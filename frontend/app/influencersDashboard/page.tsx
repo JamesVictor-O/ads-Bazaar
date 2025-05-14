@@ -1,6 +1,9 @@
 "use client";
 
-import { useState,useEffect } from "react";
+
+
+import { useState, useEffect } from "react";
+
 import {
   Search,
   TrendingUp,
@@ -26,16 +29,28 @@ import {
   Hash,
   Shield
 } from "lucide-react";
+
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useProfile } from '@farcaster/auth-kit';
 import { useAccount,useBalance} from "wagmi";
+
 export default function InfluencerDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [walletConnected, setWalletConnected] = useState(true);
+  const { data: session, status } = useSession();
+  const router = useRouter();
+    const [walletConnected, setWalletConnected] = useState(true);
   const [walletAddress, setWalletAddress] = useState("0x7A2D...F42B");
   const [isMounted, setIsMounted] = useState(false);
   const {isConnected, address} = useAccount();
   const [cUSDBalance, setCUSDBalance] = useState("1,350.75");
 
-  const { data: celoBalance } = useBalance({
+  const {
+    isAuthenticated,
+    profile: { username, fid, bio, displayName, pfpUrl },
+  } = useProfile();
+    
+    const { data: celoBalance } = useBalance({
   address: address,
   // No token address needed for native token
   enabled: isConnected,
@@ -207,6 +222,19 @@ useEffect(() => {
         return "bg-gray-100 text-gray-800";
     }
   };
+  
+    const getTransactionStatusIcon = (status) => {
+    switch (status) {
+      case "confirmed":
+        return <CheckCircle size={16} className="text-green-500" />;
+      case "pending":
+        return <Clock size={16} className="text-yellow-500" />;
+      case "failed":
+        return <AlertCircle size={16} className="text-red-500" />;
+      default:
+        return null;
+    }
+  };
 
   // Task status icon mapping
   const getTaskStatusIcon = (status) => {
@@ -221,41 +249,40 @@ useEffect(() => {
         return null;
     }
   };
-
-  // Transaction status icon mapping
-  const getTransactionStatusIcon = (status) => {
-    switch (status) {
-      case "confirmed":
-        return <CheckCircle size={16} className="text-green-500" />;
-      case "pending":
-        return <Clock size={16} className="text-yellow-500" />;
-      case "failed":
-        return <AlertCircle size={16} className="text-red-500" />;
-      default:
-        return null;
-    }
-  };
-
-  if (!isMounted) {
+   if (!isMounted) {
     return null;
+   }
+
+  useEffect(() => {
+    // If not authenticated, redirect to home
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+  }, [status, router]);
+   
+  if (status === "loading") {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
       {/* Main Content */}
+
       <main className="flex-grow px-6">
-        
-          <div className="mx-auto px-4 py-8">
-          
-          {/* Wallet Connection Section */}
-          <div className="mb-8 flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-300 mb-2">
-                Welcome to Ads-Bazer, Alex!
-              </h2>
-              <p className="text-gray-200">
-                Connect with brands and monetize your social presence and engagement
-              </p>
+          <div className=" mx-auto px-4 py-8">
+            {/* Welcome Section */}
+            <div className="mb-8 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-300 mb-2">
+                Farcaster ID: {session.user.id}
+                </h2>
+                <h2 className="text-2xl font-bold text-gray-300 mb-2">
+                Farcaster Username: {session.user.name}
+                </h2>
+                <p className="text-gray-200">
+                  Here's what's happening with your campaigns and earnings.
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               {walletConnected ? (
@@ -624,6 +651,7 @@ useEffect(() => {
           </div>
       
       </main>
+      
     </div>
   );
 }
