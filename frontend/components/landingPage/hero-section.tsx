@@ -7,6 +7,8 @@ import {
   DollarSign,
   Shield,
 } from "lucide-react";
+import { useAccount } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 interface HeroSectionProps {
   setIsModalOpen: (isOpen: boolean) => void;
@@ -14,6 +16,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { isConnected } = useAccount();
 
   const handleGetStartedClick = () => {
     setIsModalOpen(true);
@@ -42,26 +45,59 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               payments, and performance tracking.
             </p>
           </div>
+          {isConnected ? (
+            <div className="flex flex-wrap justify-center lg:justify-start gap-4 pt-2">
+              <button
+                className="px-6 sm:px-8 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition shadow-lg flex items-center group"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                onClick={handleGetStartedClick}
+              >
+                Get Started
+                <ArrowRight
+                  size={18}
+                  className={`ml-2 transition-transform duration-300 ${
+                    isHovered ? "transform translate-x-1" : ""
+                  }`}
+                />
+              </button>
+              <button className="px-6 sm:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-lg hover:bg-slate-700/50 transition">
+                Learn More
+              </button>
+            </div>
+          ) : (
+            <div className="bg-emerald-500 text-white w-[13rem] px-8 py-3 rounded-lg hover:bg-emerald-600 transition-all shadow-lg">
+              <ConnectButton.Custom>
+                {({ account, openAccountModal, openConnectModal, mounted }) => {
+                  const connected = mounted && account;
 
-          <div className="flex flex-wrap justify-center lg:justify-start gap-4 pt-2">
-            <button
-              className="px-6 sm:px-8 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition shadow-lg flex items-center group"
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-              onClick={handleGetStartedClick}
-            >
-              Get Started
-              <ArrowRight
-                size={18}
-                className={`ml-2 transition-transform duration-300 ${
-                  isHovered ? "transform translate-x-1" : ""
-                }`}
-              />
-            </button>
-            <button className="px-6 sm:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-lg hover:bg-slate-700/50 transition">
-              Learn More
-            </button>
-          </div>
+                  return (
+                    <div>
+                      {connected ? (
+                        <button
+                          onClick={openAccountModal}
+                          className="flex items-center"
+                        >
+                          <span className="text-white font-medium">
+                            {(account.address)}
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={openConnectModal}
+                          className="flex items-center"
+                        >
+                          <span className="text-white font-medium">
+                            Connect Wallet
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                }}
+              </ConnectButton.Custom>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 pt-6 md:pt-8 max-w-lg mx-auto lg:mx-0">
             <div className="text-center border rounded-lg py-2 sm:py-3 px-1 sm:px-2">
