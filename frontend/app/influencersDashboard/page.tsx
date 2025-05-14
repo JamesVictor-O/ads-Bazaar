@@ -1,7 +1,7 @@
 "use client";
 
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   TrendingUp,
@@ -21,9 +21,19 @@ import {
   Bell,
   Eye
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useProfile } from '@farcaster/auth-kit';
 
 export default function InfluencerDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  const {
+    isAuthenticated,
+    profile: { username, fid, bio, displayName, pfpUrl },
+  } = useProfile();
 
   // Sample applied campaigns data
   const appliedCampaigns = [
@@ -152,9 +162,21 @@ export default function InfluencerDashboard() {
     }
   };
 
+  useEffect(() => {
+    // If not authenticated, redirect to home
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+  }, [status, router]);
+
+  if (status === "loading") {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
       {/* Main Content */}
+
       <main className="flex-grow px-6">
         {activeTab === "dashboard" && (
           <div className=" mx-auto px-4 py-8">
@@ -162,7 +184,10 @@ export default function InfluencerDashboard() {
             <div className="mb-8 flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-bold text-gray-300 mb-2">
-                  Welcome back, Alex!
+                Farcaster ID: {session.user.id}
+                </h2>
+                <h2 className="text-2xl font-bold text-gray-300 mb-2">
+                Farcaster Username: {session.user.name}
                 </h2>
                 <p className="text-gray-200">
                   Here's what's happening with your campaigns and earnings.
@@ -469,6 +494,7 @@ export default function InfluencerDashboard() {
 
        
       </main>
+      
     </div>
   );
 }
