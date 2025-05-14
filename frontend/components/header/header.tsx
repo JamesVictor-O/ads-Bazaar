@@ -14,10 +14,12 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { address, isConnected } = useAccount();
 
-  
   useEffect(() => {
+    setIsMounted(true);
+    
     const handleScroll = () => {
       if (window.scrollY > 10) {
         setScrolled(true);
@@ -26,8 +28,11 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    // Only add event listener if window is available
+    if (typeof window !== "undefined") {
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+    }
   }, []);
 
   const handleNavClick = (tab: string) => {
@@ -42,6 +47,11 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
     if (!addr) return "";
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
+
+  // Don't render anything until component is mounted (client-side)
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <header className="fixed h-28 w-full z-50 transition-all duration-300 bg-slate-900/95 backdrop-blur-sm shadow-lg py-2">
@@ -206,7 +216,6 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                           }}
                         </ConnectButton.Custom>
                       </div>
-                      
                     </div>
                   </div>
                 )}
