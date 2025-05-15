@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.18;
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
@@ -42,6 +42,7 @@ contract AdsBazaar {
     struct AdBrief {
         bytes32 briefId;
         address business;
+        string name; 
         string description;
         uint256 budget;
         Status status;
@@ -80,6 +81,7 @@ contract AdsBazaar {
    
     struct BriefData {
         address business;
+        string name; 
         string description;
         uint256 budget;
         Status status;
@@ -163,6 +165,7 @@ contract AdsBazaar {
 
     
     function createAdBrief(
+        string calldata _name,
         string calldata _description,
         uint256 _budget,
         uint256 _applicationDeadline,
@@ -197,6 +200,7 @@ contract AdsBazaar {
         briefs[briefId] = AdBrief({
             briefId: briefId,
             business: msg.sender,
+            name: _name,
             description: _description,
             budget: _budget,
             status: Status.OPEN,
@@ -432,6 +436,7 @@ contract AdsBazaar {
         AdBrief storage brief = briefs[_briefId];
         return BriefData({
             business: brief.business,
+            name: brief.name,
             description: brief.description,
             budget: brief.budget,
             status: brief.status,

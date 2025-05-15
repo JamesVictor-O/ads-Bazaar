@@ -1,0 +1,714 @@
+{
+  "address": "0x106702795D0bd411B178e96Ad1f64cCB5971fCD7",
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [
+        { "name": "_cUSD", "type": "address", "internalType": "address" }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "applications",
+      "inputs": [
+        { "name": "", "type": "bytes32", "internalType": "bytes32" },
+        { "name": "", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [
+        { "name": "influencer", "type": "address", "internalType": "address" },
+        { "name": "message", "type": "string", "internalType": "string" },
+        { "name": "timestamp", "type": "uint256", "internalType": "uint256" },
+        { "name": "isSelected", "type": "bool", "internalType": "bool" },
+        { "name": "hasClaimed", "type": "bool", "internalType": "bool" },
+        { "name": "proofLink", "type": "string", "internalType": "string" },
+        { "name": "isApproved", "type": "bool", "internalType": "bool" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "applyToBrief",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" },
+        { "name": "_message", "type": "string", "internalType": "string" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "briefs",
+      "inputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+      "outputs": [
+        { "name": "briefId", "type": "bytes32", "internalType": "bytes32" },
+        { "name": "business", "type": "address", "internalType": "address" },
+        { "name": "name", "type": "string", "internalType": "string" },
+        { "name": "description", "type": "string", "internalType": "string" },
+        { "name": "budget", "type": "uint256", "internalType": "uint256" },
+        {
+          "name": "status",
+          "type": "uint8",
+          "internalType": "enum AdsBazaar.Status"
+        },
+        {
+          "name": "applicationDeadline",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "promotionDuration",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "promotionStartTime",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "promotionEndTime",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "maxInfluencers",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "selectedInfluencersCount",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "targetAudience",
+          "type": "uint8",
+          "internalType": "enum AdsBazaar.TargetAudience"
+        },
+        {
+          "name": "verificationDeadline",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "businessBriefs",
+      "inputs": [
+        { "name": "", "type": "address", "internalType": "address" },
+        { "name": "", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "cUSD",
+      "inputs": [],
+      "outputs": [
+        { "name": "", "type": "address", "internalType": "contract IERC20" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "cancelAdBrief",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "claimPayments",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "completeCampaign",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "createAdBrief",
+      "inputs": [
+        { "name": "_name", "type": "string", "internalType": "string" },
+        { "name": "_description", "type": "string", "internalType": "string" },
+        { "name": "_budget", "type": "uint256", "internalType": "uint256" },
+        {
+          "name": "_applicationDeadline",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_promotionDuration",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_maxInfluencers",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        { "name": "_targetAudience", "type": "uint8", "internalType": "uint8" },
+        {
+          "name": "_verificationPeriod",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "getAdBrief",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct AdsBazaar.BriefData",
+          "components": [
+            {
+              "name": "business",
+              "type": "address",
+              "internalType": "address"
+            },
+            { "name": "name", "type": "string", "internalType": "string" },
+            {
+              "name": "description",
+              "type": "string",
+              "internalType": "string"
+            },
+            { "name": "budget", "type": "uint256", "internalType": "uint256" },
+            {
+              "name": "status",
+              "type": "uint8",
+              "internalType": "enum AdsBazaar.Status"
+            },
+            {
+              "name": "applicationDeadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "promotionDuration",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "promotionStartTime",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "promotionEndTime",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "maxInfluencers",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "selectedInfluencersCount",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "targetAudience",
+              "type": "uint8",
+              "internalType": "enum AdsBazaar.TargetAudience"
+            },
+            {
+              "name": "verificationDeadline",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getBriefApplications",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct AdsBazaar.ApplicationData",
+          "components": [
+            {
+              "name": "influencers",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "messages",
+              "type": "string[]",
+              "internalType": "string[]"
+            },
+            {
+              "name": "timestamps",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "isSelected",
+              "type": "bool[]",
+              "internalType": "bool[]"
+            },
+            {
+              "name": "hasClaimed",
+              "type": "bool[]",
+              "internalType": "bool[]"
+            },
+            {
+              "name": "proofLinks",
+              "type": "string[]",
+              "internalType": "string[]"
+            },
+            { "name": "isApproved", "type": "bool[]", "internalType": "bool[]" }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getBusinessBriefs",
+      "inputs": [
+        { "name": "_business", "type": "address", "internalType": "address" }
+      ],
+      "outputs": [
+        { "name": "", "type": "bytes32[]", "internalType": "bytes32[]" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getInfluencerApplications",
+      "inputs": [
+        { "name": "_influencer", "type": "address", "internalType": "address" }
+      ],
+      "outputs": [
+        { "name": "", "type": "bytes32[]", "internalType": "bytes32[]" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getPendingPayments",
+      "inputs": [
+        { "name": "_influencer", "type": "address", "internalType": "address" }
+      ],
+      "outputs": [
+        {
+          "name": "briefIds",
+          "type": "bytes32[]",
+          "internalType": "bytes32[]"
+        },
+        { "name": "amounts", "type": "uint256[]", "internalType": "uint256[]" },
+        { "name": "approved", "type": "bool[]", "internalType": "bool[]" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getTotalPendingAmount",
+      "inputs": [
+        { "name": "_influencer", "type": "address", "internalType": "address" }
+      ],
+      "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "influencerApplications",
+      "inputs": [
+        { "name": "", "type": "address", "internalType": "address" },
+        { "name": "", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "influencerPendingPayments",
+      "inputs": [
+        { "name": "", "type": "address", "internalType": "address" },
+        { "name": "", "type": "uint256", "internalType": "uint256" }
+      ],
+      "outputs": [
+        { "name": "briefId", "type": "bytes32", "internalType": "bytes32" },
+        { "name": "amount", "type": "uint256", "internalType": "uint256" },
+        { "name": "isApproved", "type": "bool", "internalType": "bool" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "owner",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "platformFeePercentage",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "registerUser",
+      "inputs": [
+        { "name": "_isBusiness", "type": "bool", "internalType": "bool" },
+        { "name": "_isInfluencer", "type": "bool", "internalType": "bool" },
+        { "name": "_profileData", "type": "string", "internalType": "string" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "selectInfluencer",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" },
+        {
+          "name": "_applicationIndex",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setPlatformFee",
+      "inputs": [
+        {
+          "name": "_newFeePercentage",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "submitProof",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" },
+        { "name": "_proofLink", "type": "string", "internalType": "string" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "totalPendingAmount",
+      "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
+      "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "users",
+      "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
+      "outputs": [
+        { "name": "isRegistered", "type": "bool", "internalType": "bool" },
+        { "name": "isBusiness", "type": "bool", "internalType": "bool" },
+        { "name": "isInfluencer", "type": "bool", "internalType": "bool" },
+        { "name": "profileData", "type": "string", "internalType": "string" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "withdrawFees",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "ApplicationSubmitted",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "influencer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "AutoApprovalTriggered",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "BriefCancelled",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "BriefCreated",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "business",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "budget",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "maxInfluencers",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "targetAudience",
+          "type": "uint8",
+          "indexed": false,
+          "internalType": "enum AdsBazaar.TargetAudience"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "InfluencerSelected",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "influencer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PaymentClaimed",
+      "inputs": [
+        {
+          "name": "influencer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PaymentReleased",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "influencer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PromotionStarted",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "startTime",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "endTime",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ProofApproved",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "influencer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ProofSubmitted",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "influencer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "proofLink",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "UserRegistered",
+      "inputs": [
+        {
+          "name": "user",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "isBusiness",
+          "type": "bool",
+          "indexed": false,
+          "internalType": "bool"
+        },
+        {
+          "name": "isInfluencer",
+          "type": "bool",
+          "indexed": false,
+          "internalType": "bool"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "VerificationDeadlineSet",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "deadline",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    }
+  ]
+}

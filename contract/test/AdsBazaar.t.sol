@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.18;
 
 import "forge-std/Test.sol";
 import "../src/AdsBazaar.sol";
@@ -119,6 +119,7 @@ contract AdsBazaarTest is Test {
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
         adsBazaar.createAdBrief(
+            "First Campaign",
             "Test Ad Campaign",
             budget,
             applicationDeadline,
@@ -262,6 +263,7 @@ contract AdsBazaarTest is Test {
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
         adsBazaar.createAdBrief(
+            "New camp",
             "Campaign to Cancel",
             budget,
             applicationDeadline,
@@ -333,6 +335,7 @@ contract AdsBazaarTest is Test {
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
         adsBazaar.createAdBrief(
+            "Fee",
             "Fee Test",
             budget,
             block.timestamp + 1 days,
@@ -387,6 +390,7 @@ contract AdsBazaarTest is Test {
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
         adsBazaar.createAdBrief(
+            "Deadline",
             "Deadline Test",
             budget,
             applicationDeadline,
@@ -442,6 +446,7 @@ contract AdsBazaarTest is Test {
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
         adsBazaar.createAdBrief(
+            "Max",
             "Max Influencers Test",
             budget,
             block.timestamp + 1 days,
@@ -487,6 +492,7 @@ contract AdsBazaarTest is Test {
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
         adsBazaar.createAdBrief(
+            "Fit",
             "Fitness Campaign",
             budget,
             block.timestamp + 1 days,
@@ -522,6 +528,7 @@ contract AdsBazaarTest is Test {
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
         adsBazaar.createAdBrief(
+            "Verify",
             "Verification Test",
             budget,
             block.timestamp + 1 days,
@@ -583,5 +590,18 @@ contract AdsBazaarTest is Test {
         // Check total pending amount
         uint256 totalPending = adsBazaar.getTotalPendingAmount(influencer1);
         assertEq(totalPending, amounts[0]);
+    }
+
+    function testCannotClaimTwice() public {
+        _setupUsersAndCreateBrief();
+        _applyAndSelectInfluencers();
+        _submitProofsAndComplete();
+
+        vm.prank(influencer1);
+        adsBazaar.claimPayments();
+
+        vm.prank(influencer1);
+        vm.expectRevert("No pending payments to claim");
+        adsBazaar.claimPayments();
     }
 }
