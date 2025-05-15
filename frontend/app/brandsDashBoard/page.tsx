@@ -113,7 +113,7 @@ const BrandDashboard = () => {
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Dashboard</h1>
+          <h1 className="text-xl sm:text-3xl md:text-4xl font-semibold text-gray-900">Dashboard</h1>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative w-full sm:w-auto">
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -142,7 +142,7 @@ const BrandDashboard = () => {
                 <Briefcase className="h-5 w-5 text-indigo-600" />
               </div>
               <div className="ml-3">
-                <div className="text-xs font-medium text-gray-500">Active Campaigns</div>
+                <div className="text-xs md:text-base font-medium text-gray-500">Active Campaigns</div>
                 <div className="text-lg font-semibold text-gray-900">
                   {mockCampaigns.filter((c) => c.status === "active").length}
                 </div>
@@ -171,8 +171,8 @@ const BrandDashboard = () => {
                             <Briefcase className="h-4 w-4 text-indigo-600" />
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
-                            <div className="text-xs text-gray-500 flex flex-wrap gap-2">
+                            <div className="text-sm font-medium md:text-base text-gray-900">{campaign.name}</div>
+                            <div className="text-xs md:text-base text-gray-500 flex flex-wrap gap-2">
                               <span className="flex items-center">
                                 <Calendar size={12} className="mr-1" />
                                 {format(campaign.endDate, "MMM d, yyyy")}
@@ -186,18 +186,13 @@ const BrandDashboard = () => {
                         </div>
                         <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span>
                       </div>
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm md:text-base text-gray-900">
                         {campaign.spent.toLocaleString()} / {campaign.budget.toLocaleString()} cUSD
                         <div className="text-xs text-gray-500">
                           {Math.round((campaign.spent / campaign.budget) * 100)}% spent
                         </div>
                       </div>
-                      <div className="relative h-2 bg-gray-200 rounded">
-                        <div
-                          style={{ width: `${Math.round((campaign.spent / campaign.budget) * 100)}%` }}
-                          className="absolute h-2 bg-indigo-600 rounded"
-                        />
-                      </div>
+                    
                       <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-500 gap-2">
                         <div className="flex gap-3">
                           <span className="flex items-center">
@@ -215,7 +210,7 @@ const BrandDashboard = () => {
                               setSelectedCampaign(campaign);
                               setShowApplicationsModal(true);
                             }}
-                            className="text-indigo-600 hover:text-indigo-900 font-medium"
+                            className="text-white bg-indigo-600 p-2 rounded hover:text-gray-400 font-medium"
                           >
                             Applications
                           </button>
@@ -224,7 +219,7 @@ const BrandDashboard = () => {
                               setSelectedCampaign(campaign);
                               setShowSubmissionsModal(true);
                             }}
-                            className="text-indigo-600 hover:text-indigo-900 font-medium"
+                            className="text-white bg-indigo-600 p-2 rounded hover:text-gray-400 font-medium"
                           >
                             Submissions
                           </button>
@@ -303,7 +298,7 @@ const BrandDashboard = () => {
       {showApplicationsModal && selectedCampaign && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[80vh] overflow-y-auto">
-            <h2 className="text-lg font-medium mb-4">Applications for {selectedCampaign.name}</h2>
+            <h2 className="text-lg text-gray-700 font-medium mb-4">Applications for {selectedCampaign.name}</h2>
             <ul className="divide-y divide-gray-200">
               {(mockApplications[selectedCampaign.id] || []).map((applicant, index) => (
                 <li key={index} className="py-4">
@@ -347,7 +342,7 @@ const BrandDashboard = () => {
       {showSubmissionsModal && selectedCampaign && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[80vh] overflow-y-auto">
-            <h2 className="text-lg font-medium mb-4">Submissions for {selectedCampaign.name}</h2>
+            <h2 className="text-lg text-gray-700 font-medium mb-4">Submissions for {selectedCampaign.name}</h2>
             <ul className="divide-y divide-gray-200">
               {(mockSubmissions[selectedCampaign.id] || []).map((submission, index) => (
                 <li key={index} className="py-4">

@@ -2,8 +2,17 @@
 
 import { useState, useEffect } from "react";
 import {
-  Briefcase, DollarSign, Calendar, Clock, CheckCircle, Link as LinkIcon,
-  Users, ChevronRight, Copy, ExternalLink, AlertCircle,
+  Briefcase,
+  DollarSign,
+  Calendar,
+  Clock,
+  CheckCircle,
+  Link as LinkIcon,
+  Users,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -20,7 +29,11 @@ const activeCampaigns = [
     budget: 1500,
     deadline: "2025-06-01",
     tasks: [
-      { name: "Farcaster post", status: "completed", postLink: "https://farcaster.com/user/post/123" },
+      {
+        name: "Farcaster post",
+        status: "completed",
+        postLink: "https://farcaster.com/user/post/123",
+      },
       { name: "X thread", status: "pending", postLink: "" },
     ],
     paymentStatus: "pending",
@@ -33,8 +46,16 @@ const activeCampaigns = [
     budget: 1800,
     deadline: "2025-05-30",
     tasks: [
-      { name: "Farcaster cast", status: "completed", postLink: "https://farcaster.com/user/post/456" },
-      { name: "Lens story", status: "completed", postLink: "https://lens.xyz/post/789" },
+      {
+        name: "Farcaster cast",
+        status: "completed",
+        postLink: "https://farcaster.com/user/post/456",
+      },
+      {
+        name: "Lens story",
+        status: "completed",
+        postLink: "https://lens.xyz/post/789",
+      },
     ],
     paymentStatus: "paid",
     contractAddress: "0x3fe1...9d7c",
@@ -155,7 +176,6 @@ export default function InfluencerDashboard() {
               Manage your campaigns and track earnings.
             </p>
           </div>
-         
         </div>
 
         {/* Stats Overview */}
@@ -165,8 +185,12 @@ export default function InfluencerDashboard() {
               <Briefcase className="h-5 w-5 text-indigo-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">Active Campaigns</p>
-              <p className="text-lg font-semibold text-gray-900">{campaigns.length}</p>
+              <p className="text-xs font-medium text-gray-500">
+                Active Campaigns
+              </p>
+              <p className="text-lg font-semibold text-gray-900">
+                {campaigns.length}
+              </p>
             </div>
           </div>
           <div className="bg-white shadow rounded-lg p-4 flex items-center">
@@ -174,9 +198,12 @@ export default function InfluencerDashboard() {
               <DollarSign className="h-5 w-5 text-green-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">Total Earnings</p>
+              <p className="text-xs font-medium text-gray-500">
+                Total Earnings
+              </p>
               <p className="text-lg font-semibold text-gray-900">
-                {transactionHistory.reduce((sum, tx) => sum + tx.amount, 0)} cUSD
+                {transactionHistory.reduce((sum, tx) => sum + tx.amount, 0)}{" "}
+                cUSD
               </p>
             </div>
           </div>
@@ -185,7 +212,9 @@ export default function InfluencerDashboard() {
               <Users className="h-5 w-5 text-purple-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">Farcaster Followers</p>
+              <p className="text-xs font-medium text-gray-500">
+                Farcaster Followers
+              </p>
               <p className="text-lg font-semibold text-gray-900">12.4K</p>
             </div>
           </div>
@@ -194,8 +223,12 @@ export default function InfluencerDashboard() {
         {/* Active Campaigns */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Active Campaigns</h2>
-            <button className="text-sm text-indigo-600 hover:text-indigo-800">View All</button>
+            <h2 className="text-lg font-medium text-gray-900">
+              Active Campaigns
+            </h2>
+            <button className="text-sm text-indigo-600 hover:text-indigo-800">
+              View All
+            </button>
           </div>
           <div className="space-y-4">
             {campaigns.map((campaign) => (
@@ -203,10 +236,14 @@ export default function InfluencerDashboard() {
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-900">{campaign.title}</h3>
+                      <h3 className="text-sm font-medium text-gray-900">
+                        {campaign.title}
+                      </h3>
                       <p className="text-xs text-gray-500">{campaign.brand}</p>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">{campaign.budget} cUSD</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {campaign.budget} cUSD
+                    </span>
                   </div>
                   <div className="text-xs text-gray-500 flex flex-wrap gap-2">
                     <span className="flex items-center">
@@ -215,19 +252,39 @@ export default function InfluencerDashboard() {
                     </span>
                     <span className="flex items-center">
                       <Clock size={12} className="mr-1" />
-                      {Math.ceil((new Date(campaign.deadline) - new Date()) / (1000 * 60 * 60 * 24))} days left
+                      {Math.ceil(
+                        (new Date(campaign.deadline) - new Date()) /
+                          (1000 * 60 * 60 * 24)
+                      )}{" "}
+                      days left
                     </span>
                   </div>
                   <div className="text-xs text-gray-500">
                     <span className="flex items-center">
-                      Contract: <a href="#" className="ml-1 text-indigo-600 hover:underline truncate">{campaign.contractAddress}</a>
-                      <button className="ml-1 text-gray-400 hover:text-indigo-600"><Copy size={12} /></button>
-                      <a href="#" className="ml-1 text-gray-400 hover:text-indigo-600"><ExternalLink size={12} /></a>
+                      Contract:{" "}
+                      <a
+                        href="#"
+                        className="ml-1 text-indigo-600 hover:underline truncate"
+                      >
+                        {campaign.contractAddress}
+                      </a>
+                      <button className="ml-1 text-gray-400 hover:text-indigo-600">
+                        <Copy size={12} />
+                      </button>
+                      <a
+                        href="#"
+                        className="ml-1 text-gray-400 hover:text-indigo-600"
+                      >
+                        <ExternalLink size={12} />
+                      </a>
                     </span>
                   </div>
                   <div className="space-y-2">
                     {campaign.tasks.map((task, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-sm">
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between text-sm"
+                      >
                         <div className="flex items-center">
                           {getTaskStatusIcon(task.status)}
                           <span className="ml-2 text-xs">{task.name}</span>
@@ -238,7 +295,7 @@ export default function InfluencerDashboard() {
                               href={task.postLink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-indigo-600 hover:text-indigo-800 flex items-center text-xs"
+                              className="text-white bg-indigo-600 p-2 rounded hover:text-gray-200 flex items-center text-xs"
                             >
                               <LinkIcon size={12} className="mr-1" />
                               View
@@ -249,7 +306,7 @@ export default function InfluencerDashboard() {
                                 setSelectedCampaign(campaign);
                                 setShowSubmitModal(true);
                               }}
-                              className="text-indigo-600 hover:text-indigo-800 text-xs"
+                              className="text-white hover:text-gray-200 rounded  bg-indigo-600 p-2 text-xs"
                               disabled={task.status === "completed"}
                             >
                               Submit Link
@@ -269,15 +326,16 @@ export default function InfluencerDashboard() {
                     >
                       Payment: {campaign.paymentStatus}
                     </span>
-                    {campaign.paymentStatus !== "paid" && campaign.tasks.every((t) => t.status === "completed") && (
-                      <button
-                        onClick={() => simulateFundRelease(campaign.id)}
-                        className="text-green-600 hover:text-green-800 text-xs flex items-center"
-                      >
-                        <CheckCircle size={12} className="mr-1" />
-                        Simulate Fund Release
-                      </button>
-                    )}
+                    {campaign.paymentStatus !== "paid" &&
+                      campaign.tasks.every((t) => t.status === "completed") && (
+                        <button
+                          onClick={() => simulateFundRelease(campaign.id)}
+                          className="text-green-600 hover:text-green-800 text-xs flex items-center"
+                        >
+                          <CheckCircle size={12} className="mr-1" />
+                          Simulate Fund Release
+                        </button>
+                      )}
                   </div>
                 </div>
               </div>
@@ -288,27 +346,43 @@ export default function InfluencerDashboard() {
         {/* Transactions */}
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Recent Transactions</h2>
-            <button className="text-sm text-indigo-600 hover:text-indigo-800">View All</button>
+            <h2 className="text-lg font-medium text-gray-900">
+              Recent Transactions
+            </h2>
+            <button className="text-sm text-indigo-600 hover:text-indigo-800">
+              View All
+            </button>
           </div>
           <div className="bg-white shadow rounded-lg p-4">
             {transactionHistory.length === 0 ? (
               <p className="text-sm text-gray-500">No transactions yet.</p>
             ) : (
               transactionHistory.map((tx) => (
-                <div key={tx.id} className="py-2 border-b border-gray-200 last:border-0">
+                <div
+                  key={tx.id}
+                  className="py-2 border-b border-gray-200 last:border-0"
+                >
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{tx.amount} cUSD</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {tx.amount} cUSD
+                      </p>
                       <p className="text-xs text-gray-500">From: {tx.from}</p>
                       <p className="text-xs text-gray-500">{tx.date}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 capitalize">{tx.status}</span>
-                      <a href="#" className="text-indigo-600 hover:text-indigo-800 text-xs truncate">
+                      <span className="text-xs text-gray-500 capitalize">
+                        {tx.status}
+                      </span>
+                      <a
+                        href="#"
+                        className="text-indigo-600 hover:text-indigo-800 text-xs truncate"
+                      >
                         {tx.txHash}
                       </a>
-                      <button className="text-gray-400 hover:text-indigo-600"><Copy size={12} /></button>
+                      <button className="text-gray-400 hover:text-indigo-600">
+                        <Copy size={12} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -325,11 +399,17 @@ export default function InfluencerDashboard() {
             <h2 className="text-lg font-medium mb-4">Submit Post Link</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Campaign</label>
-                <p className="text-sm text-gray-900">{selectedCampaign.title}</p>
+                <label className="block text-sm font-medium text-gray-700">
+                  Campaign
+                </label>
+                <p className="text-sm text-gray-900">
+                  {selectedCampaign.title}
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Post Link</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Post Link
+                </label>
                 <input
                   type="url"
                   value={postLink}
@@ -347,7 +427,13 @@ export default function InfluencerDashboard() {
                 Cancel
               </button>
               <button
-                onClick={() => handleSubmitPost(selectedCampaign.id, selectedCampaign.tasks.find((t) => t.status === "pending")?.name)}
+                onClick={() =>
+                  handleSubmitPost(
+                    selectedCampaign.id,
+                    selectedCampaign.tasks.find((t) => t.status === "pending")
+                      ?.name
+                  )
+                }
                 className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
                 disabled={!postLink}
               >
