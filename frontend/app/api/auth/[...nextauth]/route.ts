@@ -1,5 +1,8 @@
 import NextAuth from "next-auth";
 import { createAppClient, viemConnector } from "@farcaster/auth-client";
+import CredentialsProvider from "next-auth/providers/credentials";
+
+
 
 export const authOptions = {
   providers: [
@@ -74,6 +77,75 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 };
+
+
+export default NextAuth({
+  providers: [
+    CredentialsProvider({
+      name: "Farcaster",
+      credentials: {
+        message: { label: "Message", type: "text" },
+        signature: { label: "Signature", type: "text" },
+        name: { label: "Name", type: "text" },
+        pfp: { label: "Profile Picture", type: "text" },
+        userType: { label: "User Type", type: "text" }, // From GetStartedModal
+      },
+      async authorize(credentials) {
+        const client = createAppClient({
+          ethereum: viemConnector(),
+        });
+
+        try {
+          const { message, signature, name, pfp, userType } = credentials || {};
+          if (!message || !signature || !userType) {
+            throw new Error("Missing required credentials");
+          }
+
+          // Verify Farcaster signature
+          const verification = await client.verifySignInMessage({
+            message,
+            signature: signature as `0x${string}`,
+            domain: process.env.NEXT_PUBLIC_DOMAIN || "localhost:3000",
+            nonce: await client.fetchNonce(),
+          });
+
+          if (!verification.success) {
+            throw new Error("Farcaster verification failed");
+          }
+
+          // Return user object for session
+          return {
+            id: verification.fid.toString(),
+            name: name || "Anonymous",
+            pfp: pfp || "",
+            userType,
+            walletAddress: verification.address, // Farcaster-verified address
+          };
+        } catch (error) {
+          console.error("Farcaster auth error:", error);
+          return null;
+        }
+      },
+    }),
+  ],
+  callbacks: {
+    async session({ session, user }) {
+      session.user.userType = user.userType;
+      session.user.walletAddress = user.walletAddress;
+      session.user.fid = user.id; // Farcaster FID
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.userType = user.userType;
+        token.walletAddress = user.walletAddress;
+        token.fid = user.id;
+      }
+      return token;
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+});
 
 // Create the handler for API routes
 const handler = NextAuth(authOptions);

@@ -1,9 +1,37 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { X, Twitter, Facebook, Youtube, Share2 } from "lucide-react";
+import { X, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signIn, getCsrfToken } from "next-auth/react";
 import { SignInButton } from "@farcaster/auth-kit";
 import "@farcaster/auth-kit/styles.css";
+import { useAccount, useWriteContract } from "wagmi";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// Smart contract ABI (generated after deployment)
+const ADS_BAZER_ABI = [
+  {
+    inputs: [
+      { name: "userType", type: "string" },
+      { name: "niche", type: "string" },
+      { name: "businessType", type: "string" },
+      { name: "budget", type: "string" },
+    ],
+    name: "registerUser",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "user", type: "address" }],
+    name: "isUserRegistered",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
 
 interface GetStartedModalProps {
   isOpen?: boolean;
@@ -11,7 +39,7 @@ interface GetStartedModalProps {
 }
 
 type UserType = "influencer" | "advertiser";
-type SocialPlatform = "farcaster" | "twitter" | "facebook" | "youtube";
+type SocialPlatform = "farcaster";
 
 interface UserDetails {
   userType: UserType | "";
@@ -21,25 +49,21 @@ interface UserDetails {
   budget?: string;
 }
 
-const GetStartedModal = ({
-  isOpen = true,
-  onClose = () => {},
-}: GetStartedModalProps) => {
+const GetStartedModal = ({ isOpen = true, onClose = () => {} }: GetStartedModalProps) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({
     userType: "",
     connectedPlatforms: [],
   });
-
   const router = useRouter();
+  const { address, isConnected } = useAccount();
+  const { writeContract, isPending, error: txError } = useWriteContract();
 
   const [showNextStep, setShowNextStep] = useState(false);
   const [connecting, setConnecting] = useState<SocialPlatform | null>(null);
-
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFarcasterLoading, setIsFarcasterLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
 
   useEffect(() => {
     const fetchCsrfToken = async () => {
@@ -49,6 +73,12 @@ const GetStartedModal = ({
     fetchCsrfToken();
   }, []);
 
+  useEffect(() => {
+    if (txError) {
+      toast.error(`Transaction failed: ${txError.message}`, { position: "bottom-center" });
+    }
+  }, [txError]);
+
   const handleSuccess = async (data: {
     message: string;
     signature: `0x${string}`;
@@ -57,33 +87,18 @@ const GetStartedModal = ({
   }) => {
     setIsLoading(true);
     try {
-      console.log("Farcaster data received:", {
-        name: data.name || "No name received",
-        signature: data.signature ? "Signature received" : "No signature",
-        message: data.message ? "Message received" : "No message"
-      });
-      
-      // Ensure we have a default name if none is provided
-      const userName = data.name;
-      
-      // Use the right format for the domain - make sure it matches the auth server config
+      const userName = data.name || "Anonymous";
       const result = await signIn("farcaster", {
         message: data.message,
         signature: data.signature,
         name: userName,
         pfp: data.pfp,
-        callbackUrl: "/influencersDashboard",  // Explicitly set redirect URL
-        redirect: true,             // Enable redirect
+        callbackUrl: "/influencersDashboard",
+        redirect: true,
       });
-      
-      // This part only runs if redirect is false
       if (result?.error) {
         throw new Error(result.error);
       }
-      
-      // Only runs when redirect is false but successful
-      onClose();
-      router.push("/influencersDashboard");
     } catch (err) {
       console.error("Farcaster auth error:", err);
       setError(err instanceof Error ? err.message : "Sign in failed");
@@ -103,8 +118,6 @@ const GetStartedModal = ({
 
   const handleConnect = (platform: SocialPlatform) => {
     setConnecting(platform);
-
-    // Simulate connection process
     setTimeout(() => {
       const connectedPlatforms = userDetails.connectedPlatforms || [];
       if (!connectedPlatforms.includes(platform)) {
@@ -125,6 +138,47 @@ const GetStartedModal = ({
     });
   };
 
+  const handleCompleteRegistration = async () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first", { position: "bottom-center" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await writeContract({
+        address: "0xYourContractAddress", // Replace with deployed contract address
+        abi: ADS_BAZER_ABI,
+        functionName: "registerUser",
+        args: [
+          userDetails.userType,
+          userDetails.niche || "",
+          userDetails.businessType || "",
+          userDetails.budget || "",
+        ],
+      });
+      toast.success("Registration completed successfully!", { position: "bottom-center" });
+      onClose();
+      router.push(
+        userDetails.userType === "influencer" ? "/influencersDashboard" : "/brandsDashBoard"
+      );
+    } catch (err) {
+      console.error("Registration error:", err);
+      toast.error("Failed to complete registration", { position: "bottom-center" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isFormValid = () => {
+    if (userDetails.userType === "influencer") {
+      return (
+        !!userDetails.niche && (userDetails.connectedPlatforms?.length || 0) > 0
+      );
+    }
+    return !!userDetails.businessType && !!userDetails.budget;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -143,34 +197,24 @@ const GetStartedModal = ({
         {!showNextStep ? (
           <div className="space-y-6">
             <p className="text-gray-600">What best describes you?</p>
-
             <div className="space-y-4">
               <button
                 onClick={() => handleUserTypeSelection("influencer")}
                 className="w-full p-4 border-2 border-blue-500 rounded-lg flex items-center justify-between hover:bg-blue-50 transition-colors"
               >
                 <div className="text-left">
-                  <h3 className="font-medium text-lg text-gray-800">
-                    I'm an Influencer
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    I want to monetize my audience and work with brands
-                  </p>
+                  <h3 className="font-medium text-lg text-gray-800">I'm an Influencer</h3>
+                  <p className="text-gray-600 text-sm">I want to monetize my audience and work with brands</p>
                 </div>
                 <div className="w-6 h-6 rounded-full border-2 border-blue-500"></div>
               </button>
-
               <button
                 onClick={() => handleUserTypeSelection("advertiser")}
                 className="w-full p-4 border-2 border-blue-500 rounded-lg flex items-center justify-between hover:bg-blue-50 transition-colors"
               >
                 <div className="text-left">
-                  <h3 className="font-medium text-lg text-gray-800">
-                    I want to run ads
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    I'm looking to promote my business or product
-                  </p>
+                  <h3 className="font-medium text-lg text-gray-800">I want to run ads</h3>
+                  <p className="text-gray-600 text-sm">I'm looking to promote my business or product</p>
                 </div>
                 <div className="w-6 h-6 rounded-full border-2 border-blue-500"></div>
               </button>
@@ -183,22 +227,16 @@ const GetStartedModal = ({
                 ? "Great! Let's set up your influencer profile"
                 : "Great! Let's set up your advertising account"}
             </p>
-
             <div className="space-y-4 text-gray-600">
               {userDetails.userType === "influencer" ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Niche/Category
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Niche/Category</label>
                     <select
                       className="w-full p-2 border border-gray-300 rounded-md"
                       value={userDetails.niche || ""}
                       onChange={(e) =>
-                        setUserDetails({
-                          ...userDetails,
-                          niche: e.target.value,
-                        })
+                        setUserDetails({ ...userDetails, niche: e.target.value })
                       }
                     >
                       <option value="">Select a category</option>
@@ -212,13 +250,9 @@ const GetStartedModal = ({
                       <option value="other">Other</option>
                     </select>
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Connect Your Social Media
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Connect Your Social Media</label>
                     <div className="space-y-3">
-                      {/* Farcaster */}
                       <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                         <div className="flex items-center">
                           <div className="bg-purple-100 p-2 rounded-full mr-3">
@@ -227,13 +261,9 @@ const GetStartedModal = ({
                           <span className="font-medium">Farcaster</span>
                         </div>
                         {error && (
-                          <div className="mb-4 rounded-md bg-red-50 p-4 text-red-700">
-                            {error}
-                          </div>
+                          <div className="mb-4 rounded-md bg-red-50 p-4 text-red-700">{error}</div>
                         )}
-                        {userDetails.connectedPlatforms?.includes(
-                          "farcaster"
-                        ) ? (
+                        {userDetails.connectedPlatforms?.includes("farcaster") ? (
                           <button
                             onClick={() => handleDisconnect("farcaster")}
                             className="py-1 px-3 bg-gray-100 text-gray-600 text-sm rounded-md hover:bg-gray-200 transition-colors"
@@ -247,31 +277,25 @@ const GetStartedModal = ({
                               console.error("Farcaster auth error:", error);
                               setError("Failed to authenticate with Farcaster");
                             }}
-                            domain="localhost:3000" // Make sure this matches your domain in the API route
+                            domain="localhost:3000"
                             siweUri="http://localhost:3000"
                             nonce={csrfToken || undefined}
-                            timeout={300000} // 5 minutes
+                            timeout={300000}
                           />
                         )}
                       </div>
-
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Business Type
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Business Type</label>
                     <select
                       className="w-full p-2 border border-gray-300 rounded-md"
                       value={userDetails.businessType || ""}
                       onChange={(e) =>
-                        setUserDetails({
-                          ...userDetails,
-                          businessType: e.target.value,
-                        })
+                        setUserDetails({ ...userDetails, businessType: e.target.value })
                       }
                     >
                       <option value="">Select business type</option>
@@ -283,19 +307,13 @@ const GetStartedModal = ({
                       <option value="other">Other</option>
                     </select>
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Monthly Ad Budget
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Ad Budget</label>
                     <select
                       className="w-full p-2 border border-gray-300 rounded-md"
                       value={userDetails.budget || ""}
                       onChange={(e) =>
-                        setUserDetails({
-                          ...userDetails,
-                          budget: e.target.value,
-                        })
+                        setUserDetails({ ...userDetails, budget: e.target.value })
                       }
                     >
                       <option value="">Select budget range</option>
@@ -308,6 +326,32 @@ const GetStartedModal = ({
                   </div>
                 </div>
               )}
+            </div>
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={handleBack}
+                className="py-2 px-4 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleCompleteRegistration}
+                disabled={!isFormValid() || isLoading || isPending}
+                className={`py-2 px-4 rounded-md text-white transition-colors ${
+                  isFormValid() && !isLoading && !isPending
+                    ? "bg-indigo-600 hover:bg-indigo-700"
+                    : "bg-gray-400 cursor-not-allowed"
+                }`}
+              >
+                {isLoading || isPending ? (
+                  <svg className="animate-spin h-5 w-5 mx-auto text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"></path>
+                  </svg>
+                ) : (
+                  "Complete Registration"
+                )}
+              </button>
             </div>
           </div>
         )}
