@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.28;
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
@@ -21,6 +21,24 @@ contract AdsBazaar {
         CANCELLED       
     }
 
+    // Target audience enum
+    enum TargetAudience {
+        GENERAL,
+        FASHION,
+        TECH,
+        GAMING,
+        FITNESS,
+        BEAUTY,
+        FOOD,
+        TRAVEL,
+        BUSINESS,
+        EDUCATION,
+        ENTERTAINMENT,
+        SPORTS,
+        LIFESTYLE,
+        OTHER
+    }
+
     struct AdBrief {
         bytes32 briefId;
         address business;
@@ -33,6 +51,8 @@ contract AdsBazaar {
         uint256 promotionEndTime;  
         uint256 maxInfluencers;
         uint256 selectedInfluencersCount;
+        TargetAudience targetAudience;
+        uint256 verificationDeadline;
     }
 
     struct InfluencerApplication {
@@ -42,6 +62,7 @@ contract AdsBazaar {
         bool isSelected;
         bool hasClaimed;
         string proofLink;
+        bool isApproved;  
     }
 
     struct UserProfile {
@@ -51,22 +72,58 @@ contract AdsBazaar {
         string profileData; 
     }
 
+    struct PendingPayment {
+        bytes32 briefId;
+        uint256 amount;
+        bool isApproved;
+    }
+   
+    struct BriefData {
+        address business;
+        string description;
+        uint256 budget;
+        Status status;
+        uint256 applicationDeadline;
+        uint256 promotionDuration;
+        uint256 promotionStartTime;
+        uint256 promotionEndTime;
+        uint256 maxInfluencers;
+        uint256 selectedInfluencersCount;
+        TargetAudience targetAudience;
+        uint256 verificationDeadline;
+    }
+    
+    struct ApplicationData {
+        address[] influencers;
+        string[] messages;
+        uint256[] timestamps;
+        bool[] isSelected;
+        bool[] hasClaimed;
+        string[] proofLinks;
+        bool[] isApproved;
+    }
    
     mapping(bytes32 => AdBrief) public briefs;
     mapping(bytes32 => InfluencerApplication[]) public applications;
     mapping(address => UserProfile) public users;
     mapping(address => bytes32[]) public businessBriefs;
     mapping(address => bytes32[]) public influencerApplications;
+    mapping(address => PendingPayment[]) public influencerPendingPayments;
+    mapping(address => uint256) public totalPendingAmount; // Total amount pending for each influencer
 
     // Events
     event UserRegistered(address indexed user, bool isBusiness, bool isInfluencer);
-    event BriefCreated(bytes32 indexed briefId, address indexed business, uint256 budget, uint256 maxInfluencers);
+    event BriefCreated(bytes32 indexed briefId, address indexed business, uint256 budget, uint256 maxInfluencers, TargetAudience targetAudience);
     event BriefCancelled(bytes32 indexed briefId);
     event ApplicationSubmitted(bytes32 indexed briefId, address indexed influencer);
     event InfluencerSelected(bytes32 indexed briefId, address indexed influencer);
     event ProofSubmitted(bytes32 indexed briefId, address indexed influencer, string proofLink);
+    event ProofApproved(bytes32 indexed briefId, address indexed influencer);
     event PaymentReleased(bytes32 indexed briefId, address indexed influencer, uint256 amount);
     event PromotionStarted(bytes32 indexed briefId, uint256 startTime, uint256 endTime);
+    event PaymentClaimed(address indexed influencer, uint256 amount);
+    event VerificationDeadlineSet(bytes32 indexed briefId, uint256 deadline);
+    event AutoApprovalTriggered(bytes32 indexed briefId);
 
     
     modifier onlyOwner() {
@@ -110,12 +167,16 @@ contract AdsBazaar {
         uint256 _budget,
         uint256 _applicationDeadline,
         uint256 _promotionDuration,
-        uint256 _maxInfluencers
+        uint256 _maxInfluencers,
+        uint8 _targetAudience,
+        uint256 _verificationPeriod  // Period in seconds after promotion ends for verification
     ) external onlyBusiness {
         require(_budget > 0, "Budget must be greater than 0");
         require(_applicationDeadline > block.timestamp, "Application deadline must be in the future");
         require(_promotionDuration > 0, "Promotion duration must be greater than 0");
         require(_maxInfluencers > 0, "Max influencers must be greater than 0");
+        require(_targetAudience < uint8(type(TargetAudience).max), "Invalid target audience");
+        require(_verificationPeriod > 0, "Verification period must be greater than 0");
         
         // Transfer tokens from business to contract
         require(cUSD.transferFrom(msg.sender, address(this), _budget), "Token transfer failed");
@@ -144,19 +205,41 @@ contract AdsBazaar {
             promotionStartTime: 0, 
             promotionEndTime: 0,   
             maxInfluencers: _maxInfluencers,
-            selectedInfluencersCount: 0
+            selectedInfluencersCount: 0,
+            targetAudience: TargetAudience(_targetAudience),
+            verificationDeadline: 0  // Will be set when promotion starts
         });
         
         // Add to business briefs
         businessBriefs[msg.sender].push(briefId);
         
-        emit BriefCreated(briefId, msg.sender, _budget, _maxInfluencers);
+        emit BriefCreated(briefId, msg.sender, _budget, _maxInfluencers, TargetAudience(_targetAudience));
     }
     
     function cancelAdBrief(bytes32 _briefId) external onlyBusiness briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
         require(brief.business == msg.sender, "Not the brief owner");
-        require(brief.status == Status.OPEN, "Brief not in open status");
+        require(brief.status == Status.OPEN, "Brief can only be cancelled if open");
+        
+        // Additional checks for new requirements:
+        // 1. Can cancel if deadline passed with no applications
+        // 2. Can cancel if deadline passed and fewer influencers applied than maxInfluencers
+        bool canCancel = false;
+        
+        // If application deadline has passed and no influencers applied
+        if (block.timestamp > brief.applicationDeadline && applications[_briefId].length == 0) {
+            canCancel = true;
+        }
+        // If application deadline has passed and fewer influencers applied than max expected
+        else if (block.timestamp > brief.applicationDeadline && applications[_briefId].length < brief.maxInfluencers) {
+            canCancel = true;
+        }
+        // If no influencers have been selected yet
+        else if (brief.selectedInfluencersCount == 0) {
+            canCancel = true;
+        }
+        
+        require(canCancel, "Cannot cancel: influencers already selected or conditions not met");
         
         brief.status = Status.CANCELLED;
         
@@ -184,8 +267,11 @@ contract AdsBazaar {
             brief.status = Status.ASSIGNED;
             brief.promotionStartTime = block.timestamp;
             brief.promotionEndTime = block.timestamp + brief.promotionDuration;
+            // Set verification deadline (2 days after promotion ends)
+            brief.verificationDeadline = brief.promotionEndTime + 2 days;
             
             emit PromotionStarted(_briefId, brief.promotionStartTime, brief.promotionEndTime);
+            emit VerificationDeadlineSet(_briefId, brief.verificationDeadline);
         }
         
         emit InfluencerSelected(_briefId, application.influencer);
@@ -205,19 +291,28 @@ contract AdsBazaar {
         
         for (uint256 i = 0; i < applications[_briefId].length; i++) {
             if (applications[_briefId][i].isSelected) {
-                applications[_briefId][i].hasClaimed = true;
+                applications[_briefId][i].isApproved = true;
                 
                 // Calculate platform fee (platformFeePercentage is in tenths of a percent)
                 uint256 platformFee = (equalShare * platformFeePercentage) / 1000;
                 uint256 influencerAmount = equalShare - platformFee;
                 
-                // Transfer to influencer
-                require(cUSD.transfer(applications[_briefId][i].influencer, influencerAmount), "Transfer failed");
-                
                 // Transfer platform fee
                 require(cUSD.transfer(owner, platformFee), "Platform fee transfer failed");
                 
-                emit PaymentReleased(_briefId, applications[_briefId][i].influencer, influencerAmount);
+                // Add to pending payments instead of direct transfer
+                address influencer = applications[_briefId][i].influencer;
+                PendingPayment memory payment = PendingPayment({
+                    briefId: _briefId,
+                    amount: influencerAmount,
+                    isApproved: true
+                });
+                
+                influencerPendingPayments[influencer].push(payment);
+                totalPendingAmount[influencer] += influencerAmount;
+                
+                emit ProofApproved(_briefId, influencer);
+                emit PaymentReleased(_briefId, influencer, influencerAmount);
             }
         }
     }
@@ -240,7 +335,8 @@ contract AdsBazaar {
             timestamp: block.timestamp,
             isSelected: false,
             hasClaimed: false,
-            proofLink: ""
+            proofLink: "",
+            isApproved: false
         });
         
         applications[_briefId].push(newApplication);
@@ -267,32 +363,87 @@ contract AdsBazaar {
         require(found, "Not selected for this brief");
     }
 
-   
-    function getAdBrief(bytes32 _briefId) external view returns (
-        address business,
-        string memory description,
-        uint256 budget,
-        Status status,
-        uint256 applicationDeadline,
-        uint256 promotionDuration,
-        uint256 promotionStartTime,
-        uint256 promotionEndTime,
-        uint256 maxInfluencers,
-        uint256 selectedInfluencersCount
+    function claimPayments() external onlyInfluencer {
+        uint256 totalAmount = totalPendingAmount[msg.sender];
+        require(totalAmount > 0, "No pending payments to claim");
+        
+        // Reset pending amount
+        totalPendingAmount[msg.sender] = 0;
+        
+        // Mark all payments as claimed
+        PendingPayment[] storage payments = influencerPendingPayments[msg.sender];
+        for (uint256 i = 0; i < payments.length; i++) {
+            if (payments[i].isApproved && !findAndMarkAsClaimed(payments[i].briefId)) {
+                // This should never happen, but just in case
+                revert("Error marking payment as claimed");
+            }
+        }
+        
+        // Clear pending payments array
+        delete influencerPendingPayments[msg.sender];
+        
+        // Transfer total amount
+        require(cUSD.transfer(msg.sender, totalAmount), "Payment transfer failed");
+        
+        emit PaymentClaimed(msg.sender, totalAmount);
+    }
+    
+    // Helper function to find application and mark as claimed
+    function findAndMarkAsClaimed(bytes32 _briefId) internal returns (bool) {
+        InfluencerApplication[] storage briefApps = applications[_briefId];
+        
+        for (uint256 i = 0; i < briefApps.length; i++) {
+            if (briefApps[i].influencer == msg.sender && briefApps[i].isSelected) {
+                briefApps[i].hasClaimed = true;
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    function getPendingPayments(address _influencer) external view returns (
+        bytes32[] memory briefIds,
+        uint256[] memory amounts,
+        bool[] memory approved
     ) {
+        PendingPayment[] storage payments = influencerPendingPayments[_influencer];
+        uint256 count = payments.length;
+        
+        briefIds = new bytes32[](count);
+        amounts = new uint256[](count);
+        approved = new bool[](count);
+        
+        for (uint256 i = 0; i < count; i++) {
+            briefIds[i] = payments[i].briefId;
+            amounts[i] = payments[i].amount;
+            approved[i] = payments[i].isApproved;
+        }
+        
+        return (briefIds, amounts, approved);
+    }
+
+    // Get total pending amount for an influencer
+    function getTotalPendingAmount(address _influencer) external view returns (uint256) {
+        return totalPendingAmount[_influencer];
+    }
+   
+    function getAdBrief(bytes32 _briefId) external view returns (BriefData memory) {
         AdBrief storage brief = briefs[_briefId];
-        return (
-            brief.business,
-            brief.description,
-            brief.budget,
-            brief.status,
-            brief.applicationDeadline,
-            brief.promotionDuration,
-            brief.promotionStartTime,
-            brief.promotionEndTime,
-            brief.maxInfluencers,
-            brief.selectedInfluencersCount
-        );
+        return BriefData({
+            business: brief.business,
+            description: brief.description,
+            budget: brief.budget,
+            status: brief.status,
+            applicationDeadline: brief.applicationDeadline,
+            promotionDuration: brief.promotionDuration,
+            promotionStartTime: brief.promotionStartTime,
+            promotionEndTime: brief.promotionEndTime,
+            maxInfluencers: brief.maxInfluencers,
+            selectedInfluencersCount: brief.selectedInfluencersCount,
+            targetAudience: brief.targetAudience,
+            verificationDeadline: brief.verificationDeadline
+        });
     }
     
     function getBusinessBriefs(address _business) external view returns (bytes32[] memory) {
@@ -303,23 +454,17 @@ contract AdsBazaar {
         return influencerApplications[_influencer];
     }
     
-    function getBriefApplications(bytes32 _briefId) external view returns (
-        address[] memory influencers,
-        string[] memory messages,
-        uint256[] memory timestamps,
-        bool[] memory isSelected,
-        bool[] memory hasClaimed,
-        string[] memory proofLinks
-    ) {
+    function getBriefApplications(bytes32 _briefId) external view returns (ApplicationData memory) {
         InfluencerApplication[] storage briefApps = applications[_briefId];
         uint256 count = briefApps.length;
         
-        influencers = new address[](count);
-        messages = new string[](count);
-        timestamps = new uint256[](count);
-        isSelected = new bool[](count);
-        hasClaimed = new bool[](count);
-        proofLinks = new string[](count);
+        address[] memory influencers = new address[](count);
+        string[] memory messages = new string[](count);
+        uint256[] memory timestamps = new uint256[](count);
+        bool[] memory isSelected = new bool[](count);
+        bool[] memory hasClaimed = new bool[](count);
+        string[] memory proofLinks = new string[](count);
+        bool[] memory isApproved = new bool[](count);
         
         for (uint256 i = 0; i < count; i++) {
             influencers[i] = briefApps[i].influencer;
@@ -328,11 +473,20 @@ contract AdsBazaar {
             isSelected[i] = briefApps[i].isSelected;
             hasClaimed[i] = briefApps[i].hasClaimed;
             proofLinks[i] = briefApps[i].proofLink;
+            isApproved[i] = briefApps[i].isApproved;
         }
         
-        return (influencers, messages, timestamps, isSelected, hasClaimed, proofLinks);
+        return ApplicationData({
+            influencers: influencers,
+            messages: messages,
+            timestamps: timestamps,
+            isSelected: isSelected,
+            hasClaimed: hasClaimed,
+            proofLinks: proofLinks,
+            isApproved: isApproved
+        });
     }
-    
+
     
     function setPlatformFee(uint256 _newFeePercentage) external onlyOwner {
         require(_newFeePercentage <= 10, "Fee too high"); // Max 1%
