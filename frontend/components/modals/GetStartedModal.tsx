@@ -19,6 +19,9 @@ interface UserDetails {
   connectedPlatforms?: SocialPlatform[];
   businessType?: string;
   budget?: string;
+  farcasterUsername?: string;
+  farcasterPfp?: string;
+  farcasterId?: string;
 }
 
 const GetStartedModal = ({
@@ -38,8 +41,6 @@ const GetStartedModal = ({
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFarcasterLoading, setIsFarcasterLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  
 
   useEffect(() => {
     const fetchCsrfToken = async () => {
@@ -54,41 +55,49 @@ const GetStartedModal = ({
     signature: `0x${string}`;
     name: string;
     pfp: string;
+    fid?: string;
   }) => {
-    setIsLoading(true);
+    setIsFarcasterLoading(true);
     try {
       console.log("Farcaster data received:", {
         name: data.name || "No name received",
         signature: data.signature ? "Signature received" : "No signature",
-        message: data.message ? "Message received" : "No message"
+        message: data.message ? "Message received" : "No message",
+        pfp: data.pfp ? "Profile picture received" : "No profile picture",
+        fid: data.fid || "No FID received",
       });
-      
-      // Ensure we have a default name if none is provided
-      const userName = data.name;
-      
-      // Use the right format for the domain - make sure it matches the auth server config
+
+      // Use the name from data, or fallback to "Farcaster User + FID"
+      const userName = data.name || (data.fid ? `Farcaster User ${data.fid}` : "Farcaster User");
+
       const result = await signIn("farcaster", {
         message: data.message,
         signature: data.signature,
         name: userName,
         pfp: data.pfp,
-        callbackUrl: "/influencersDashboard",  // Explicitly set redirect URL
-        redirect: true,             // Enable redirect
+        fid: data.fid, // Pass FID to the auth provider
+        callbackUrl: "/", 
+        redirect: false, 
       });
-      
-      // This part only runs if redirect is false
+
       if (result?.error) {
         throw new Error(result.error);
       }
-      
-      // Only runs when redirect is false but successful
-      onClose();
-      router.push("/influencersDashboard");
+
+      // Update user details with Farcaster info
+      setUserDetails(prev => ({
+        ...prev,
+        connectedPlatforms: [...(prev.connectedPlatforms || []), "farcaster"],
+        farcasterUsername: userName,
+        farcasterPfp: data.pfp,
+        farcasterId: data.fid
+      }));
+
     } catch (err) {
       console.error("Farcaster auth error:", err);
       setError(err instanceof Error ? err.message : "Sign in failed");
     } finally {
-      setIsLoading(false);
+      setIsFarcasterLoading(false);
     }
   };
 
@@ -122,7 +131,22 @@ const GetStartedModal = ({
     setUserDetails({
       ...userDetails,
       connectedPlatforms: connectedPlatforms.filter((p) => p !== platform),
+      ...(platform === "farcaster" ? { 
+        farcasterUsername: undefined, 
+        farcasterPfp: undefined,
+        farcasterId: undefined 
+      } : {})
     });
+  };
+
+  // Function to display user identity - prefers username but falls back to ID
+  const getUserDisplayName = () => {
+    if (userDetails.farcasterUsername && userDetails.farcasterUsername !== `Farcaster User ${userDetails.farcasterId}`) {
+      return userDetails.farcasterUsername;
+    } else if (userDetails.farcasterId) {
+      return `Farcaster ID: ${userDetails.farcasterId}`;
+    }
+    return "Connected";
   };
 
   if (!isOpen) return null;
@@ -226,20 +250,38 @@ const GetStartedModal = ({
                           </div>
                           <span className="font-medium">Farcaster</span>
                         </div>
+                        
                         {error && (
                           <div className="mb-4 rounded-md bg-red-50 p-4 text-red-700">
                             {error}
                           </div>
                         )}
-                        {userDetails.connectedPlatforms?.includes(
-                          "farcaster"
-                        ) ? (
-                          <button
-                            onClick={() => handleDisconnect("farcaster")}
-                            className="py-1 px-3 bg-gray-100 text-gray-600 text-sm rounded-md hover:bg-gray-200 transition-colors"
-                          >
-                            Disconnect
-                          </button>
+                        
+                        {userDetails.connectedPlatforms?.includes("farcaster") ? (
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center">
+                              {userDetails.farcasterPfp && (
+                                <img 
+                                  src={userDetails.farcasterPfp} 
+                                  alt="Profile" 
+                                  className="w-6 h-6 rounded-full mr-2"
+                                />
+                              )}
+                              <span className="text-sm font-medium">
+                                {getUserDisplayName()}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleDisconnect("farcaster")}
+                              className="py-1 px-3 bg-gray-100 text-gray-600 text-sm rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                              Disconnect
+                            </button>
+                          </div>
+                        ) : isFarcasterLoading ? (
+                          <div className="flex items-center">
+                            <span className="text-sm text-gray-500">Connecting...</span>
+                          </div>
                         ) : (
                           <SignInButton
                             onSuccess={handleSuccess}
@@ -254,9 +296,20 @@ const GetStartedModal = ({
                           />
                         )}
                       </div>
-
                     </div>
                   </div>
+                  
+                  {/* Add continue/submit button */}
+                  {userDetails.connectedPlatforms?.length ? (
+                    <div className="mt-6">
+                      <button 
+                        onClick={() => router.push("/influencersDashboard")}
+                        className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        Continue to Dashboard
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -283,31 +336,18 @@ const GetStartedModal = ({
                       <option value="other">Other</option>
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Monthly Ad Budget
-                    </label>
-                    <select
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                      value={userDetails.budget || ""}
-                      onChange={(e) =>
-                        setUserDetails({
-                          ...userDetails,
-                          budget: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Select budget range</option>
-                      <option value="under500">Less than $500</option>
-                      <option value="500-2000">$500 - $2,000</option>
-                      <option value="2000-5000">$2,000 - $5,000</option>
-                      <option value="5000-10000">$5,000 - $10,000</option>
-                      <option value="10000plus">$10,000+</option>
-                    </select>
-                  </div>
                 </div>
               )}
+            </div>
+            
+            {/* Back button */}
+            <div className="flex justify-start">
+              <button
+                onClick={handleBack}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                ← Back
+              </button>
             </div>
           </div>
         )}
