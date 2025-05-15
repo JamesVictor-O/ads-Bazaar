@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../src/AdsBazaar.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
-// Mock cUSD token for testing
+
 contract MockCUSD is ERC20 {
     constructor() ERC20("Mock cUSD", "cUSD") {
         _mint(msg.sender, 1000000 * 10**18); // Mint 1 million tokens
@@ -20,7 +20,6 @@ contract AdsBazaarTest is Test {
     AdsBazaar public adsBazaar;
     MockCUSD public cUSD;
     
-    // Test users
     address public owner = address(1);
     address public business1 = address(2);
     address public business2 = address(3);
@@ -28,7 +27,6 @@ contract AdsBazaarTest is Test {
     address public influencer2 = address(5);
     address public influencer3 = address(6);
     
-    // Test variables
     uint256 public constant INITIAL_BALANCE = 10000 * 10**18; // 10,000 cUSD
     bytes32 public briefId;
     
@@ -38,7 +36,7 @@ contract AdsBazaarTest is Test {
         adsBazaar = new AdsBazaar(address(cUSD));
         vm.stopPrank();
         
-        // Fund test accounts
+        
         fundAccount(business1);
         fundAccount(business2);
         fundAccount(influencer1);
@@ -52,7 +50,6 @@ contract AdsBazaarTest is Test {
         vm.stopPrank();
     }
 
-    // Test registration functionality
     function testRegistration() public {
         // Register business1 as business
         vm.startPrank(business1);
@@ -85,7 +82,6 @@ contract AdsBazaarTest is Test {
         vm.stopPrank();
     }
     
-    // Break up the large function into smaller ones to avoid stack depth issues
     function testCompleteUserFlow() public {
         // 1. Register users and create brief
         _setupUsersAndCreateBrief();
@@ -95,6 +91,9 @@ contract AdsBazaarTest is Test {
         
         // 3. Submit proofs and complete campaign
         _submitProofsAndComplete();
+        
+        // 4. Claim payments
+        _claimPayments();
     }
     
     // Helper function for step 1 of the user flow
@@ -114,6 +113,8 @@ contract AdsBazaarTest is Test {
         uint256 applicationDeadline = block.timestamp + 1 days;
         uint256 promotionDuration = 7 days;
         uint256 maxInfluencers = 2;
+        uint8 targetAudience = uint8(AdsBazaar.TargetAudience.TECH);
+        uint256 verificationPeriod = 2 days;
         
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
@@ -122,7 +123,9 @@ contract AdsBazaarTest is Test {
             budget,
             applicationDeadline,
             promotionDuration,
-            maxInfluencers
+            maxInfluencers,
+            targetAudience,
+            verificationPeriod
         );
         vm.stopPrank();
         
@@ -142,18 +145,10 @@ contract AdsBazaarTest is Test {
         adsBazaar.applyToBrief(briefId, "I have great reach in your target market");
         
         // Verify applications
-        (
-            address[] memory influencers,
-            string[] memory messages,
-            uint256[] memory timestamps,
-            bool[] memory isSelected,
-            bool[] memory hasClaimed,
-            string[] memory proofLinks
-        ) = adsBazaar.getBriefApplications(briefId);
-        
-        assertEq(influencers.length, 2);
-        assertEq(influencers[0], influencer1);
-        assertEq(influencers[1], influencer2);
+        AdsBazaar.ApplicationData memory appData = adsBazaar.getBriefApplications(briefId);
+        assertEq(appData.influencers.length, 2);
+        assertEq(appData.influencers[0], influencer1);
+        assertEq(appData.influencers[1], influencer2);
         
         // Business selects influencers
         vm.startPrank(business1);
@@ -162,32 +157,16 @@ contract AdsBazaarTest is Test {
         vm.stopPrank();
         
         // Verify brief status changed to ASSIGNED
-        (
-            ,
-            ,
-            ,
-            AdsBazaar.Status status,
-            ,
-            ,
-            uint256 startTime,
-            uint256 endTime,
-            ,
-            uint256 selectedCount
-        ) = adsBazaar.getAdBrief(briefId);
-        
-        assertEq(uint256(status), uint256(AdsBazaar.Status.ASSIGNED));
-        assertEq(selectedCount, 2);
-        assertTrue(startTime > 0);
-        
-        (, , , , , uint256 duration, , , , ) = adsBazaar.getAdBrief(briefId);
-        assertEq(endTime, startTime + duration);
+        AdsBazaar.BriefData memory briefData = adsBazaar.getAdBrief(briefId);
+        assertEq(uint256(briefData.status), uint256(AdsBazaar.Status.ASSIGNED));
+        assertEq(briefData.selectedInfluencersCount, 2);
+        assertTrue(briefData.promotionStartTime > 0);
+        assertEq(briefData.promotionEndTime, briefData.promotionStartTime + briefData.promotionDuration);
+        assertEq(briefData.verificationDeadline, briefData.promotionEndTime + 2 days);
     }
     
     // Helper function for step 3 of the user flow
     function _submitProofsAndComplete() internal {
-        // Get end time
-        (, , , , , , , uint256 endTime, , ) = adsBazaar.getAdBrief(briefId);
-        
         // Influencers submit proof of promotion
         vm.prank(influencer1);
         adsBazaar.submitProof(briefId, "https://social.com/proof1");
@@ -195,33 +174,77 @@ contract AdsBazaarTest is Test {
         vm.prank(influencer2);
         adsBazaar.submitProof(briefId, "https://social.com/proof2");
         
+        // Get promotion end time
+        AdsBazaar.BriefData memory briefData = adsBazaar.getAdBrief(briefId);
+        
         // Wait for promotion period to end
-        vm.warp(endTime + 1);
+        vm.warp(briefData.promotionEndTime + 1);
         
         // Business completes the campaign
-        uint256 influencer1BalanceBefore = cUSD.balanceOf(influencer1);
-        uint256 influencer2BalanceBefore = cUSD.balanceOf(influencer2);
         uint256 ownerBalanceBefore = cUSD.balanceOf(owner);
         
         vm.prank(business1);
         adsBazaar.completeCampaign(briefId);
         
-        // Verify payments were made correctly
-        uint256 platformFeePercentage = adsBazaar.platformFeePercentage();
-        
-        // Get brief budget separately to avoid stack too deep
-        (, , uint256 budget, , , , , , , ) = adsBazaar.getAdBrief(briefId);
-        uint256 expectedShareBeforeFee = budget / 2; // Equal split between 2 influencers
-        uint256 expectedFee = (expectedShareBeforeFee * platformFeePercentage) / 1000;
-        uint256 expectedPayment = expectedShareBeforeFee - expectedFee;
-        
-        assertEq(cUSD.balanceOf(influencer1), influencer1BalanceBefore + expectedPayment);
-        assertEq(cUSD.balanceOf(influencer2), influencer2BalanceBefore + expectedPayment);
-        assertEq(cUSD.balanceOf(owner), ownerBalanceBefore + (expectedFee * 2));
-        
         // Verify brief status changed to COMPLETED
-        (, , , AdsBazaar.Status status, , , , , , ) = adsBazaar.getAdBrief(briefId);
-        assertEq(uint256(status), uint256(AdsBazaar.Status.COMPLETED));
+        briefData = adsBazaar.getAdBrief(briefId);
+        assertEq(uint256(briefData.status), uint256(AdsBazaar.Status.COMPLETED));
+        
+        // Verify platform fees were transferred to owner
+        uint256 platformFeePercentage = adsBazaar.platformFeePercentage();
+        uint256 expectedFeePerInfluencer = (briefData.budget / 2 * platformFeePercentage) / 1000;
+        assertEq(cUSD.balanceOf(owner), ownerBalanceBefore + (expectedFeePerInfluencer * 2));
+        
+        // Verify pending payments for influencers
+        uint256 expectedPaymentPerInfluencer = (briefData.budget / 2) - expectedFeePerInfluencer;
+        
+        // Check pending payments for influencer1
+        uint256 pendingAmount1 = adsBazaar.getTotalPendingAmount(influencer1);
+        assertEq(pendingAmount1, expectedPaymentPerInfluencer);
+        
+        // Check pending payments for influencer2
+        uint256 pendingAmount2 = adsBazaar.getTotalPendingAmount(influencer2);
+        assertEq(pendingAmount2, expectedPaymentPerInfluencer);
+        
+        // Check that applications were marked as approved
+        AdsBazaar.ApplicationData memory appData = adsBazaar.getBriefApplications(briefId);
+        assertTrue(appData.isApproved[0]);
+        assertTrue(appData.isApproved[1]);
+    }
+    
+    //  helper function for claiming payments
+    function _claimPayments() internal {
+        // Get balances before claiming
+        uint256 influencer1BalanceBefore = cUSD.balanceOf(influencer1);
+        uint256 influencer2BalanceBefore = cUSD.balanceOf(influencer2);
+        
+        // Get expected payment amounts
+        uint256 pendingAmount1 = adsBazaar.getTotalPendingAmount(influencer1);
+        uint256 pendingAmount2 = adsBazaar.getTotalPendingAmount(influencer2);
+        
+        // Influencer1 claims payment
+        vm.prank(influencer1);
+        adsBazaar.claimPayments();
+        
+        // Verify payment was received and pending amount was reset
+        assertEq(cUSD.balanceOf(influencer1), influencer1BalanceBefore + pendingAmount1);
+        assertEq(adsBazaar.getTotalPendingAmount(influencer1), 0);
+        
+        // Verify the application is marked as claimed
+        AdsBazaar.ApplicationData memory appData = adsBazaar.getBriefApplications(briefId);
+        assertTrue(appData.hasClaimed[0]);
+        
+        // Influencer2 claims payment
+        vm.prank(influencer2);
+        adsBazaar.claimPayments();
+        
+        // Verify payment was received and pending amount was reset
+        assertEq(cUSD.balanceOf(influencer2), influencer2BalanceBefore + pendingAmount2);
+        assertEq(adsBazaar.getTotalPendingAmount(influencer2), 0);
+        
+        // Verify the application is marked as claimed
+        appData = adsBazaar.getBriefApplications(briefId);
+        assertTrue(appData.hasClaimed[1]);
     }
     
     // Test cancelling a brief
@@ -233,6 +256,8 @@ contract AdsBazaarTest is Test {
         // Create ad brief
         uint256 budget = 500 * 10**18;
         uint256 applicationDeadline = block.timestamp + 1 days;
+        uint8 targetAudience = uint8(AdsBazaar.TargetAudience.FASHION);
+        uint256 verificationPeriod = 2 days;
         
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
@@ -241,7 +266,9 @@ contract AdsBazaarTest is Test {
             budget,
             applicationDeadline,
             7 days,
-            2
+            2,
+            targetAudience,
+            verificationPeriod
         );
         
         // Get the brief ID
@@ -256,8 +283,8 @@ contract AdsBazaarTest is Test {
         vm.stopPrank();
         
         // Verify brief status is CANCELLED
-        (, , , AdsBazaar.Status status, , , , , , ) = adsBazaar.getAdBrief(briefId);
-        assertEq(uint256(status), uint256(AdsBazaar.Status.CANCELLED));
+        AdsBazaar.BriefData memory briefData = adsBazaar.getAdBrief(briefId);
+        assertEq(uint256(briefData.status), uint256(AdsBazaar.Status.CANCELLED));
         
         // Verify business received refund
         assertEq(cUSD.balanceOf(business1), balanceBefore + budget);
@@ -267,7 +294,7 @@ contract AdsBazaarTest is Test {
     function testAdminFunctions() public {
         // Set platform fee
         vm.prank(owner);
-        adsBazaar.setPlatformFee(1); // 1%
+        adsBazaar.setPlatformFee(1); // 0.1%
         assertEq(adsBazaar.platformFeePercentage(), 1);
         
         // Try to set fee as non-owner (should fail)
@@ -300,6 +327,9 @@ contract AdsBazaarTest is Test {
         adsBazaar.registerUser(false, true, '{"name": "Influencer One"}');
         
         uint256 budget = 100 * 10**18;
+        uint8 targetAudience = uint8(AdsBazaar.TargetAudience.GAMING);
+        uint256 verificationPeriod = 1 days;
+        
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
         adsBazaar.createAdBrief(
@@ -307,7 +337,9 @@ contract AdsBazaarTest is Test {
             budget,
             block.timestamp + 1 days,
             1 days,
-            1
+            1,
+            targetAudience,
+            verificationPeriod
         );
         
         bytes32[] memory briefs = adsBazaar.getBusinessBriefs(business1);
@@ -321,8 +353,8 @@ contract AdsBazaarTest is Test {
         adsBazaar.selectInfluencer(briefId, 0);
         
         // Fast forward to end of promotion
-        (, , , , , , , uint256 endTime, , ) = adsBazaar.getAdBrief(briefId);
-        vm.warp(endTime + 1);
+        AdsBazaar.BriefData memory briefData = adsBazaar.getAdBrief(briefId);
+        vm.warp(briefData.promotionEndTime + 1);
         
         vm.prank(business1);
         adsBazaar.completeCampaign(briefId);
@@ -349,6 +381,8 @@ contract AdsBazaarTest is Test {
         // Create ad brief with short deadline
         uint256 budget = 100 * 10**18;
         uint256 applicationDeadline = block.timestamp + 1 hours;
+        uint8 targetAudience = uint8(AdsBazaar.TargetAudience.ENTERTAINMENT);
+        uint256 verificationPeriod = 1 days;
         
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
@@ -357,7 +391,9 @@ contract AdsBazaarTest is Test {
             budget,
             applicationDeadline,
             7 days,
-            1
+            1,
+            targetAudience,
+            verificationPeriod
         );
         
         bytes32[] memory briefs = adsBazaar.getBusinessBriefs(business1);
@@ -368,10 +404,10 @@ contract AdsBazaarTest is Test {
         vm.prank(influencer1);
         adsBazaar.applyToBrief(briefId, "Application before deadline");
         
-        // Verify application was recorded - capture all return values but only use influencers
-        (address[] memory influencers,,,,,) = adsBazaar.getBriefApplications(briefId);
-        assertEq(influencers.length, 1);
-        assertEq(influencers[0], influencer1);
+        // Verify application was recorded
+        AdsBazaar.ApplicationData memory appData = adsBazaar.getBriefApplications(briefId);
+        assertEq(appData.influencers.length, 1);
+        assertEq(appData.influencers[0], influencer1);
         
         // Fast forward past deadline
         vm.warp(applicationDeadline + 1);
@@ -381,9 +417,9 @@ contract AdsBazaarTest is Test {
         vm.expectRevert("Application deadline passed");
         adsBazaar.applyToBrief(briefId, "Application after deadline");
         
-        // Verify no new application was added - capture all return values but only use influencers
-        (influencers,,,,,) = adsBazaar.getBriefApplications(briefId);
-        assertEq(influencers.length, 1);
+        // Verify no new application was added
+        appData = adsBazaar.getBriefApplications(briefId);
+        assertEq(appData.influencers.length, 1);
     }
     
     // Test selecting more influencers than allowed
@@ -400,6 +436,8 @@ contract AdsBazaarTest is Test {
         
         // Create ad brief with max 1 influencer
         uint256 budget = 100 * 10**18;
+        uint8 targetAudience = uint8(AdsBazaar.TargetAudience.SPORTS);
+        uint256 verificationPeriod = 1 days;
         
         vm.startPrank(business1);
         cUSD.approve(address(adsBazaar), budget);
@@ -408,7 +446,9 @@ contract AdsBazaarTest is Test {
             budget,
             block.timestamp + 1 days,
             7 days,
-            1 // Max 1 influencer
+            1, // Max 1 influencer
+            targetAudience, 
+            verificationPeriod
         );
         
         bytes32[] memory briefs = adsBazaar.getBusinessBriefs(business1);
@@ -428,9 +468,120 @@ contract AdsBazaarTest is Test {
         
         // Try to select the second influencer (should fail)
         vm.startPrank(business1);
-        // Update to match the actual error message in the contract
         vm.expectRevert("Brief not in open status");
         adsBazaar.selectInfluencer(briefId, 1);
         vm.stopPrank();
+    }
+    
+    // Test new target audience functionality
+    function testTargetAudience() public {
+        // Register business
+        vm.prank(business1);
+        adsBazaar.registerUser(true, false, '{"name": "Business One"}');
+        
+        // Create ad brief with specific target audience
+        uint256 budget = 100 * 10**18;
+        uint8 targetAudience = uint8(AdsBazaar.TargetAudience.FITNESS);
+        uint256 verificationPeriod = 1 days;
+        
+        vm.startPrank(business1);
+        cUSD.approve(address(adsBazaar), budget);
+        adsBazaar.createAdBrief(
+            "Fitness Campaign",
+            budget,
+            block.timestamp + 1 days,
+            7 days,
+            2,
+            targetAudience,
+            verificationPeriod
+        );
+        
+        bytes32[] memory briefs = adsBazaar.getBusinessBriefs(business1);
+        briefId = briefs[0];
+        vm.stopPrank();
+        
+        // Verify target audience is set correctly
+        AdsBazaar.BriefData memory briefData = adsBazaar.getAdBrief(briefId);
+        assertEq(uint8(briefData.targetAudience), targetAudience);
+    }
+    
+    // Test verification deadline
+    function testVerificationDeadline() public {
+        // Register users
+        vm.prank(business1);
+        adsBazaar.registerUser(true, false, '{"name": "Business One"}');
+        
+        vm.prank(influencer1);
+        adsBazaar.registerUser(false, true, '{"name": "Influencer One"}');
+        
+        // Create ad brief
+        uint256 budget = 100 * 10**18;
+        uint8 targetAudience = uint8(AdsBazaar.TargetAudience.EDUCATION);
+        uint256 verificationPeriod = 3 days; // 3 days verification period
+        
+        vm.startPrank(business1);
+        cUSD.approve(address(adsBazaar), budget);
+        adsBazaar.createAdBrief(
+            "Verification Test",
+            budget,
+            block.timestamp + 1 days,
+            2 days, // 2 days promotion
+            1,
+            targetAudience,
+            verificationPeriod
+        );
+        
+        bytes32[] memory briefs = adsBazaar.getBusinessBriefs(business1);
+        briefId = briefs[0];
+        vm.stopPrank();
+        
+        // Influencer applies
+        vm.prank(influencer1);
+        adsBazaar.applyToBrief(briefId, "I'll promote this");
+        
+        // Business selects influencer
+        vm.prank(business1);
+        adsBazaar.selectInfluencer(briefId, 0);
+        
+        // Verify verification deadline is set
+        AdsBazaar.BriefData memory briefData = adsBazaar.getAdBrief(briefId);
+        assertTrue(briefData.verificationDeadline > 0);
+        
+        // Confirm it's equal to promotion end time + 2 days (default verification period)
+        assertEq(briefData.verificationDeadline, briefData.promotionEndTime + 2 days);
+    }
+    
+    // Test getPendingPayments function
+    function testGetPendingPayments() public {
+        // Setup complete flow
+        _setupUsersAndCreateBrief();
+        _applyAndSelectInfluencers();
+        
+        // Submit proofs
+        vm.prank(influencer1);
+        adsBazaar.submitProof(briefId, "https://proof1.com");
+        
+        vm.prank(influencer2);
+        adsBazaar.submitProof(briefId, "https://proof2.com");
+        
+        // Complete campaign
+        AdsBazaar.BriefData memory briefData = adsBazaar.getAdBrief(briefId);
+        vm.warp(briefData.promotionEndTime + 1);
+        
+        vm.prank(business1);
+        adsBazaar.completeCampaign(briefId);
+        
+        // Check pending payments for influencer1
+        (bytes32[] memory briefIds, uint256[] memory amounts, bool[] memory approved) = adsBazaar.getPendingPayments(influencer1);
+        
+        // Assert expectations
+        assertEq(briefIds.length, 1);
+        assertEq(briefIds[0], briefId);
+        assertTrue(amounts[0] > 0);
+        assertTrue(approved[0]);
+        
+        // Check total pending amount
+        uint256 totalPending = adsBazaar.getTotalPendingAmount(influencer1);
+        assertEq(totalPending, amounts[0]);
     }
 }
