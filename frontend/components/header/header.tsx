@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Bell, Menu, X, User, Search, ChevronDown } from "lucide-react";
+import { Bell, Menu, X, User, Search, ChevronDown,Copy } from "lucide-react";
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi";
+import { useAccount,useBalance } from "wagmi";
 
 interface HeaderProps {
   setActiveTab?: (tab: string) => void;
@@ -13,13 +13,18 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [cUSDBalance, setCUSDBalance] = useState("1,350.75");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const { address, isConnected } = useAccount();
-
+  const { data: celoBalance } = useBalance({
+    address: address,
+    enabled: isConnected,
+    watch: true,
+  });
   useEffect(() => {
     setIsMounted(true);
-    
+
     const handleScroll = () => {
       if (window.scrollY > 10) {
         setScrolled(true);
@@ -41,6 +46,8 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
     }
     setMobileMenuOpen(false);
   };
+ 
+
 
   // Truncate wallet address for display
   const truncateAddress = (addr?: string) => {
@@ -180,41 +187,30 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                       >
                         Settings
                       </a>
-                      <div className="bg-emerald-500 text-white px-4 py-1 rounded-lg hover:bg-emerald-600 transition-all shadow-lg">
-                        <ConnectButton.Custom>
-                          {({
-                            account,
-                            openAccountModal,
-                            openConnectModal,
-                            mounted,
-                          }) => {
-                            const connected = mounted && account;
-
-                            return (
-                              <div>
-                                {connected ? (
-                                  <button
-                                    onClick={openAccountModal}
-                                    className="flex items-center"
-                                  >
-                                    <span className="text-white font-medium">
-                                      {truncateAddress(account.address)}
-                                    </span>
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={openConnectModal}
-                                    className="flex items-center"
-                                  >
-                                    <span className="text-white font-medium">
-                                      Connect Wallet
-                                    </span>
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          }}
-                        </ConnectButton.Custom>
+                      <div className="bg-gray-800 rounded-lg px-4 py-2 flex items-center">
+                        <div>
+                          <div className="flex items-center">
+                            <span className="text-green-400 mr-2">●</span>
+                            <span className="text-gray-300 font-medium">
+                              {truncateAddress(address)}
+                            </span>
+                            <button className="ml-2 text-gray-400 hover:text-gray-300">
+                              <Copy size={14} />
+                            </button>
+                          </div>
+                          <div className="flex items-center mt-1 text-sm">
+                            <span className="text-gray-400 mr-2">
+                              {celoBalance?.formatted
+                                ? `${parseFloat(celoBalance.formatted).toFixed(
+                                    2
+                                  )} CELO`
+                                : "0.00 CELO"}
+                            </span>
+                            <span className="text-gray-400">
+                              {cUSDBalance} cUSD
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
