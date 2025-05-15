@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Bell, Menu, X, User, Search, ChevronDown,Copy } from "lucide-react";
+import { Bell, Menu, X, User, Search, ChevronDown, Copy } from "lucide-react";
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount,useBalance } from "wagmi";
+import { useAccount, useBalance } from "wagmi";
 
 interface HeaderProps {
   setActiveTab?: (tab: string) => void;
@@ -46,8 +46,6 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
     }
     setMobileMenuOpen(false);
   };
- 
-
 
   // Truncate wallet address for display
   const truncateAddress = (addr?: string) => {
@@ -64,12 +62,14 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
     <header className="fixed h-28 w-full z-50 transition-all duration-300 bg-slate-900/95 backdrop-blur-sm shadow-lg py-2">
       <div className="h-full w-full px-4 lg:px-8 flex justify-between items-center">
         {/* Logo */}
-        <div className="flex items-center space-x-3">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
-            <span className="font-bold text-white text-lg">AB</span>
+        <Link href={"/"}>
+          <div className="flex items-center space-x-3">
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
+              <span className="font-bold text-white text-lg">AB</span>
+            </div>
+            <h1 className="text-xl font-bold text-white">Ads-Bazer</h1>
           </div>
-          <h1 className="text-xl font-bold text-white">Ads-Bazer</h1>
-        </div>
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
@@ -85,62 +85,12 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
           >
             Marketplace
           </Link>
-          <div className="relative group">
-            <button className="font-medium text-slate-200 hover:text-white flex items-center space-x-1 group-hover:underline decoration-emerald-400 decoration-2 underline-offset-8 transition">
-              <span>Campaigns</span>
-              <ChevronDown
-                size={16}
-                className="opacity-70 group-hover:opacity-100"
-              />
-            </button>
-            <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-slate-800 ring-1 ring-slate-700 hidden group-hover:block">
-              <div className="py-1">
-                <a
-                  href="#"
-                  className="block px-4 py-2 text-sm text-slate-200 hover:bg-slate-700 hover:text-white"
-                >
-                  Active Campaigns
-                </a>
-                <a
-                  href="#"
-                  className="block px-4 py-2 text-sm text-slate-200 hover:bg-slate-700 hover:text-white"
-                >
-                  Create Campaign
-                </a>
-                <a
-                  href="#"
-                  className="block px-4 py-2 text-sm text-slate-200 hover:bg-slate-700 hover:text-white"
-                >
-                  Campaign History
-                </a>
-              </div>
-            </div>
-          </div>
-          <a
-            href="#"
-            className="font-medium text-slate-200 hover:text-white hover:underline decoration-emerald-400 decoration-2 underline-offset-8 transition"
-            onClick={() => handleNavClick("analytics")}
-          >
-            Analytics
-          </a>
         </nav>
 
         {/* Right Side Actions */}
         <div className="flex items-center space-x-1 sm:space-x-4">
           {isConnected ? (
             <>
-              {/* Search - Hidden on smallest screens */}
-              <div className="hidden sm:flex items-center relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={16} className="text-slate-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search"
-                  className="bg-slate-800/60 border-slate-700 text-slate-200 text-sm rounded-lg pl-10 pr-4 py-1.5 w-40 lg:w-56 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-                />
-              </div>
-
               {/* Notifications */}
               <button className="relative p-2 rounded-full hover:bg-slate-800/60">
                 <Bell size={20} className="text-slate-200" />

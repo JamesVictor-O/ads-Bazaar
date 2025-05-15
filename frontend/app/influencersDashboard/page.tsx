@@ -143,7 +143,7 @@ export default function InfluencerDashboard() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 pt-3">
       <main className="flex-grow p-4 sm:p-6">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -155,11 +155,7 @@ export default function InfluencerDashboard() {
               Manage your campaigns and track earnings.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600 bg-gray-200 px-3 py-1 rounded-md">
-              {walletAddress || "Connect Wallet"}
-            </span>
-          </div>
+         
         </div>
 
         {/* Stats Overview */}
