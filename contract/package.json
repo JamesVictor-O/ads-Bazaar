@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@selfxyz/contracts": "^0.0.8",
+    "@selfxyz/core": "^0.0.25"
+  }
+}
