@@ -1,10 +1,20 @@
 {
-  "address": "0x106702795D0bd411B178e96Ad1f64cCB5971fCD7",
   "abi": [
     {
       "type": "constructor",
       "inputs": [
-        { "name": "_cUSD", "type": "address", "internalType": "address" }
+        { "name": "_cUSD", "type": "address", "internalType": "address" },
+        {
+          "name": "_identityVerificationHub",
+          "type": "address",
+          "internalType": "address"
+        },
+        { "name": "_scope", "type": "uint256", "internalType": "uint256" },
+        {
+          "name": "_attestationIds",
+          "type": "uint256[]",
+          "internalType": "uint256[]"
+        }
       ],
       "stateMutability": "nonpayable"
     },
@@ -342,6 +352,46 @@
     },
     {
       "type": "function",
+      "name": "getVerificationConfig",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct ISelfVerificationRoot.VerificationConfig",
+          "components": [
+            {
+              "name": "olderThanEnabled",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "olderThan",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "forbiddenCountriesEnabled",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "forbiddenCountriesListPacked",
+              "type": "uint256[4]",
+              "internalType": "uint256[4]"
+            },
+            {
+              "name": "ofacEnabled",
+              "type": "bool[3]",
+              "internalType": "bool[3]"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "influencerApplications",
       "inputs": [
         { "name": "", "type": "address", "internalType": "address" },
@@ -362,6 +412,15 @@
         { "name": "amount", "type": "uint256", "internalType": "uint256" },
         { "name": "isApproved", "type": "bool", "internalType": "bool" }
       ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "isInfluencerVerified",
+      "inputs": [
+        { "name": "_influencer", "type": "address", "internalType": "address" }
+      ],
+      "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
       "stateMutability": "view"
     },
     {
@@ -418,6 +477,46 @@
     },
     {
       "type": "function",
+      "name": "setVerificationConfig",
+      "inputs": [
+        {
+          "name": "newVerificationConfig",
+          "type": "tuple",
+          "internalType": "struct ISelfVerificationRoot.VerificationConfig",
+          "components": [
+            {
+              "name": "olderThanEnabled",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "olderThan",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "forbiddenCountriesEnabled",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "forbiddenCountriesListPacked",
+              "type": "uint256[4]",
+              "internalType": "uint256[4]"
+            },
+            {
+              "name": "ofacEnabled",
+              "type": "bool[3]",
+              "internalType": "bool[3]"
+            }
+          ]
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "submitProof",
       "inputs": [
         { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" },
@@ -435,6 +534,15 @@
     },
     {
       "type": "function",
+      "name": "triggerAutoApproval",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "users",
       "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
       "outputs": [
@@ -444,6 +552,40 @@
         { "name": "profileData", "type": "string", "internalType": "string" }
       ],
       "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "verifiedInfluencers",
+      "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
+      "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "verifySelfProof",
+      "inputs": [
+        {
+          "name": "proof",
+          "type": "tuple",
+          "internalType": "struct ISelfVerificationRoot.DiscloseCircuitProof",
+          "components": [
+            { "name": "a", "type": "uint256[2]", "internalType": "uint256[2]" },
+            {
+              "name": "b",
+              "type": "uint256[2][2]",
+              "internalType": "uint256[2][2]"
+            },
+            { "name": "c", "type": "uint256[2]", "internalType": "uint256[2]" },
+            {
+              "name": "pubSignals",
+              "type": "uint256[21]",
+              "internalType": "uint256[21]"
+            }
+          ]
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
     },
     {
       "type": "function",
@@ -544,6 +686,19 @@
           "indexed": true,
           "internalType": "bytes32"
         },
+        {
+          "name": "influencer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "InfluencerVerified",
+      "inputs": [
         {
           "name": "influencer",
           "type": "address",
@@ -693,6 +848,19 @@
     },
     {
       "type": "event",
+      "name": "VerificationConfigUpdated",
+      "inputs": [
+        {
+          "name": "updater",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
       "name": "VerificationDeadlineSet",
       "inputs": [
         {
@@ -709,6 +877,44 @@
         }
       ],
       "anonymous": false
-    }
-  ]
+    },
+    { "type": "error", "name": "InvalidAttestationId", "inputs": [] },
+    { "type": "error", "name": "InvalidScope", "inputs": [] },
+    { "type": "error", "name": "RegisteredNullifier", "inputs": [] }
+  ],
+  "methodIdentifiers": {
+    "applications(bytes32,uint256)": "db76b006",
+    "applyToBrief(bytes32,string)": "19e53cf7",
+    "briefs(bytes32)": "5c200290",
+    "businessBriefs(address,uint256)": "7fe346bf",
+    "cUSD()": "1fccf672",
+    "cancelAdBrief(bytes32)": "ab53bd39",
+    "claimPayments()": "b630aebd",
+    "completeCampaign(bytes32)": "b0a6e3e6",
+    "createAdBrief(string,string,uint256,uint256,uint256,uint256,uint8,uint256)": "a32d600f",
+    "getAdBrief(bytes32)": "92bae94a",
+    "getBriefApplications(bytes32)": "2c39759c",
+    "getBusinessBriefs(address)": "dc76b154",
+    "getInfluencerApplications(address)": "839796e6",
+    "getPendingPayments(address)": "40a2e60a",
+    "getTotalPendingAmount(address)": "836002c4",
+    "getVerificationConfig()": "0510077d",
+    "influencerApplications(address,uint256)": "6d78f27f",
+    "influencerPendingPayments(address,uint256)": "ea03b888",
+    "isInfluencerVerified(address)": "19d47e9d",
+    "owner()": "8da5cb5b",
+    "platformFeePercentage()": "cdd78cfc",
+    "registerUser(bool,bool,string)": "50144cd3",
+    "selectInfluencer(bytes32,uint256)": "9afe00ee",
+    "setPlatformFee(uint256)": "12e8e2c3",
+    "setVerificationConfig((bool,uint256,bool,uint256[4],bool[3]))": "003bc35c",
+    "submitProof(bytes32,string)": "bea6d0e2",
+    "totalPendingAmount(address)": "6bac5c84",
+    "triggerAutoApproval(bytes32)": "030cab82",
+    "users(address)": "a87430ba",
+    "verifiedInfluencers(address)": "55085485",
+    "verifySelfProof((uint256[2],uint256[2][2],uint256[2],uint256[21]))": "fdc60967",
+    "withdrawFees()": "476343ee"
+  },
+  "id": 29
 }
