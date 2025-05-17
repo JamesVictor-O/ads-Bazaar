@@ -18,10 +18,9 @@ Ad-Bazaar solves a major problem in the digital marketing world: trust. Influenc
 
 - Allowing **brands** to create ad campaigns with clear requirements.
 - Letting **content creators/influencers** apply and fulfill those campaigns.
-- **Locking payments** in a Stellar smart contract until tasks are completed.
+- **Locking payments** in a  smart contract until tasks are completed.
 - **Releasing funds automatically** once deliverables are verified.
 
-Built on **Stellar**, the platform benefits from:
 
 - ⚡ **Fast Transactions**
 - 💸 **Low Fees**
@@ -35,7 +34,7 @@ Built on **Stellar**, the platform benefits from:
 - 📢 Campaign Creation by Brands
 - 🙋 Influencer Application & Matching
 - 🧾 Post Submission and Review
-- 🔐 Escrow and Automated Payments via Stellar Smart Contracts
+- 🔐 Escrow and Automated Payments via  Smart Contracts
 - 🔍 Transparent Workflow with On-Chain Records
 - 🧑‍🤝‍🧑 Decentralized Peer-to-Peer Interaction
 
