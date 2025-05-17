@@ -47,6 +47,9 @@ interface UserDetails {
   connectedPlatforms?: SocialPlatform[];
   businessType?: string;
   budget?: string;
+  farcasterUsername?: string;
+  farcasterPfp?: string;
+  farcasterId?: string;
 }
 
 const GetStartedModal = ({ isOpen = true, onClose = () => {} }: GetStartedModalProps) => {
@@ -65,10 +68,11 @@ const GetStartedModal = ({ isOpen = true, onClose = () => {} }: GetStartedModalP
   const [isFarcasterLoading, setIsFarcasterLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+
   useEffect(() => {
     const fetchCsrfToken = async () => {
       const token = await getCsrfToken();
-      setCsrfToken(token);
+      setCsrfToken(token ?? null);
     };
     fetchCsrfToken();
   }, []);
@@ -84,26 +88,49 @@ const GetStartedModal = ({ isOpen = true, onClose = () => {} }: GetStartedModalP
     signature: `0x${string}`;
     name: string;
     pfp: string;
+    fid?: string;
   }) => {
-    setIsLoading(true);
+    setIsFarcasterLoading(true);
     try {
-      const userName = data.name || "Anonymous";
+
+      console.log("Farcaster data received:", {
+        name: data.name || "No name received",
+        signature: data.signature ? "Signature received" : "No signature",
+        message: data.message ? "Message received" : "No message",
+        pfp: data.pfp ? "Profile picture received" : "No profile picture",
+        fid: data.fid || "No FID received",
+      });
+
+      // Use the name from data, or fallback to "Farcaster User + FID"
+      const userName = data.name || (data.fid ? `Farcaster User ${data.fid}` : "Farcaster User");
+
       const result = await signIn("farcaster", {
         message: data.message,
         signature: data.signature,
         name: userName,
         pfp: data.pfp,
-        callbackUrl: "/influencersDashboard",
-        redirect: true,
+        fid: data.fid, // Pass FID to the auth provider
+        callbackUrl: "/", 
+        redirect: false, 
       });
+
       if (result?.error) {
         throw new Error(result.error);
       }
+
+      // Update user details with Farcaster info
+      setUserDetails(prev => ({
+        ...prev,
+        connectedPlatforms: [...(prev.connectedPlatforms || []), "farcaster"],
+        farcasterUsername: userName,
+        farcasterPfp: data.pfp,
+        farcasterId: data.fid
+      }));
     } catch (err) {
       console.error("Farcaster auth error:", err);
       setError(err instanceof Error ? err.message : "Sign in failed");
     } finally {
-      setIsLoading(false);
+      setIsFarcasterLoading(false);
     }
   };
 
@@ -135,9 +162,13 @@ const GetStartedModal = ({ isOpen = true, onClose = () => {} }: GetStartedModalP
     setUserDetails({
       ...userDetails,
       connectedPlatforms: connectedPlatforms.filter((p) => p !== platform),
+      ...(platform === "farcaster" ? { 
+        farcasterUsername: undefined, 
+        farcasterPfp: undefined,
+        farcasterId: undefined 
+      } : {})
     });
   };
-
   const handleCompleteRegistration = async () => {
     if (!isConnected) {
       toast.error("Please connect your wallet first", { position: "bottom-center" });
@@ -169,15 +200,25 @@ const GetStartedModal = ({ isOpen = true, onClose = () => {} }: GetStartedModalP
       setIsLoading(false);
     }
   };
+const isFormValid = () => {
+  if (userDetails.userType === "influencer") {
+    return (
+      !!userDetails.niche && 
+      Array.isArray(userDetails.connectedPlatforms) && 
+      userDetails.connectedPlatforms.length > 0
+    );
+  }
+  return !!userDetails.businessType && !!userDetails.budget;
+};
 
-  const isFormValid = () => {
-    if (userDetails.userType === "influencer") {
-      return (
-        !!userDetails.niche && (userDetails.connectedPlatforms?.length || 0) > 0
-      );
+  const getUserDisplayName = () => {
+    if (userDetails.farcasterUsername && userDetails.farcasterUsername !== `Farcaster User ${userDetails.farcasterId}`) {
+      return userDetails.farcasterUsername;
+    } else if (userDetails.farcasterId) {
+      return `Farcaster ID: ${userDetails.farcasterId}`;
     }
-    return !!userDetails.businessType && !!userDetails.budget;
-  };
+    return "Connected";
+  }
 
   if (!isOpen) return null;
 
@@ -260,16 +301,36 @@ const GetStartedModal = ({ isOpen = true, onClose = () => {} }: GetStartedModalP
                           </div>
                           <span className="font-medium">Farcaster</span>
                         </div>
+                        
                         {error && (
                           <div className="mb-4 rounded-md bg-red-50 p-4 text-red-700">{error}</div>
                         )}
+                        
                         {userDetails.connectedPlatforms?.includes("farcaster") ? (
-                          <button
-                            onClick={() => handleDisconnect("farcaster")}
-                            className="py-1 px-3 bg-gray-100 text-gray-600 text-sm rounded-md hover:bg-gray-200 transition-colors"
-                          >
-                            Disconnect
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center">
+                              {userDetails.farcasterPfp && (
+                                <img 
+                                  src={userDetails.farcasterPfp} 
+                                  alt="Profile" 
+                                  className="w-6 h-6 rounded-full mr-2"
+                                />
+                              )}
+                              <span className="text-sm font-medium">
+                                {getUserDisplayName()}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleDisconnect("farcaster")}
+                              className="py-1 px-3 bg-gray-100 text-gray-600 text-sm rounded-md hover:bg-gray-200 transition-colors"
+                            >
+                              Disconnect
+                            </button>
+                          </div>
+                        ) : isFarcasterLoading ? (
+                          <div className="flex items-center">
+                            <span className="text-sm text-gray-500">Connecting...</span>
+                          </div>
                         ) : (
                           <SignInButton
                             onSuccess={handleSuccess}
@@ -351,6 +412,7 @@ const GetStartedModal = ({ isOpen = true, onClose = () => {} }: GetStartedModalP
                 ) : (
                   "Complete Registration"
                 )}
+
               </button>
             </div>
           </div>

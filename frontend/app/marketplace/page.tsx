@@ -223,19 +223,19 @@ export default function Marketplace() {
       {showApplyModal && selectedCampaign && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto">
-            <h2 className="text-lg font-medium mb-4">Apply for {selectedCampaign.title}</h2>
+            <h2 className="text-xl font-medium mb-4 text-gray-700">Apply for {selectedCampaign.title}</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Campaign Details</label>
-                <p className="text-sm text-gray-600">{selectedCampaign.brand} - {selectedCampaign.budget} cUSD</p>
-                <p className="text-xs text-gray-500 mt-1">{selectedCampaign.requirements}</p>
+                <label className="block text-lg font-medium text-gray-700">Campaign Details</label>
+                <p className="text-base text-gray-600">{selectedCampaign.brand} - {selectedCampaign.budget} cUSD</p>
+                <p className="text-base text-gray-500 mt-1">{selectedCampaign.requirements}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Application Message</label>
+                <label className="block text-base font-medium text-gray-700">Application Message</label>
                 <textarea
                   value={applicationMessage}
                   onChange={(e) => setApplicationMessage(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 text-sm"
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 text-sm text-gray-600"
                   rows={4}
                   placeholder="Why are you a great fit for this campaign?"
                 />
