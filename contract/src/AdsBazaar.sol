@@ -1,15 +1,35 @@
+
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
+
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import {SelfVerificationRoot} from "@selfxyz/contracts/contracts/abstract/SelfVerificationRoot.sol";
+import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISelfVerificationRoot.sol";
+import {SelfCircuitLibrary} from "@selfxyz/contracts/contracts/libraries/SelfCircuitLibrary.sol";
 
-
-contract AdsBazaar {
+contract AdsBazaar is SelfVerificationRoot {
     address public owner;
     IERC20 public cUSD;
-    uint256 public platformFeePercentage = 5; 
+    uint256 public platformFeePercentage = 5; // 0.5%
+    
+    // Self protocol related mappings
+    mapping(address => bool) public verifiedInfluencers;
+    mapping(uint256 => bool) internal _nullifiers;
+    
+    // Error definition
+    error RegisteredNullifier();
 
-    constructor(address _cUSD) {
+    constructor(
+        address _cUSD,
+        address _identityVerificationHub, 
+        uint256 _scope, 
+        uint256[] memory _attestationIds
+    ) SelfVerificationRoot(
+        _identityVerificationHub, 
+        _scope, 
+        _attestationIds
+    ) {
         cUSD = IERC20(_cUSD);
         owner = msg.sender;
     }
@@ -126,7 +146,10 @@ contract AdsBazaar {
     event PaymentClaimed(address indexed influencer, uint256 amount);
     event VerificationDeadlineSet(bytes32 indexed briefId, uint256 deadline);
     event AutoApprovalTriggered(bytes32 indexed briefId);
+    event InfluencerVerified(address indexed influencer);
 
+    // Self protocol related events
+    event VerificationConfigUpdated(address indexed updater);
     
     modifier onlyOwner() {
         require(msg.sender == owner, "Not authorized");
@@ -148,6 +171,12 @@ contract AdsBazaar {
         _;
     }
 
+    // Add modifier for verified influencers
+    modifier onlyVerifiedInfluencer() {
+        require(users[msg.sender].isInfluencer, "Not registered as influencer");
+        require(verifiedInfluencers[msg.sender], "Influencer identity not verified");
+        _;
+    }
     
     function registerUser(bool _isBusiness, bool _isInfluencer, string calldata _profileData) external {
         require(_isBusiness || _isInfluencer, "Must register as business or influencer");
@@ -225,7 +254,6 @@ contract AdsBazaar {
         require(brief.business == msg.sender, "Not the brief owner");
         require(brief.status == Status.OPEN, "Brief can only be cancelled if open");
         
-        // Additional checks for new requirements:
         // 1. Can cancel if deadline passed with no applications
         // 2. Can cancel if deadline passed and fewer influencers applied than maxInfluencers
         bool canCancel = false;
@@ -297,7 +325,7 @@ contract AdsBazaar {
             if (applications[_briefId][i].isSelected) {
                 applications[_briefId][i].isApproved = true;
                 
-                // Calculate platform fee (platformFeePercentage is in tenths of a percent)
+                // Calculate platform fee
                 uint256 platformFee = (equalShare * platformFeePercentage) / 1000;
                 uint256 influencerAmount = equalShare - platformFee;
                 
@@ -327,12 +355,12 @@ contract AdsBazaar {
         require(brief.status == Status.OPEN, "Brief not open for applications");
         require(block.timestamp < brief.applicationDeadline, "Application deadline passed");
         
-       
+        // Check if influencer has already applied
         for (uint256 i = 0; i < applications[_briefId].length; i++) {
             require(applications[_briefId][i].influencer != msg.sender, "Already applied");
         }
         
-        
+        // Create application
         InfluencerApplication memory newApplication = InfluencerApplication({
             influencer: msg.sender,
             message: _message,
@@ -367,7 +395,10 @@ contract AdsBazaar {
         require(found, "Not selected for this brief");
     }
 
+    // Modified to require verification through Self protocol
     function claimPayments() external onlyInfluencer {
+        require(verifiedInfluencers[msg.sender], "Identity verification required");
+        
         uint256 totalAmount = totalPendingAmount[msg.sender];
         require(totalAmount > 0, "No pending payments to claim");
         
@@ -404,6 +435,43 @@ contract AdsBazaar {
         }
         
         return false;
+    }
+
+    // Implement Self protocol verification function
+    function verifySelfProof(
+        ISelfVerificationRoot.DiscloseCircuitProof memory proof
+    ) public override {
+        // Check if nullifier has been registered
+        if (_nullifiers[proof.pubSignals[NULLIFIER_INDEX]]) {
+            revert RegisteredNullifier();
+        }
+        
+        // Verify the proof with Self verification hub
+        super.verifySelfProof(proof);
+        
+        // Mark nullifier as used to prevent replay attacks
+        _nullifiers[proof.pubSignals[NULLIFIER_INDEX]] = true;
+        
+        // Get the user address from the proof
+        address userAddress = address(uint160(proof.pubSignals[USER_IDENTIFIER_INDEX]));
+        
+        // Mark the influencer as verified
+        verifiedInfluencers[userAddress] = true;
+        
+        emit InfluencerVerified(userAddress);
+    }
+
+    // Set verification configuration for Self protocol
+    function setVerificationConfig(
+        ISelfVerificationRoot.VerificationConfig memory newVerificationConfig
+    ) external onlyOwner {
+        _setVerificationConfig(newVerificationConfig);
+        emit VerificationConfigUpdated(msg.sender);
+    }
+
+    // Get verification configuration
+    function getVerificationConfig() external view returns (ISelfVerificationRoot.VerificationConfig memory) {
+        return _getVerificationConfig();
     }
 
     function getPendingPayments(address _influencer) external view returns (
@@ -491,7 +559,6 @@ contract AdsBazaar {
             isApproved: isApproved
         });
     }
-
     
     function setPlatformFee(uint256 _newFeePercentage) external onlyOwner {
         require(_newFeePercentage <= 10, "Fee too high"); // Max 1%
@@ -502,5 +569,55 @@ contract AdsBazaar {
         uint256 balance = cUSD.balanceOf(address(this));
         require(balance > 0, "No fees to withdraw");
         require(cUSD.transfer(owner, balance), "Transfer failed");
+    }
+    
+    // Check if an influencer is verified
+    function isInfluencerVerified(address _influencer) external view returns (bool) {
+        return verifiedInfluencers[_influencer];
+    }
+
+    function triggerAutoApproval(bytes32 _briefId) external onlyOwner briefExists(_briefId) {
+        AdBrief storage brief = briefs[_briefId];
+        require(brief.status == Status.ASSIGNED, "Brief not in assigned status");
+        require(block.timestamp > brief.verificationDeadline, "Verification deadline not yet passed");
+        
+        // Mark brief as completed
+        brief.status = Status.COMPLETED;
+        
+        // Calculate equal share for all selected influencers
+        uint256 equalShare = brief.budget / brief.selectedInfluencersCount;
+        uint256 platformFee = (equalShare * platformFeePercentage) / 1000;
+        uint256 influencerAmount = equalShare - platformFee;
+        
+        // Process all selected applications
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            InfluencerApplication storage application = applications[_briefId][i];
+            
+            if (application.isSelected) {
+                // Only approve if proof was submitted
+                if (bytes(application.proofLink).length > 0) {
+                    application.isApproved = true;
+                    
+                    // Transfer platform fee
+                    require(cUSD.transfer(owner, platformFee), "Platform fee transfer failed");
+                    
+                    // Add to pending payments
+                    address influencer = application.influencer;
+                    PendingPayment memory payment = PendingPayment({
+                        briefId: _briefId,
+                        amount: influencerAmount,
+                        isApproved: true
+                    });
+                    
+                    influencerPendingPayments[influencer].push(payment);
+                    totalPendingAmount[influencer] += influencerAmount;
+                    
+                    emit ProofApproved(_briefId, influencer);
+                    emit PaymentReleased(_briefId, influencer, influencerAmount);
+                }
+            }
+        }
+        
+        emit AutoApprovalTriggered(_briefId);
     }
 }
