@@ -1,4 +1,5 @@
 
+
 import { getDefaultConfig, connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { celoAlfajores } from 'wagmi/chains';
 import { injectedWallet, metaMaskWallet } from '@rainbow-me/rainbowkit/wallets';
@@ -32,3 +33,4 @@ export const wagmiConfig = getDefaultConfig({
     [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
   }
 });
+
