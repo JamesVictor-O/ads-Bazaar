@@ -125,6 +125,7 @@ contract AdsBazaar is SelfVerificationRoot {
         bool[] isApproved;
     }
    
+    bytes32[] private allBriefIds;
     mapping(bytes32 => AdBrief) public briefs;
     mapping(bytes32 => InfluencerApplication[]) public applications;
     mapping(address => UserProfile) public users;
@@ -245,6 +246,7 @@ contract AdsBazaar is SelfVerificationRoot {
         
         // Add to business briefs
         businessBriefs[msg.sender].push(briefId);
+        allBriefIds.push(briefId);
         
         emit BriefCreated(briefId, msg.sender, _budget, _maxInfluencers, TargetAudience(_targetAudience));
     }
@@ -517,6 +519,10 @@ contract AdsBazaar is SelfVerificationRoot {
             targetAudience: brief.targetAudience,
             verificationDeadline: brief.verificationDeadline
         });
+    }
+
+    function getAllBriefs() external view returns (bytes32[] memory) {
+        return allBriefIds;
     }
     
     function getBusinessBriefs(address _business) external view returns (bytes32[] memory) {

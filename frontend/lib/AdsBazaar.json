@@ -256,6 +256,15 @@
     },
     {
       "type": "function",
+      "name": "getAllBriefs",
+      "inputs": [],
+      "outputs": [
+        { "name": "", "type": "bytes32[]", "internalType": "bytes32[]" }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "getBriefApplications",
       "inputs": [
         { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" }
@@ -881,40 +890,5 @@
     { "type": "error", "name": "InvalidAttestationId", "inputs": [] },
     { "type": "error", "name": "InvalidScope", "inputs": [] },
     { "type": "error", "name": "RegisteredNullifier", "inputs": [] }
-  ],
-  "methodIdentifiers": {
-    "applications(bytes32,uint256)": "db76b006",
-    "applyToBrief(bytes32,string)": "19e53cf7",
-    "briefs(bytes32)": "5c200290",
-    "businessBriefs(address,uint256)": "7fe346bf",
-    "cUSD()": "1fccf672",
-    "cancelAdBrief(bytes32)": "ab53bd39",
-    "claimPayments()": "b630aebd",
-    "completeCampaign(bytes32)": "b0a6e3e6",
-    "createAdBrief(string,string,uint256,uint256,uint256,uint256,uint8,uint256)": "a32d600f",
-    "getAdBrief(bytes32)": "92bae94a",
-    "getBriefApplications(bytes32)": "2c39759c",
-    "getBusinessBriefs(address)": "dc76b154",
-    "getInfluencerApplications(address)": "839796e6",
-    "getPendingPayments(address)": "40a2e60a",
-    "getTotalPendingAmount(address)": "836002c4",
-    "getVerificationConfig()": "0510077d",
-    "influencerApplications(address,uint256)": "6d78f27f",
-    "influencerPendingPayments(address,uint256)": "ea03b888",
-    "isInfluencerVerified(address)": "19d47e9d",
-    "owner()": "8da5cb5b",
-    "platformFeePercentage()": "cdd78cfc",
-    "registerUser(bool,bool,string)": "50144cd3",
-    "selectInfluencer(bytes32,uint256)": "9afe00ee",
-    "setPlatformFee(uint256)": "12e8e2c3",
-    "setVerificationConfig((bool,uint256,bool,uint256[4],bool[3]))": "003bc35c",
-    "submitProof(bytes32,string)": "bea6d0e2",
-    "totalPendingAmount(address)": "6bac5c84",
-    "triggerAutoApproval(bytes32)": "030cab82",
-    "users(address)": "a87430ba",
-    "verifiedInfluencers(address)": "55085485",
-    "verifySelfProof((uint256[2],uint256[2][2],uint256[2],uint256[21]))": "fdc60967",
-    "withdrawFees()": "476343ee"
-  },
-  "id": 29
+  ]
 }
