@@ -4,13 +4,46 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useAccount,
+  usePublicClient,
 } from "wagmi";
 import { parseUnits, Hex } from "viem";
 import { cUSDContractConfig } from "../lib/contracts";
-
 import ABI from "../lib/AdsBazaar.json";
 
-const CONTRACT_ADDRESS = "0x23308957ED8274662aE415C041cB17767c919774";
+const CONTRACT_ADDRESS = "0xe0F5Aeb011C4B8e5C0A5A10611b3Aa57ab4Bf56F";
+
+type Status = "OPEN" | "ASSIGNED" | "COMPLETED" | "CANCELLED";
+type TargetAudience =
+  | "GENERAL"
+  | "FASHION"
+  | "TECH"
+  | "GAMING"
+  | "FITNESS"
+  | "BEAUTY"
+  | "FOOD"
+  | "TRAVEL"
+  | "BUSINESS"
+  | "EDUCATION"
+  | "ENTERTAINMENT"
+  | "SPORTS"
+  | "LIFESTYLE"
+  | "OTHER";
+
+interface BriefData {
+  business: Address;
+  name: string;
+  description: string;
+  budget: bigint;
+  status: Status;
+  applicationDeadline: bigint;
+  promotionDuration: bigint;
+  promotionStartTime: bigint;
+  promotionEndTime: bigint;
+  maxInfluencers: bigint;
+  selectedInfluencersCount: bigint;
+  targetAudience: TargetAudience;
+  verificationDeadline: bigint;
+}
 
 // Type definitions
 type Address = `0x${string}`;
@@ -21,20 +54,7 @@ type UserProfile = {
   isInfluencer: boolean;
   profileData: string;
 };
-type BriefData = {
-  business: Address;
-  name: string;
-  description: string;
-  budget: bigint;
-  applicationDeadline: bigint;
-  promotionDuration: bigint;
-  maxInfluencers: bigint;
-  targetAudience: number;
-  verificationPeriod: bigint;
-  isActive: boolean;
-  isCancelled: boolean;
-  isCompleted: boolean;
-};
+
 type Application = {
   influencer: Address;
   message: string;
@@ -154,13 +174,15 @@ export function useAdBrief(briefId: Bytes32) {
 // Get all briefs for a business
 export function useBusinessBriefs(businessAddress?: Address) {
   const { address } = useAccount();
+  const publicClient = usePublicClient();
   const targetAddress = businessAddress || address;
 
+  // First fetch the brief IDs
   const {
     data: briefIds,
-    error,
-    isLoading,
-    refetch,
+    error: briefIdsError,
+    isLoading: isLoadingBriefIds,
+    refetch: refetchBriefIds,
   } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
@@ -171,13 +193,13 @@ export function useBusinessBriefs(businessAddress?: Address) {
     },
   });
 
-  // Use state to store full brief data
+  // Then fetch details for each brief
   const [briefs, setBriefs] = useState<Array<{ briefId: Bytes32 } & BriefData>>(
     []
   );
-  const [isLoadingAllBriefs, setIsLoadingAllBriefs] = useState(false);
+  const [isLoadingBriefs, setIsLoadingBriefs] = useState(false);
+  const [briefsError, setBriefsError] = useState<Error | null>(null);
 
-  // Fetch full data for each brief ID
   useEffect(() => {
     async function fetchAllBriefData() {
       if (!briefIds || briefIds.length === 0) {
@@ -185,38 +207,84 @@ export function useBusinessBriefs(businessAddress?: Address) {
         return;
       }
 
-      setIsLoadingAllBriefs(true);
-      try {
-        const briefPromises = (briefIds as Bytes32[]).map(async (briefId) => {
-          const response = await fetch("/api/getBriefData", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ briefId }),
-          });
-          const data = await response.json();
-          return { briefId, ...data };
-        });
+      setIsLoadingBriefs(true);
+      setBriefsError(null);
 
-        const briefsData = await Promise.all(briefPromises);
+      try {
+        const briefsData = await Promise.all(
+          (briefIds as Bytes32[]).map(async (briefId) => {
+            const briefData = await publicClient.readContract({
+              address: CONTRACT_ADDRESS,
+              abi: ABI.abi,
+              functionName: "getAdBrief",
+              args: [briefId],
+            });
+
+            const rawData = briefData as any[];
+            return {
+              briefId,
+              business: rawData[0],
+              name: rawData[1],
+              description: rawData[2],
+              budget: rawData[3],
+              status: convertStatus(rawData[4]),
+              applicationDeadline: rawData[5],
+              promotionDuration: rawData[6],
+              promotionStartTime: rawData[7],
+              promotionEndTime: rawData[8],
+              maxInfluencers: rawData[9],
+              selectedInfluencersCount: rawData[10],
+              targetAudience: convertTargetAudience(rawData[11]),
+              verificationDeadline: rawData[12],
+            };
+          })
+        );
         setBriefs(briefsData);
       } catch (error) {
         console.error("Error fetching briefs data:", error);
+        setBriefsError(error as Error);
+        setBriefs([]);
       } finally {
-        setIsLoadingAllBriefs(false);
+        setIsLoadingBriefs(false);
       }
     }
 
     fetchAllBriefData();
-  }, [briefIds]);
+  }, [briefIds, publicClient]);
 
   return {
     briefIds: briefIds as Bytes32[] | undefined,
     briefs,
-    isLoadingBriefIds: isLoading,
-    isLoadingAllBriefs,
-    briefsError: error,
-    refetchBriefs: refetch,
+    isLoading: isLoadingBriefIds || isLoadingBriefs,
+    error: briefIdsError || briefsError,
+    refetch: refetchBriefIds,
   };
+}
+
+// Helper functions to convert contract enums to strings
+function convertStatus(statusNumber: bigint): Status {
+  const statuses: Status[] = ["OPEN", "ASSIGNED", "COMPLETED", "CANCELLED"];
+  return statuses[Number(statusNumber)] || "CANCELLED";
+}
+
+function convertTargetAudience(audienceNumber: bigint): TargetAudience {
+  const audiences: TargetAudience[] = [
+    "GENERAL",
+    "FASHION",
+    "TECH",
+    "GAMING",
+    "FITNESS",
+    "BEAUTY",
+    "FOOD",
+    "TRAVEL",
+    "BUSINESS",
+    "EDUCATION",
+    "ENTERTAINMENT",
+    "SPORTS",
+    "LIFESTYLE",
+    "OTHER",
+  ];
+  return audiences[Number(audienceNumber)] || "GENERAL";
 }
 
 // Get all applications for an influencer
