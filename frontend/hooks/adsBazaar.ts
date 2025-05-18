@@ -552,12 +552,14 @@ export function useApplyToBrief() {
   };
 }
 
+
+
 // Submit proof
 export function useSubmitProof() {
   const tx = useHandleTransaction();
   const { address } = useAccount();
 
-  const submitProof = async (briefId: Bytes32, proofLink: string) => {
+  const submitProof = async (briefId, proofLink: string) => {
     if (!address) return;
 
     try {

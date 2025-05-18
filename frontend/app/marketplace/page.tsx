@@ -1,10 +1,32 @@
+
+
+
+
 "use client";
 
 import { useState } from "react";
-import { Search, CheckCircle, Target, Calendar, Users, MessageCircle } from "lucide-react";
+import { Search, CheckCircle, Target, Calendar, Users } from "lucide-react";
+import ApplyModal from "@/components/modals/AdsApplicationModal";
 
-// Mock data for campaigns
-const campaigns = [
+interface Campaign {
+  id: number;
+  category: string;
+  title: string;
+  brand: string;
+  budget: number;
+  description: string;
+  audience: string;
+  duration: string;
+  deliverables: number;
+  requirements: string;
+  applications: Array<{
+    address: string;
+    username: string;
+    message: string;
+  }>;
+}
+
+const campaigns: Campaign[] = [
   {
     id: 1,
     category: "Tech",
@@ -18,7 +40,7 @@ const campaigns = [
     requirements: "Min 10K followers, 3+ crypto posts",
     applications: [],
   },
-  {
+   {
     id: 2,
     category: "Lifestyle",
     title: "Eco-Friendly Product Line",
@@ -60,39 +82,15 @@ const campaigns = [
 ];
 
 export default function Marketplace() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [budgetFilter, setBudgetFilter] = useState("Budget: Any");
-  const [showApplyModal, setShowApplyModal] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
-  const [applicationMessage, setApplicationMessage] = useState("");
-  const [mockCampaigns, setMockCampaigns] = useState(campaigns);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All Categories");
+  const [budgetFilter, setBudgetFilter] = useState<string>("Budget: Any");
+  const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [applicationMessage, setApplicationMessage] = useState<string>("");
+  const [mockCampaigns, setMockCampaigns] = useState<Campaign[]>(campaigns);
 
-  const handleApply = () => {
-    if (applicationMessage.trim()) {
-      setMockCampaigns((prev) =>
-        prev.map((campaign) =>
-          campaign.id === selectedCampaign.id
-            ? {
-                ...campaign,
-                applications: [
-                  ...campaign.applications,
-                  {
-                    address: "0x123...abc", // Mock wallet address
-                    username: "crypto_guru", // Mock Farcaster username
-                    message: applicationMessage,
-                  },
-                ],
-              }
-            : campaign
-        )
-      );
-      setShowApplyModal(false);
-      setApplicationMessage("");
-      alert("Application submitted successfully!"); // Replace with toast in production
-    }
-  };
-
+  
   const filteredCampaigns = mockCampaigns.filter((campaign) => {
     const matchesSearch = campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaign.brand.toLowerCase().includes(searchQuery.toLowerCase());
@@ -218,47 +216,15 @@ export default function Marketplace() {
           )}
         </div>
       </div>
-
-      {/* Apply Modal */}
-      {showApplyModal && selectedCampaign && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto">
-            <h2 className="text-xl font-medium mb-4 text-gray-700">Apply for {selectedCampaign.title}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-lg font-medium text-gray-700">Campaign Details</label>
-                <p className="text-base text-gray-600">{selectedCampaign.brand} - {selectedCampaign.budget} cUSD</p>
-                <p className="text-base text-gray-500 mt-1">{selectedCampaign.requirements}</p>
-              </div>
-              <div>
-                <label className="block text-base font-medium text-gray-700">Application Message</label>
-                <textarea
-                  value={applicationMessage}
-                  onChange={(e) => setApplicationMessage(e.target.value)}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 text-sm text-gray-600"
-                  rows={4}
-                  placeholder="Why are you a great fit for this campaign?"
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setShowApplyModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleApply}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-                disabled={!applicationMessage.trim()}
-              >
-                Submit Application
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
+      <ApplyModal
+        showApplyModal={showApplyModal}
+        setShowApplyModal={setShowApplyModal}
+        selectedCampaign={selectedCampaign}
+        applicationMessage={applicationMessage}
+        setApplicationMessage={setApplicationMessage}
+        
+      />
     </div>
   );
 }
