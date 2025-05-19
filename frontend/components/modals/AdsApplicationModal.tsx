@@ -24,15 +24,20 @@ interface Campaign {
 interface ApplyModalProps {
   showApplyModal: boolean;
   setShowApplyModal: (show: boolean) => void;
-  selectedCampaign: Campaign | null;
+  selectedBrief: {
+    id: `0x${string}`;
+    title: string;
+    business: string;
+    budget: number;
+    requirements?: string;
+  } | null;
   applicationMessage: string;
   setApplicationMessage: (message: string) => void;
 }
-
 export default function ApplyModal({
   showApplyModal,
   setShowApplyModal,
-  selectedCampaign,
+  selectedBrief,
   applicationMessage,
   setApplicationMessage,
 }: ApplyModalProps) {
@@ -41,16 +46,13 @@ export default function ApplyModal({
   const { applyToBrief } = useApplyToBrief();
 
   const handleApply = async (): Promise<void> => {
-    if (!applicationMessage.trim() || !selectedCampaign) return;
-
+    if (!applicationMessage.trim() || !selectedBrief) return;
+     console.log("Applying to brief:", selectedBrief.id, applicationMessage);
     setIsLoading(true);
     setError(null);
 
     try {
-      const briefId = `0x${selectedCampaign.id.toString(16).padStart(64, '0')}`;
-      console.log("Applying to brief with ID:", briefId);
-      await applyToBrief(briefId, applicationMessage);
-      
+      await applyToBrief(selectedBrief.id, applicationMessage);
       setShowApplyModal(false);
       setApplicationMessage("");
       alert("Application submitted successfully!");
@@ -62,12 +64,12 @@ export default function ApplyModal({
     }
   };
 
-  if (!showApplyModal || !selectedCampaign) return null;
+  if (!showApplyModal || !selectedBrief) return null;
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto">
-        <h2 className="text-xl font-medium mb-4 text-gray-700">Apply for {selectedCampaign.title}</h2>
+        <h2 className="text-xl font-medium mb-4 text-gray-700">Apply for {selectedBrief.title}</h2>
         
         {error && (
           <div className="mb-4 p-2 bg-red-100 text-red-700 rounded text-sm">
@@ -78,8 +80,8 @@ export default function ApplyModal({
         <div className="space-y-4">
           <div>
             <label className="block text-lg font-medium text-gray-700">Campaign Details</label>
-            <p className="text-base text-gray-600">{selectedCampaign.brand} - {selectedCampaign.budget} cUSD</p>
-            <p className="text-base text-gray-500 mt-1">{selectedCampaign.requirements}</p>
+            <p className="text-base text-gray-600">{selectedBrief.business} - {selectedBrief.budget} cUSD</p>
+            <p className="text-base text-gray-500 mt-1">{selectedBrief.requirements}</p>
           </div>
           <div>
             <label className="block text-base font-medium text-gray-700">Application Message</label>
