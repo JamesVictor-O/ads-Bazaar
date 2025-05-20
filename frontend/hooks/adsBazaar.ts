@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback ,useMemo} from "react";
 import {
   useReadContract,
   useWriteContract,
@@ -46,7 +46,15 @@ interface FormattedBriefDataOutput {
   targetAudience: TargetAudience | number;
   verificationDeadline: number;
 }
-
+export interface InfluencerApplication {
+  influencer: string;
+  message: string;
+  timestamp: number;
+  isSelected: boolean;
+  hasClaimed: boolean;
+  proofLink: string;
+  isApproved: boolean;
+}
 interface RawBriefData {
   business: `0x${string}`;
   name: string;
@@ -275,6 +283,133 @@ export function useGetAllBriefs() {
     error: idError || error,
   };
 }
+
+export function useGetBusinessBriefIds(businessAddress: `0x${string}`) {
+  const { data, isLoading, isError, error, refetch } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "getBusinessBriefs",
+    args: [businessAddress],
+  });
+
+  return {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  };
+}
+
+
+export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
+  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const publicClient = usePublicClient();
+
+  // First fetch all brief IDs for this business
+  const {
+    data: briefIds,
+    isLoading: isLoadingIds,
+    isError: isErrorIds,
+    error: idError,
+  } = useGetBusinessBriefIds(businessAddress);
+
+  // Then fetch details for each brief
+  const fetchBusinessBriefDetails = useCallback(
+    async (ids: `0x${string}`[]) => {
+      if (!publicClient) {
+        setError(new Error("Public client not available"));
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const results = await Promise.all(
+          ids.map(async (id) => {
+            try {
+              const result = await publicClient.readContract({
+                address: CONTRACT_ADDRESS,
+                abi: ABI.abi,
+                functionName: "briefs",
+                args: [id],
+              });
+
+              // Handle the array response properly
+              if (Array.isArray(result)) {
+                return formatBriefData(id, result);
+              }
+              return null;
+            } catch (err) {
+              console.error(`Error fetching brief ${id}:`, err);
+              return null;
+            }
+          })
+        );
+
+        setProcessedBriefs(
+          results.filter((brief): brief is FormattedBriefData => brief !== null)
+        );
+      } catch (err) {
+        console.error("Error fetching brief details:", err);
+        setError(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [publicClient]
+  );
+
+  useEffect(() => {
+    if (briefIds && !isLoadingIds) {
+      fetchBusinessBriefDetails(briefIds as `0x${string}`[]);
+    }
+  }, [briefIds, isLoadingIds, fetchBusinessBriefDetails]);
+
+  const formatBriefData = (
+    briefId: `0x${string}`,
+    rawData: any[]
+  ): FormattedBriefData | null => {
+    try {
+      // Ensure rawData is an array with enough elements
+      if (!Array.isArray(rawData) || rawData.length < 13) {
+        console.error("Invalid brief data format:", rawData);
+        return null;
+      }
+
+      return {
+        id: briefId,
+        business: rawData[1] as `0x${string}`,
+        title: rawData[2] as string,
+        description: rawData[3] as string,
+        budget: Number(formatEther(rawData[4] as bigint)),
+        status: Number(rawData[5]),
+        applicationDeadline: Number(rawData[6]),
+        promotionDuration: Number(rawData[7]),
+        promotionStartTime: Number(rawData[8]),
+        promotionEndTime: Number(rawData[9]),
+        maxInfluencers: Number(rawData[10]),
+        selectedInfluencersCount: Number(rawData[11]),
+        targetAudience: Number(rawData[12]),
+        verificationDeadline: Number(rawData[13] || 0n), // Handle optional field
+      };
+    } catch (err) {
+      console.error(`Error formatting brief ${briefId}:`, err);
+      return null;
+    }
+  };
+
+  return {
+    briefs: processedBriefs,
+    isLoading: isLoading || isLoadingIds,
+    isError: isErrorIds || error !== null,
+    error: idError || error,
+  };
+}
+
 
 // Get user profile
 export function useUserProfile(userAddress?: Address) {
