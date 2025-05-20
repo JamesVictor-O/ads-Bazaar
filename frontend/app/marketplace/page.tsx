@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Search, CheckCircle, Target, Calendar, Users } from "lucide-react";
-import { useGetAllBriefs } from "@/hooks/adsBazaar";
+import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
 import { useGetAllId } from "@/hooks/adsBazaar";
+import { useAccount } from "wagmi";
 // import { shortenAddress } from "@/utils/address";
 
 // Status and audience mappings
@@ -58,10 +59,11 @@ export default function Marketplace() {
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
   const [selectedBrief, setSelectedBrief] = useState<any>(null);
   const [applicationMessage, setApplicationMessage] = useState<string>("");
-  const {  data } = useGetAllId();
+  const { data } = useGetAllId();
 
   const { briefs, isLoading } = useGetAllBriefs();
-
+  const { address, isConnected } = useAccount();
+  const { userProfile, isLoadingProfile: isProfileLoading } = useUserProfile();
 
   if (isLoading) {
     return (
@@ -75,6 +77,71 @@ export default function Marketplace() {
   }
 
   console.log("Briefs data:", data);
+
+  const getButtonState = (brief: Brief) => {
+    if (!isConnected) {
+      return {
+        text: "Connect Wallet to Apply",
+        disabled: true,
+        onClick: () => {},
+        variant: "gray",
+      };
+    }
+
+    if (isProfileLoading) {
+      return {
+        text: "Loading...",
+        disabled: true,
+        onClick: () => {},
+        variant: "gray",
+      };
+    }
+
+    if (!userProfile?.isRegistered) {
+      return {
+        text: "Register as Influencer",
+        disabled: false,
+        onClick: () => (window.location.href = "/register"),
+        variant: "indigo",
+      };
+    }
+
+    if (userProfile.isBusiness) {
+      if (brief.business.toLowerCase() === address?.toLowerCase()) {
+        return {
+          text: "Your Campaign",
+          disabled: true,
+          onClick: () => {},
+          variant: "gray",
+        };
+      }
+      return {
+        text: "Use Influencer Account",
+        disabled: true,
+        onClick: () => {},
+        variant: "gray",
+      };
+    }
+
+    if (brief.status !== 0) {
+      return {
+        text: "Closed",
+        disabled: true,
+        onClick: () => {},
+        variant: "gray",
+      };
+    }
+
+    return {
+      text: "Apply Now",
+      disabled: false,
+      onClick: () => {
+        setSelectedBrief(brief);
+        setShowApplyModal(true);
+      },
+      variant: "indigo",
+    };
+  };
 
   const filteredBriefs = briefs.filter((brief) => {
     const budget = brief.budget;
@@ -158,6 +225,7 @@ export default function Marketplace() {
             const category = audienceMap[brief.targetAudience] || "Other";
             const status = statusMap[brief.status] || "Unknown";
             const isOpen = brief.status === 0;
+            const buttonState = getButtonState(brief);
 
             return (
               <div key={brief.id} className="bg-white shadow rounded-lg p-4">
@@ -210,18 +278,15 @@ export default function Marketplace() {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      setSelectedBrief(brief);
-                      setShowApplyModal(true);
-                    }}
+                    onClick={buttonState.onClick}
                     className={`w-full py-2 px-4 rounded-md text-sm ${
-                      isOpen
+                      buttonState.variant === "indigo"
                         ? "bg-indigo-600 text-white hover:bg-indigo-700"
                         : "bg-gray-200 text-gray-600 cursor-not-allowed"
                     }`}
-                    disabled={!isOpen}
+                    disabled={buttonState.disabled}
                   >
-                    {isOpen ? "Apply Now" : "Closed"}
+                    {buttonState.text}
                   </button>
                 </div>
               </div>
@@ -235,24 +300,26 @@ export default function Marketplace() {
         </div>
       </div>
 
-      <ApplyModal
-        showApplyModal={showApplyModal}
-        setShowApplyModal={setShowApplyModal}
-        selectedBrief={
-          selectedBrief
-            ? {
-                id: selectedBrief.id,
-                title: selectedBrief.title,
-                business: selectedBrief.business,
-                budget: selectedBrief.budget,
-                requirements:
-                  selectedBrief.requirements || "No specific requirements",
-              }
-            : null
-        }
-        applicationMessage={applicationMessage}
-        setApplicationMessage={setApplicationMessage}
-      />
+      {userProfile?.isRegistered && userProfile.isInfluencer && (
+        <ApplyModal
+          showApplyModal={showApplyModal}
+          setShowApplyModal={setShowApplyModal}
+          selectedBrief={
+            selectedBrief
+              ? {
+                  id: selectedBrief.id,
+                  title: selectedBrief.title,
+                  business: selectedBrief.business,
+                  budget: selectedBrief.budget,
+                  requirements:
+                    selectedBrief.requirements || "No specific requirements",
+                }
+              : null
+          }
+          applicationMessage={applicationMessage}
+          setApplicationMessage={setApplicationMessage}
+        />
+      )}
     </div>
   );
 }
