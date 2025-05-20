@@ -19,6 +19,8 @@ import { useRouter } from "next/navigation";
 import { useProfile } from "@farcaster/auth-kit";
 import { useAccount } from "wagmi";
 import { format } from "date-fns";
+import { useUserProfile } from "../../hooks/adsBazaar";
+import Link from "next/link";
 
 // Mock data for active campaigns
 const activeCampaigns = [
@@ -89,6 +91,8 @@ export default function InfluencerDashboard() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [postLink, setPostLink] = useState("");
+  // Get user profile data
+  const { userProfile, isLoadingProfile } = useUserProfile();
 
   useEffect(() => {
     setIsMounted(true);
@@ -159,6 +163,25 @@ export default function InfluencerDashboard() {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <p className="text-gray-600">Loading...</p>
+      </div>
+    );
+  }
+
+  // If user is not registered or not an influencer, show a message
+  if (!userProfile?.isRegistered || !userProfile?.isInfluencer) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center p-8 max-w-md">
+          <h2 className="text-2xl font-bold mb-4">Account Required</h2>
+          <p className="mb-6">
+            You need to register as an influencer to access the dashboard.
+          </p>
+          <Link href={"/"}>
+            <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+              Register as Influencer
+            </button>
+          </Link>
+        </div>
       </div>
     );
   }
