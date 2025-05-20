@@ -20,6 +20,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { format } from "date-fns";
+import Link from "next/link";
 
 // Import our custom hooks
 import {
@@ -320,9 +321,11 @@ const BrandDashboard = () => {
           <p className="mb-6">
             You need to register as a business to access the dashboard.
           </p>
-          <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-            Register as Business
-          </button>
+          <Link href={"/"}>
+            <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+              Register as Business
+            </button>
+          </Link>
         </div>
       </div>
     );
