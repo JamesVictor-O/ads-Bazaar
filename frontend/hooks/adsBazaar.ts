@@ -48,19 +48,18 @@ interface FormattedBriefDataOutput {
 }
 
 interface RawBriefData {
-  briefId: `0x${string}`;
   business: `0x${string}`;
   name: string;
   description: string;
   budget: bigint;
-  status: number;
+  status: bigint;
   applicationDeadline: bigint;
   promotionDuration: bigint;
   promotionStartTime: bigint;
   promotionEndTime: bigint;
   maxInfluencers: bigint;
   selectedInfluencersCount: bigint;
-  targetAudience: number;
+  targetAudience: bigint;
   verificationDeadline: bigint;
 }
 
@@ -168,116 +167,6 @@ export function useGetAllId() {
   };
 }
 
-// export function useGetAllBriefs() {
-//   const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [error, setError] = useState<Error | null>(null);
-
-//   const { data: briefIds, isLoading: isLoadingIds, isError: isErrorIds, error: idError } = useGetAllId();
-
-//   // Fetch brief details for a single briefId
-//   const fetchBriefDetails = useCallback(
-//     async (briefId: Bytes32): Promise<FormattedBriefData | null> => {
-//       try {
-//         const result = await useReadContract({
-//           address: CONTRACT_ADDRESS,
-//           abi: ABI.abi,
-//           functionName: "getAdBrief",
-//           args: [briefId],
-//         });
-
-//         console.log(`Fetched brief data for ${briefId}:`, result);
-//         return formatBriefData(briefId, result as RawBriefData);
-//       } catch (err) {
-//         console.error(`Error fetching brief ${briefId}:`, err);
-//         return null;
-//       }
-//     },
-//     []
-//   );
-
-//   useEffect(() => {
-//     let isMounted = true;
-
-//     async function processBriefs() {
-//       if (!briefIds || isLoadingIds) {
-//         console.log("No briefIds or still loading:", { briefIds, isLoadingIds, idError });
-//         return;
-//       }
-
-//       console.log("Processing briefIds:", briefIds);
-
-//       setIsLoading(true);
-//       try {
-//         const briefPromises: Promise<FormattedBriefData | null>[] = (briefIds as Bytes32[]).map(
-//           (id: Bytes32) => fetchBriefDetails(id)
-//         );
-//         const results = await Promise.all(briefPromises);
-//         const validBriefs = results.filter((brief): brief is FormattedBriefData => brief !== null);
-
-//         console.log("Processed briefs:", validBriefs);
-
-//         if (isMounted) {
-//           setProcessedBriefs(validBriefs);
-//           setIsLoading(false);
-//         }
-//       } catch (err) {
-//         console.error("Error processing briefs:", err);
-//         if (isMounted) {
-//           setError(err as Error);
-//           setIsLoading(false);
-//         }
-//       }
-//     }
-
-//     processBriefs();
-
-//     return () => {
-//       isMounted = false;
-//     };
-//   }, [briefIds, isLoadingIds, fetchBriefDetails]);
-
-//   function formatBriefData(
-//     briefId: Bytes32,
-//     rawData: RawBriefData | undefined
-//   ): FormattedBriefData | null {
-//     if (!rawData) {
-//       console.log("No raw data for briefId:", briefId);
-//       return null;
-//     }
-
-//     console.log("Formatting raw data:", rawData);
-
-//     try {
-//       return {
-//         id: briefId,
-//         business: rawData.business || "0x0",
-//         title: rawData.name || "Untitled Campaign",
-//         description: rawData.description || "",
-//         budget: Number(rawData.budget) || 0,
-//         status: Number(rawData.status) || 0,
-//         applicationDeadline: Number(rawData.applicationDeadline) || 0,
-//         promotionDuration: Number(rawData.promotionDuration) || 0,
-//         promotionStartTime: Number(rawData.promotionStartTime) || 0,
-//         promotionEndTime: Number(rawData.promotionEndTime) || 0,
-//         maxInfluencers: Number(rawData.maxInfluencers) || 0,
-//         selectedInfluencersCount: Number(rawData.selectedInfluencersCount) || 0,
-//         targetAudience: Number(rawData.targetAudience) || 0,
-//         verificationDeadline: Number(rawData.verificationDeadline) || 0,
-//       };
-//     } catch (err) {
-//       console.error(`Error formatting brief ${briefId}:`, err);
-//       return null;
-//     }
-//   }
-
-//   return {
-//     briefs: processedBriefs,
-//     isLoading: isLoading || isLoadingIds,
-//     isError: isErrorIds || error !== null,
-//     error,
-//   };
-// }
 export function useGetAllBriefs() {
   const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>(
     []
@@ -295,46 +184,51 @@ export function useGetAllBriefs() {
   } = useGetAllId();
 
   // Then fetch details for each brief
-  const fetchAllBriefDetails = useCallback(async (ids: `0x${string}`[]) => {
-  if (!publicClient) {
-    setError(new Error("Public client not available"));
-    return;
-  }
+  const fetchAllBriefDetails = useCallback(
+    async (ids: `0x${string}`[]) => {
+      if (!publicClient) {
+        setError(new Error("Public client not available"));
+        return;
+      }
 
-  setIsLoading(true);
-  setError(null);
-  
-  try {
-    const results = await Promise.all(
-      ids.map(async (id) => {
-        try {
-          const result = await publicClient.readContract({
-            address: CONTRACT_ADDRESS,
-            abi: ABI.abi,
-            functionName: "briefs",
-            args: [id],
-          });
+      setIsLoading(true);
+      setError(null);
 
-          // Handle the array response properly
-          if (Array.isArray(result)) {
-            return formatBriefData(id, result);
-          }
-          return null;
-        } catch (err) {
-          console.error(`Error fetching brief ${id}:`, err);
-          return null;
-        }
-      })
-    );
+      try {
+        const results = await Promise.all(
+          ids.map(async (id) => {
+            try {
+              const result = await publicClient.readContract({
+                address: CONTRACT_ADDRESS,
+                abi: ABI.abi,
+                functionName: "briefs",
+                args: [id],
+              });
 
-    setProcessedBriefs(results.filter((brief): brief is FormattedBriefData => brief !== null));
-  } catch (err) {
-    console.error("Error fetching brief details:", err);
-    setError(err as Error);
-  } finally {
-    setIsLoading(false);
-  }
-}, [publicClient]);
+              // Handle the array response properly
+              if (Array.isArray(result)) {
+                return formatBriefData(id, result);
+              }
+              return null;
+            } catch (err) {
+              console.error(`Error fetching brief ${id}:`, err);
+              return null;
+            }
+          })
+        );
+
+        setProcessedBriefs(
+          results.filter((brief): brief is FormattedBriefData => brief !== null)
+        );
+      } catch (err) {
+        console.error("Error fetching brief details:", err);
+        setError(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [publicClient]
+  );
   useEffect(() => {
     if (briefIds && !isLoadingIds) {
       fetchAllBriefDetails(briefIds as `0x${string}`[]);
@@ -381,12 +275,6 @@ export function useGetAllBriefs() {
     error: idError || error,
   };
 }
-
-
-
-
-
-
 
 // Get user profile
 export function useUserProfile(userAddress?: Address) {
