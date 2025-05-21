@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback ,useMemo} from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   useReadContract,
   useWriteContract,
@@ -7,11 +7,9 @@ import {
   usePublicClient,
 } from "wagmi";
 import { parseUnits, Hex } from "viem";
-import { cUSDContractConfig } from "../lib/contracts";
+import { cUSDContractConfig, CONTRACT_ADDRESS } from "../lib/contracts";
 import { formatEther } from "viem";
 import ABI from "../lib/AdsBazaar.json";
-
-const CONTRACT_ADDRESS = "0xe0F5Aeb011C4B8e5C0A5A10611b3Aa57ab4Bf56F";
 
 type Status = "OPEN" | "ASSIGNED" | "COMPLETED" | "CANCELLED";
 type TargetAudience =
@@ -135,24 +133,25 @@ function useHandleTransaction() {
     writeContract,
     isPending: isWritePending,
     data: hash,
+    error: writeError,
   } = useWriteContract();
+
   const {
     isLoading: isConfirming,
     isSuccess,
-    isError,
-    error,
-  } = useWaitForTransactionReceipt({
-    hash,
-  });
+    isError: isReceiptError,
+    error: receiptError,
+  } = useWaitForTransactionReceipt({ hash });
 
   const isPending = isWritePending || isConfirming;
+  const error = writeError || receiptError;
 
   return {
     writeContract,
     hash,
     isPending,
     isSuccess,
-    isError,
+    isError: isReceiptError || (hash && !isSuccess && !isConfirming),
     error,
   };
 }
@@ -301,9 +300,10 @@ export function useGetBusinessBriefIds(businessAddress: `0x${string}`) {
   };
 }
 
-
 export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
-  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>([]);
+  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const publicClient = usePublicClient();
@@ -411,7 +411,6 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
     error: idError || error,
   };
 }
-
 
 // Get user profile
 export function useUserProfile(userAddress?: Address) {
@@ -828,7 +827,7 @@ export function useCreateAdBrief() {
   };
 }
 
-// Cancel ad brief
+//Cancel ad brief
 export function useCancelAdBrief() {
   const tx = useHandleTransaction();
   const { address } = useAccount();
