@@ -30,7 +30,7 @@ import {
   useCancelAdBrief,
   useSelectInfluencer,
   useCompleteCampaign,
-  useGetBusinessBriefs
+  useGetBusinessBriefs,
 } from "../../hooks/adsBazaar";
 
 const BrandDashboard = () => {
@@ -51,21 +51,22 @@ const BrandDashboard = () => {
     targetAudience: "0", // Default target audience (0 = General)
     verificationPeriod: "86400", // 1 day in seconds
   });
-  
-  const { cancelBrief, isPending: isCancellingBrief, isSuccess: isCancelSuccess } = useCancelAdBrief();
+
+  const {
+    cancelBrief,
+    isPending: isCancellingBrief,
+    isSuccess: isCancelSuccess,
+  } = useCancelAdBrief();
 
   // Get user profile data
   const { userProfile, isLoadingProfile } = useUserProfile();
-  
+
   // Get all briefs created by this business
   const { briefs, isLoading, isError } = useGetBusinessBriefs(address);
-  
+
   // Get applications for the selected brief
-  const { 
-    applications, 
-    isLoadingApplications, 
-    refetchApplications 
-  } = useBriefApplications(selectedBrief?.id || "0x0");
+  const { applications, isLoadingApplications, refetchApplications } =
+    useBriefApplications(selectedBrief?.id || "0x0");
 
   // Contract interaction hooks
   const {
@@ -98,7 +99,7 @@ const BrandDashboard = () => {
       0: "OPEN",
       1: "ASSIGNED",
       2: "COMPLETED",
-      3: "CANCELLED"
+      3: "CANCELLED",
     };
     return statusMap[statusCode] || "UNKNOWN";
   };
@@ -126,7 +127,9 @@ const BrandDashboard = () => {
 
     if (isSelectError) {
       toast.error(
-        `Failed to select influencer: ${selectError?.message || "Unknown error"}`
+        `Failed to select influencer: ${
+          selectError?.message || "Unknown error"
+        }`
       );
     }
   }, [isSelectSuccess, isSelectError, selectError, refetchApplications]);
@@ -139,28 +142,33 @@ const BrandDashboard = () => {
 
     if (isCompleteError) {
       toast.error(
-        `Failed to complete campaign: ${completeError?.message || "Unknown error"}`
+        `Failed to complete campaign: ${
+          completeError?.message || "Unknown error"
+        }`
       );
     }
   }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications]);
 
   // Calculate stats from real data
-  const activeBriefs = briefs ? briefs.filter(
-    (brief) => brief.status === 0 || brief.status === 1
-  ) : [];
-  
-  const completedBriefs = briefs ? briefs.filter(
-    (brief) => brief.status === 2
-  ) : [];
-  
-  const totalBudget = briefs ? briefs.reduce(
-    (sum, brief) => sum + Number(brief.budget), 0
-  ) : 0;
+  const activeBriefs = briefs
+    ? briefs.filter((brief) => brief.status === 0 || brief.status === 1)
+    : [];
+
+  const completedBriefs = briefs
+    ? briefs.filter((brief) => brief.status === 2)
+    : [];
+
+  const totalBudget = briefs
+    ? briefs.reduce((sum, brief) => sum + Number(brief.budget), 0)
+    : 0;
 
   // Get total influencers from selected influencers
-  const totalInfluencers = briefs ? briefs.reduce(
-    (sum, brief) => sum + Number(brief.selectedInfluencersCount), 0
-  ) : 0;
+  const totalInfluencers = briefs
+    ? briefs.reduce(
+        (sum, brief) => sum + Number(brief.selectedInfluencersCount),
+        0
+      )
+    : 0;
 
   // Form validation function
   const isFormValid = () => {
@@ -381,14 +389,18 @@ const BrandDashboard = () => {
                               <span className="flex items-center">
                                 <Calendar size={12} className="mr-1" />
                                 {format(
-                                  new Date(Number(brief.applicationDeadline) * 1000),
+                                  new Date(
+                                    Number(brief.applicationDeadline) * 1000
+                                  ),
                                   "MMM d, yyyy"
                                 )}
                               </span>
                               <span className="flex items-center">
                                 <Clock size={12} className="mr-1" />
                                 {Math.ceil(
-                                  (new Date(Number(brief.applicationDeadline) * 1000) -
+                                  (new Date(
+                                    Number(brief.applicationDeadline) * 1000
+                                  ) -
                                     new Date()) /
                                     (1000 * 60 * 60 * 24)
                                 )}{" "}
@@ -403,8 +415,7 @@ const BrandDashboard = () => {
                       </div>
                       <div className="text-sm md:text-base text-gray-900">
                         {(0).toLocaleString()} /{" "}
-                        {Number(brief.budget).toLocaleString()}{" "}
-                        cUSD
+                        {Number(brief.budget).toLocaleString()} cUSD
                         <div className="text-xs text-gray-500">
                           {Math.round((0 / Number(brief.budget)) * 100)}% spent
                         </div>
@@ -414,7 +425,8 @@ const BrandDashboard = () => {
                         <div className="flex gap-3">
                           <span className="flex items-center">
                             <Users size={14} className="mr-1" />
-                            {brief.selectedInfluencersCount}/{Number(brief.maxInfluencers)} influencers
+                            {brief.selectedInfluencersCount}/
+                            {Number(brief.maxInfluencers)} influencers
                           </span>
                           <span className="flex items-center">
                             <BarChart2 size={14} className="mr-1" />0
@@ -467,8 +479,6 @@ const BrandDashboard = () => {
           selectedBrief={selectedBrief}
           applications={applications || []}
           isLoadingApplications={isLoadingApplications}
-          isSelectingInfluencer={isSelectingInfluencer}
-          onAssignInfluencer={handleAssignInfluencer}
           onClose={() => setShowApplicationsModal(false)}
         />
       )}
