@@ -23,7 +23,7 @@ export const CreateCampaignModal = ({
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto">
-        <h2 className="text-lg font-medium mb-4">Create Campaign</h2>
+        <h2 className="text-lg font-medium mb-4 text-black">Create Campaign</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -35,7 +35,7 @@ export const CreateCampaignModal = ({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="mt-1 block w-full border border-gray-300 rounded-md p-2 text-sm"
+              className="mt-1 block w-full border border-gray-300 text-black rounded-md p-2 text-sm"
               required
             />
           </div>

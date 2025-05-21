@@ -373,6 +373,8 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
     briefId: `0x${string}`,
     rawData: any[]
   ): FormattedBriefData | null => {
+    console.log("rawData", rawData);
+
     try {
       // Ensure rawData is an array with enough elements
       if (!Array.isArray(rawData) || rawData.length < 13) {
