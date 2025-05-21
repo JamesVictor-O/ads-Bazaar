@@ -33,6 +33,7 @@ import {
   useCancelAdBrief,
   useSelectInfluencer,
   useCompleteCampaign,
+  useGetBusinessBriefs
 } from "../../hooks/adsBazaar";
 
 const BrandDashboard = () => {
@@ -61,15 +62,11 @@ const BrandDashboard = () => {
 
   // Get user profile data
   const { userProfile, isLoadingProfile } = useUserProfile();
+  const {briefs}=useGetBusinessBriefs(address);
 
   // Get all briefs created by this business
-  const {
-    briefs,
-    isLoading: isLoadingBriefs,
-    error: briefsError,
-    refetch: refetchBriefs,
-  } = useBusinessBriefs();
-
+ 
+ console.log("Briefs data:", briefs);
   // Get applications for the selected brief
   const { applications, isLoadingApplications, refetchApplications } =
     useBriefApplications(selectedBrief?.briefId || "0x0");
@@ -128,7 +125,7 @@ const BrandDashboard = () => {
         `Failed to create campaign: ${createError?.message || "Unknown error"}`
       );
     }
-  }, [isCreateSuccess, isCreateError, createError, refetchBriefs, router]);
+  }, [isCreateSuccess, isCreateError, createError,  router]);
 
   useEffect(() => {
     if (isSelectSuccess) {
@@ -163,7 +160,6 @@ const BrandDashboard = () => {
     isCompleteSuccess,
     isCompleteError,
     completeError,
-    refetchBriefs,
     refetchApplications,
   ]);
 
@@ -288,31 +284,7 @@ const BrandDashboard = () => {
     }
   };
 
-  if (briefsError) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center p-8 max-w-md">
-          <h2 className="text-2xl font-bold mb-4">Error Loading Briefs</h2>
-          <p className="mb-6">{briefsError.message}</p>
-          <button
-            onClick={() => refetchBriefs()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
 
-  // If still loading, show a loading state
-  if (isLoadingProfile || isLoadingBriefs) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
 
   // If user is not registered or not a business, show a message
   if (!userProfile?.isRegistered || !userProfile?.isBusiness) {
