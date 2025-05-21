@@ -16,9 +16,6 @@ import {
   Plus,
   Calendar,
   Clock,
-  Tag,
-  Globe,
-  Link as LinkIcon,
   CheckCircle,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -33,6 +30,7 @@ import {
   useCancelAdBrief,
   useSelectInfluencer,
   useCompleteCampaign,
+  useGetBusinessBriefs
 } from "../../hooks/adsBazaar";
 
 const BrandDashboard = () => {
@@ -53,26 +51,21 @@ const BrandDashboard = () => {
     targetAudience: "0", // Default target audience (0 = General)
     verificationPeriod: "86400", // 1 day in seconds
   });
-  const {
-    cancelBrief,
-    isPending: isCancellingBrief,
-    isSuccess: isCancelSuccess,
-  } = useCancelAdBrief();
+  
+  const { cancelBrief, isPending: isCancellingBrief, isSuccess: isCancelSuccess } = useCancelAdBrief();
 
   // Get user profile data
   const { userProfile, isLoadingProfile } = useUserProfile();
-
+  
   // Get all briefs created by this business
-  const {
-    briefs,
-    isLoading: isLoadingBriefs,
-    error: briefsError,
-    refetch: refetchBriefs,
-  } = useBusinessBriefs();
-
+  const { briefs, isLoading, isError } = useGetBusinessBriefs(address);
+  
   // Get applications for the selected brief
-  const { applications, isLoadingApplications, refetchApplications } =
-    useBriefApplications(selectedBrief?.briefId || "0x0");
+  const { 
+    applications, 
+    isLoadingApplications, 
+    refetchApplications 
+  } = useBriefApplications(selectedBrief?.id || "0x0");
 
   // Contract interaction hooks
   const {
@@ -99,27 +92,22 @@ const BrandDashboard = () => {
     error: completeError,
   } = useCompleteCampaign();
 
-  // Get total influencers from applications that are selected
-  const totalInfluencers = briefs?.reduce((sum, brief) => {
-    const briefApplications =
-      applications?.filter((app) => app.isSelected) || [];
-    return sum + briefApplications.length;
-  }, 0);
-
-  useEffect(() => {
-    if (briefs) {
-      console.log("Raw briefs data:", briefs);
-      console.log("Formatted briefs:", briefs.map(formatBriefData));
-    }
-  }, [briefs]);
+  // Map status codes to readable strings
+  const getStatusString = (statusCode) => {
+    const statusMap = {
+      0: "OPEN",
+      1: "ASSIGNED",
+      2: "COMPLETED",
+      3: "CANCELLED"
+    };
+    return statusMap[statusCode] || "UNKNOWN";
+  };
 
   // Effects for transaction states
   useEffect(() => {
     if (isCreateSuccess) {
       toast.success("Campaign created successfully!");
       setShowCreateModal(false);
-      console.log("Triggering refetch of briefs after create success");
-      refetchBriefs();
       router.push("/brandsDashBoard");
     }
 
@@ -128,7 +116,7 @@ const BrandDashboard = () => {
         `Failed to create campaign: ${createError?.message || "Unknown error"}`
       );
     }
-  }, [isCreateSuccess, isCreateError, createError, refetchBriefs, router]);
+  }, [isCreateSuccess, isCreateError, createError, router]);
 
   useEffect(() => {
     if (isSelectSuccess) {
@@ -138,9 +126,7 @@ const BrandDashboard = () => {
 
     if (isSelectError) {
       toast.error(
-        `Failed to select influencer: ${
-          selectError?.message || "Unknown error"
-        }`
+        `Failed to select influencer: ${selectError?.message || "Unknown error"}`
       );
     }
   }, [isSelectSuccess, isSelectError, selectError, refetchApplications]);
@@ -148,79 +134,33 @@ const BrandDashboard = () => {
   useEffect(() => {
     if (isCompleteSuccess) {
       toast.success("Campaign completed and funds released successfully!");
-      refetchBriefs();
       refetchApplications();
     }
 
     if (isCompleteError) {
       toast.error(
-        `Failed to complete campaign: ${
-          completeError?.message || "Unknown error"
-        }`
+        `Failed to complete campaign: ${completeError?.message || "Unknown error"}`
       );
     }
-  }, [
-    isCompleteSuccess,
-    isCompleteError,
-    completeError,
-    refetchBriefs,
-    refetchApplications,
-  ]);
-
-  // Convert blockchain data to a more readable format
-  const formatBriefData = (brief) => {
-    const statusMap = {
-      OPEN: "active",
-      ASSIGNED: "active",
-      COMPLETED: "completed",
-      CANCELLED: "cancelled",
-    };
-    return {
-      ...brief,
-      id: brief.briefId,
-      name: brief.name,
-      status: statusMap[brief.status] || "active",
-      spent: 0, // This would need to be calculated based on approved payments
-      budget: Number(brief.budget) / 10 ** 18, // Convert from wei to cUSD
-      impressions: 0, // This would need to be tracked separately
-      clicks: 0, // This would need to be tracked separately
-      engagement: 0, // This would need to be tracked separately
-      influencers: 0, // Will be updated from applications
-      maxInfluencers: Number(brief.maxInfluencers),
-      endDate: new Date(Number(brief.applicationDeadline) * 1000),
-      isActive: brief.status === "ASSIGNED",
-      isCompleted: brief.status === "COMPLETED",
-      isCancelled: brief.status === "CANCELLED",
-      applicationDeadline: brief.applicationDeadline,
-      promotionDuration: brief.promotionDuration,
-      promotionStartTime: brief.promotionStartTime,
-      promotionEndTime: brief.promotionEndTime,
-      verificationDeadline: brief.verificationDeadline,
-    };
-  };
+  }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications]);
 
   // Calculate stats from real data
-  const formattedBriefs = briefs?.map(formatBriefData) || [];
-  const activeBriefs =
-    briefs?.filter(
-      (brief) => brief.status === "OPEN" || brief.status === "ASSIGNED"
-    ) || [];
+  const activeBriefs = briefs ? briefs.filter(
+    (brief) => brief.status === 0 || brief.status === 1
+  ) : [];
+  
+  const completedBriefs = briefs ? briefs.filter(
+    (brief) => brief.status === 2
+  ) : [];
+  
+  const totalBudget = briefs ? briefs.reduce(
+    (sum, brief) => sum + Number(brief.budget), 0
+  ) : 0;
 
-  const completedBriefs = formattedBriefs.filter(
-    (brief) => brief.status === "completed"
-  );
-  const totalBudget =
-    briefs?.reduce((sum, brief) => sum + Number(brief.budget) / 10 ** 18, 0) ||
-    0;
-
-  // Update influencer counts for each brief
-  const briefsWithInfluencerCounts = activeBriefs.map((brief) => {
-    const briefApplications =
-      applications?.filter((app) => app.isSelected) || [];
-    const formatted = formatBriefData(brief);
-    formatted.influencers = briefApplications.length;
-    return formatted;
-  });
+  // Get total influencers from selected influencers
+  const totalInfluencers = briefs ? briefs.reduce(
+    (sum, brief) => sum + Number(brief.selectedInfluencersCount), 0
+  ) : 0;
 
   // Form validation function
   const isFormValid = () => {
@@ -233,7 +173,6 @@ const BrandDashboard = () => {
   };
 
   const handleCreateCampaign = async () => {
-    // Form validation is now handled by the isFormValid function
     if (!isFormValid()) {
       toast.error("Please fill in all required fields");
       return;
@@ -287,32 +226,6 @@ const BrandDashboard = () => {
       );
     }
   };
-
-  if (briefsError) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center p-8 max-w-md">
-          <h2 className="text-2xl font-bold mb-4">Error Loading Briefs</h2>
-          <p className="mb-6">{briefsError.message}</p>
-          <button
-            onClick={() => refetchBriefs()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // If still loading, show a loading state
-  if (isLoadingProfile || isLoadingBriefs) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
 
   // If user is not registered or not a business, show a message
   if (!userProfile?.isRegistered || !userProfile?.isBusiness) {
@@ -442,102 +355,96 @@ const BrandDashboard = () => {
             </button>
           </div>
           <div className="bg-white shadow rounded-md">
-            {activeBriefs.length === 0 ? (
+            {isLoading ? (
+              <div className="p-8 text-center text-gray-500">
+                <p>Loading campaigns...</p>
+              </div>
+            ) : activeBriefs.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <p>No active campaigns. Create one to get started!</p>
               </div>
             ) : (
               <ul className="divide-y divide-gray-200">
-                {activeBriefs.map((brief) => {
-                  const formattedBrief = formatBriefData(brief);
-                  return (
-                    <li key={brief.briefId} className="p-4">
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                              <Briefcase className="h-4 w-4 text-indigo-600" />
+                {activeBriefs.map((brief) => (
+                  <li key={brief.id} className="p-4">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                            <Briefcase className="h-4 w-4 text-indigo-600" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium md:text-base text-gray-900">
+                              {brief.title}
                             </div>
-                            <div>
-                              <div className="text-sm font-medium md:text-base text-gray-900">
-                                {brief.name}
-                              </div>
-                              <div className="text-xs md:text-base text-gray-500 flex flex-wrap gap-2">
-                                <span className="flex items-center">
-                                  <Calendar size={12} className="mr-1" />
-                                  {format(
-                                    new Date(
-                                      Number(brief.applicationDeadline) * 1000
-                                    ),
-                                    "MMM d, yyyy"
-                                  )}
-                                </span>
-                                <span className="flex items-center">
-                                  <Clock size={12} className="mr-1" />
-                                  {Math.ceil(
-                                    (new Date(
-                                      Number(brief.applicationDeadline) * 1000
-                                    ) -
-                                      new Date()) /
-                                      (1000 * 60 * 60 * 24)
-                                  )}{" "}
-                                  days left
-                                </span>
-                              </div>
+                            <div className="text-xs md:text-base text-gray-500 flex flex-wrap gap-2">
+                              <span className="flex items-center">
+                                <Calendar size={12} className="mr-1" />
+                                {format(
+                                  new Date(Number(brief.applicationDeadline) * 1000),
+                                  "MMM d, yyyy"
+                                )}
+                              </span>
+                              <span className="flex items-center">
+                                <Clock size={12} className="mr-1" />
+                                {Math.ceil(
+                                  (new Date(Number(brief.applicationDeadline) * 1000) -
+                                    new Date()) /
+                                    (1000 * 60 * 60 * 24)
+                                )}{" "}
+                                days left
+                              </span>
                             </div>
                           </div>
-                          <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                            Active
-                          </span>
                         </div>
-                        <div className="text-sm md:text-base text-gray-900">
-                          {(0).toLocaleString()} /{" "}
-                          {(Number(brief.budget) / 10 ** 18).toLocaleString()}{" "}
-                          cUSD
-                          <div className="text-xs text-gray-500">
-                            {Math.round(
-                              (0 / (Number(brief.budget) / 10 ** 18)) * 100
-                            )}
-                            % spent
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-500 gap-2">
-                          <div className="flex gap-3">
-                            <span className="flex items-center">
-                              <Users size={14} className="mr-1" />
-                              0/{Number(brief.maxInfluencers)} influencers
-                            </span>
-                            <span className="flex items-center">
-                              <BarChart2 size={14} className="mr-1" />0
-                              impressions
-                            </span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setSelectedBrief(brief);
-                                setShowApplicationsModal(true);
-                              }}
-                              className="text-white bg-indigo-600 p-2 rounded hover:bg-indigo-700 hover:text-white font-medium"
-                            >
-                              Applications
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedBrief(brief);
-                                setShowSubmissionsModal(true);
-                              }}
-                              className="text-white bg-indigo-600 p-2 rounded hover:bg-indigo-700 hover:text-white font-medium"
-                            >
-                              Submissions
-                            </button>
-                          </div>
+                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                          {getStatusString(brief.status)}
+                        </span>
+                      </div>
+                      <div className="text-sm md:text-base text-gray-900">
+                        {(0).toLocaleString()} /{" "}
+                        {Number(brief.budget).toLocaleString()}{" "}
+                        cUSD
+                        <div className="text-xs text-gray-500">
+                          {Math.round((0 / Number(brief.budget)) * 100)}% spent
                         </div>
                       </div>
-                    </li>
-                  );
-                })}
+
+                      <div className="flex flex-col sm:flex-row justify-between text-xs text-gray-500 gap-2">
+                        <div className="flex gap-3">
+                          <span className="flex items-center">
+                            <Users size={14} className="mr-1" />
+                            {brief.selectedInfluencersCount}/{Number(brief.maxInfluencers)} influencers
+                          </span>
+                          <span className="flex items-center">
+                            <BarChart2 size={14} className="mr-1" />0
+                            impressions
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedBrief(brief);
+                              setShowApplicationsModal(true);
+                            }}
+                            className="text-white bg-indigo-600 p-2 rounded hover:bg-indigo-700 hover:text-white font-medium"
+                          >
+                            Applications
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedBrief(brief);
+                              setShowSubmissionsModal(true);
+                            }}
+                            className="text-white bg-indigo-600 p-2 rounded hover:bg-indigo-700 hover:text-white font-medium"
+                          >
+                            Submissions
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
