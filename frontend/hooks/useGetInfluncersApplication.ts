@@ -2,19 +2,18 @@
 import { useState, useEffect, useCallback ,useMemo} from "react";
 import {
   useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
   useAccount,
   usePublicClient,
 } from "wagmi";
-import { parseUnits, Hex } from "viem";
-import { cUSDContractConfig } from "../lib/contracts";
+
+
+
 import { formatEther } from "viem";
 type Bytes32 = Hex;
 import ABI from "../lib/AdsBazaar.json";
 
 
-
+const CONTRACT_ADDRESS = "0xe0F5Aeb011C4B8e5C0A5A10611b3Aa57ab4Bf56F";
 export interface InfluencerApplication {
   influencer: string;
   message: string;
@@ -53,7 +52,6 @@ interface FormattedBriefData {
 }
 
 
-const CONTRACT_ADDRESS = "0xe0F5Aeb011C4B8e5C0A5A10611b3Aa57ab4Bf56F";
 // influncers applied brifes
 
 export function useGetInfluencerApplicationIds(influencerAddress: `0x${string}`) {
@@ -75,7 +73,7 @@ export function useGetInfluencerApplicationIds(influencerAddress: `0x${string}`)
 
 
 
-export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
+export function useGetInfluencerApplications(influencerAddress: `0x${string}`) { 
   const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>([]);
   const [applications, setApplications] = useState<InfluencerApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -119,7 +117,7 @@ export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
                 abi: ABI.abi,
                 functionName: "getBriefApplications",
                 args: [id],
-              });
+              }) as BriefApplications;
 
               // Find this influencer's application
               const influencerApp = applicationsResult.influencers
@@ -149,12 +147,17 @@ export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
         );
 
         const validResults = results.filter(
-          (result): result is { brief: FormattedBriefData; application: InfluencerApplication } => 
+          (result): result is { brief: FormattedBriefData; application: { influencer: string; message: string; timestamp: bigint; isSelected: boolean; hasClaimed: boolean; proofLink: string; isApproved: boolean; } } =>
             result !== null && result.application !== undefined
         );
 
         setProcessedBriefs(validResults.map(r => r.brief));
-        setApplications(validResults.map(r => r.application));
+        setApplications(
+          validResults.map(r => ({
+            ...r.application,
+            timestamp: Number(r.application.timestamp),
+          }))
+        );
       } catch (err) {
         console.error("Error fetching influencer applications:", err);
         setError(err as Error);

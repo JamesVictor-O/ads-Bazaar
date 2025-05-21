@@ -10,7 +10,6 @@ import {
   CheckCircle,
   Link as LinkIcon,
   Users,
-  ChevronRight,
   Copy,
   ExternalLink,
   AlertCircle,
@@ -30,6 +29,8 @@ import {
   useIsInfluencerVerified,
   useInfluencerApplications,
 } from "../../hooks/adsBazaar";
+
+import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
 
 export default function InfluencerDashboard() {
@@ -42,29 +43,22 @@ export default function InfluencerDashboard() {
   } = useProfile();
   const [isMounted, setIsMounted] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
-  const [campaigns, setCampaigns] = useState([]);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [postLink, setPostLink] = useState("");
   const [transactionHistory, setTransactionHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   // Get user profile data
   const { userProfile, isLoadingProfile } = useUserProfile();
 
   // Get verification status
   const { isVerified, isLoadingVerification } = useIsInfluencerVerified();
-
-  // Get all briefs
-  const {
-    data: allBriefs,
-    isLoading: isLoadingBriefs,
-    rawData,
-  } = useGetAllId();
-
-  // Get influencer applications
-  const { applicationIds, isLoadingApplications } = useInfluencerApplications();
+  
+  // Get dashboard data from the new hook
+  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } = useInfluencerDashboard();
+  console.log("appliedBriefs", appliedBriefs);
+  console.log("assignedBriefs", assignedBriefs);
 
   useEffect(() => {
     setIsMounted(true);
@@ -79,218 +73,115 @@ export default function InfluencerDashboard() {
     }
   }, [status, router]);
 
-  // Process applications and briefs when data is available
+  // Generate transaction history from assigned briefs with approved applications
   useEffect(() => {
-    const fetchCampaignData = async () => {
-      if (
-        !applicationIds ||
-        !rawData ||
-        isLoadingApplications ||
-        isLoadingBriefs
-      ) {
-        return;
-      }
+    if (assignedBriefs && assignedBriefs.length > 0) {
+      const txHistory = assignedBriefs
+        .filter((brief) => brief.application.isApproved && brief.application.hasClaimed)
+        .map((brief) => ({
+          id: brief.briefId,
+          type: "payment",
+          amount: Number(brief.brief.budget) / 1e18, // Convert from wei
+          from: brief.brief.business,
+          date: format(new Date(), "yyyy-MM-dd"),
+          txHash: `${brief.briefId.slice(0, 10)}...${brief.briefId.slice(-6)}`,
+          status: "confirmed",
+        }));
 
-      setLoading(true);
+      setTransactionHistory(txHistory);
+    }
+  }, [assignedBriefs]);
 
-      try {
-        // Filter out invalid applications first
-        const validApplications = applicationIds.filter(
-          (app) => app.briefId && !isNaN(Number(app.applicationIndex))
-        );
-
-        // Map applications to briefs
-        const campaignData = validApplications
-          .map((app) => {
-            const briefId = app.briefId;
-            const appIndex = Number(app.applicationIndex);
-
-            // Find the matching brief from all briefs
-            const matchingBrief = rawData.find((brief) => brief.id === briefId);
-
-            if (!matchingBrief) {
-              console.warn("Brief not found:", briefId);
-              return null;
-            }
-
-            // Check if applications array exists and has the correct index
-            if (
-              !matchingBrief.applications ||
-              !Array.isArray(matchingBrief.applications) ||
-              !matchingBrief.applications[appIndex]
-            ) {
-              console.warn("Invalid application index:", {
-                briefId,
-                appIndex,
-                applicationsLength: matchingBrief.applications?.length || 0,
-              });
-              return null;
-            }
-
-            // Get this influencer's application from the brief
-            const application = matchingBrief.applications[appIndex];
-
-            // Build campaign object with necessary data
-            return {
-              id: briefId,
-              appIndex: appIndex,
-              title: matchingBrief.title,
-              brand: matchingBrief.brand,
-              budget: Number(matchingBrief.budget) / 1e18, // Convert from wei
-              deadline: new Date(
-                Number(matchingBrief.deadline) * 1000
-              ).toISOString(),
-              status: getApplicationStatus(application),
-              tasks: [
-                {
-                  name: "Farcaster post",
-                  status: application.proofLink ? "completed" : "pending",
-                  postLink: application.proofLink || "",
-                },
-              ],
-              paymentStatus: application.hasClaimed
-                ? "paid"
-                : application.isApproved
-                ? "ready"
-                : "pending",
-              contractAddress:
-                matchingBrief.id.slice(0, 10) +
-                "..." +
-                matchingBrief.id.slice(-6),
-              application: application,
-            };
-          })
-          .filter(Boolean); // Remove any null entries
-
-        // Sort campaigns by deadline
-        campaignData.sort(
-          (a, b) => new Date(a.deadline) - new Date(b.deadline)
-        );
-
-        setCampaigns(campaignData);
-
-        // Generate transaction history from paid campaigns
-        const txHistory = campaignData
-          .filter((camp) => camp.paymentStatus === "paid")
-          .map((camp) => ({
-            id: camp.id,
-            type: "payment",
-            amount: camp.budget,
-            from: camp.brand,
-            date: format(new Date(), "yyyy-MM-dd"),
-            txHash: `${camp.id.slice(0, 10)}...${camp.id.slice(-6)}`,
-            status: "confirmed",
-          }));
-
-        setTransactionHistory(txHistory);
-      } catch (err) {
-        console.error("Error processing campaign data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCampaignData();
-  }, [applicationIds, rawData, isLoadingApplications, isLoadingBriefs]);
-
-  const getApplicationStatus = (application) => {
-    if (application.isApproved) return "approved";
-    if (application.isSelected) return "selected";
-    return "pending";
-  };
-
-  const handleSubmitPost = (campaignId, taskName) => {
-    // Here you would typically call a contract function to submit proof
-    // For now, just update the UI
-    setCampaigns((prev) =>
-      prev.map((campaign) =>
-        campaign.id === campaignId
-          ? {
-              ...campaign,
-              tasks: campaign.tasks.map((task) =>
-                task.name === taskName
-                  ? { ...task, status: "completed", postLink }
-                  : task
-              ),
-            }
-          : campaign
-      )
-    );
+  const handleSubmitPost = (briefId, taskName) => {
+    // Update the application with the proof link
+    console.log("Submitting proof link:", postLink, "for brief:", briefId);
+    
+    // Here you would call your contract function to submit the proof
+    // For example:
+    // submitProof(briefId, postLink);
+    
+    // For now, just close the modal
     setShowSubmitModal(false);
     setPostLink("");
+    
+    // Refresh data after submission
+    refetch();
   };
 
-  const simulateFundRelease = (campaignId) => {
-    // Here you would typically call a contract function to claim funds
-    setCampaigns((prev) =>
-      prev.map((campaign) =>
-        campaign.id === campaignId
-          ? { ...campaign, paymentStatus: "paid" }
-          : campaign
-      )
-    );
-
-    const campaign = campaigns.find((c) => c.id === campaignId);
-
-    setTransactionHistory((prev) => [
-      ...prev,
-      {
-        id: prev.length + 1,
-        type: "payment",
-        amount: campaign.budget,
-        from: campaign.brand,
-        date: format(new Date(), "yyyy-MM-dd"),
-        txHash: `${campaignId.slice(0, 10)}...${campaignId.slice(-6)}`,
-        status: "confirmed",
-      },
-    ]);
+  const handleClaimFunds = (briefId) => {
+    console.log("Claiming funds for brief:", briefId);
+    
+    // Here you would call your contract function to claim funds
+    // For example:
+    // claimFunds(briefId);
+    
+    // Refresh data after claiming
+    refetch();
   };
 
-  const getTaskStatusIcon = (status) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle size={16} className="text-green-500" />;
-      case "pending":
-        return <AlertCircle size={16} className="text-gray-400" />;
-      default:
-        return null;
+  const getTaskStatusIcon = (application) => {
+    if (application.proofLink) {
+      return <CheckCircle size={16} className="text-green-500" />;
+    }
+    return <AlertCircle size={16} className="text-gray-400" />;
+  };
+
+  const getStatusBadge = (application) => {
+    if (application.isApproved) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <CheckSquare size={12} className="mr-1" />
+          Approved
+        </span>
+      );
+    } else if (application.isSelected) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <CheckCircle size={12} className="mr-1" />
+          Selected
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <Clock3 size={12} className="mr-1" />
+          Pending
+        </span>
+      );
     }
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "approved":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckSquare size={12} className="mr-1" />
-            Approved
-          </span>
-        );
-      case "selected":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            <CheckCircle size={12} className="mr-1" />
-            Selected
-          </span>
-        );
-      case "rejected":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <X size={12} className="mr-1" />
-            Rejected
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <Clock3 size={12} className="mr-1" />
-            Pending
-          </span>
-        );
+  const getPaymentStatus = (application) => {
+    if (application.hasClaimed) {
+      return {
+        label: "Paid",
+        classes: "bg-green-100 text-green-800"
+      };
+    } else if (application.isApproved) {
+      return {
+        label: "Ready to Claim",
+        classes: "bg-blue-100 text-blue-800"
+      };
+    } else {
+      return {
+        label: "Pending",
+        classes: "bg-yellow-100 text-yellow-800"
+      };
     }
   };
 
-  if (!isMounted || status === "loading" || loading) {
+  // Calculate total earnings
+  const totalEarned = transactionHistory.reduce((sum, tx) => sum + tx.amount, 0);
+
+  // Calculate potential earnings
+  const potentialEarnings = assignedBriefs
+    ? assignedBriefs
+        .filter(b => b.application.isSelected || b.application.isApproved)
+        .filter(b => !b.application.hasClaimed)
+        .reduce((sum, b) => sum + (Number(b.brief.budget) / 1e18), 0)
+    : 0;
+
+  if (!isMounted || status === "loading" || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="text-center">
@@ -315,6 +206,25 @@ export default function InfluencerDashboard() {
               Register as Influencer
             </button>
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // If error occurred while fetching data
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="text-center p-8 max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">Error Loading Dashboard</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={refetch} 
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -363,7 +273,7 @@ export default function InfluencerDashboard() {
             <div className="ml-3">
               <p className="text-xs font-medium text-gray-500">Applications</p>
               <p className="text-lg font-semibold text-gray-900">
-                {campaigns.length}
+                {appliedBriefs?.length || 0}
               </p>
             </div>
           </div>
@@ -374,11 +284,7 @@ export default function InfluencerDashboard() {
             <div className="ml-3">
               <p className="text-xs font-medium text-gray-500">Selected</p>
               <p className="text-lg font-semibold text-gray-900">
-                {
-                  campaigns.filter(
-                    (c) => c.status === "selected" || c.status === "approved"
-                  ).length
-                }
+                {assignedBriefs?.length || 0}
               </p>
             </div>
           </div>
@@ -389,10 +295,7 @@ export default function InfluencerDashboard() {
             <div className="ml-3">
               <p className="text-xs font-medium text-gray-500">Total Earned</p>
               <p className="text-lg font-semibold text-gray-900">
-                {transactionHistory
-                  .reduce((sum, tx) => sum + tx.amount, 0)
-                  .toFixed(2)}{" "}
-                cUSD
+                {totalEarned.toFixed(2)} cUSD
               </p>
             </div>
           </div>
@@ -405,14 +308,7 @@ export default function InfluencerDashboard() {
                 Potential Earnings
               </p>
               <p className="text-lg font-semibold text-gray-900">
-                {campaigns
-                  .filter(
-                    (c) => c.status === "selected" || c.status === "approved"
-                  )
-                  .filter((c) => c.paymentStatus !== "paid")
-                  .reduce((sum, c) => sum + c.budget, 0)
-                  .toFixed(2)}{" "}
-                cUSD
+                {potentialEarnings.toFixed(2)} cUSD
               </p>
             </div>
           </div>
@@ -429,7 +325,7 @@ export default function InfluencerDashboard() {
             </button>
           </div>
 
-          {campaigns.length === 0 ? (
+          {(!appliedBriefs || appliedBriefs.length === 0) ? (
             <div className="bg-white shadow rounded-lg p-8 text-center">
               <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -446,78 +342,88 @@ export default function InfluencerDashboard() {
             </div>
           ) : (
             <div className="space-y-4">
-              {campaigns.map((campaign) => (
-                <div
-                  key={campaign.id}
-                  className="bg-white shadow rounded-lg p-4"
-                >
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-medium text-gray-900">
-                            {campaign.title}
-                          </h3>
-                          {getStatusBadge(campaign.status)}
+              {appliedBriefs.map((brief) => {
+                // Convert deadlines and calculate human-readable time remaining
+                const applicationDeadline = Number(brief.brief.applicationDeadline) * 1000;
+                const verificationDeadline = Number(brief.brief.verificationDeadline) * 1000;
+                
+                const paymentStatus = getPaymentStatus(brief.application);
+                const budget = Number(brief.brief.budget) / 1e18; // Convert from wei
+                
+                return (
+                  <div
+                    key={brief.briefId}
+                    className="bg-white shadow rounded-lg p-4"
+                  >
+                    <div className="flex flex-col gap-3">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-medium text-gray-900">
+                              {brief.brief.name}
+                            </h3>
+                            {getStatusBadge(brief.application)}
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {brief.brief.business}
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-500">
-                          {campaign.brand}
-                        </p>
+                        <span className="text-sm font-medium text-gray-900">
+                          {budget.toFixed(2)} cUSD
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">
-                        {campaign.budget.toFixed(2)} cUSD
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 flex flex-wrap gap-2">
-                      <span className="flex items-center">
-                        <Calendar size={12} className="mr-1" />
-                        {format(new Date(campaign.deadline), "MMM d, yyyy")}
-                      </span>
-                      <span className="flex items-center">
-                        <Clock size={12} className="mr-1" />
-                        {formatDistanceToNow(new Date(campaign.deadline), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      <span className="flex items-center">
-                        Contract:{" "}
-                        <a
-                          href="#"
-                          className="ml-1 text-indigo-600 hover:underline truncate"
-                        >
-                          {campaign.contractAddress}
-                        </a>
-                        <button className="ml-1 text-gray-400 hover:text-indigo-600">
-                          <Copy size={12} />
-                        </button>
-                        <a
-                          href="#"
-                          className="ml-1 text-gray-400 hover:text-indigo-600"
-                        >
-                          <ExternalLink size={12} />
-                        </a>
-                      </span>
-                    </div>
-
-                    {/* Only show tasks for selected applications */}
-                    {(campaign.status === "selected" ||
-                      campaign.status === "approved") && (
-                      <div className="space-y-2">
-                        {campaign.tasks.map((task, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between text-sm"
+                      <div className="text-xs text-gray-500 flex flex-wrap gap-2">
+                        <span className="flex items-center">
+                          <Calendar size={12} className="mr-1" />
+                          {format(new Date(applicationDeadline), "MMM d, yyyy")}
+                        </span>
+                        <span className="flex items-center">
+                          <Clock size={12} className="mr-1" />
+                          {formatDistanceToNow(new Date(applicationDeadline), {
+                            addSuffix: true,
+                          })}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        <span className="flex items-center">
+                          Contract:{" "}
+                          <a
+                            href={`https://explorer.celo.org/address/${brief.briefId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-1 text-indigo-600 hover:underline truncate"
                           >
+                            {`${brief.briefId.slice(0, 10)}...${brief.briefId.slice(-6)}`}
+                          </a>
+                          <button 
+                            className="ml-1 text-gray-400 hover:text-indigo-600"
+                            onClick={() => navigator.clipboard.writeText(brief.briefId)}
+                          >
+                            <Copy size={12} />
+                          </button>
+                          <a
+                            href={`https://explorer.celo.org/address/${brief.briefId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-1 text-gray-400 hover:text-indigo-600"
+                          >
+                            <ExternalLink size={12} />
+                          </a>
+                        </span>
+                      </div>
+
+                      {/* Only show tasks for selected applications */}
+                      {brief.application.isSelected && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
                             <div className="flex items-center">
-                              {getTaskStatusIcon(task.status)}
-                              <span className="ml-2 text-xs">{task.name}</span>
+                              {getTaskStatusIcon(brief.application)}
+                              <span className="ml-2 text-xs">Farcaster post</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              {task.status === "completed" && task.postLink ? (
+                              {brief.application.proofLink ? (
                                 <a
-                                  href={task.postLink}
+                                  href={brief.application.proofLink}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-white bg-indigo-600 p-2 rounded hover:text-gray-200 flex items-center text-xs"
@@ -528,58 +434,49 @@ export default function InfluencerDashboard() {
                               ) : (
                                 <button
                                   onClick={() => {
-                                    setSelectedCampaign(campaign);
-                                    setSelectedTask(task);
+                                    setSelectedCampaign(brief);
+                                    setSelectedTask({ name: "Farcaster post" });
                                     setShowSubmitModal(true);
                                   }}
                                   className="text-white hover:text-gray-200 rounded bg-indigo-600 p-2 text-xs"
-                                  disabled={
-                                    task.status === "completed" ||
-                                    campaign.status !== "selected"
-                                  }
+                                  disabled={!brief.application.isSelected}
                                 >
                                   Submit Link
                                 </button>
                               )}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Application message */}
-                    <div className="text-xs text-gray-500 border-t pt-2 mt-1">
-                      <p className="font-medium mb-1">
-                        Your application message:
-                      </p>
-                      <p className="italic">{campaign.application.message}</p>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          campaign.paymentStatus === "paid"
-                            ? "bg-green-100 text-green-800"
-                            : campaign.paymentStatus === "ready"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        Payment: {campaign.paymentStatus}
-                      </span>
-                      {campaign.paymentStatus === "ready" && (
-                        <button
-                          onClick={() => simulateFundRelease(campaign.id)}
-                          className="text-green-600 hover:text-green-800 text-xs flex items-center"
-                        >
-                          <CheckCircle size={12} className="mr-1" />
-                          Claim Funds
-                        </button>
+                        </div>
                       )}
+
+                      {/* Application message */}
+                      <div className="text-xs text-gray-500 border-t pt-2 mt-1">
+                        <p className="font-medium mb-1">
+                          Your application message:
+                        </p>
+                        <p className="italic">{brief.application.message}</p>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${paymentStatus.classes}`}
+                        >
+                          Payment: {paymentStatus.label}
+                        </span>
+                        {brief.application.isApproved && !brief.application.hasClaimed && (
+                          <button
+                            onClick={() => handleClaimFunds(brief.briefId)}
+                            className="text-green-600 hover:text-green-800 text-xs flex items-center"
+                          >
+                            <CheckCircle size={12} className="mr-1" />
+                            Claim Funds
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -622,12 +519,17 @@ export default function InfluencerDashboard() {
                         {tx.status}
                       </span>
                       <a
-                        href="#"
+                        href={`https://explorer.celo.org/tx/${tx.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-indigo-600 hover:text-indigo-800 text-xs truncate"
                       >
                         {tx.txHash}
                       </a>
-                      <button className="text-gray-400 hover:text-indigo-600">
+                      <button 
+                        className="text-gray-400 hover:text-indigo-600"
+                        onClick={() => navigator.clipboard.writeText(tx.id)}
+                      >
                         <Copy size={12} />
                       </button>
                     </div>
@@ -642,17 +544,22 @@ export default function InfluencerDashboard() {
       {/* Submit Post Link Modal */}
       {showSubmitModal && selectedCampaign && selectedTask && (
         <SubmitPostModal
-          selectedCampaign={selectedCampaign}
+          selectedCampaign={{
+            id: selectedCampaign.briefId,
+            title: selectedCampaign.brief.name,
+            brand: selectedCampaign.brief.business
+          }}
           selectedTask={selectedTask}
           postLink={postLink}
           setPostLink={setPostLink}
           onSubmit={() =>
-            handleSubmitPost(selectedCampaign.id, selectedTask.name)
+            handleSubmitPost(selectedCampaign.briefId, selectedTask.name)
           }
           onClose={() => {
             setShowSubmitModal(false);
             setSelectedCampaign(null);
             setSelectedTask(null);
+            setPostLink("");
           }}
         />
       )}

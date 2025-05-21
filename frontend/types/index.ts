@@ -53,3 +53,45 @@ export interface Task {
   status: string;
   postLink?: string;
 }
+
+
+export interface BriefData {
+  business: string;
+  name: string;
+  description: string;
+  budget: string;
+  status: number;
+  applicationDeadline: string;
+  promotionDuration: string;
+  promotionStartTime: string;
+  promotionEndTime: string;
+  maxInfluencers: string;
+  selectedInfluencersCount: string;
+  targetAudience: number;
+  verificationDeadline: string;
+}
+
+export  interface ApplicationData {
+  influencer: string;
+  message: string;
+  timestamp: string;
+  isSelected: boolean;
+  hasClaimed: boolean;
+  proofLink: string;
+  isApproved: boolean;
+}
+
+export interface InfluencerDashboardData {
+  appliedBriefs: {
+    briefId: string;
+    brief: BriefData;
+    application: ApplicationData | null;
+  }[];
+  assignedBriefs: {
+    briefId: string;
+    brief: BriefData;
+    application: ApplicationData;
+  }[];
+  isLoading: boolean;
+  error: string | null;
+}
