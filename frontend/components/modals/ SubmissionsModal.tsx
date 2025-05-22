@@ -1,6 +1,5 @@
 // SubmissionsModal.tsx
 "use client";
-
 import { CheckCircle, Clock, Globe } from "lucide-react";
 import {Brief, Application} from "@/types/index";
 
@@ -107,17 +106,11 @@ export const SubmissionsModal = ({
                           ).toLocaleTimeString()}
                         </div>
 
-                        {submission.message && (
-                          <div className="mt-2 p-3 bg-gray-50 rounded-md text-gray-700">
-                            <p className="text-xs font-medium mb-1">Note:</p>
-                            <p className="text-sm">{submission.message}</p>
-                          </div>
-                        )}
 
                         {!submission.isApproved && (
                           <div className="mt-3 flex justify-end">
                             <button
-                              onClick={() => onReleaseFunds(selectedBrief.briefId)}
+                              onClick={() => onReleaseFunds(selectedBrief.id)}
                               disabled={isCompletingCampaign}
                               className="px-3 py-1 text-sm text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
                             >

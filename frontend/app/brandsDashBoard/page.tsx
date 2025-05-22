@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import { Brief } from "@/types/index";
 import { SubmissionsModal } from "@/components/modals/ SubmissionsModal";
 import { ApplicationsModal } from "@/components/modals/ApplicationsModal";
 import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
@@ -36,11 +37,10 @@ import {
 const BrandDashboard = () => {
   const router = useRouter();
   const { address } = useAccount();
-  const [activeTab, setActiveTab] = useState("dashboard");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
-  const [selectedBrief, setSelectedBrief] = useState(null);
+  const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -211,17 +211,7 @@ const BrandDashboard = () => {
     }
   };
 
-  const handleAssignInfluencer = async (briefId, applicationIndex) => {
-    try {
-      await selectInfluencer(briefId, applicationIndex);
-      // Success state handled in useEffect
-    } catch (error) {
-      console.error("Error assigning influencer:", error);
-      toast.error(
-        `Failed to assign influencer: ${error.message || "Unknown error"}`
-      );
-    }
-  };
+ 
 
   const handleReleaseFunds = async (briefId) => {
     try {
@@ -230,7 +220,11 @@ const BrandDashboard = () => {
     } catch (error) {
       console.error("Error releasing funds:", error);
       toast.error(
-        `Failed to release funds: ${error.message || "Unknown error"}`
+        `Failed to release funds: ${
+          typeof error === "object" && error !== null && "message" in error
+            ? (error as { message?: string }).message
+            : "Unknown error"
+        }`
       );
     }
   };
@@ -400,8 +394,8 @@ const BrandDashboard = () => {
                                 {Math.ceil(
                                   (new Date(
                                     Number(brief.applicationDeadline) * 1000
-                                  ) -
-                                    new Date()) /
+                                  ).getTime() -
+                                    new Date().getTime()) /
                                     (1000 * 60 * 60 * 24)
                                 )}{" "}
                                 days left
@@ -478,7 +472,6 @@ const BrandDashboard = () => {
         <ApplicationsModal
           selectedBrief={selectedBrief}
           applications={applications || []}
-          onAssignInfluencer={handleAssignInfluencer}
           isLoadingApplications={isLoadingApplications}
           onClose={() => setShowApplicationsModal(false)}
         />

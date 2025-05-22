@@ -95,3 +95,11 @@ export interface InfluencerDashboardData {
   isLoading: boolean;
   error: string | null;
 }
+
+export interface ApplicationsModalProps {
+  selectedBrief: Brief | null;
+  applications: Application[];
+  isLoadingApplications: boolean;
+  onClose: () => void;
+}
+

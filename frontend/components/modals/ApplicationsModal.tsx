@@ -1,11 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Brief, Application } from "@/types/index";
+import { ApplicationsModalProps } from "@/types/index";
 import {
   Loader2,
   ExternalLink,
   Check,
-  AlertTriangle,
   Calendar,
   XCircle,
   Award,
@@ -22,13 +21,6 @@ import {
   useCompleteCampaign,
 } from "@/hooks/adsBazaar";
 
-interface ApplicationsModalProps {
-  selectedBrief: Brief | null;
-  applications: Application[];
-  isLoadingApplications: boolean;
-  onClose: () => void;
-}
-
 export const ApplicationsModal = ({
   selectedBrief,
   applications,
@@ -37,7 +29,7 @@ export const ApplicationsModal = ({
 }: ApplicationsModalProps) => {
   const { address, isConnected } = useAccount();
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
-
+  console.log(selectedBrief);
   // Transaction hooks
   const {
     selectInfluencer,
@@ -110,32 +102,62 @@ export const ApplicationsModal = ({
     toast.error(errorMessage, { duration: 5000 });
   }, [selectError, cancelError, completeError]);
 
+
+
+
+
+  // Function to handle influencer assignment
   const handleAssignInfluencer = async (briefId: Hex, index: number) => {
     if (!isConnected) {
       toast.error("Please connect your wallet first");
       return;
     }
+  
+    if (applications[index].isSelected) {
+      toast.error("Influencer already selected");
+      return;
+    }
 
     const application = applications[index];
-    const influencerName =
-      application.influencerProfile?.name ||
-      truncateAddress(application.influencer);
+    const influencerName = truncateAddress(application.influencer);
 
     setPendingIndex(index);
     const toastId = toast.loading(`Assigning ${influencerName}...`);
 
     try {
+      console.log("Assigning influencer:", { briefId, index });
       await selectInfluencer(briefId, index);
       toast.success(`${influencerName} assigned successfully!`, {
         id: toastId,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Transaction error:", error);
-      toast.error(`Failed to assign influencer`, { id: toastId });
+      toast.error(
+        `Failed to assign influencer: ${error.message || "Unknown error"}`,
+        {
+          id: toastId,
+        }
+      );
     } finally {
       setPendingIndex(null);
     }
   };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   const handleCancelCampaign = async () => {
     if (!selectedBrief) return;
@@ -322,7 +344,7 @@ export const ApplicationsModal = ({
                             <button
                               onClick={() =>
                                 handleAssignInfluencer(
-                                  selectedBrief.briefId,
+                                  selectedBrief.id,
                                   index
                                 )
                               }
