@@ -10,6 +10,7 @@ import { parseUnits, Hex } from "viem";
 import { cUSDContractConfig, CONTRACT_ADDRESS } from "../lib/contracts";
 import { formatEther } from "viem";
 import ABI from "../lib/AdsBazaar.json";
+import { toast } from "react-hot-toast";
 
 type Status = "OPEN" | "ASSIGNED" | "COMPLETED" | "CANCELLED";
 type TargetAudience =
@@ -936,27 +937,59 @@ export function useApplyToBrief() {
 
 // Submit proof
 export function useSubmitProof() {
-  const tx = useHandleTransaction();
+  const { writeContract, hash, isPending, isSuccess, isError, error } =
+    useHandleTransaction();
   const { address } = useAccount();
 
-  const submitProof = async (briefId, proofLink: string) => {
-    if (!address) return;
+  const submitProof = async (briefId: string, proofLink: string) => {
+    if (!address) {
+      toast.error("Please connect your wallet");
+      return { success: false, status: "error" };
+    }
 
     try {
-      await tx.writeContract({
+      // Initiate transaction
+      await writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "submitProof",
         args: [briefId, proofLink],
       });
-    } catch (error) {
+
+      return {
+        success: true,
+        status: isPending ? "pending" : isSuccess ? "success" : "idle",
+        hash,
+        isPending,
+        isSuccess,
+        isError,
+        error,
+      };
+    } catch (error: any) {
       console.error("Error submitting proof:", error);
+
+      let errorMessage = "Failed to submit proof";
+      if (error.shortMessage) {
+        errorMessage = error.shortMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      return {
+        success: false,
+        status: "error",
+        error: errorMessage,
+      };
     }
   };
 
   return {
     submitProof,
-    ...tx,
+    hash,
+    isPending,
+    isSuccess,
+    isError,
+    error,
   };
 }
 
@@ -1062,31 +1095,6 @@ export function useTriggerAutoApproval() {
 
   return {
     triggerAutoApproval,
-    ...tx,
-  };
-}
-
-// For admin only: Withdraw fees
-export function useWithdrawFees() {
-  const tx = useHandleTransaction();
-  const { address } = useAccount();
-
-  const withdrawFees = async () => {
-    if (!address) return;
-
-    try {
-      await tx.writeContract({
-        address: CONTRACT_ADDRESS,
-        abi: ABI.abi,
-        functionName: "withdrawFees",
-      });
-    } catch (error) {
-      console.error("Error withdrawing fees:", error);
-    }
-  };
-
-  return {
-    withdrawFees,
     ...tx,
   };
 }

@@ -1,19 +1,11 @@
-
-import { useState, useEffect, useCallback ,useMemo} from "react";
-import {
-  useReadContract,
-  useAccount,
-  usePublicClient,
-} from "wagmi";
-
-
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useReadContract, useAccount, usePublicClient } from "wagmi";
 
 import { formatEther } from "viem";
 type Bytes32 = Hex;
 import ABI from "../lib/AdsBazaar.json";
+import { CONTRACT_ADDRESS } from "../lib/contracts";
 
-
-const CONTRACT_ADDRESS = "0xe0F5Aeb011C4B8e5C0A5A10611b3Aa57ab4Bf56F";
 export interface InfluencerApplication {
   influencer: string;
   message: string;
@@ -51,10 +43,11 @@ interface FormattedBriefData {
   verificationDeadline: number;
 }
 
-
 // influncers applied brifes
 
-export function useGetInfluencerApplicationIds(influencerAddress: `0x${string}`) {
+export function useGetInfluencerApplicationIds(
+  influencerAddress: `0x${string}`
+) {
   const { data, isLoading, isError, error, refetch } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
@@ -71,10 +64,10 @@ export function useGetInfluencerApplicationIds(influencerAddress: `0x${string}`)
   };
 }
 
-
-
-export function useGetInfluencerApplications(influencerAddress: `0x${string}`) { 
-  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>([]);
+export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
+  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>(
+    []
+  );
   const [applications, setApplications] = useState<InfluencerApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -112,12 +105,12 @@ export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
               });
 
               // Get the application details for this influencer
-              const applicationsResult = await publicClient.readContract({
+              const applicationsResult = (await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
                 functionName: "getBriefApplications",
                 args: [id],
-              }) as BriefApplications;
+              })) as BriefApplications;
 
               // Find this influencer's application
               const influencerApp = applicationsResult.influencers
@@ -130,7 +123,11 @@ export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
                   proofLink: applicationsResult.proofLinks[index],
                   isApproved: applicationsResult.isApproved[index],
                 }))
-                .find((app: any) => app.influencer.toLowerCase() === influencerAddress.toLowerCase());
+                .find(
+                  (app: any) =>
+                    app.influencer.toLowerCase() ===
+                    influencerAddress.toLowerCase()
+                );
 
               if (Array.isArray(briefResult)) {
                 return {
@@ -147,13 +144,25 @@ export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
         );
 
         const validResults = results.filter(
-          (result): result is { brief: FormattedBriefData; application: { influencer: string; message: string; timestamp: bigint; isSelected: boolean; hasClaimed: boolean; proofLink: string; isApproved: boolean; } } =>
-            result !== null && result.application !== undefined
+          (
+            result
+          ): result is {
+            brief: FormattedBriefData;
+            application: {
+              influencer: string;
+              message: string;
+              timestamp: bigint;
+              isSelected: boolean;
+              hasClaimed: boolean;
+              proofLink: string;
+              isApproved: boolean;
+            };
+          } => result !== null && result.application !== undefined
         );
 
-        setProcessedBriefs(validResults.map(r => r.brief));
+        setProcessedBriefs(validResults.map((r) => r.brief));
         setApplications(
-          validResults.map(r => ({
+          validResults.map((r) => ({
             ...r.application,
             timestamp: Number(r.application.timestamp),
           }))
@@ -174,8 +183,7 @@ export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
     }
   }, [briefIds, isLoadingIds, fetchInfluencerApplications]);
 
-
-   const formatBriefData = (
+  const formatBriefData = (
     briefId: `0x${string}`,
     rawData: any[]
   ): FormattedBriefData | null => {
@@ -216,31 +224,33 @@ export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
   };
 }
 
-
-
-
-
-export function useInfluencerApplicationDetails(briefId: `0x${string}`, influencerAddress?: `0x${string}`) {
+export function useInfluencerApplicationDetails(
+  briefId: `0x${string}`,
+  influencerAddress?: `0x${string}`
+) {
   const { address } = useAccount();
   const addr = influencerAddress || address;
-  
+
   const { data, isLoading, isError, error } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
     functionName: "getBriefApplications",
     args: [briefId],
-  }) as { data?: BriefApplications } & Omit<ReturnType<typeof useReadContract>, 'data'>;
+  }) as { data?: BriefApplications } & Omit<
+    ReturnType<typeof useReadContract>,
+    "data"
+  >;
 
   // Find the influencer's specific application
   const application = useMemo(() => {
     if (!data?.influencers) return null;
-    
+
     const index = data.influencers.findIndex(
       (inf) => inf.toLowerCase() === addr?.toLowerCase()
     );
-    
+
     if (index === -1) return null;
-    
+
     return {
       influencer: data.influencers[index],
       message: data.messages[index],
