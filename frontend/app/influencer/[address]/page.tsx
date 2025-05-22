@@ -1,21 +1,66 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useAccount, useReadContract } from "wagmi";
-import { useEffect, useState } from "react";
-import { Briefcase, Users, Link as LinkIcon, Share2 } from "lucide-react";
+import { useAccount } from "wagmi";
+import { useState, useEffect } from "react";
+import {
+  Briefcase,
+  Link as LinkIcon,
+  Share2,
+  Plus,
+  Edit,
+  Globe,
+  Youtube,
+  Instagram,
+  Twitter,
+  MessageSquare,
+  Video,
+  Facebook,
+  Linkedin,
+} from "lucide-react";
 import Link from "next/link";
-
-import adsBazaarABI from "../../../lib/AdsBazaar.json";
-import { CONTRACT_ADDRESS } from "../../../lib/contracts";
 
 export default function InfluencerProfile() {
   const { address: profileAddress } = useParams();
   const { address: connectedAddress, isConnected } = useAccount();
   const [isOwner, setIsOwner] = useState(false);
-  const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+
+  // Sample social accounts data structure
+  const [socialAccounts, setSocialAccounts] = useState([
+    {
+      platform: "twitter",
+      username: "johndoe",
+      followers: 12500,
+      verified: true,
+      url: "https://twitter.com/johndoe",
+    },
+    {
+      platform: "youtube",
+      username: "@johndoe",
+      followers: 85000,
+      verified: false,
+      url: "https://youtube.com/johndoe",
+    },
+    {
+      platform: "instagram",
+      username: "john.doe",
+      followers: 42000,
+      verified: true,
+      url: "https://instagram.com/john.doe",
+    },
+  ]);
+
+  const [profileData, setProfileData] = useState({
+    name: "John Doe",
+    bio: "Digital creator specializing in tech reviews and tutorials. Collaborating with brands to create authentic content.",
+    website: "https://johndoe.com",
+    niche: "Tech & Gadgets",
+    totalFollowers: socialAccounts.reduce((sum, acc) => sum + acc.followers, 0),
+    avgEngagement: 4.7,
+    successRate: 92,
+  });
 
   // Check if connected wallet owns this profile
   useEffect(() => {
@@ -25,87 +70,38 @@ export default function InfluencerProfile() {
         (profileAddress as string).toLowerCase();
       setIsOwner(ownerStatus);
     }
+    setLoading(false);
   }, [isConnected, connectedAddress, profileAddress]);
 
-  // Fetch influencer data from contract
-  const {
-    data: influencerData,
-    error: contractError,
-    isLoading: contractLoading,
-  } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: adsBazaarABI.abi,
-    functionName: "getInfluencerProfile",
-    args: [profileAddress as `0x${string}`],
-    enabled: !!profileAddress,
-  });
+  const handleSaveProfile = () => {
+    // In a real app, this would save to the contract/database
+    setEditMode(false);
+    // Recalculate total followers
+    setProfileData((prev) => ({
+      ...prev,
+      totalFollowers: socialAccounts.reduce(
+        (sum, acc) => sum + acc.followers,
+        0
+      ),
+    }));
+  };
 
-  // Process influencer data when loaded
-  useEffect(() => {
-    if (!profileAddress) {
-      setError("No profile address provided");
-      setLoading(false);
-      return;
-    }
+  const addSocialAccount = () => {
+    setSocialAccounts([
+      ...socialAccounts,
+      { platform: "", username: "", followers: 0, verified: false, url: "" },
+    ]);
+  };
 
-    if (contractLoading) {
-      setLoading(true);
-      return;
-    }
+  const updateSocialAccount = (index: number, field: string, value: any) => {
+    const updated = [...socialAccounts];
+    updated[index] = { ...updated[index], [field]: value };
+    setSocialAccounts(updated);
+  };
 
-    if (contractError) {
-      console.error("Contract error:", contractError);
-      // Instead of showing error, create a basic profile
-      const basicProfile = {
-        farcasterUsername: null,
-        farcasterPfp: null,
-        niche: null,
-        bio: null,
-        followerCount: null,
-      };
-      setProfileData(basicProfile);
-      setLoading(false);
-      return;
-    }
-
-    if (influencerData) {
-      try {
-        let parsedData;
-        if (typeof influencerData === "string") {
-          parsedData = JSON.parse(influencerData);
-        } else {
-          parsedData = influencerData;
-        }
-        setProfileData(parsedData);
-        setLoading(false);
-      } catch (err) {
-        console.error("Parsing error:", err);
-        // Fallback to basic profile
-        const basicProfile = {
-          farcasterUsername: null,
-          farcasterPfp: null,
-          niche: null,
-          bio: null,
-          followerCount: null,
-        };
-        setProfileData(basicProfile);
-        setLoading(false);
-      }
-    } else {
-      // If contract call completed but returned no data, show basic profile
-      if (!contractLoading) {
-        const basicProfile = {
-          farcasterUsername: null,
-          farcasterPfp: null,
-          niche: null,
-          bio: null,
-          followerCount: null,
-        };
-        setProfileData(basicProfile);
-        setLoading(false);
-      }
-    }
-  }, [influencerData, contractError, contractLoading, profileAddress]);
+  const removeSocialAccount = (index: number) => {
+    setSocialAccounts(socialAccounts.filter((_, i) => i !== index));
+  };
 
   if (loading) {
     return (
@@ -118,187 +114,398 @@ export default function InfluencerProfile() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center p-6 max-w-md">
-          <p className="text-red-500 mb-4">{error}</p>
-          <Link href="/" className="text-indigo-600 hover:underline">
-            Go back home
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const PlatformIcon = ({ platform }: { platform: string }) => {
+    switch (platform.toLowerCase()) {
+      case "youtube":
+        return <Youtube className="h-5 w-5" />;
+      case "instagram":
+        return <Instagram className="h-5 w-5" />;
+      case "twitter":
+        return <Twitter className="h-5 w-5" />;
+      case "facebook":
+        return <Facebook className="h-5 w-5" />;
+      case "linkedin":
+        return <Linkedin className="h-5 w-5" />;
+      case "tiktok":
+        return <Video className="h-5 w-5" />; // Using Video as substitute for TikTok
+      case "farcaster":
+        return <MessageSquare className="h-5 w-5" />; // Using MessageSquare as substitute
+      default:
+        return <Globe className="h-5 w-5" />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Profile Header */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-6">
-            <div className="flex-shrink-0">
-              <img
-                src={profileData?.farcasterPfp || "/default-avatar.png"}
-                alt="Profile"
-                className="h-24 w-24 rounded-full object-cover bg-gray-200"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='48' r='48' fill='%23e5e7eb'/%3E%3Cpath d='M48 24c6.627 0 12 5.373 12 12s-5.373 12-12 12-12-5.373-12-12 5.373-12 12-12zm0 24c13.255 0 24 10.745 24 24H24c0-13.255 10.745-24 24-24z' fill='%239ca3af'/%3E%3C/svg%3E";
-                }}
-              />
-            </div>
-            <div className="flex-grow">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {profileData?.farcasterUsername ||
-                      `Influencer ${(profileAddress as string)?.slice(
-                        0,
-                        6
-                      )}...${(profileAddress as string)?.slice(-4)}`}
-                  </h1>
-                  <p className="text-gray-600 text-sm mt-1">
-                    {profileAddress as string}
-                  </p>
-                  <p className="text-gray-600 mt-2">
-                    {profileData?.niche || "No niche specified"}
-                  </p>
-                </div>
-                {isOwner && (
-                  <Link
-                    href="/influencersDashboard"
-                    className="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {editMode ? (
+                    <input
+                      type="text"
+                      value={profileData.name}
+                      onChange={(e) =>
+                        setProfileData({ ...profileData, name: e.target.value })
+                      }
+                      className="border rounded px-3 py-1"
+                    />
+                  ) : (
+                    profileData.name
+                  )}
+                </h1>
+                {isOwner && !editMode && (
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="text-indigo-600 hover:text-indigo-800 flex items-center text-sm"
                   >
+                    <Edit className="h-4 w-4 mr-1" />
                     Edit Profile
+                  </button>
+                )}
+              </div>
+              <p className="text-gray-600 text-sm mt-1">
+                {profileAddress as string}
+              </p>
+            </div>
+
+            {isOwner && (
+              <div className="flex gap-3">
+                {editMode ? (
+                  <>
+                    <button
+                      onClick={() => setEditMode(false)}
+                      className="px-3 py-1 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveProfile}
+                      className="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
+                    >
+                      Save Changes
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/marketplace"
+                    className="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 flex items-center"
+                  >
+                    <Briefcase className="h-4 w-4 mr-1" />
+                    Browse Campaigns
                   </Link>
                 )}
               </div>
+            )}
+          </div>
 
-              <div className="mt-4 flex flex-wrap gap-4">
-                <div className="flex items-center text-gray-600">
-                  <Users className="h-5 w-5 mr-2" />
-                  <span>Followers: {profileData?.followerCount || "N/A"}</span>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <Briefcase className="h-5 w-5 mr-2" />
-                  <span>Campaigns: {isOwner ? "0" : "Private"}</span>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Bio Section */}
+            <div className="md:col-span-2">
+              <h2 className="text-lg font-semibold mb-2">About</h2>
+              {editMode ? (
+                <textarea
+                  value={profileData.bio}
+                  onChange={(e) =>
+                    setProfileData({ ...profileData, bio: e.target.value })
+                  }
+                  className="w-full border rounded px-3 py-2 h-32"
+                />
+              ) : (
+                <p className="text-gray-700">{profileData.bio}</p>
+              )}
+
+              <div className="mt-4">
+                <h2 className="text-lg font-semibold mb-2">Niche</h2>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={profileData.niche}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, niche: e.target.value })
+                    }
+                    className="border rounded px-3 py-1 w-full"
+                  />
+                ) : (
+                  <div className="inline-block bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm">
+                    {profileData.niche}
+                  </div>
+                )}
               </div>
 
-              {profileData?.bio && (
-                <p className="mt-4 text-gray-700">{profileData.bio}</p>
+              {profileData.website && (
+                <div className="mt-4">
+                  <h2 className="text-lg font-semibold mb-2">Website</h2>
+                  {editMode ? (
+                    <input
+                      type="url"
+                      value={profileData.website}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          website: e.target.value,
+                        })
+                      }
+                      className="border rounded px-3 py-1 w-full"
+                    />
+                  ) : (
+                    <a
+                      href={profileData.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline flex items-center"
+                    >
+                      <Globe className="h-4 w-4 mr-1" />
+                      {profileData.website.replace(/^https?:\/\//, "")}
+                    </a>
+                  )}
+                </div>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Public Stats */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Public Statistics</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-500">Total Campaigns</p>
-              <p className="text-xl font-bold">{isOwner ? "0" : "Private"}</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-500">Engagement Rate</p>
-              <p className="text-xl font-bold">N/A</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-500">Avg. Reach</p>
-              <p className="text-xl font-bold">N/A</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg text-center">
-              <p className="text-sm text-gray-500">Success Rate</p>
-              <p className="text-xl font-bold">N/A</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Owner-only sections */}
-        {isOwner && (
-          <>
-            {/* Applications - Simplified without dashboard hook */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h2 className="text-lg font-semibold mb-4">Your Applications</h2>
-              <p className="text-gray-500">
-                You haven't applied to any campaigns yet.
-              </p>
-              <Link
-                href="/marketplace"
-                className="inline-block mt-4 text-indigo-600 hover:underline"
-              >
-                Browse available campaigns →
-              </Link>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Link
-                  href="/marketplace"
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center"
-                >
-                  <Briefcase className="h-5 w-5 mr-3 text-indigo-600" />
-                  <span>Browse Campaigns</span>
-                </Link>
-                <Link
-                  href="/influencersDashboard"
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center"
-                >
-                  <Share2 className="h-5 w-5 mr-3 text-indigo-600" />
-                  <span>View Full Dashboard</span>
-                </Link>
+            {/* Stats Overview */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-4">Audience Metrics</h2>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500">Total Followers</p>
+                  <p className="text-2xl font-bold">
+                    {profileData.totalFollowers.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Avg. Engagement Rate</p>
+                  <p className="text-2xl font-bold">
+                    {profileData.avgEngagement}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Campaign Success Rate</p>
+                  <p className="text-2xl font-bold">
+                    {profileData.successRate}%
+                  </p>
+                </div>
               </div>
             </div>
-          </>
-        )}
-
-        {/* Public message for non-owners */}
-        {!isOwner && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">
-              About This Influencer
-            </h2>
-            <p className="text-gray-600 mb-4">
-              This is a public profile page. Connect your wallet to view more
-              details if this is your profile.
-            </p>
-            <Link
-              href="/marketplace"
-              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-            >
-              <Briefcase className="h-4 w-4 mr-2" />
-              Browse Campaigns
-            </Link>
-          </div>
-        )}
-
-        {/* Share Profile */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-500 mb-2">Share this profile</p>
-          <div className="flex justify-center gap-3">
-            <button
-              onClick={() => {
-                if (navigator.clipboard && window.location) {
-                  navigator.clipboard
-                    .writeText(window.location.href)
-                    .then(() => {
-                      // Could add a toast notification here
-                      console.log("URL copied to clipboard");
-                    })
-                    .catch((err) => console.error("Failed to copy URL:", err));
-                }
-              }}
-              className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"
-              title="Copy profile URL"
-            >
-              <LinkIcon className="h-5 w-5 text-gray-600" />
-            </button>
           </div>
         </div>
+
+        {/* Social Accounts Section */}
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">Social Accounts</h2>
+            {isOwner && editMode && (
+              <button
+                onClick={addSocialAccount}
+                className="text-indigo-600 hover:text-indigo-800 flex items-center text-sm"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Account
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {socialAccounts.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No social accounts added yet
+              </div>
+            ) : (
+              socialAccounts.map((account, index) => (
+                <div
+                  key={index}
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gray-100 p-2 rounded-full">
+                        <PlatformIcon platform={account.platform} />
+                      </div>
+                      <div>
+                        {editMode ? (
+                          <div className="space-y-2">
+                            <select
+                              value={account.platform}
+                              onChange={(e) =>
+                                updateSocialAccount(
+                                  index,
+                                  "platform",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded px-2 py-1 text-sm"
+                            >
+                              <option value="">Select Platform</option>
+                              <option value="youtube">YouTube</option>
+                              <option value="instagram">Instagram</option>
+                              <option value="twitter">Twitter</option>
+                              <option value="facebook">Facebook</option>
+                              <option value="linkedin">LinkedIn</option>
+                              <option value="tiktok">TikTok</option>
+                              <option value="farcaster">Farcaster</option>
+                            </select>
+                            <input
+                              type="text"
+                              placeholder="Username"
+                              value={account.username}
+                              onChange={(e) =>
+                                updateSocialAccount(
+                                  index,
+                                  "username",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded px-2 py-1 text-sm w-full"
+                            />
+                            <input
+                              type="number"
+                              placeholder="Follower Count"
+                              value={account.followers}
+                              onChange={(e) =>
+                                updateSocialAccount(
+                                  index,
+                                  "followers",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="border rounded px-2 py-1 text-sm w-full"
+                            />
+                            <input
+                              type="url"
+                              placeholder="Profile URL"
+                              value={account.url}
+                              onChange={(e) =>
+                                updateSocialAccount(
+                                  index,
+                                  "url",
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded px-2 py-1 text-sm w-full"
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium capitalize">
+                                {account.platform}
+                              </h3>
+                              {account.verified && (
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                                  Verified
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-600 text-sm">
+                              @{account.username}
+                            </p>
+                            <p className="text-gray-800 mt-1">
+                              {account.followers.toLocaleString()} followers
+                            </p>
+                            {account.url && (
+                              <a
+                                href={account.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-indigo-600 hover:underline text-sm flex items-center mt-1"
+                              >
+                                <LinkIcon className="h-3 w-3 mr-1" />
+                                View Profile
+                              </a>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {editMode && (
+                      <button
+                        onClick={() => removeSocialAccount(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Public Profile Link */}
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Public Profile</h2>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">
+                  Your public profile URL
+                </p>
+                <a
+                  href={`/influencer/${profileAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 hover:underline flex items-center"
+                >
+                  {typeof window !== "undefined" &&
+                    `${window.location.origin}/influencer/${profileAddress}`}
+                  <LinkIcon className="h-4 w-4 ml-1" />
+                </a>
+              </div>
+              <button
+                onClick={() => {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(
+                      typeof window !== "undefined"
+                        ? `${window.location.origin}/influencer/${profileAddress}`
+                        : ""
+                    );
+                    // Add toast notification in a real app
+                  }
+                }}
+                className="px-3 py-1 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300 flex items-center"
+              >
+                <Share2 className="h-4 w-4 mr-1" />
+                Copy Link
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Campaign Statistics (for owner) */}
+        {isOwner && (
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Campaign Performance</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-500">Completed Campaigns</p>
+                <p className="text-2xl font-bold">12</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-500">Active Campaigns</p>
+                <p className="text-2xl font-bold">3</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-500">Total Earnings</p>
+                <p className="text-2xl font-bold">$8,450</p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Link
+                href="/influencersDashboard"
+                className="text-indigo-600 hover:text-indigo-800 flex items-center"
+              >
+                View full dashboard for detailed analytics
+                <LinkIcon className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
