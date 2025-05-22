@@ -295,7 +295,7 @@ export const ApplicationsModal = ({
                         </div>
                         <div>
                           <a
-                            href={`/profile/${application.influencer}`}
+                            href={`/influencer/${application.influencer}`}
                             className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 inline-flex items-center"
                           >
                             {application.influencerProfile?.name ||

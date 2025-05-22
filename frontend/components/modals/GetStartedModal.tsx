@@ -66,7 +66,6 @@ const GetStartedModal = ({
     }
   }, [isError, error]);
 
-  // Handle successful registration
   useEffect(() => {
     if (isSuccess) {
       toast.success("Registration completed successfully!", {

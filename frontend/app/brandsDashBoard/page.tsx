@@ -478,6 +478,7 @@ const BrandDashboard = () => {
         <ApplicationsModal
           selectedBrief={selectedBrief}
           applications={applications || []}
+          onAssignInfluencer={handleAssignInfluencer}
           isLoadingApplications={isLoadingApplications}
           onClose={() => setShowApplicationsModal(false)}
         />

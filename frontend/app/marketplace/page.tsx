@@ -154,7 +154,7 @@ export default function Marketplace() {
       return {
         text: "Register as Influencer",
         disabled: false,
-        onClick: () => (window.location.href = "/register"),
+        onClick: () => (window.location.href = "/"),
         variant: "indigo",
       };
     }
