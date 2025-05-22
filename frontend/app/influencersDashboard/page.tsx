@@ -54,9 +54,10 @@ export default function InfluencerDashboard() {
 
   // Get verification status
   const { isVerified, isLoadingVerification } = useIsInfluencerVerified();
-  
+
   // Get dashboard data from the new hook
-  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } = useInfluencerDashboard();
+  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
+    useInfluencerDashboard();
   console.log("appliedBriefs", appliedBriefs);
   console.log("assignedBriefs", assignedBriefs);
 
@@ -77,7 +78,10 @@ export default function InfluencerDashboard() {
   useEffect(() => {
     if (assignedBriefs && assignedBriefs.length > 0) {
       const txHistory = assignedBriefs
-        .filter((brief) => brief.application.isApproved && brief.application.hasClaimed)
+        .filter(
+          (brief) =>
+            brief.application.isApproved && brief.application.hasClaimed
+        )
         .map((brief) => ({
           id: brief.briefId,
           type: "payment",
@@ -95,26 +99,26 @@ export default function InfluencerDashboard() {
   const handleSubmitPost = (briefId, taskName) => {
     // Update the application with the proof link
     console.log("Submitting proof link:", postLink, "for brief:", briefId);
-    
+
     // Here you would call your contract function to submit the proof
     // For example:
     // submitProof(briefId, postLink);
-    
+
     // For now, just close the modal
     setShowSubmitModal(false);
     setPostLink("");
-    
+
     // Refresh data after submission
     refetch();
   };
 
   const handleClaimFunds = (briefId) => {
     console.log("Claiming funds for brief:", briefId);
-    
+
     // Here you would call your contract function to claim funds
     // For example:
     // claimFunds(briefId);
-    
+
     // Refresh data after claiming
     refetch();
   };
@@ -155,30 +159,33 @@ export default function InfluencerDashboard() {
     if (application.hasClaimed) {
       return {
         label: "Paid",
-        classes: "bg-green-100 text-green-800"
+        classes: "bg-green-100 text-green-800",
       };
     } else if (application.isApproved) {
       return {
         label: "Ready to Claim",
-        classes: "bg-blue-100 text-blue-800"
+        classes: "bg-blue-100 text-blue-800",
       };
     } else {
       return {
         label: "Pending",
-        classes: "bg-yellow-100 text-yellow-800"
+        classes: "bg-yellow-100 text-yellow-800",
       };
     }
   };
 
   // Calculate total earnings
-  const totalEarned = transactionHistory.reduce((sum, tx) => sum + tx.amount, 0);
+  const totalEarned = transactionHistory.reduce(
+    (sum, tx) => sum + tx.amount,
+    0
+  );
 
   // Calculate potential earnings
   const potentialEarnings = assignedBriefs
     ? assignedBriefs
-        .filter(b => b.application.isSelected || b.application.isApproved)
-        .filter(b => !b.application.hasClaimed)
-        .reduce((sum, b) => sum + (Number(b.brief.budget) / 1e18), 0)
+        .filter((b) => b.application.isSelected || b.application.isApproved)
+        .filter((b) => !b.application.hasClaimed)
+        .reduce((sum, b) => sum + Number(b.brief.budget) / 1e18, 0)
     : 0;
 
   if (!isMounted || status === "loading" || isLoading) {
@@ -219,8 +226,8 @@ export default function InfluencerDashboard() {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Error Loading Dashboard</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={refetch} 
+          <button
+            onClick={refetch}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
             Try Again
@@ -257,7 +264,14 @@ export default function InfluencerDashboard() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">{walletAddress}</span>
+            <span className="text-sm text-gray-500">
+              <Link
+                href={`/influencer/${address}`}
+                className="text-indigo-600 hover:text-indigo-800 text-sm"
+              >
+                View Public Profile
+              </Link>
+            </span>
             <button className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700">
               Browse Campaigns
             </button>
@@ -325,7 +339,7 @@ export default function InfluencerDashboard() {
             </button>
           </div>
 
-          {(!appliedBriefs || appliedBriefs.length === 0) ? (
+          {!appliedBriefs || appliedBriefs.length === 0 ? (
             <div className="bg-white shadow rounded-lg p-8 text-center">
               <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -344,12 +358,14 @@ export default function InfluencerDashboard() {
             <div className="space-y-4">
               {appliedBriefs.map((brief) => {
                 // Convert deadlines and calculate human-readable time remaining
-                const applicationDeadline = Number(brief.brief.applicationDeadline) * 1000;
-                const verificationDeadline = Number(brief.brief.verificationDeadline) * 1000;
-                
+                const applicationDeadline =
+                  Number(brief.brief.applicationDeadline) * 1000;
+                const verificationDeadline =
+                  Number(brief.brief.verificationDeadline) * 1000;
+
                 const paymentStatus = getPaymentStatus(brief.application);
                 const budget = Number(brief.brief.budget) / 1e18; // Convert from wei
-                
+
                 return (
                   <div
                     key={brief.briefId}
@@ -365,7 +381,10 @@ export default function InfluencerDashboard() {
                             {getStatusBadge(brief.application)}
                           </div>
                           <p className="text-xs text-gray-500">
-                            {brief.brief.business}
+                            owner: {brief.brief.business}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            description: {brief.brief.description}
                           </p>
                         </div>
                         <span className="text-sm font-medium text-gray-900">
@@ -393,11 +412,16 @@ export default function InfluencerDashboard() {
                             rel="noopener noreferrer"
                             className="ml-1 text-indigo-600 hover:underline truncate"
                           >
-                            {`${brief.briefId.slice(0, 10)}...${brief.briefId.slice(-6)}`}
+                            {`${brief.briefId.slice(
+                              0,
+                              10
+                            )}...${brief.briefId.slice(-6)}`}
                           </a>
-                          <button 
+                          <button
                             className="ml-1 text-gray-400 hover:text-indigo-600"
-                            onClick={() => navigator.clipboard.writeText(brief.briefId)}
+                            onClick={() =>
+                              navigator.clipboard.writeText(brief.briefId)
+                            }
                           >
                             <Copy size={12} />
                           </button>
@@ -418,7 +442,9 @@ export default function InfluencerDashboard() {
                           <div className="flex items-center justify-between text-sm">
                             <div className="flex items-center">
                               {getTaskStatusIcon(brief.application)}
-                              <span className="ml-2 text-xs">Farcaster post</span>
+                              <span className="ml-2 text-xs">
+                                Farcaster post
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               {brief.application.proofLink ? (
@@ -463,15 +489,16 @@ export default function InfluencerDashboard() {
                         >
                           Payment: {paymentStatus.label}
                         </span>
-                        {brief.application.isApproved && !brief.application.hasClaimed && (
-                          <button
-                            onClick={() => handleClaimFunds(brief.briefId)}
-                            className="text-green-600 hover:text-green-800 text-xs flex items-center"
-                          >
-                            <CheckCircle size={12} className="mr-1" />
-                            Claim Funds
-                          </button>
-                        )}
+                        {brief.application.isApproved &&
+                          !brief.application.hasClaimed && (
+                            <button
+                              onClick={() => handleClaimFunds(brief.briefId)}
+                              className="text-green-600 hover:text-green-800 text-xs flex items-center"
+                            >
+                              <CheckCircle size={12} className="mr-1" />
+                              Claim Funds
+                            </button>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -526,7 +553,7 @@ export default function InfluencerDashboard() {
                       >
                         {tx.txHash}
                       </a>
-                      <button 
+                      <button
                         className="text-gray-400 hover:text-indigo-600"
                         onClick={() => navigator.clipboard.writeText(tx.id)}
                       >
@@ -547,7 +574,7 @@ export default function InfluencerDashboard() {
           selectedCampaign={{
             id: selectedCampaign.briefId,
             title: selectedCampaign.brief.name,
-            brand: selectedCampaign.brief.business
+            brand: selectedCampaign.brief.business,
           }}
           selectedTask={selectedTask}
           postLink={postLink}

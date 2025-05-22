@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useReadContracts, useAccount } from 'wagmi';
-import { InfluencerDashboardData, BriefData } from '../types';
-import ABI from '../lib/AdsBazaar.json';
-import { Address } from 'viem';
-
-const CONTRACT_ADDRESS = '0xe0F5Aeb011C4B8e5C0A5A10611b3Aa57ab4Bf56F';
+import { useState, useEffect } from "react";
+import { useReadContracts, useAccount } from "wagmi";
+import { InfluencerDashboardData, BriefData } from "../types";
+import ABI from "../lib/AdsBazaar.json";
+import { CONTRACT_ADDRESS } from "../lib/contracts";
+import { Address } from "viem";
 
 export const useInfluencerDashboard = () => {
   const [dashboardData, setDashboardData] = useState<InfluencerDashboardData>({
@@ -17,19 +16,19 @@ export const useInfluencerDashboard = () => {
   const { address: influencerAddress } = useAccount();
 
   // Step 1: Get the influencer's applied brief IDs
-  const { 
+  const {
     data: briefIdsResult,
     isLoading: isLoadingBriefIds,
     error: briefIdsError,
-    refetch: refetchBriefIds
+    refetch: refetchBriefIds,
   } = useReadContracts({
     contracts: [
       {
         address: CONTRACT_ADDRESS as Address,
         abi: ABI.abi,
-        functionName: 'getInfluencerApplications',
-        args: [influencerAddress]
-      }
+        functionName: "getInfluencerApplications",
+        args: [influencerAddress],
+      },
     ],
     enabled: !!influencerAddress,
   });
@@ -49,22 +48,22 @@ export const useInfluencerDashboard = () => {
     contracts.push({
       address: CONTRACT_ADDRESS as Address,
       abi: ABI.abi,
-      functionName: 'getAllBriefs',
+      functionName: "getAllBriefs",
     });
 
     // For each brief ID, add read for brief data and applications
-    briefIds.forEach(briefId => {
+    briefIds.forEach((briefId) => {
       contracts.push({
         address: CONTRACT_ADDRESS as Address,
         abi: ABI.abi,
-        functionName: 'getAdBrief',
+        functionName: "getAdBrief",
         args: [briefId],
       });
-      
+
       contracts.push({
         address: CONTRACT_ADDRESS as Address,
         abi: ABI.abi,
-        functionName: 'getBriefApplications',
+        functionName: "getBriefApplications",
         args: [briefId],
       });
     });
@@ -76,7 +75,7 @@ export const useInfluencerDashboard = () => {
   const {
     data: briefsData,
     isLoading: isLoadingBriefsData,
-    error: briefsDataError
+    error: briefsDataError,
   } = useReadContracts({
     contracts: contractsToRead,
     enabled: contractsToRead.length > 0,
@@ -85,24 +84,27 @@ export const useInfluencerDashboard = () => {
   // Step 4: Process the data when ready
   useEffect(() => {
     if (!influencerAddress) {
-      setDashboardData(prev => ({
+      setDashboardData((prev) => ({
         ...prev,
         isLoading: false,
-        error: 'No influencer address available'
+        error: "No influencer address available",
       }));
       return;
     }
 
     if (isLoadingBriefIds || isLoadingBriefsData || !briefsData) {
-      setDashboardData(prev => ({ ...prev, isLoading: true }));
+      setDashboardData((prev) => ({ ...prev, isLoading: true }));
       return;
     }
 
     if (briefIdsError || briefsDataError) {
-      setDashboardData(prev => ({
+      setDashboardData((prev) => ({
         ...prev,
         isLoading: false,
-        error: briefIdsError?.message || briefsDataError?.message || 'Failed to fetch data'
+        error:
+          briefIdsError?.message ||
+          briefsDataError?.message ||
+          "Failed to fetch data",
       }));
       return;
     }
@@ -110,15 +112,15 @@ export const useInfluencerDashboard = () => {
     try {
       const appliedBriefs = [];
       const assignedBriefs = [];
-      
+
       // First result is getAllBriefs
       const allBriefs = briefsData[0].result;
-      
+
       // Process each brief - data comes in pairs (brief data, applications data)
       for (let i = 0; i < briefIds.length; i++) {
         const briefId = briefIds[i];
-        const briefData = briefsData[(i * 2) + 1]?.result as BriefData;
-        const applicationsData = briefsData[(i * 2) + 2]?.result as {
+        const briefData = briefsData[i * 2 + 1]?.result as BriefData;
+        const applicationsData = briefsData[i * 2 + 2]?.result as {
           influencers: string[];
           messages: string[];
           timestamps: string[];
@@ -127,12 +129,12 @@ export const useInfluencerDashboard = () => {
           proofLinks: string[];
           isApproved: boolean[];
         };
-        
+
         if (!briefData || !applicationsData) continue;
 
         // Find the influencer's application
         const influencerAppIndex = applicationsData.influencers.findIndex(
-          addr => addr.toLowerCase() === influencerAddress.toLowerCase()
+          (addr) => addr.toLowerCase() === influencerAddress.toLowerCase()
         );
 
         if (influencerAppIndex === -1) continue;
@@ -151,7 +153,7 @@ export const useInfluencerDashboard = () => {
         appliedBriefs.push({
           briefId,
           brief: briefData,
-          application
+          application,
         });
 
         // If selected, add to assignedBriefs
@@ -159,7 +161,7 @@ export const useInfluencerDashboard = () => {
           assignedBriefs.push({
             briefId,
             brief: briefData,
-            application
+            application,
           });
         }
       }
@@ -168,14 +170,14 @@ export const useInfluencerDashboard = () => {
         appliedBriefs,
         assignedBriefs,
         isLoading: false,
-        error: null
+        error: null,
       });
     } catch (error) {
-      console.error('Error processing data:', error);
-      setDashboardData(prev => ({
+      console.error("Error processing data:", error);
+      setDashboardData((prev) => ({
         ...prev,
         isLoading: false,
-        error: error.message || 'Failed to process data'
+        error: error.message || "Failed to process data",
       }));
     }
   }, [
@@ -185,7 +187,7 @@ export const useInfluencerDashboard = () => {
     isLoadingBriefIds,
     isLoadingBriefsData,
     briefIdsError,
-    briefsDataError
+    briefsDataError,
   ]);
 
   const refetch = () => {

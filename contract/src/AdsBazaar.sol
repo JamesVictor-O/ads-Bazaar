@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
@@ -126,6 +125,7 @@ contract AdsBazaar is SelfVerificationRoot {
     }
    
     bytes32[] private allBriefIds;
+    
     mapping(bytes32 => AdBrief) public briefs;
     mapping(bytes32 => InfluencerApplication[]) public applications;
     mapping(address => UserProfile) public users;
@@ -133,6 +133,9 @@ contract AdsBazaar is SelfVerificationRoot {
     mapping(address => bytes32[]) public influencerApplications;
     mapping(address => PendingPayment[]) public influencerPendingPayments;
     mapping(address => uint256) public totalPendingAmount; // Total amount pending for each influencer
+    
+    // Simplified influencer profile - just stores JSON string
+    mapping(address => string) public influencerProfiles;
 
     // Events
     event UserRegistered(address indexed user, bool isBusiness, bool isInfluencer);
@@ -148,7 +151,9 @@ contract AdsBazaar is SelfVerificationRoot {
     event VerificationDeadlineSet(bytes32 indexed briefId, uint256 deadline);
     event AutoApprovalTriggered(bytes32 indexed briefId);
     event InfluencerVerified(address indexed influencer);
-
+    event PlatformFeeTransferred(address indexed recipient, uint256 amount);
+    event InfluencerProfileUpdated(address indexed influencer, string profileData);
+    
     // Self protocol related events
     event VerificationConfigUpdated(address indexed updater);
     
@@ -193,6 +198,16 @@ contract AdsBazaar is SelfVerificationRoot {
         emit UserRegistered(msg.sender, _isBusiness, _isInfluencer);
     }
 
+    // update influencer profile (JSON string)
+    function updateInfluencerProfile(string calldata _profileData) external onlyInfluencer {
+        influencerProfiles[msg.sender] = _profileData;
+        emit InfluencerProfileUpdated(msg.sender, _profileData);
+    }
+
+    // Get influencer profile
+    function getInfluencerProfile(address _influencer) external view returns (string memory) {
+        return influencerProfiles[_influencer];
+    }
     
     function createAdBrief(
         string calldata _name,
@@ -213,7 +228,6 @@ contract AdsBazaar is SelfVerificationRoot {
         
         // Transfer tokens from business to contract
         require(cUSD.transferFrom(msg.sender, address(this), _budget), "Token transfer failed");
-        
         
         bytes32 briefId = keccak256(
             abi.encodePacked(
@@ -331,8 +345,9 @@ contract AdsBazaar is SelfVerificationRoot {
                 uint256 platformFee = (equalShare * platformFeePercentage) / 1000;
                 uint256 influencerAmount = equalShare - platformFee;
                 
-                // Transfer platform fee
+                // Transfer platform fee directly to owner immediately
                 require(cUSD.transfer(owner, platformFee), "Platform fee transfer failed");
+                emit PlatformFeeTransferred(owner, platformFee);
                 
                 // Add to pending payments instead of direct transfer
                 address influencer = applications[_briefId][i].influencer;
@@ -351,7 +366,6 @@ contract AdsBazaar is SelfVerificationRoot {
         }
     }
 
-   
     function applyToBrief(bytes32 _briefId, string calldata _message) external onlyInfluencer briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
         require(brief.status == Status.OPEN, "Brief not open for applications");
@@ -571,12 +585,6 @@ contract AdsBazaar is SelfVerificationRoot {
         platformFeePercentage = _newFeePercentage;
     }
     
-    function withdrawFees() external onlyOwner {
-        uint256 balance = cUSD.balanceOf(address(this));
-        require(balance > 0, "No fees to withdraw");
-        require(cUSD.transfer(owner, balance), "Transfer failed");
-    }
-    
     // Check if an influencer is verified
     function isInfluencerVerified(address _influencer) external view returns (bool) {
         return verifiedInfluencers[_influencer];
@@ -604,8 +612,9 @@ contract AdsBazaar is SelfVerificationRoot {
                 if (bytes(application.proofLink).length > 0) {
                     application.isApproved = true;
                     
-                    // Transfer platform fee
+                    // Transfer platform fee directly to owner
                     require(cUSD.transfer(owner, platformFee), "Platform fee transfer failed");
+                    emit PlatformFeeTransferred(owner, platformFee);
                     
                     // Add to pending payments
                     address influencer = application.influencer;
