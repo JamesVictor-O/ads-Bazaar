@@ -334,14 +334,20 @@ export default function InfluencerDashboard() {
   // If user is not registered or not an influencer, show a message
   if (!userProfile?.isRegistered || !userProfile?.isInfluencer) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-center p-8 max-w-md">
-          <h2 className="text-2xl font-bold mb-4">Account Required</h2>
-          <p className="mb-6">
-            You need to register as an influencer to access the dashboard.
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 max-w-md text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <Briefcase className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Influencer Account Required
+          </h2>
+          <p className="text-slate-400 mb-8 leading-relaxed">
+            You need to register as an influencer to access the influencer
+            dashboard and apply for promotions.
           </p>
-          <Link href={"/"}>
-            <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+          <Link href="/">
+            <button className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
               Register as Influencer
             </button>
           </Link>

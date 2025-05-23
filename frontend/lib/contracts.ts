@@ -5,4 +5,4 @@ export const cUSDContractConfig = {
   abi: erc20Abi,
 };
 
-export const CONTRACT_ADDRESS = "0x44D79767153b2c77A04C1301a24848fF973a0c82";
+export const CONTRACT_ADDRESS = "0x4650D41cBD9dDbe58e3DD69EeD454b1c83380F77";

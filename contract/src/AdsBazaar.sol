@@ -133,7 +133,7 @@ contract AdsBazaar is SelfVerificationRoot {
     mapping(address => bytes32[]) public influencerApplications;
     mapping(address => PendingPayment[]) public influencerPendingPayments;
     mapping(address => uint256) public totalPendingAmount; // Total amount pending for each influencer
-    
+    mapping(bytes32 => uint256) public briefApplicationCounts;
     // Simplified influencer profile - just stores JSON string
     mapping(address => string) public influencerProfiles;
 
@@ -375,6 +375,8 @@ contract AdsBazaar is SelfVerificationRoot {
         for (uint256 i = 0; i < applications[_briefId].length; i++) {
             require(applications[_briefId][i].influencer != msg.sender, "Already applied");
         }
+
+        briefApplicationCounts[_briefId]++;
         
         // Create application
         InfluencerApplication memory newApplication = InfluencerApplication({
