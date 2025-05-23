@@ -86,7 +86,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
             <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
               <span className="font-bold text-white text-lg">AB</span>
             </div>
-            <h1 className="text-xl font-bold text-white">Ads-Bazer</h1>
+            <h1 className="text-xl font-bold text-white">Ads-Bazaar</h1>
           </div>
         </Link>
 

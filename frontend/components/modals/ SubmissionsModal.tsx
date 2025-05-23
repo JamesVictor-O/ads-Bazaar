@@ -34,7 +34,9 @@ export const SubmissionsModal = ({
       <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 w-full max-w-md mx-auto max-h-[80vh] overflow-y-auto shadow-2xl shadow-emerald-500/10">
         {/* Header with campaign name and close button */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">Submissions for {selectedBrief.name}</h2>
+          <h2 className="text-2xl font-bold text-white">
+            Submissions for {selectedBrief.title}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
@@ -79,8 +81,12 @@ export const SubmissionsModal = ({
                   {/* Influencer info and status */}
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-sm font-medium text-white">Influencer #{index + 1}</p>
-                      <p className="text-xs text-slate-400 truncate">{submission.influencer}</p>
+                      <p className="text-sm font-medium text-white">
+                        Influencer #{index + 1}
+                      </p>
+                      <p className="text-xs text-slate-400 truncate">
+                        {submission.influencer}
+                      </p>
                     </div>
                     {submission.isApproved ? (
                       <span className="px-3 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center">
@@ -133,8 +139,14 @@ export const SubmissionsModal = ({
 
                         {/* Submission timestamp */}
                         <div className="text-xs text-slate-400">
-                          Submitted: {new Date(submission.timestamp * 1000).toLocaleDateString()} at{" "}
-                          {new Date(submission.timestamp * 1000).toLocaleTimeString()}
+                          Submitted:{" "}
+                          {new Date(
+                            submission.timestamp * 1000
+                          ).toLocaleDateString()}{" "}
+                          at{" "}
+                          {new Date(
+                            submission.timestamp * 1000
+                          ).toLocaleTimeString()}
                         </div>
 
                         {/* Release funds button */}
@@ -181,7 +193,8 @@ export const SubmissionsModal = ({
             </svg>
             <p className="font-medium">No submissions yet</p>
             <p className="mt-2 text-sm">
-              Selected influencers will appear here once they submit their proof of work.
+              Selected influencers will appear here once they submit their proof
+              of work.
             </p>
           </div>
         )}
