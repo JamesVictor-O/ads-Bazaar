@@ -11,6 +11,8 @@
   "dependencies": {
     "@farcaster/auth-kit": "^0.7.0",
     "@rainbow-me/rainbowkit": "^2.2.4",
+    "@selfxyz/core": "^0.0.25",
+    "@selfxyz/qrcode": "^0.0.19",
     "@tanstack/react-query": "^5.76.0",
     "lucide-react": "^0.510.0",
     "next": "15.3.2",

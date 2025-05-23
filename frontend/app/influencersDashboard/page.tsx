@@ -9,8 +9,6 @@ import {
   Clock,
   CheckCircle,
   Link as LinkIcon,
-  Users,
-  Copy,
   ExternalLink,
   AlertCircle,
   Shield,
@@ -20,7 +18,6 @@ import {
   Sparkles,
   Award,
   TrendingUp,
-  ArrowUpRight,
   Target,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -30,9 +27,7 @@ import { useAccount } from "wagmi";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   useUserProfile,
-  useGetAllId,
   useIsInfluencerVerified,
-  useInfluencerApplications,
   useSubmitProof,
 } from "../../hooks/adsBazaar";
 import { Toaster, toast } from "react-hot-toast";
@@ -403,6 +398,14 @@ export default function InfluencerDashboard() {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               {/* View Profile Link */}
+                <Link
+                href={"/selfVerification"}
+                className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 rounded-xl transition-all"
+              >
+                 Verify with self
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+
               <Link
                 href={`/influencer/${address}`}
                 className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 rounded-xl transition-all"
