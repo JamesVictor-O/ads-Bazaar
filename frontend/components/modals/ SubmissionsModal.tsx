@@ -1,16 +1,16 @@
 "use client";
 
-import { CheckCircle, Clock, Globe, X } from "lucide-react"; // Icons for UI
-import { Brief, Application } from "@/types/index"; // Types for brief and applications
-import { Hex } from "viem"; // Type for hexadecimal strings (e.g., brief IDs)
+import { CheckCircle, Clock, Globe, X } from "lucide-react"; 
+import { Brief, Application } from "@/types/index"; 
+import { Hex } from "viem"; 
 
 interface SubmissionsModalProps {
-  selectedBrief: Brief | null; // The selected campaign brief
-  applications: Application[]; // List of influencer applications
-  isLoadingApplications: boolean; // Loading state for fetching applications
-  isCompletingCampaign: boolean; // Loading state for releasing funds
-  onReleaseFunds: (briefId: Hex) => void; // Function to release funds to influencers
-  onClose: () => void; // Function to close the modal
+  selectedBrief: Brief | null; 
+  applications: Application[]; 
+  isLoadingApplications: boolean; 
+  isCompletingCampaign: boolean;
+  onReleaseFunds: (briefId: Hex) => void; 
+  onClose: () => void;
 }
 
 export const SubmissionsModal = ({
@@ -21,18 +21,18 @@ export const SubmissionsModal = ({
   onReleaseFunds,
   onClose,
 }: SubmissionsModalProps) => {
-  // If no brief is selected, render nothing
   if (!selectedBrief) return null;
 
-  // Filter applications to show only selected influencers
   const selectedApplications = applications.filter((app) => app.isSelected);
+
+  console.log(selectedApplications)
 
   return (
     // Modal overlay with dark, translucent background
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300">
       {/* Modal container with dark theme and emerald shadow */}
       <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 w-full max-w-md mx-auto max-h-[80vh] overflow-y-auto shadow-2xl shadow-emerald-500/10">
-        {/* Header with campaign name and close button */}
+    
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">
             Submissions for {selectedBrief.title}

@@ -2,7 +2,8 @@
 import { Hex } from "viem";
 
 export interface Brief {
-  briefId: Hex;
+  title: string;
+  id: Hex;
   name: string;
   description: string;
   budget: string;

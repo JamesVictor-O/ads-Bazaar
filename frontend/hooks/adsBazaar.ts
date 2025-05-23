@@ -410,7 +410,7 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
         maxInfluencers: Number(rawData[10]),
         selectedInfluencersCount: Number(rawData[11]),
         targetAudience: Number(rawData[12]),
-        verificationDeadline: Number(rawData[13] || 0n), // Handle optional field
+        verificationDeadline: Number(rawData[13]), 
       };
     } catch (err) {
       console.error(`Error formatting brief ${briefId}:`, err);

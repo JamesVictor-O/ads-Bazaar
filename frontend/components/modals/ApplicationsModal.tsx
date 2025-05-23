@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
-import { formatDistanceToNow } from "date-fns"; // For formatting timestamps (e.g., "2 days ago")
+import { formatDistanceToNow } from "date-fns";
 import { truncateAddress } from "@/utils/format";
 import { useAccount } from "wagmi";
 import { Hex } from "viem";
@@ -30,7 +30,7 @@ export const ApplicationsModal = ({
   isLoadingApplications,
   onClose,
 }: ApplicationsModalProps) => {
-  const { address, isConnected } = useAccount();
+  const {isConnected } = useAccount();
 
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
 
@@ -48,6 +48,9 @@ export const ApplicationsModal = ({
     isSuccess: isCanceled,
     error: cancelError,
   } = useCancelAdBrief();
+
+
+  console.log("selectedBrief", selectedBrief);
 
   // Hook for completing a campaign
   const {
@@ -215,7 +218,7 @@ export const ApplicationsModal = ({
 
   // Determine if complete button should be shown
   const showCompleteButton =
-    selectedCount > 0 && hasSubmissions && selectedBrief.status !== 2; // 2 = COMPLETED
+    selectedCount > 0 && hasSubmissions && s// For formatting timestamps (e.g., "2 days ago")electedBrief.status !== 2; // 2 = COMPLETED
 
   return (
     // Modal overlay with dark, translucent background
