@@ -864,13 +864,18 @@ export function useSelectInfluencer() {
     applicationIndex: number
   ) => {
     if (!address) return;
+    // if (applicationIndex < 0) {
+    //   throw new Error("Invalid application index");
+    // }
 
+    console.log('Calling selectInfluencer:', { briefId, applicationIndex });
+  
     try {
       await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "selectInfluencer",
-        args: [briefId, BigInt(applicationIndex)],
+        args: [briefId, applicationIndex],
       });
     } catch (error) {
       console.error("Error selecting influencer:", error);

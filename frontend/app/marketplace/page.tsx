@@ -12,14 +12,14 @@ import {
   Award,
   Check,
   UserCheck,
-} from "lucide-react";
-import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
-import ApplyModal from "@/components/modals/AdsApplicationModal";
-import { useGetAllId } from "@/hooks/adsBazaar";
-import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication";
-import { useAccount } from "wagmi";
-import { formatDistanceToNow } from "date-fns";
-import { truncateAddress } from "@/utils/format";
+} from "lucide-react"; // Icons for UI
+import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar"; // Hooks for fetching briefs and user profile
+import ApplyModal from "@/components/modals/AdsApplicationModal"; // Modal for applying to campaigns
+
+import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication"; // Hook for fetching influencer applications
+import { useAccount } from "wagmi"; // Hook for wallet connection
+import { formatDistanceToNow } from "date-fns"; // For formatting timestamps
+import { truncateAddress } from "@/utils/format"; // Utility to shorten wallet addresses
 
 // Status and audience mappings
 const statusMap = {
@@ -47,77 +47,96 @@ const audienceMap = {
 };
 
 interface Brief {
-  id: `0x${string}`;
-  business: `0x${string}`;
-  title: string;
-  description: string;
-  budget: number;
-  status: number;
-  applicationDeadline: number;
-  promotionDuration: number;
-  promotionStartTime: number;
-  promotionEndTime: number;
-  maxInfluencers: number;
-  selectedInfluencersCount: number;
-  targetAudience: number;
-  verificationDeadline: number;
-  requirements?: string;
-  applicationsCount?: number;
+  id: `0x${string}`; // Brief ID (hex string)
+  business: `0x${string}`; // Business wallet address
+  title: string; // Campaign title
+  description: string; // Campaign description
+  budget: number; // Campaign budget in cUSD
+  status: number; // Campaign status (0: Open, 1: Assigned, 2: Completed, 3: Cancelled)
+  applicationDeadline: number; // Deadline timestamp (seconds)
+  promotionDuration: number; // Duration in seconds
+  promotionStartTime: number; // Start time (seconds)
+  promotionEndTime: number; // End time (seconds)
+  maxInfluencers: number; // Max number of influencers
+  selectedInfluencersCount: number; // Number of selected influencers
+  targetAudience: number; // Audience category (mapped via audienceMap)
+  verificationDeadline: number; // Verification deadline (seconds)
+  requirements?: string; // Optional campaign requirements
+  applicationsCount?: number; // Number of applications
 }
 
 export default function Marketplace() {
+  // State for search and filters
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] =
-    useState<string>("All Categories");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All Categories");
   const [budgetFilter, setBudgetFilter] = useState<string>("Budget: Any");
+  // State for apply modal
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
-  const [selectedBrief, setSelectedBrief] = useState<any>(null);
+  const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
   const [applicationMessage, setApplicationMessage] = useState<string>("");
+  // State for tracking application status
   const [applicationStatus, setApplicationStatus] = useState<
     Record<string, "applied" | "assigned" | null>
   >({});
-  const { data } = useGetAllId();
 
+  // Fetch briefs, user profile, and influencer applications
   const { briefs, isLoading } = useGetAllBriefs();
   const { address, isConnected } = useAccount();
-  const { userProfile, isLoadingProfile: isProfileLoading } = useUserProfile();
-  const {
-    applications: influencerApplications = [],
-    isLoading: isLoadingApplications,
-  } = useGetInfluencerApplications(address);
+  const { userProfile, isLoadingProfile } = useUserProfile();
+  const { applications: influencerApplications = [], isLoading: isLoadingApplications } =
+    useGetInfluencerApplications(address);
 
+  // Update application status based on fetched applications
   useEffect(() => {
     if (!isLoadingApplications && influencerApplications) {
       const statusMap: Record<string, "applied" | "assigned" | null> = {};
-
       influencerApplications.forEach((app) => {
         statusMap[app.briefId] = app.isSelected ? "assigned" : "applied";
       });
-
       setApplicationStatus(statusMap);
     }
   }, [influencerApplications, isLoadingApplications]);
 
+  // Loading state for the entire page
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading campaigns...</p>
-        </div>
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-slate-900">
+      <div className="text-center">
+        <svg
+          className="animate-spin h-12 w-12 text-emerald-500 mx-auto"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
+          ></path>
+        </svg>
+        <p className="mt-4 text-slate-400">Loading campaigns...</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
+  // Determine button state for each brief
   const getButtonState = (brief: Brief) => {
-    // Check application status first
     const status = applicationStatus[brief.id];
     if (status === "assigned") {
       return {
         text: "Assigned",
         disabled: true,
         onClick: () => {},
-        variant: "green",
+        variant: "emerald",
         icon: <UserCheck className="w-4 h-4 mr-1" />,
       };
     }
@@ -131,22 +150,21 @@ export default function Marketplace() {
       };
     }
 
-    // Rest of your existing conditions
     if (!isConnected) {
       return {
         text: "Connect Wallet to Apply",
         disabled: true,
         onClick: () => {},
-        variant: "gray",
+        variant: "slate",
       };
     }
 
-    if (isProfileLoading) {
+    if (isLoadingProfile) {
       return {
         text: "Loading...",
         disabled: true,
         onClick: () => {},
-        variant: "gray",
+        variant: "slate",
       };
     }
 
@@ -155,7 +173,7 @@ export default function Marketplace() {
         text: "Register as Influencer",
         disabled: false,
         onClick: () => (window.location.href = "/"),
-        variant: "indigo",
+        variant: "emerald",
       };
     }
 
@@ -165,25 +183,24 @@ export default function Marketplace() {
           text: "Your Campaign",
           disabled: true,
           onClick: () => {},
-          variant: "gray",
+          variant: "slate",
         };
       }
       return {
         text: "Use Influencer Account",
         disabled: true,
         onClick: () => {},
-        variant: "gray",
+        variant: "slate",
       };
     }
 
-    const deadlinePassed =
-      new Date(brief.applicationDeadline * 1000) < new Date();
+    const deadlinePassed = new Date(brief.applicationDeadline * 1000) < new Date();
     if (brief.status !== 0 || deadlinePassed) {
       return {
         text: deadlinePassed ? "Deadline Passed" : "Closed",
         disabled: true,
         onClick: () => {},
-        variant: "gray",
+        variant: "slate",
       };
     }
 
@@ -194,10 +211,11 @@ export default function Marketplace() {
         setSelectedBrief(brief);
         setShowApplyModal(true);
       },
-      variant: "indigo",
+      variant: "emerald",
     };
   };
 
+  // Filter briefs based on search and filter criteria
   const filteredBriefs = briefs.filter((brief) => {
     const budget = brief.budget;
     const matchesSearch =
@@ -215,61 +233,62 @@ export default function Marketplace() {
     return matchesSearch && matchesCategory && matchesBudget;
   });
 
+  // Determine category badge color
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "Tech":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
       case "Fashion":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
       case "Food":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
       case "Fitness":
-        return "bg-red-100 text-red-800";
+        return "bg-red-500/10 text-red-400 border-red-500/20";
       case "Travel":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500/10 text-green-400 border-green-500/20";
       case "Gaming":
-        return "bg-indigo-100 text-indigo-800";
+        return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-slate-500/10 text-slate-400 border-slate-500/20";
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <div className="p-4 sm:p-6">
+    <div className="flex flex-col min-h-screen bg-slate-900">
+      <div className="p-6 lg:p-8">
         {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
-            Campaign Marketplace
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-white">Campaign Marketplace</h2>
+          <p className="text-sm text-slate-400 mt-2">
             Discover campaigns that match your influencer profile
           </p>
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-white shadow rounded-lg p-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 mb-8 shadow-lg shadow-emerald-500/10">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search Input */}
             <div className="flex-grow">
               <div className="relative">
                 <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={18}
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
                 />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
                   placeholder="Search campaigns..."
                 />
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
+            {/* Category and Budget Filters */}
+            <div className="flex flex-col lg:flex-row gap-4">
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full sm:w-40 pl-3 pr-8 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full lg:w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
               >
                 <option>All Categories</option>
                 {Object.entries(audienceMap).map(([value, label]) => (
@@ -281,7 +300,7 @@ export default function Marketplace() {
               <select
                 value={budgetFilter}
                 onChange={(e) => setBudgetFilter(e.target.value)}
-                className="w-full sm:w-40 pl-3 pr-8 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full lg:w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
               >
                 <option>Budget: Any</option>
                 <option>Under 500 cUSD</option>
@@ -294,80 +313,70 @@ export default function Marketplace() {
         </div>
 
         {/* Brief List */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredBriefs.map((brief) => {
             const category = audienceMap[brief.targetAudience] || "Other";
             const status = statusMap[brief.status] || "Unknown";
             const isOpen = brief.status === 0;
-            const deadlinePassed =
-              new Date(brief.applicationDeadline * 1000) < new Date();
+            const deadlinePassed = new Date(brief.applicationDeadline * 1000) < new Date();
             const buttonState = getButtonState(brief);
             const applicationsCount = brief.applicationsCount || 0;
 
             return (
               <div
                 key={brief.id}
-                className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300"
+                className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300"
               >
                 {/* Header with category and budget */}
-                <div className="p-4 border-b border-gray-100">
+                <div className="p-5 border-b border-slate-700/50">
                   <div className="flex justify-between items-start">
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(
                         category
                       )}`}
                     >
                       {category}
                     </span>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-800">
+                    <span className="inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {brief.budget.toLocaleString()} cUSD
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mt-2 line-clamp-2">
+                  <h3 className="text-lg font-semibold text-white mt-3 line-clamp-2">
                     {brief.title}
                   </h3>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-slate-400 mt-1">
                     by {truncateAddress(brief.business)}
                   </p>
                 </div>
 
                 {/* Campaign details */}
-                <div className="p-4">
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                <div className="p-5">
+                  <p className="text-sm text-slate-300 mb-4 line-clamp-3">
                     {brief.description}
                   </p>
 
                   {/* Status and deadline */}
                   <div className="flex items-center justify-between mb-4">
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                         isOpen && !deadlinePassed
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                      } border`}
                     >
-                      {isOpen && !deadlinePassed
-                        ? "Open"
-                        : deadlinePassed
-                        ? "Closed"
-                        : status}
+                      {isOpen && !deadlinePassed ? "Open" : deadlinePassed ? "Closed" : status}
                     </span>
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Clock className="w-3 h-3 mr-1" />
+                    <div className="flex items-center text-xs text-slate-400">
+                      <Clock className="w-4 h-4 mr-1" />
                       {deadlinePassed ? (
                         <span>
-                          Closed{" "}
-                          {formatDistanceToNow(
-                            new Date(brief.applicationDeadline * 1000),
-                            { addSuffix: true }
-                          )}
+                          Closed {formatDistanceToNow(new Date(brief.applicationDeadline * 1000), {
+                            addSuffix: true,
+                          })}
                         </span>
                       ) : (
                         <span>
-                          Closes in{" "}
-                          {formatDistanceToNow(
-                            new Date(brief.applicationDeadline * 1000)
-                          )}
+                          Closes in {formatDistanceToNow(new Date(brief.applicationDeadline * 1000))}
                         </span>
                       )}
                     </div>
@@ -375,64 +384,62 @@ export default function Marketplace() {
 
                   {/* Stats grid */}
                   <div className="grid grid-cols-2 gap-3 text-xs mb-4">
-                    <div className="bg-gray-50 p-2 rounded-lg">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Users className="w-3 h-3 mr-1" />
+                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                      <div className="flex items-center text-slate-400 mb-1">
+                        <Users className="w-4 h-4 mr-1" />
                         <span>Influencers</span>
                       </div>
-                      <div className="font-semibold">
+                      <div className="font-semibold text-white">
                         {brief.selectedInfluencersCount}/{brief.maxInfluencers}
                       </div>
                     </div>
-                    <div className="bg-gray-50 p-2 rounded-lg">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Award className="w-3 h-3 mr-1" />
+                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                      <div className="flex items-center text-slate-400 mb-1">
+                        <Award className="w-4 h-4 mr-1" />
                         <span>Applications</span>
                       </div>
-                      <div className="font-semibold">{applicationsCount}</div>
+                      <div className="font-semibold text-white">{applicationsCount}</div>
                     </div>
-                    <div className="bg-gray-50 p-2 rounded-lg">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Calendar className="w-3 h-3 mr-1" />
+                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                      <div className="flex items-center text-slate-400 mb-1">
+                        <Calendar className="w-4 h-4 mr-1" />
                         <span>Duration</span>
                       </div>
-                      <div className="font-semibold">
+                      <div className="font-semibold text-white">
                         {Math.ceil(brief.promotionDuration / 86400)} days
                       </div>
                     </div>
-                    <div className="bg-gray-50 p-2 rounded-lg">
-                      <div className="flex items-center text-gray-500 mb-1">
-                        <Target className="w-3 h-3 mr-1" />
+                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                      <div className="flex items-center text-slate-400 mb-1">
+                        <Target className="w-4 h-4 mr-1" />
                         <span>Audience</span>
                       </div>
-                      <div className="font-semibold truncate">{category}</div>
+                      <div className="font-semibold text-white truncate">{category}</div>
                     </div>
                   </div>
 
                   {/* Requirements (if any) */}
                   {brief.requirements && (
                     <div className="mb-4">
-                      <div className="flex items-center text-xs text-gray-500 mb-1">
-                        <AlertCircle className="w-3 h-3 mr-1" />
+                      <div className="flex items-center text-xs text-slate-400 mb-1">
+                        <AlertCircle className="w-4 h-4 mr-1" />
                         <span>Requirements</span>
                       </div>
-                      <p className="text-xs text-gray-600 line-clamp-2">
-                        {brief.requirements}
-                      </p>
+                      <p className="text-xs text-slate-300 line-clamp-2">{brief.requirements}</p>
                     </div>
                   )}
 
                   {/* Apply button */}
                   <button
                     onClick={buttonState.onClick}
-                    className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center ${
-                      buttonState.variant === "indigo"
-                        ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    className={`w-full py-3 px-4 rounded-xl text-sm font-medium flex items-center justify-center transition-all duration-200 shadow-md ${
+                      buttonState.variant === "emerald" && !buttonState.disabled
+                        ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
                         : buttonState.variant === "blue"
-                        ? "bg-blue-100 text-blue-800 cursor-not-allowed"
-                        : buttonState.variant === "green"
-                        ? "bg-green-100 text-green-800 cursor-not-allowed"
-                        : "bg-gray-100 text-gray-600 cursor-not-allowed"
+                        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20 cursor-not-allowed"
+                        : buttonState.variant === "emerald" && buttonState.disabled
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-not-allowed"
+                        : "bg-slate-500/10 text-slate-400 border border-slate-500/20 cursor-not-allowed"
                     }`}
                     disabled={buttonState.disabled}
                   >
@@ -445,13 +452,11 @@ export default function Marketplace() {
           })}
           {filteredBriefs.length === 0 && (
             <div className="col-span-full py-12 text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
+              <div className="mx-auto w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center mb-4">
+                <Search className="w-8 h-8 text-slate-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">
-                No campaigns found
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <h3 className="text-lg font-medium text-white">No campaigns found</h3>
+              <p className="text-sm text-slate-400 mt-2">
                 Try adjusting your search or filter criteria
               </p>
             </div>
@@ -459,6 +464,7 @@ export default function Marketplace() {
         </div>
       </div>
 
+      {/* Apply Modal */}
       {userProfile?.isRegistered && userProfile.isInfluencer && (
         <ApplyModal
           showApplyModal={showApplyModal}
@@ -470,8 +476,7 @@ export default function Marketplace() {
                   title: selectedBrief.title,
                   business: selectedBrief.business,
                   budget: selectedBrief.budget,
-                  requirements:
-                    selectedBrief.requirements || "No specific requirements",
+                  requirements: selectedBrief.requirements || "No specific requirements",
                 }
               : null
           }
