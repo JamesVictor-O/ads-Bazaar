@@ -17,10 +17,8 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  TrendingUp,
   Filter,
   MoreVertical,
-  ArrowUpRight,
   Activity,
   Target,
 } from "lucide-react";
@@ -58,14 +56,16 @@ const BrandDashboard = () => {
     verificationPeriod: "86400",
   });
 
-  const {
-    cancelBrief,
-    isPending: isCancellingBrief,
-    isSuccess: isCancelSuccess,
-  } = useCancelAdBrief();
+  // const {
+  //   cancelBrief,
+  //   isPending: isCancellingBrief,
+  //   isSuccess: isCancelSuccess,
+  // } = useCancelAdBrief();
 
-  const { userProfile, isLoadingProfile } = useUserProfile();
-  const { briefs, isLoading, isError } = useGetBusinessBriefs(address);
+  const { userProfile } = useUserProfile();
+  const { briefs, isLoading, isError } = address
+    ? useGetBusinessBriefs(address as `0x${string}`)
+    : { briefs: [], isLoading: false, isError: false };
   const { applications, isLoadingApplications, refetchApplications } =
     useBriefApplications(selectedBrief?.id || "0x0");
 
@@ -78,8 +78,6 @@ const BrandDashboard = () => {
   } = useCreateAdBrief();
 
   const {
-    selectInfluencer,
-    isPending: isSelectingInfluencer,
     isSuccess: isSelectSuccess,
     isError: isSelectError,
     error: selectError,
@@ -112,8 +110,12 @@ const BrandDashboard = () => {
     }
   }, [briefs]);
 
-  const getStatusString = (statusCode) => {
-    const statusMap = {
+  interface StatusMap {
+    [key: number]: string;
+  }
+
+  const getStatusString = (statusCode: number): string => {
+    const statusMap: StatusMap = {
       0: "Active",
       1: "In Progress",
       2: "Completed",
@@ -122,8 +124,12 @@ const BrandDashboard = () => {
     return statusMap[statusCode] || "Unknown";
   };
 
-  const getStatusColor = (statusCode) => {
-    const colorMap = {
+  interface StatusColorMap {
+    [key: number]: string;
+  }
+
+  const getStatusColor = (statusCode: number): string => {
+    const colorMap: StatusColorMap = {
       0: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
       1: "bg-blue-500/10 text-blue-400 border-blue-500/20",
       2: "bg-green-500/10 text-green-400 border-green-500/20",
@@ -245,11 +251,15 @@ const BrandDashboard = () => {
     } catch (error) {
       console.error("Error creating campaign:", error);
       toast.error(
-        `Failed to create campaign: ${error.message || "Unknown error"}`
+        `Failed to create campaign: ${
+          typeof error === "object" && error !== null && "message" in error
+            ? (error as { message?: string }).message
+            : "Unknown error"
+        }`
       );
     }
   };
-
+// @ts-ignore  
   const handleReleaseFunds = async (briefId) => {
     try {
       await completeCampaign(briefId);
@@ -527,6 +537,7 @@ const BrandDashboard = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => {
+                            // @ts-ignore  
                             setSelectedBrief(brief);
                             setShowApplicationsModal(true);
                           }}
@@ -541,6 +552,7 @@ const BrandDashboard = () => {
                         </button>
                         <button
                           onClick={() => {
+                            // @ts-ignore  
                             setSelectedBrief(brief);
                             setShowSubmissionsModal(true);
                           }}

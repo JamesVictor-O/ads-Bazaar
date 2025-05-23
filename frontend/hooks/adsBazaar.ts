@@ -208,6 +208,15 @@ export function useGetAllBriefs() {
           ids.map(async (id) => {
             try {
               // Fetch brief details
+              if (!publicClient) {
+                throw new Error("Public client not available");
+              }
+              if (!publicClient) {
+                throw new Error("Public client not available");
+              }
+              if (!publicClient) {
+                throw new Error("Public client not available");
+              }
               const briefData = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
@@ -280,7 +289,7 @@ export function useGetAllBriefs() {
         maxInfluencers: Number(rawData[10]),
         selectedInfluencersCount: Number(rawData[11]),
         targetAudience: Number(rawData[12]),
-        verificationDeadline: Number(rawData[13] || 0n), // Handle optional field
+        verificationDeadline: Number(rawData[13] || 0), // Handle optional field
         applicationCount: applicationCount,
       };
     } catch (err) {
@@ -410,7 +419,8 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
         maxInfluencers: Number(rawData[10]),
         selectedInfluencersCount: Number(rawData[11]),
         targetAudience: Number(rawData[12]),
-        verificationDeadline: Number(rawData[13]), 
+        verificationDeadline: Number(rawData[13]),
+        applicationCount: 0, // Default to 0 or fetch actual count if available
       };
     } catch (err) {
       console.error(`Error formatting brief ${briefId}:`, err);
@@ -444,10 +454,10 @@ export function useUserProfile(userAddress?: Address) {
   return {
     userProfile: data
       ? {
-          isRegistered: data[0] as boolean,
-          isBusiness: data[1] as boolean,
-          isInfluencer: data[2] as boolean,
-          profileData: data[3] as string,
+          isRegistered: (data as [boolean, boolean, boolean, string])[0],
+          isBusiness: (data as [boolean, boolean, boolean, string])[1],
+          isInfluencer: (data as [boolean, boolean, boolean, string])[2],
+          profileData: (data as [boolean, boolean, boolean, string])[3],
         }
       : null,
     isLoadingProfile: isLoading,
@@ -530,7 +540,7 @@ export function useBusinessBriefs(businessAddress?: Address) {
 
   useEffect(() => {
     async function fetchAllBriefData() {
-      if (!briefIds || briefIds.length === 0) {
+      if (!Array.isArray(briefIds) || briefIds.length === 0) {
         setBriefs([]);
         return;
       }
@@ -541,6 +551,7 @@ export function useBusinessBriefs(businessAddress?: Address) {
       try {
         const briefsData = await Promise.all(
           (briefIds as Bytes32[]).map(async (briefId) => {
+            // @ts-ignore  
             const briefData = await publicClient.readContract({
               address: CONTRACT_ADDRESS,
               abi: ABI.abi,
@@ -658,17 +669,21 @@ export function useBriefApplications(briefId: Bytes32) {
   });
 
   // Format the application data into a more usable structure
-  const formattedApplications = data
-    ? (data.influencers as Address[]).map((influencer, index) => ({
-        influencer,
-        message: data.messages[index] as string,
-        timestamp: Number(data.timestamps[index] as bigint),
-        isSelected: data.isSelected[index] as boolean,
-        hasClaimed: data.hasClaimed[index] as boolean,
-        proofLink: data.proofLinks[index] as string,
-        isApproved: data.isApproved[index] as boolean,
-      }))
-    : [];
+  const formattedApplications =
+    data &&
+    typeof data === "object" &&
+    "influencers" in data &&
+    Array.isArray((data as any).influencers)
+      ? ((data as any).influencers as Address[]).map((influencer, index) => ({
+          influencer,
+          message: (data as any).messages[index] as string,
+          timestamp: Number((data as any).timestamps[index] as bigint),
+          isSelected: (data as any).isSelected[index] as boolean,
+          hasClaimed: (data as any).hasClaimed[index] as boolean,
+          proofLink: (data as any).proofLinks[index] as string,
+          isApproved: (data as any).isApproved[index] as boolean,
+        }))
+      : [];
 
   return {
     applications: formattedApplications as Application[],
@@ -695,13 +710,21 @@ export function usePendingPayments(influencerAddress?: Address) {
   });
 
   // Format the payment data into a more usable structure
-  const formattedPayments = data
-    ? (data.briefIds as Bytes32[]).map((briefId, index) => ({
-        briefId,
-        amount: data.amounts[index] as bigint,
-        approved: data.approved[index] as boolean,
-      }))
-    : [];
+  const formattedPayments =
+    data &&
+    typeof data === "object" &&
+    "briefIds" in data &&
+    Array.isArray((data as any).briefIds) &&
+    "amounts" in data &&
+    Array.isArray((data as any).amounts) &&
+    "approved" in data &&
+    Array.isArray((data as any).approved)
+      ? ((data as any).briefIds as Bytes32[]).map((briefId: Bytes32, index: number) => ({
+          briefId,
+          amount: (data as any).amounts[index] as bigint,
+          approved: (data as any).approved[index] as boolean,
+        }))
+      : [];
 
   return {
     pendingPayments: formattedPayments as Payment[],
@@ -877,9 +900,7 @@ export function useSelectInfluencer() {
     applicationIndex: number
   ) => {
     if (!address) return;
-    // if (applicationIndex < 0) {
-    //   throw new Error("Invalid application index");
-    // }
+  
 
     console.log("Calling selectInfluencer:", { briefId, applicationIndex });
 
@@ -1041,18 +1062,30 @@ export function useVerifySelfProof() {
   const tx = useHandleTransaction();
   const { address } = useAccount();
 
-  const verifySelfProof = async (proof: string) => {
+  const verifySelfProof = async (proof: any, publicSignals: string[]) => {
     if (!address) return;
 
     try {
+      // Format the proof according to your contract's expected structure
+      const formattedProof = {
+        a: [proof.pi_a[0], proof.pi_a[1]],
+        b: [
+          [proof.pi_b[0][1], proof.pi_b[0][0]], 
+          [proof.pi_b[1][1], proof.pi_b[1][0]]
+        ],
+        c: [proof.pi_c[0], proof.pi_c[1]],
+        pubSignals: publicSignals // This should be exactly 21 elements as per your ABI
+      };
+
       await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "verifySelfProof",
-        args: [proof],
+        args: [formattedProof],
       });
     } catch (error) {
       console.error("Error verifying Self proof:", error);
+      throw error; // Re-throw so the calling component can handle it
     }
   };
 

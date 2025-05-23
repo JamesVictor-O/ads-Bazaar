@@ -25,6 +25,12 @@ export interface Application {
   isSelected: boolean;
   isApproved?: boolean;
   proofLink?: string;
+  influencerProfile?: {
+    avatar?: string;
+    name?: string;
+    // Add other fields as needed
+  };
+   hasClaimed?: boolean;
 }
 
 export interface FormData {
