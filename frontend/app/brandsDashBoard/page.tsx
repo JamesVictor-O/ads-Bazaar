@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { Brief } from "@/types/index";
-// import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
 import { SubmissionsModal } from "@/components/modals/ SubmissionsModal";
-
 import { ApplicationsModal } from "@/components/modals/ApplicationsModal";
 import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
 import { useRouter } from "next/navigation";
@@ -14,7 +12,6 @@ import {
   Users,
   Briefcase,
   DollarSign,
-  BarChart2,
   Search,
   Plus,
   Calendar,
@@ -99,7 +96,7 @@ const BrandDashboard = () => {
   // Create a map to store application counts for each brief
   const [applicationCounts, setApplicationCounts] = useState<{[key: string]: number}>({});
 
-  // Load application counts for all briefs
+
   useEffect(() => {
     if (briefs && briefs.length > 0) {
       briefs.forEach(brief => {
@@ -342,10 +339,6 @@ const BrandDashboard = () => {
               <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl border border-blue-500/20">
                 <Activity className="w-6 h-6 text-blue-400" />
               </div>
-              <div className="flex items-center text-emerald-400 text-sm font-medium">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                +12%
-              </div>
             </div>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-white">{activeBriefs.length}</p>
@@ -357,10 +350,6 @@ const BrandDashboard = () => {
             <div className="flex items-start justify-between mb-4">
               <div className="p-3 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl border border-green-500/20">
                 <CheckCircle className="w-6 h-6 text-green-400" />
-              </div>
-              <div className="flex items-center text-emerald-400 text-sm font-medium">
-                <ArrowUpRight className="w-4 h-4 mr-1" />
-                +8%
               </div>
             </div>
             <div className="space-y-1">
@@ -374,10 +363,6 @@ const BrandDashboard = () => {
               <div className="p-3 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-xl border border-emerald-500/20">
                 <DollarSign className="w-6 h-6 text-emerald-400" />
               </div>
-              <div className="flex items-center text-emerald-400 text-sm font-medium">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                +24%
-              </div>
             </div>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-white">{totalBudget.toLocaleString()}</p>
@@ -389,10 +374,6 @@ const BrandDashboard = () => {
             <div className="flex items-start justify-between mb-4">
               <div className="p-3 bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-xl border border-orange-500/20">
                 <Users className="w-6 h-6 text-orange-400" />
-              </div>
-              <div className="flex items-center text-emerald-400 text-sm font-medium">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                +15%
               </div>
             </div>
             <div className="space-y-1">
