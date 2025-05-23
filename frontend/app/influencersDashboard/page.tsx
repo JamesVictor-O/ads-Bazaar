@@ -20,6 +20,8 @@ import {
   Sparkles,
   Award,
   TrendingUp,
+  ArrowUpRight,
+  Target,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -33,7 +35,7 @@ import {
   useInfluencerApplications,
   useSubmitProof,
 } from "../../hooks/adsBazaar";
-import { toast } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 
 import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
@@ -368,112 +370,109 @@ export default function InfluencerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 pt-3">
-      <main className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-10 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="relative">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute -left-2 -top-2 w-16 h-16 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-30"></div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 relative">
-                  Welcome back,{" "}
-                  <span className="bg-gradient-to-r from-indigo-600  bg-clip-text ">
-                    {username || displayName || "Influencer"}
-                  </span>
-                </h1>
-              </div>
-              {isVerified && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200 shadow-sm">
-                  <Shield size={14} className="mr-1" />
-                  Verified Creator
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-28">
+      <Toaster position="top-right" />
+
+      <div className="px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Header Section */}
+        <div className="mb-12">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">
+                Hi,{" "}
+                <span className="bg-gradient-to-r from-emerald-400 bg-clip-text ">
+                  {username || displayName || "Influencer"}
                 </span>
-              )}
+                {isVerified && (
+                  <span className="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-900/50 text-emerald-400 border border-emerald-800/50">
+                    <Shield className="w-4 h-4 mr-1" />
+                    Verified Creator
+                  </span>
+                )}
+              </h1>
+              <p className="text-xl text-slate-400">
+                Manage your creative collaborations and track earnings
+              </p>
             </div>
-            <p className="text-sm text-gray-600 mt-2 ml-1 font-light">
-              Manage your creative collaborations and track your earnings
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Link
-              href={`/influencer/${address}`}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors flex items-center group"
-            >
-              View Public Profile
-              <ExternalLink
-                size={14}
-                className="ml-1 opacity-70 group-hover:opacity-100 transition-opacity"
-              />
-            </Link>
-            <Link href="/marketplace">
-              <button className="px-4 py-2 text-sm bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center">
-                <Sparkles size={14} className="mr-2" />
-                Browse Campaigns
-              </button>
-            </Link>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              {/* View Profile Link */}
+              <Link
+                href={`/influencer/${address}`}
+                className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 rounded-xl transition-all"
+              >
+                View Public Profile
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+
+              {/* Browse Campaigns Button */}
+              <Link href="/marketplace">
+                <button className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
+                  <Sparkles className="w-5 h-5" />
+                  Browse Campaigns
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-            <div className="flex items-center">
-              <div className="rounded-lg bg-indigo-100 p-3 mr-4 group-hover:bg-indigo-200 transition-colors">
-                <Briefcase className="h-6 w-6 text-indigo-600" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Applications
-                </p>
-                <p className="text-xl font-bold text-gray-800 mt-1">
-                  {appliedBriefs?.length || 0}
-                </p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
+            <div className="flex items-start justify-between mb-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl border border-blue-500/20">
+                <Briefcase className="w-6 h-6 text-blue-400" />
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-            <div className="flex items-center">
-              <div className="rounded-lg bg-green-100 p-3 mr-4 group-hover:bg-green-200 transition-colors">
-                <Award className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Selected
-                </p>
-                <p className="text-xl font-bold text-gray-800 mt-1">
-                  {assignedBriefs?.length || 0}
-                </p>
-              </div>
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-white">
+                {appliedBriefs?.length || 0}
+              </p>
+              <p className="text-slate-400 font-medium">Applications</p>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-            <div className="flex items-center">
-              <div className="rounded-lg bg-amber-100 p-3 mr-4 group-hover:bg-amber-200 transition-colors">
-                <DollarSign className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Earned
-                </p>
-                <p className="text-xl font-bold text-gray-800 mt-1">
-                  {totalEarned.toFixed(2)} cUSD
-                </p>
+
+          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
+            <div className="flex items-start justify-between mb-4">
+              <div className="p-3 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl border border-green-500/20">
+                <Award className="w-6 h-6 text-green-400" />
               </div>
             </div>
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-white">
+                {assignedBriefs?.length || 0}
+              </p>
+              <p className="text-slate-400 font-medium">Selected</p>
+            </div>
           </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-            <div className="flex items-center">
-              <div className="rounded-lg bg-purple-100 p-3 mr-4 group-hover:bg-purple-200 transition-colors">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
+
+          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
+            <div className="flex items-start justify-between mb-4">
+              <div className="p-3 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-xl border border-emerald-500/20">
+                <DollarSign className="w-6 h-6 text-emerald-400" />
               </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Potential Earnings
-                </p>
-                <p className="text-xl font-bold text-gray-800 mt-1">
-                  {potentialEarnings.toFixed(2)} cUSD
-                </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-white">
+                {totalEarned.toFixed(2)}
+              </p>
+              <p className="text-slate-400 font-medium">Total Earned (cUSD)</p>
+            </div>
+          </div>
+
+          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
+            <div className="flex items-start justify-between mb-4">
+              <div className="p-3 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl border border-purple-500/20">
+                <TrendingUp className="w-6 h-6 text-purple-400" />
               </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-white">
+                {potentialEarnings.toFixed(2)}
+              </p>
+              <p className="text-slate-400 font-medium">
+                Potential Earnings (cUSD)
+              </p>
             </div>
           </div>
         </div>
@@ -482,206 +481,186 @@ export default function InfluencerDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Campaign Applications - Takes 2/3 width on large screens */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                  <Briefcase className="h-5 w-5 text-indigo-500 mr-2" />
-                  Your Campaigns
-                </h2>
-                <div className="text-sm text-indigo-600 hover:text-indigo-800 transition-colors flex items-center">
-                  View All
-                  <ExternalLink size={14} className="ml-1" />
+            <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
+              <div className="p-6 border-b border-slate-700/50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-emerald-400" />
+                    Your Campaigns
+                  </h2>
+                  <span className="text-slate-400">
+                    {appliedBriefs?.length || 0} campaigns
+                  </span>
                 </div>
               </div>
 
               {isLoading && appliedBriefs === undefined ? (
-                <div className="bg-white rounded-lg p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mx-auto mb-3"></div>
-                  <p className="text-sm text-gray-500">
-                    Loading applications...
-                  </p>
+                <div className="p-12 text-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-4"></div>
+                  <p className="text-slate-400">Loading applications...</p>
                 </div>
               ) : !appliedBriefs || appliedBriefs.length === 0 ? (
-                <div className="bg-gradient-to-br from-gray-50 to-indigo-50 rounded-xl p-8 text-center border border-gray-200">
-                  <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4 opacity-70" />
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">
+                <div className="p-12 text-center">
+                  <Briefcase className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">
                     No Active Campaigns
                   </h3>
-                  <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                  <p className="text-slate-400 max-w-md mx-auto mb-6">
                     You haven't applied to any campaigns yet. Discover exciting
                     collaborations that match your creative style.
                   </p>
                   <Link href="/marketplace">
-                    <button className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg">
+                    <button className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
+                      <Sparkles className="w-5 h-5" />
                       Explore Marketplace
                     </button>
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="divide-y divide-slate-700/50">
                   {appliedBriefs.map((brief) => {
                     const applicationDeadline =
                       Number(brief.brief.applicationDeadline) * 1000;
                     const verificationDeadline =
                       Number(brief.brief.verificationDeadline) * 1000;
-
                     const paymentStatus = getPaymentStatus(brief.application);
                     const budget = Number(brief.brief.budget) / 1e18;
 
                     return (
                       <div
                         key={brief.briefId}
-                        className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow group"
+                        className="p-6 hover:bg-slate-800/30 transition-all duration-200 group"
                       >
-                        <div className="flex flex-col gap-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-base font-semibold text-gray-800 group-hover:text-indigo-600 transition-colors">
-                                  {brief.brief.name}
-                                </h3>
-                                {getStatusBadge(
-                                  brief.application,
-                                  brief.brief.status
-                                )}
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                          {/* Campaign Info */}
+                          <div className="flex-1">
+                            <div className="flex items-start gap-4">
+                              <div className="p-3 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl border border-slate-600/50 group-hover:border-emerald-500/30 transition-colors">
+                                <Target className="w-5 h-5 text-slate-300" />
                               </div>
-                              <p className="text-xs text-gray-500 font-light">
-                                Brand:{" "}
-                                <span className="font-medium text-gray-700">
-                                  {brief.brief.business}
-                                </span>
-                              </p>
-                            </div>
-                            <span className="text-base font-semibold bg-gradient-to-r  bg-clip-text ">
-                              {budget.toFixed(2)} cUSD
-                            </span>
-                          </div>
 
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <span className="flex items-center bg-gray-50 rounded-full px-3 py-1 text-gray-600">
-                              <Calendar size={12} className="mr-1 opacity-70" />
-                              {format(new Date(applicationDeadline), "MMM d")}
-                            </span>
-                            <span className="flex items-center bg-gray-50 rounded-full px-3 py-1 text-gray-600">
-                              <Clock size={12} className="mr-1 opacity-70" />
-                              {formatDistanceToNow(
-                                new Date(applicationDeadline),
-                                { addSuffix: true }
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="text-xs text-gray-500 mt-1">
-                            <div className="flex items-center">
-                              <span className="font-medium mr-1">
-                                Contract:
-                              </span>
-                              <a
-                                href={`https://explorer.celo.org/address/${brief.briefId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-indigo-600 hover:underline truncate"
-                              >
-                                {`${brief.briefId.slice(
-                                  0,
-                                  6
-                                )}...${brief.briefId.slice(-4)}`}
-                              </a>
-                              <button
-                                className="ml-1 text-gray-400 hover:text-indigo-600 transition-colors"
-                                onClick={() =>
-                                  navigator.clipboard.writeText(brief.briefId)
-                                }
-                              >
-                                <Copy size={12} />
-                              </button>
-                            </div>
-                          </div>
-
-                          {brief.application.isSelected && (
-                            <div className="mt-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <div className="flex items-center">
-                                  {getTaskStatusIcon(brief.application)}
-                                  <span className="ml-2 text-sm font-medium text-gray-700">
-                                    Content Submission
-                                  </span>
-                                  {brief.brief.status !== 1 && (
-                                    <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                                      Waiting for assignment...
-                                    </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="text-lg font-semibold text-white truncate">
+                                    {brief.brief.name}
+                                  </h3>
+                                  {getStatusBadge(
+                                    brief.application,
+                                    brief.brief.status
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  {brief.application.proofLink ? (
-                                    <a
-                                      href={brief.application.proofLink}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-white bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 rounded-lg hover:shadow-md transition-all text-xs flex items-center"
-                                    >
-                                      <LinkIcon size={12} className="mr-1" />
-                                      View Content
-                                    </a>
-                                  ) : canSubmitProof(brief) ? (
-                                    <button
-                                      onClick={() => {
-                                        setSelectedCampaign(brief);
-                                        setSelectedTask({
-                                          name: brief.brief.description,
-                                        });
-                                        setShowSubmitModal(true);
-                                      }}
-                                      className="text-white bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1.5 rounded-lg hover:shadow-md transition-all text-xs flex items-center"
-                                      disabled={isSubmittingProof}
-                                    >
-                                      {isSubmittingProof ? (
-                                        "Submitting..."
-                                      ) : (
-                                        <>
-                                          <LinkIcon
-                                            size={12}
-                                            className="mr-1"
-                                          />
-                                          Submit Content
-                                        </>
+
+                                <p className="text-slate-400 text-sm mb-3 line-clamp-2">
+                                  {brief.brief.description}
+                                </p>
+
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" />
+                                    <span>
+                                      {format(
+                                        new Date(applicationDeadline),
+                                        "MMM d, yyyy"
                                       )}
-                                    </button>
-                                  ) : brief.application.isSelected &&
-                                    brief.brief.status !== 1 ? (
-                                    <span className="text-xs text-gray-500 italic">
-                                      Submit when assigned
                                     </span>
-                                  ) : null}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="w-4 h-4" />
+                                    <span>
+                                      {formatDistanceToNow(
+                                        new Date(applicationDeadline),
+                                        { addSuffix: true }
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <DollarSign className="w-4 h-4" />
+                                    <span>{budget.toFixed(2)} cUSD</span>
+                                  </div>
                                 </div>
+
+                                {brief.application.isSelected && (
+                                  <div className="mt-4">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        {getTaskStatusIcon(brief.application)}
+                                        <span className="text-sm font-medium text-slate-300">
+                                          Content Submission
+                                        </span>
+                                        {brief.brief.status !== 1 && (
+                                          <span className="ml-2 text-xs text-amber-400 bg-amber-900/30 px-2 py-1 rounded-full border border-amber-800/50">
+                                            Waiting for assignment...
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        {brief.application.proofLink ? (
+                                          <a
+                                            href={brief.application.proofLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs"
+                                          >
+                                            <LinkIcon className="w-3 h-3" />
+                                            View Content
+                                          </a>
+                                        ) : canSubmitProof(brief) ? (
+                                          <button
+                                            onClick={() => {
+                                              setSelectedCampaign(brief);
+                                              setSelectedTask({
+                                                name: brief.brief.description,
+                                              });
+                                              setShowSubmitModal(true);
+                                            }}
+                                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs"
+                                            disabled={isSubmittingProof}
+                                          >
+                                            {isSubmittingProof ? (
+                                              "Submitting..."
+                                            ) : (
+                                              <>
+                                                <LinkIcon className="w-3 h-3" />
+                                                Submit Content
+                                              </>
+                                            )}
+                                          </button>
+                                        ) : brief.application.isSelected &&
+                                          brief.brief.status !== 1 ? (
+                                          <span className="text-xs text-slate-500 italic">
+                                            Submit when assigned
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          )}
-
-                          <div className="text-sm text-gray-600 border-t pt-3 mt-2">
-                            <p className="font-medium mb-1 text-gray-700">
-                              Your Pitch:
-                            </p>
-                            <p className="italic font-light">
-                              {brief.application.message}
-                            </p>
                           </div>
 
-                          <div className="flex justify-between items-center pt-2 mt-1">
-                            <span
-                              className={`text-xs px-3 py-1 rounded-full ${paymentStatus.classes}`}
-                            >
-                              {paymentStatus.label}
-                            </span>
+                          {/* Budget & Actions */}
+                          <div className="flex flex-col items-end gap-4">
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-white mb-1">
+                                {budget.toFixed(2)} cUSD
+                              </div>
+                              <span
+                                className={`text-xs px-3 py-1 rounded-full ${paymentStatus.classes}`}
+                              >
+                                {paymentStatus.label}
+                              </span>
+                            </div>
+
                             {brief.application.isApproved &&
                               !brief.application.hasClaimed && (
                                 <button
                                   onClick={() =>
                                     handleClaimFunds(brief.briefId)
                                   }
-                                  className="text-sm bg-gradient-to-r from-green-600 to-teal-600 text-white px-3 py-1 rounded-lg hover:shadow-md transition-all flex items-center"
+                                  className="flex items-center gap-1 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-sm font-medium"
                                 >
-                                  <CheckCircle size={14} className="mr-1" />
+                                  <CheckCircle className="w-4 h-4" />
                                   Claim Funds
                                 </button>
                               )}
@@ -697,54 +676,56 @@ export default function InfluencerDashboard() {
 
           {/* Transactions - Takes 1/3 width on large screens */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-                  <DollarSign className="h-5 w-5 text-amber-500 mr-2" />
-                  Transaction History
-                </h2>
-                <div className="text-sm text-indigo-600 hover:text-indigo-800 transition-colors flex items-center">
-                  View All
-                  <ExternalLink size={14} className="ml-1" />
+            <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden sticky top-6">
+              <div className="p-6 border-b border-slate-700/50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-amber-400" />
+                    Transaction History
+                  </h2>
+                  <span className="text-slate-400">
+                    {transactionHistory.length} transactions
+                  </span>
                 </div>
               </div>
+
               {transactionHistory.length === 0 ? (
-                <div className="bg-gradient-to-br from-gray-50 to-indigo-50 rounded-xl p-6 text-center border border-gray-200">
-                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4 opacity-70" />
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">
+                <div className="p-12 text-center">
+                  <DollarSign className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">
                     No Transactions Yet
                   </h3>
-                  <p className="text-sm text-gray-500 mb-1">
+                  <p className="text-slate-400">
                     Your completed earnings will appear here
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="divide-y divide-slate-700/50">
                   {transactionHistory.map((tx) => (
                     <div
                       key={tx.id}
-                      className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+                      className="p-4 hover:bg-slate-800/30 transition-all duration-200"
                     >
-                      <div className="rounded-full bg-green-100 p-2 mr-3 group-hover:bg-green-200 transition-colors">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-800 truncate">
-                          +{tx.amount.toFixed(2)} cUSD
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          From {tx.from}
-                        </p>
-                      </div>
-                      <div className="flex items-center ml-2">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-emerald-900/20 rounded-lg border border-emerald-800/30">
+                          <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-white truncate">
+                            +{tx.amount.toFixed(2)} cUSD
+                          </p>
+                          <p className="text-xs text-slate-400 truncate">
+                            From {tx.from}
+                          </p>
+                        </div>
                         <a
                           href={`https://explorer.celo.org/tx/${tx.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-800 text-xs"
+                          className="text-slate-400 hover:text-emerald-400 transition-colors"
                           title="View on explorer"
                         >
-                          <ExternalLink size={14} />
+                          <ExternalLink className="w-4 h-4" />
                         </a>
                       </div>
                     </div>
@@ -754,7 +735,7 @@ export default function InfluencerDashboard() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Submit Post Link Modal */}
       {showSubmitModal && selectedCampaign && selectedTask && (

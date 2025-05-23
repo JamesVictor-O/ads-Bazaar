@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { ApplicationsModalProps } from "@/types/index"; // Type for modal props
-import { Loader2, ExternalLink, Check, Calendar, XCircle, Award, X } from "lucide-react"; // Icons for UI
+import {
+  Loader2,
+  ExternalLink,
+  Check,
+  Calendar,
+  XCircle,
+  Award,
+  X,
+} from "lucide-react"; // Icons for UI
 import Image from "next/image"; // For rendering influencer avatars
 import { toast } from "react-hot-toast"; // For success/error notifications
 import { formatDistanceToNow } from "date-fns"; // For formatting timestamps (e.g., "2 days ago")
@@ -119,12 +127,17 @@ export const ApplicationsModal = ({
 
     try {
       await selectInfluencer(briefId, index); // Call blockchain function
-      toast.success(`${influencerName} assigned successfully!`, { id: toastId });
-    } catch (error: any) {
-      console.error("Transaction error:", error);
-      toast.error(`Failed to assign influencer: ${error.message || "Unknown error"}`, {
+      toast.success(`${influencerName} assigned successfully!`, {
         id: toastId,
       });
+    } catch (error: any) {
+      console.error("Transaction error:", error);
+      toast.error(
+        `Failed to assign influencer: ${error.message || "Unknown error"}`,
+        {
+          id: toastId,
+        }
+      );
     } finally {
       setPendingIndex(null); // Reset loading state
     }
@@ -194,7 +207,9 @@ export const ApplicationsModal = ({
   const deadlinePassed = deadline < new Date();
 
   // Check if there are any submissions
-  const hasSubmissions = applications.some((app) => app.isSelected && app.hasClaimed);
+  const hasSubmissions = applications.some(
+    (app) => app.isSelected && app.hasClaimed
+  );
 
   // Determine if cancel button should be shown
   const showCancelButton =
@@ -214,11 +229,15 @@ export const ApplicationsModal = ({
         {/* Header with campaign name and close button */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-white">Applications for {selectedBrief.name}</h2>
+            <h2 className="text-2xl font-bold text-white">
+              Applications for {selectedBrief.title}
+            </h2>
             <div className="flex items-center text-sm text-slate-400 mt-2 gap-4">
               <span>
                 {spotsRemaining > 0
-                  ? `${spotsRemaining} spot${spotsRemaining !== 1 ? "s" : ""} remaining out of ${maxInfluencers}`
+                  ? `${spotsRemaining} spot${
+                      spotsRemaining !== 1 ? "s" : ""
+                    } remaining out of ${maxInfluencers}`
                   : "All influencer spots filled"}
               </span>
               {deadlinePassed && (
@@ -254,7 +273,9 @@ export const ApplicationsModal = ({
                 <div
                   key={index}
                   className={`bg-slate-900/50 border ${
-                    application.isSelected ? "border-emerald-500/20" : "border-slate-700/50"
+                    application.isSelected
+                      ? "border-emerald-500/20"
+                      : "border-slate-700/50"
                   } rounded-xl p-5 hover:bg-slate-900/80 transition-all duration-200 shadow-sm hover:shadow-md`}
                 >
                   <div className="flex flex-col gap-4">
@@ -284,11 +305,16 @@ export const ApplicationsModal = ({
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            {application.influencerProfile?.name || truncateAddress(application.influencer)}
+                            {application.influencerProfile?.name ||
+                              truncateAddress(application.influencer)}
                             <ExternalLink className="w-4 h-4 ml-1" />
                           </a>
                           <p className="text-xs text-slate-400 mt-1">
-                            Applied {formatDistanceToNow(new Date(application.timestamp * 1000), { addSuffix: true })}
+                            Applied{" "}
+                            {formatDistanceToNow(
+                              new Date(application.timestamp * 1000),
+                              { addSuffix: true }
+                            )}
                           </p>
                         </div>
                       </div>
@@ -301,8 +327,15 @@ export const ApplicationsModal = ({
                         ) : (
                           spotsRemaining > 0 && (
                             <button
-                              onClick={() => handleAssignInfluencer(selectedBrief.id, index)}
-                              disabled={isSelectingInfluencer || pendingIndex === index || isCanceling || isCompleting}
+                              onClick={() =>
+                                handleAssignInfluencer(selectedBrief.id, index)
+                              }
+                              disabled={
+                                isSelectingInfluencer ||
+                                pendingIndex === index ||
+                                isCanceling ||
+                                isCompleting
+                              }
                               className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-500/25"
                             >
                               {pendingIndex === index ? (
@@ -322,7 +355,8 @@ export const ApplicationsModal = ({
                     {/* Application message */}
                     <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
                       <p className="text-sm text-slate-300 whitespace-pre-wrap">
-                        {application.message || "No application message provided"}
+                        {application.message ||
+                          "No application message provided"}
                       </p>
                     </div>
 
@@ -337,7 +371,13 @@ export const ApplicationsModal = ({
                           <>
                             <div className="flex justify-between text-xs text-slate-400">
                               <span>Proof approved:</span>
-                              <span className={application.isApproved ? "text-emerald-400" : "text-amber-400"}>
+                              <span
+                                className={
+                                  application.isApproved
+                                    ? "text-emerald-400"
+                                    : "text-amber-400"
+                                }
+                              >
                                 {application.isApproved ? "Yes" : "Pending"}
                               </span>
                             </div>
