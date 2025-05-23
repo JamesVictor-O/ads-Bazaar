@@ -89,13 +89,13 @@ export function SubmitPostModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in-0 duration-300">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-200/50 w-full max-w-lg mx-auto animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+      <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-emerald-500/10 w-full max-w-lg mx-auto animate-in zoom-in-95 duration-300">
         {/* Header */}
         <div className="relative px-8 pt-8 pb-6">
           <button
             onClick={onClose}
-            className="absolute right-6 top-6 text-gray-400 hover:text-gray-600 transition-colors rounded-full p-1 hover:bg-gray-100"
+            className="absolute right-6 top-6 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-full p-2"
             disabled={
               transactionStatus.stage !== "idle" &&
               transactionStatus.stage !== "error" &&
@@ -106,14 +106,14 @@ export function SubmitPostModal({
           </button>
 
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-indigo-100 rounded-xl">
-              <Send className="h-5 w-5 text-indigo-600" />
+            <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+              <Send className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-white">
                 Submit Your Post
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-slate-400 mt-1">
                 Share your content link to complete the task
               </p>
             </div>
@@ -123,44 +123,47 @@ export function SubmitPostModal({
         {/* Content */}
         <div className="px-8 pb-8 space-y-6">
           {/* Campaign Info */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 border border-indigo-100">
-            <div className="space-y-3">
+          <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 shadow-sm">
+            <div className="space-y-4">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="h-4 w-4 text-indigo-500" />
-                  <label className="text-sm font-medium text-indigo-900">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-emerald-400" />
+                  <label className="text-sm font-medium text-slate-300 uppercase tracking-wide">
                     Campaign
                   </label>
                 </div>
-                <p className="text-indigo-800 font-medium">
+                <p className="text-white font-medium text-lg">
                   {selectedCampaign.title}
                 </p>
-                <p className="text-sm text-indigo-600">
+                <p className="text-sm text-slate-400">
                   by {selectedCampaign.brand}
                 </p>
               </div>
 
-              <div className="border-t border-indigo-200 pt-3">
-                <label className="block text-sm font-medium text-indigo-900 mb-1">
-                  Task
-                </label>
-                <p className="text-indigo-800">{selectedTask.name}</p>
+              <div className="border-t border-slate-700/50 pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                  <label className="text-sm font-medium text-slate-300 uppercase tracking-wide">
+                    Task
+                  </label>
+                </div>
+                <p className="text-white font-medium">{selectedTask.name}</p>
               </div>
             </div>
           </div>
 
           {/* Post Link Input */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              Post Link <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-slate-300 mb-3">
+              Post Link <span className="text-red-400">*</span>
             </label>
             <div className="relative">
-              <Link className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Link className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
               <input
                 type="url"
                 value={postLink}
                 onChange={(e) => setPostLink(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:border-indigo-500 focus:ring-0 transition-colors disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-300 placeholder-slate-500 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="https://warpcast.com/~/cast/..."
                 disabled={
                   transactionStatus.stage !== "idle" &&
@@ -168,7 +171,7 @@ export function SubmitPostModal({
                 }
               />
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-slate-400 mt-2">
               Paste the direct link to your social media post
             </p>
           </div>
@@ -179,13 +182,15 @@ export function SubmitPostModal({
               <div className="flex items-start gap-3">
                 {getStatusIcon()}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium">{transactionStatus.message}</p>
+                  <p className="font-medium text-white">
+                    {transactionStatus.message}
+                  </p>
                   {transactionStatus.hash && (
                     <a
                       href={`https://explorer.celo.org/tx/${transactionStatus.hash}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center text-xs mt-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                      className="inline-flex items-center text-xs mt-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
                     >
                       <ExternalLink className="h-3 w-3 mr-1" />
                       View transaction details
@@ -200,7 +205,7 @@ export function SubmitPostModal({
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
-              className="flex-1 px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-xl border border-slate-600/50 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={
                 transactionStatus.stage !== "idle" &&
                 transactionStatus.stage !== "error" &&
@@ -223,10 +228,10 @@ export function SubmitPostModal({
                 isSubmitting ||
                 (transactionStatus.stage !== "idle" &&
                   transactionStatus.stage !== "error")
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
                   : transactionStatus.stage === "success"
-                  ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 hover:shadow-indigo-300"
+                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-md shadow-emerald-500/25"
+                  : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-md shadow-emerald-500/25"
               }`}
             >
               {isSubmitting ||

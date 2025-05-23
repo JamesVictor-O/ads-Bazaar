@@ -417,6 +417,16 @@
     },
     {
       "type": "function",
+      "name": "hasInfluencerApplied",
+      "inputs": [
+        { "name": "_briefId", "type": "bytes32", "internalType": "bytes32" },
+        { "name": "_influencer", "type": "address", "internalType": "address" }
+      ],
+      "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "influencerApplications",
       "inputs": [
         { "name": "", "type": "address", "internalType": "address" },

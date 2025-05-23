@@ -548,6 +548,16 @@ contract AdsBazaar is SelfVerificationRoot {
     function getInfluencerApplications(address _influencer) external view returns (bytes32[] memory) {
         return influencerApplications[_influencer];
     }
+
+    function hasInfluencerApplied(bytes32 _briefId, address _influencer) public view returns (bool) {
+        InfluencerApplication[] storage briefApplications = applications[_briefId];
+        for (uint256 i = 0; i < briefApplications.length; i++) {
+            if (briefApplications[i].influencer == _influencer) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     function getBriefApplications(bytes32 _briefId) external view returns (ApplicationData memory) {
         InfluencerApplication[] storage briefApps = applications[_briefId];
