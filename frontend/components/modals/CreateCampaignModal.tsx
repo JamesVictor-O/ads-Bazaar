@@ -148,10 +148,12 @@ export const CreateCampaignModal = ({
                 className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none"
               >
                 <option value="86400">1 day</option>
+                <option value="172800">2 days</option>
                 <option value="259200">3 days</option>
+                <option value="345600">4 days</option>
+                <option value="432000">5 days</option>
+                <option value="518400">6 days</option>
                 <option value="604800">7 days</option>
-                <option value="1209600">14 days</option>
-                <option value="2592000">30 days</option>
               </select>
             </div>
 
@@ -168,11 +170,19 @@ export const CreateCampaignModal = ({
                 className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none"
               >
                 <option value="0">General</option>
-                <option value="1">Technology</option>
-                <option value="2">Fashion</option>
-                <option value="3">Health & Fitness</option>
-                <option value="4">Food & Beverage</option>
-                <option value="5">Travel</option>
+                <option value="1">Fashion</option>
+                <option value="2">Technology</option>
+                <option value="3">Gaming</option>
+                <option value="4">Fitness</option>
+                <option value="5">Beauty</option>
+                <option value="6">Food</option>
+                <option value="7">Travel</option>
+                <option value="8">Business</option>
+                <option value="9">Education</option>
+                <option value="10">Entertainment</option>
+                <option value="11">Sports</option>
+                <option value="12">Lifestyle</option>
+                <option value="13">Other</option>
               </select>
             </div>
 
@@ -196,6 +206,7 @@ export const CreateCampaignModal = ({
                 <option value="14400">4 hours</option>
                 <option value="28800">8 hours</option>
                 <option value="86400">24 hours</option>
+                <option value="172800">48 hours</option>
               </select>
             </div>
           </div>

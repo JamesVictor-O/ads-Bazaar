@@ -3,7 +3,7 @@
 import { useApplyToBrief } from "@/hooks/adsBazaar";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import { FiX, FiLoader } from "react-icons/fi";
+import { X, Loader2, Send, DollarSign, FileText, User } from "lucide-react";
 
 interface ApplyModalProps {
   showApplyModal: boolean;
@@ -120,101 +120,150 @@ export default function ApplyModal({
   if (!showApplyModal || !selectedBrief || !isClient) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto shadow-xl">
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Apply for {selectedBrief.title}
-          </h2>
+    // Modal overlay with dark, translucent background
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+      {/* Modal container with dark theme and emerald shadow */}
+      <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 w-full max-w-2xl mx-auto max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10">
+        {/* Header with campaign name and close button */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              Apply for {selectedBrief.title}
+            </h2>
+            <p className="text-sm text-slate-400 mt-1">
+              Submit your application to join this campaign
+            </p>
+          </div>
           <button
             onClick={() => setShowApplyModal(false)}
-            className="text-gray-500 hover:text-gray-700"
+            className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
             disabled={isPending}
+            aria-label="Close modal"
           >
-            <FiX size={20} />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="space-y-4 mb-6">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-500">
-              Campaign Details
-            </h3>
-            <p className="text-lg font-medium text-gray-800 mt-1">
-              {selectedBrief.business}
-            </p>
-            <p className="text-sm text-indigo-600 font-medium mt-1">
-              Budget: {selectedBrief.budget} cUSD
-            </p>
-            {selectedBrief.requirements && (
-              <div className="mt-2">
-                <p className="text-sm text-gray-600">
-                  {selectedBrief.requirements}
+        {/* Campaign Details */}
+        <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6 mb-6 shadow-sm">
+          <h3 className="text-sm font-medium text-slate-400 mb-4 uppercase tracking-wide">
+            Campaign Details
+          </h3>
+
+          <div className="space-y-4">
+            {/* Business Name */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-slate-700/50 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-slate-400" />
+              </div>
+              <div>
+                <p className="text-lg font-medium text-white">
+                  {selectedBrief.business}
                 </p>
+                <p className="text-xs text-slate-400">Business</p>
+              </div>
+            </div>
+
+            {/* Budget */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20">
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-lg font-medium text-emerald-400">
+                  {selectedBrief.budget} cUSD
+                </p>
+                <p className="text-xs text-slate-400">Total Budget</p>
+              </div>
+            </div>
+
+            {/* Requirements */}
+            {selectedBrief.requirements && (
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-slate-700/50 rounded-full flex items-center justify-center mt-1">
+                  <FileText className="w-5 h-5 text-slate-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    {selectedBrief.requirements}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">Requirements</p>
+                </div>
               </div>
             )}
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Application Message
-              <span className="text-red-500">*</span>
-            </label>
+        {/* Application Message Section */}
+        <div className="flex-grow">
+          <label className="block text-sm font-medium text-slate-300 mb-3">
+            Application Message
+            <span className="text-red-400 ml-1">*</span>
+          </label>
+          <div className="relative">
             <textarea
               value={applicationMessage}
               onChange={(e) => setApplicationMessage(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm text-gray-600 focus:ring-indigo-500 focus:border-indigo-500"
-              rows={4}
-              placeholder="Explain why you're a great fit for this campaign..."
+              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-300 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 resize-none min-h-[120px]"
+              placeholder="Explain why you're a great fit for this campaign. Highlight your relevant experience, audience demographics, and how you plan to promote their brand..."
               disabled={isPending}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Minimum 20 characters. Current: {applicationMessage.length}
-            </p>
+            <div className="absolute bottom-3 right-3 text-xs text-slate-500">
+              {applicationMessage.length}/20 min
+            </div>
           </div>
+          <p className="mt-2 text-xs text-slate-400">
+            Minimum 20 characters required. Be specific about your approach and
+            why you're the right fit.
+          </p>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={() => setShowApplyModal(false)}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            disabled={isPending}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleApply}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={
-              !applicationMessage.trim() ||
-              applicationMessage.length < 20 ||
-              isPending
-            }
-          >
-            {isPending ? (
-              <>
-                <FiLoader className="animate-spin mr-2" />
-                Processing...
-              </>
-            ) : (
-              "Submit Application"
-            )}
-          </button>
-        </div>
-
+        {/* Loading State */}
         {isPending && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-md flex items-start">
-            <FiLoader className="animate-spin text-blue-500 mr-2 mt-0.5" />
+          <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start">
+            <Loader2 className="animate-spin text-emerald-400 mr-3 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-blue-800">
+              <p className="text-sm font-medium text-emerald-400">
                 Transaction in progress
               </p>
-              <p className="text-xs text-blue-600">
+              <p className="text-xs text-slate-400 mt-1">
                 Please wait while we process your application...
               </p>
             </div>
           </div>
         )}
+
+        {/* Action buttons */}
+        <div className="mt-6 flex justify-end pt-4 border-t border-slate-700/50 gap-4">
+          <button
+            onClick={() => setShowApplyModal(false)}
+            disabled={isPending}
+            className="px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleApply}
+            disabled={
+              !applicationMessage.trim() ||
+              applicationMessage.length < 20 ||
+              isPending
+            }
+            className="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md shadow-emerald-500/25"
+          >
+            {isPending ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="animate-spin h-4 w-4" />
+                <span>Processing...</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Send className="h-4 w-4" />
+                <span>Submit Application</span>
+              </div>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

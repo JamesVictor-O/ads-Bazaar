@@ -68,7 +68,8 @@ interface Brief {
 export default function Marketplace() {
   // State for search and filters
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("All Categories");
+  const [categoryFilter, setCategoryFilter] =
+    useState<string>("All Categories");
   const [budgetFilter, setBudgetFilter] = useState<string>("Budget: Any");
   // State for apply modal
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
@@ -83,8 +84,10 @@ export default function Marketplace() {
   const { briefs, isLoading } = useGetAllBriefs();
   const { address, isConnected } = useAccount();
   const { userProfile, isLoadingProfile } = useUserProfile();
-  const { applications: influencerApplications = [], isLoading: isLoadingApplications } =
-    useGetInfluencerApplications(address);
+  const {
+    applications: influencerApplications = [],
+    isLoading: isLoadingApplications,
+  } = useGetInfluencerApplications(address);
 
   // Update application status based on fetched applications
   useEffect(() => {
@@ -99,34 +102,34 @@ export default function Marketplace() {
 
   // Loading state for the entire page
   if (isLoading) {
-  return (
-    <div className="flex justify-center items-center min-h-screen bg-slate-900">
-      <div className="text-center">
-        <svg
-          className="animate-spin h-12 w-12 text-emerald-500 mx-auto"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
-          ></path>
-        </svg>
-        <p className="mt-4 text-slate-400">Loading campaigns...</p>
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-slate-900">
+        <div className="text-center">
+          <svg
+            className="animate-spin h-12 w-12 text-emerald-500 mx-auto"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
+            ></path>
+          </svg>
+          <p className="mt-4 text-slate-400">Loading campaigns...</p>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // Determine button state for each brief
   const getButtonState = (brief: Brief) => {
@@ -194,7 +197,8 @@ export default function Marketplace() {
       };
     }
 
-    const deadlinePassed = new Date(brief.applicationDeadline * 1000) < new Date();
+    const deadlinePassed =
+      new Date(brief.applicationDeadline * 1000) < new Date();
     if (brief.status !== 0 || deadlinePassed) {
       return {
         text: deadlinePassed ? "Deadline Passed" : "Closed",
@@ -258,7 +262,9 @@ export default function Marketplace() {
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white">Campaign Marketplace</h2>
+          <h2 className="text-3xl font-bold text-white">
+            Campaign Marketplace
+          </h2>
           <p className="text-sm text-slate-400 mt-2">
             Discover campaigns that match your influencer profile
           </p>
@@ -318,9 +324,10 @@ export default function Marketplace() {
             const category = audienceMap[brief.targetAudience] || "Other";
             const status = statusMap[brief.status] || "Unknown";
             const isOpen = brief.status === 0;
-            const deadlinePassed = new Date(brief.applicationDeadline * 1000) < new Date();
+            const deadlinePassed =
+              new Date(brief.applicationDeadline * 1000) < new Date();
             const buttonState = getButtonState(brief);
-            const applicationsCount = brief.applicationsCount || 0;
+            const applicationsCount = brief.applicationCount || 0;
 
             return (
               <div
@@ -364,19 +371,30 @@ export default function Marketplace() {
                           : "bg-slate-500/10 text-slate-400 border-slate-500/20"
                       } border`}
                     >
-                      {isOpen && !deadlinePassed ? "Open" : deadlinePassed ? "Closed" : status}
+                      {isOpen && !deadlinePassed
+                        ? "Open"
+                        : deadlinePassed
+                        ? "Closed"
+                        : status}
                     </span>
                     <div className="flex items-center text-xs text-slate-400">
                       <Clock className="w-4 h-4 mr-1" />
                       {deadlinePassed ? (
                         <span>
-                          Closed {formatDistanceToNow(new Date(brief.applicationDeadline * 1000), {
-                            addSuffix: true,
-                          })}
+                          Closed{" "}
+                          {formatDistanceToNow(
+                            new Date(brief.applicationDeadline * 1000),
+                            {
+                              addSuffix: true,
+                            }
+                          )}
                         </span>
                       ) : (
                         <span>
-                          Closes in {formatDistanceToNow(new Date(brief.applicationDeadline * 1000))}
+                          Closes in{" "}
+                          {formatDistanceToNow(
+                            new Date(brief.applicationDeadline * 1000)
+                          )}
                         </span>
                       )}
                     </div>
@@ -398,7 +416,9 @@ export default function Marketplace() {
                         <Award className="w-4 h-4 mr-1" />
                         <span>Applications</span>
                       </div>
-                      <div className="font-semibold text-white">{applicationsCount}</div>
+                      <div className="font-semibold text-white">
+                        {applicationsCount}
+                      </div>
                     </div>
                     <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
                       <div className="flex items-center text-slate-400 mb-1">
@@ -414,7 +434,9 @@ export default function Marketplace() {
                         <Target className="w-4 h-4 mr-1" />
                         <span>Audience</span>
                       </div>
-                      <div className="font-semibold text-white truncate">{category}</div>
+                      <div className="font-semibold text-white truncate">
+                        {category}
+                      </div>
                     </div>
                   </div>
 
@@ -425,7 +447,9 @@ export default function Marketplace() {
                         <AlertCircle className="w-4 h-4 mr-1" />
                         <span>Requirements</span>
                       </div>
-                      <p className="text-xs text-slate-300 line-clamp-2">{brief.requirements}</p>
+                      <p className="text-xs text-slate-300 line-clamp-2">
+                        {brief.requirements}
+                      </p>
                     </div>
                   )}
 
@@ -437,7 +461,8 @@ export default function Marketplace() {
                         ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
                         : buttonState.variant === "blue"
                         ? "bg-blue-500/10 text-blue-400 border border-blue-500/20 cursor-not-allowed"
-                        : buttonState.variant === "emerald" && buttonState.disabled
+                        : buttonState.variant === "emerald" &&
+                          buttonState.disabled
                         ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-not-allowed"
                         : "bg-slate-500/10 text-slate-400 border border-slate-500/20 cursor-not-allowed"
                     }`}
@@ -455,7 +480,9 @@ export default function Marketplace() {
               <div className="mx-auto w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center mb-4">
                 <Search className="w-8 h-8 text-slate-400" />
               </div>
-              <h3 className="text-lg font-medium text-white">No campaigns found</h3>
+              <h3 className="text-lg font-medium text-white">
+                No campaigns found
+              </h3>
               <p className="text-sm text-slate-400 mt-2">
                 Try adjusting your search or filter criteria
               </p>
@@ -476,7 +503,8 @@ export default function Marketplace() {
                   title: selectedBrief.title,
                   business: selectedBrief.business,
                   budget: selectedBrief.budget,
-                  requirements: selectedBrief.requirements || "No specific requirements",
+                  requirements:
+                    selectedBrief.requirements || "No specific requirements",
                 }
               : null
           }

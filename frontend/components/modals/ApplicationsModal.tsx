@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { ApplicationsModalProps } from "@/types/index"; // Type for modal props
+import { ApplicationsModalProps } from "@/types/index";
 import {
   Loader2,
   ExternalLink,
@@ -11,13 +11,13 @@ import {
   XCircle,
   Award,
   X,
-} from "lucide-react"; // Icons for UI
-import Image from "next/image"; // For rendering influencer avatars
-import { toast } from "react-hot-toast"; // For success/error notifications
+} from "lucide-react";
+import Image from "next/image";
+import { toast } from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns"; // For formatting timestamps (e.g., "2 days ago")
-import { truncateAddress } from "@/utils/format"; // Utility to shorten wallet addresses
-import { useAccount } from "wagmi"; // Hook to get wallet address and connection status
-import { Hex } from "viem"; // Type for hexadecimal strings (e.g., brief IDs)
+import { truncateAddress } from "@/utils/format";
+import { useAccount } from "wagmi";
+import { Hex } from "viem";
 import {
   useCancelAdBrief,
   useSelectInfluencer,
@@ -27,26 +27,25 @@ import {
 export const ApplicationsModal = ({
   selectedBrief,
   applications,
-  isLoadingApplications, 
-  onClose, 
+  isLoadingApplications,
+  onClose,
 }: ApplicationsModalProps) => {
   const { address, isConnected } = useAccount();
- 
+
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
 
-  
   const {
-    selectInfluencer, 
-    isPending: isSelectingInfluencer, 
+    selectInfluencer,
+    isPending: isSelectingInfluencer,
     isSuccess: isInfluencerSelected,
     error: selectError,
   } = useSelectInfluencer();
 
   // Hook for canceling a campaign
   const {
-    cancelBrief, 
-    isPending: isCanceling, 
-    isSuccess: isCanceled, 
+    cancelBrief,
+    isPending: isCanceling,
+    isSuccess: isCanceled,
     error: cancelError,
   } = useCancelAdBrief();
 
@@ -122,14 +121,11 @@ export const ApplicationsModal = ({
     const application = applications[index];
     const influencerName = truncateAddress(application.influencer);
 
-    setPendingIndex(index); 
+    setPendingIndex(index);
     const toastId = toast.loading(`Assigning ${influencerName}...`);
 
     try {
-      await selectInfluencer(briefId, index); 
-      toast.success(`${influencerName} assigned successfully!`, {
-        id: toastId,
-      });
+      await selectInfluencer(briefId, index);
     } catch (error: any) {
       console.error("Transaction error:", error);
       toast.error(
@@ -150,7 +146,7 @@ export const ApplicationsModal = ({
     const toastId = toast.loading("Canceling campaign...");
 
     try {
-      await cancelBrief(selectedBrief.briefId); 
+      await cancelBrief(selectedBrief.briefId);
       toast.success("Campaign canceled successfully!", { id: toastId });
     } catch (error) {
       console.error("Transaction error:", error);
@@ -165,7 +161,7 @@ export const ApplicationsModal = ({
     const toastId = toast.loading("Completing campaign...");
 
     try {
-      await completeCampaign(selectedBrief.briefId); 
+      await completeCampaign(selectedBrief.briefId);
       toast.success("Campaign completed successfully!", { id: toastId });
     } catch (error) {
       console.error("Transaction error:", error);

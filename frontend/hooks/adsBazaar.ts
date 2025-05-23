@@ -78,6 +78,7 @@ interface FormattedBriefData {
   budget: number;
   status: number;
   applicationDeadline: number;
+  applicationCount: number;
   promotionDuration: number;
   promotionStartTime: number;
   promotionEndTime: number;
@@ -206,16 +207,25 @@ export function useGetAllBriefs() {
         const results = await Promise.all(
           ids.map(async (id) => {
             try {
-              const result = await publicClient.readContract({
+              // Fetch brief details
+              const briefData = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
                 functionName: "briefs",
                 args: [id],
               });
 
+              // Fetch application count for this brief
+              const applicationCount = await publicClient.readContract({
+                address: CONTRACT_ADDRESS,
+                abi: ABI.abi,
+                functionName: "briefApplicationCounts",
+                args: [id],
+              });
+
               // Handle the array response properly
-              if (Array.isArray(result)) {
-                return formatBriefData(id, result);
+              if (Array.isArray(briefData)) {
+                return formatBriefData(id, briefData, Number(applicationCount));
               }
               return null;
             } catch (err) {
@@ -237,6 +247,7 @@ export function useGetAllBriefs() {
     },
     [publicClient]
   );
+
   useEffect(() => {
     if (briefIds && !isLoadingIds) {
       fetchAllBriefDetails(briefIds as `0x${string}`[]);
@@ -245,7 +256,8 @@ export function useGetAllBriefs() {
 
   const formatBriefData = (
     briefId: `0x${string}`,
-    rawData: any[]
+    rawData: any[],
+    applicationCount: number
   ): FormattedBriefData | null => {
     try {
       // Ensure rawData is an array with enough elements
@@ -269,6 +281,7 @@ export function useGetAllBriefs() {
         selectedInfluencersCount: Number(rawData[11]),
         targetAudience: Number(rawData[12]),
         verificationDeadline: Number(rawData[13] || 0n), // Handle optional field
+        applicationCount: applicationCount,
       };
     } catch (err) {
       console.error(`Error formatting brief ${briefId}:`, err);
@@ -868,8 +881,8 @@ export function useSelectInfluencer() {
     //   throw new Error("Invalid application index");
     // }
 
-    console.log('Calling selectInfluencer:', { briefId, applicationIndex });
-  
+    console.log("Calling selectInfluencer:", { briefId, applicationIndex });
+
     try {
       await tx.writeContract({
         address: CONTRACT_ADDRESS,
