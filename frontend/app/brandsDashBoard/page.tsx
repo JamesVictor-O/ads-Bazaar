@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { Brief } from "@/types/index";
-// import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
 import { SubmissionsModal } from "@/components/modals/ SubmissionsModal";
-
 import { ApplicationsModal } from "@/components/modals/ApplicationsModal";
 import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
 import { useRouter } from "next/navigation";
@@ -14,7 +12,6 @@ import {
   Users,
   Briefcase,
   DollarSign,
-  BarChart2,
   Search,
   Plus,
   Calendar,
@@ -101,7 +98,7 @@ const BrandDashboard = () => {
     [key: string]: number;
   }>({});
 
-  // Load application counts for all briefs
+
   useEffect(() => {
     if (briefs && briefs.length > 0) {
       briefs.forEach((brief) => {

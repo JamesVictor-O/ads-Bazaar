@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { ApplicationsModalProps } from "@/types/index"; // Type for modal props
 import {
   Loader2,
@@ -21,33 +22,32 @@ import {
   useCancelAdBrief,
   useSelectInfluencer,
   useCompleteCampaign,
-} from "@/hooks/adsBazaar"; // Custom hooks for blockchain interactions
+} from "@/hooks/adsBazaar";
 
 export const ApplicationsModal = ({
-  selectedBrief, // The selected campaign brief
-  applications, // List of influencer applications
-  isLoadingApplications, // Loading state for fetching applications
-  onClose, // Function to close the modal
+  selectedBrief,
+  applications,
+  isLoadingApplications, 
+  onClose, 
 }: ApplicationsModalProps) => {
-  // Get wallet address and connection status
   const { address, isConnected } = useAccount();
-  // State to track which application is being processed (for loading spinner)
+ 
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
 
-  // Hook for selecting an influencer
+  
   const {
-    selectInfluencer, // Function to assign an influencer
-    isPending: isSelectingInfluencer, // Loading state
-    isSuccess: isInfluencerSelected, // Success state
-    error: selectError, // Error state
+    selectInfluencer, 
+    isPending: isSelectingInfluencer, 
+    isSuccess: isInfluencerSelected,
+    error: selectError,
   } = useSelectInfluencer();
 
   // Hook for canceling a campaign
   const {
-    cancelBrief, // Function to cancel the campaign
-    isPending: isCanceling, // Loading state
-    isSuccess: isCanceled, // Success state
-    error: cancelError, // Error state
+    cancelBrief, 
+    isPending: isCanceling, 
+    isSuccess: isCanceled, 
+    error: cancelError,
   } = useCancelAdBrief();
 
   // Hook for completing a campaign
@@ -122,11 +122,11 @@ export const ApplicationsModal = ({
     const application = applications[index];
     const influencerName = truncateAddress(application.influencer);
 
-    setPendingIndex(index); // Set loading state for this application
+    setPendingIndex(index); 
     const toastId = toast.loading(`Assigning ${influencerName}...`);
 
     try {
-      await selectInfluencer(briefId, index); // Call blockchain function
+      await selectInfluencer(briefId, index); 
       toast.success(`${influencerName} assigned successfully!`, {
         id: toastId,
       });
@@ -150,7 +150,7 @@ export const ApplicationsModal = ({
     const toastId = toast.loading("Canceling campaign...");
 
     try {
-      await cancelBrief(selectedBrief.briefId); // Call blockchain function
+      await cancelBrief(selectedBrief.briefId); 
       toast.success("Campaign canceled successfully!", { id: toastId });
     } catch (error) {
       console.error("Transaction error:", error);
@@ -165,7 +165,7 @@ export const ApplicationsModal = ({
     const toastId = toast.loading("Completing campaign...");
 
     try {
-      await completeCampaign(selectedBrief.briefId); // Call blockchain function
+      await completeCampaign(selectedBrief.briefId); 
       toast.success("Campaign completed successfully!", { id: toastId });
     } catch (error) {
       console.error("Transaction error:", error);

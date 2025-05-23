@@ -45,7 +45,9 @@ export const CreateCampaignModal = ({
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
               placeholder="Enter campaign name"
               required
@@ -60,7 +62,9 @@ export const CreateCampaignModal = ({
             </label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 resize-y"
               rows={4}
               placeholder="Describe your campaign"
@@ -69,110 +73,133 @@ export const CreateCampaignModal = ({
             />
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Budget (cUSD)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={formData.budget}
+                onChange={(e) =>
+                  setFormData({ ...formData, budget: e.target.value })
+                }
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
+                placeholder="Enter budget amount"
+                required
+                aria-required="true"
+              />
+            </div>
+
+            {/* Max Influencers */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Max Influencers
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={formData.maxInfluencers}
+                onChange={(e) =>
+                  setFormData({ ...formData, maxInfluencers: e.target.value })
+                }
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
+                placeholder="Enter max influencers"
+                required
+                aria-required="true"
+              />
+            </div>
+
+            {/* Application Deadline */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Application Deadline
+              </label>
+              <input
+                type="date"
+                min={format(new Date(), "yyyy-MM-dd")}
+                value={formData.applicationDeadline}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    applicationDeadline: e.target.value,
+                  })
+                }
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
+                required
+                aria-required="true"
+              />
+            </div>
+
+            {/* Promotion Duration */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Promotion Duration
+              </label>
+              <select
+                value={formData.promotionDuration}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    promotionDuration: e.target.value,
+                  })
+                }
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none"
+              >
+                <option value="86400">1 day</option>
+                <option value="259200">3 days</option>
+                <option value="604800">7 days</option>
+                <option value="1209600">14 days</option>
+                <option value="2592000">30 days</option>
+              </select>
+            </div>
+
+            {/* Target Audience */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Target Audience
+              </label>
+              <select
+                value={formData.targetAudience}
+                onChange={(e) =>
+                  setFormData({ ...formData, targetAudience: e.target.value })
+                }
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none"
+              >
+                <option value="0">General</option>
+                <option value="1">Technology</option>
+                <option value="2">Fashion</option>
+                <option value="3">Health & Fitness</option>
+                <option value="4">Food & Beverage</option>
+                <option value="5">Travel</option>
+              </select>
+            </div>
+
+            {/* Verification Period */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Verification Period
+              </label>
+              <select
+                value={formData.verificationPeriod}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    verificationPeriod: e.target.value,
+                  })
+                }
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none"
+              >
+                <option value="3600">1 hour</option>
+                <option value="7200">2 hours</option>
+                <option value="14400">4 hours</option>
+                <option value="28800">8 hours</option>
+                <option value="86400">24 hours</option>
+              </select>
+            </div>
+          </div>
           {/* Budget */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Budget (cUSD)
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={formData.budget}
-              onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
-              placeholder="Enter budget amount"
-              required
-              aria-required="true"
-            />
-          </div>
-
-          {/* Max Influencers */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Max Influencers
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={formData.maxInfluencers}
-              onChange={(e) => setFormData({ ...formData, maxInfluencers: e.target.value })}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
-              placeholder="Enter max influencers"
-              required
-              aria-required="true"
-            />
-          </div>
-
-          {/* Application Deadline */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Application Deadline
-            </label>
-            <input
-              type="date"
-              min={format(new Date(), "yyyy-MM-dd")}
-              value={formData.applicationDeadline}
-              onChange={(e) => setFormData({ ...formData, applicationDeadline: e.target.value })}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
-              required
-              aria-required="true"
-            />
-          </div>
-
-          {/* Promotion Duration */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Promotion Duration
-            </label>
-            <select
-              value={formData.promotionDuration}
-              onChange={(e) => setFormData({ ...formData, promotionDuration: e.target.value })}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none"
-            >
-              <option value="86400">1 day</option>
-              <option value="259200">3 days</option>
-              <option value="604800">7 days</option>
-              <option value="1209600">14 days</option>
-              <option value="2592000">30 days</option>
-            </select>
-          </div>
-
-          {/* Target Audience */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Target Audience
-            </label>
-            <select
-              value={formData.targetAudience}
-              onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none"
-            >
-              <option value="0">General</option>
-              <option value="1">Technology</option>
-              <option value="2">Fashion</option>
-              <option value="3">Health & Fitness</option>
-              <option value="4">Food & Beverage</option>
-              <option value="5">Travel</option>
-            </select>
-          </div>
-
-          {/* Verification Period */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Verification Period
-            </label>
-            <select
-              value={formData.verificationPeriod}
-              onChange={(e) => setFormData({ ...formData, verificationPeriod: e.target.value })}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none"
-            >
-              <option value="3600">1 hour</option>
-              <option value="7200">2 hours</option>
-              <option value="14400">4 hours</option>
-              <option value="28800">8 hours</option>
-              <option value="86400">24 hours</option>
-            </select>
-          </div>
         </div>
 
         {/* Actions */}
