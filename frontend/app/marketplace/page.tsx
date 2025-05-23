@@ -501,6 +501,7 @@ export default function Marketplace() {
               ? {
                   id: selectedBrief.id,
                   title: selectedBrief.title,
+                  description: selectedBrief.description,
                   business: selectedBrief.business,
                   budget: selectedBrief.budget,
                   requirements:
