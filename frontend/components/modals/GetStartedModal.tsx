@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Share2 } from "lucide-react";
+import { X, Share2, User, Target, CheckCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signIn, getCsrfToken } from "next-auth/react";
 import { SignInButton } from "@farcaster/auth-kit";
@@ -238,251 +238,292 @@ const GetStartedModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 mx-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Get Started</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <X size={24} />
-          </button>
+  <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+    <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 w-full max-w-2xl mx-auto max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white">
+            Get Started
+          </h2>
+          <p className="text-sm text-slate-400 mt-1">
+            {!showNextStep 
+              ? "Choose your path and start your journey" 
+              : userDetails.userType === "influencer"
+                ? "Set up your influencer profile"
+                : "Set up your advertising account"
+            }
+          </p>
         </div>
+        <button
+          onClick={onClose}
+          className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
+          disabled={isPending}
+          aria-label="Close modal"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
-        {!showNextStep ? (
-          <div className="space-y-6">
-            <p className="text-gray-600">What best describes you?</p>
-            <div className="space-y-4">
-              <button
-                onClick={() => handleUserTypeSelection("influencer")}
-                className="w-full p-4 border-2 border-blue-500 rounded-lg flex items-center justify-between hover:bg-blue-50 transition-colors"
-              >
-                <div className="text-left">
-                  <h3 className="font-medium text-lg text-gray-800">
-                    I'm an Influencer
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    I want to monetize my audience and work with brands
-                  </p>
-                </div>
-                <div className="w-6 h-6 rounded-full border-2 border-blue-500"></div>
-              </button>
-              <button
-                onClick={() => handleUserTypeSelection("advertiser")}
-                className="w-full p-4 border-2 border-blue-500 rounded-lg flex items-center justify-between hover:bg-blue-50 transition-colors"
-              >
-                <div className="text-left">
-                  <h3 className="font-medium text-lg text-gray-800">
-                    I want to run ads
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    I'm looking to promote my business or product
-                  </p>
-                </div>
-                <div className="w-6 h-6 rounded-full border-2 border-blue-500"></div>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <p className="text-gray-600">
-              {userDetails.userType === "influencer"
-                ? "Great! Let's set up your influencer profile"
-                : "Great! Let's set up your advertising account"}
-            </p>
-            <div className="space-y-4 text-gray-600">
-              {userDetails.userType === "influencer" ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Niche/Category
-                    </label>
-                    <select
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                      value={userDetails.niche || ""}
-                      onChange={(e) =>
-                        setUserDetails({
-                          ...userDetails,
-                          niche: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Select a category</option>
-                      <option value="fashion">Fashion & Style</option>
-                      <option value="beauty">Beauty & Cosmetics</option>
-                      <option value="fitness">Fitness & Health</option>
-                      <option value="travel">Travel & Lifestyle</option>
-                      <option value="food">Food & Cooking</option>
-                      <option value="tech">Technology</option>
-                      <option value="gaming">Gaming</option>
-                      <option value="other">Other</option>
-                    </select>
+      {!showNextStep ? (
+        /* User Type Selection */
+        <div className="flex-grow">
+          <h3 className="text-sm font-medium text-slate-400 mb-6 uppercase tracking-wide">
+            What best describes you?
+          </h3>
+          
+          <div className="space-y-4">
+            <button
+              onClick={() => handleUserTypeSelection("influencer")}
+              className="w-full p-6 bg-slate-900/50 border border-slate-700/50 rounded-xl hover:border-emerald-500/50 hover:bg-slate-900/70 transition-all duration-200 group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20 group-hover:border-emerald-500/40 transition-all duration-200">
+                    <User className="w-6 h-6 text-emerald-400" />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Connect Your Social Media
-                    </label>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                        <div className="flex items-center">
-                          <div className="bg-purple-100 p-2 rounded-full mr-3">
-                            <Share2 size={18} className="text-purple-600" />
-                          </div>
-                          <span className="font-medium">Farcaster</span>
-                        </div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-medium text-white group-hover:text-emerald-300 transition-colors duration-200">
+                      I'm an Influencer
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                      I want to monetize my audience and work with brands
+                    </p>
+                  </div>
+                </div>
+                <div className="w-5 h-5 rounded-full border-2 border-slate-600 group-hover:border-emerald-500 transition-colors duration-200"></div>
+              </div>
+            </button>
 
-                        {authError && (
-                          <div className="mb-4 rounded-md bg-red-50 p-4 text-red-700">
-                            {authError}
-                          </div>
-                        )}
+            <button
+              onClick={() => handleUserTypeSelection("advertiser")}
+              className="w-full p-6 bg-slate-900/50 border border-slate-700/50 rounded-xl hover:border-emerald-500/50 hover:bg-slate-900/70 transition-all duration-200 group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20 group-hover:border-emerald-500/40 transition-all duration-200">
+                    <Target className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-medium text-white group-hover:text-emerald-300 transition-colors duration-200">
+                      I want to run ads
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                      I'm looking to promote my business or product
+                    </p>
+                  </div>
+                </div>
+                <div className="w-5 h-5 rounded-full border-2 border-slate-600 group-hover:border-emerald-500 transition-colors duration-200"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Profile Setup */
+        <div className="flex-grow">
+          {userDetails.userType === "influencer" ? (
+            /* Influencer Setup */
+            <div className="space-y-6">
+              {/* Niche Selection */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Niche/Category
+                  <span className="text-red-400 ml-1">*</span>
+                </label>
+                <select
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
+                  value={userDetails.niche || ""}
+                  onChange={(e) =>
+                    setUserDetails({
+                      ...userDetails,
+                      niche: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Select a category</option>
+                  <option value="fashion">Fashion & Style</option>
+                  <option value="beauty">Beauty & Cosmetics</option>
+                  <option value="fitness">Fitness & Health</option>
+                  <option value="travel">Travel & Lifestyle</option>
+                  <option value="food">Food & Cooking</option>
+                  <option value="tech">Technology</option>
+                  <option value="gaming">Gaming</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
 
-                        {userDetails.connectedPlatforms?.includes(
-                          "farcaster"
-                        ) ? (
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center">
-                              {userDetails.farcasterPfp && (
-                                <img
-                                  src={userDetails.farcasterPfp}
-                                  alt="Profile"
-                                  className="w-6 h-6 rounded-full mr-2"
-                                />
-                              )}
-                              <span className="text-sm font-medium">
-                                {getUserDisplayName()}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => handleDisconnect("farcaster")}
-                              className="py-1 px-3 bg-gray-100 text-gray-600 text-sm rounded-md hover:bg-gray-200 transition-colors"
-                            >
-                              Disconnect
-                            </button>
-                          </div>
-                        ) : isFarcasterLoading ? (
-                          <div className="flex items-center">
-                            <span className="text-sm text-gray-500">
-                              Connecting...
-                            </span>
-                          </div>
-                        ) : (
-                          <SignInButton
-                            onSuccess={handleSuccess}
-                            onError={(error) => {
-                              console.error("Farcaster auth error:", error);
-                              setAuthError(
-                                "Failed to authenticate with Farcaster"
-                              );
-                            }}
-                            domain="localhost:3000"
-                            siweUri="http://localhost:3000"
-                            nonce={csrfToken || undefined}
-                            timeout={300000}
-                          />
-                        )}
+              {/* Social Media Connection */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Connect Your Social Media
+                </label>
+                
+                {authError && (
+                  <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                    <p className="text-sm text-red-400">{authError}</p>
+                  </div>
+                )}
+
+                <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center border border-purple-500/20">
+                        <Share2 className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-white">Farcaster</p>
+                        <p className="text-xs text-slate-400">Connect your profile</p>
                       </div>
                     </div>
+
+                    {userDetails.connectedPlatforms?.includes("farcaster") ? (
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center">
+                          {userDetails.farcasterPfp && (
+                            <img
+                              src={userDetails.farcasterPfp}
+                              alt="Profile"
+                              className="w-6 h-6 rounded-full mr-2"
+                            />
+                          )}
+                          <span className="text-sm font-medium text-slate-300">
+                            {getUserDisplayName()}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleDisconnect("farcaster")}
+                          className="px-3 py-1 bg-slate-700/50 text-slate-400 text-sm rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:text-white transition-all duration-200"
+                        >
+                          Disconnect
+                        </button>
+                      </div>
+                    ) : isFarcasterLoading ? (
+                      <div className="flex items-center">
+                        <Loader2 className="animate-spin w-4 h-4 text-slate-400 mr-2" />
+                        <span className="text-sm text-slate-400">Connecting...</span>
+                      </div>
+                    ) : (
+                      <SignInButton
+                        onSuccess={handleSuccess}
+                        onError={(error) => {
+                          console.error("Farcaster auth error:", error);
+                          setAuthError("Failed to authenticate with Farcaster");
+                        }}
+                        domain="localhost:3000"
+                        siweUri="http://localhost:3000"
+                        nonce={csrfToken || undefined}
+                        timeout={300000}
+                      />
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Business Type
-                    </label>
-                    <select
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                      value={userDetails.businessType || ""}
-                      onChange={(e) =>
-                        setUserDetails({
-                          ...userDetails,
-                          businessType: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Select business type</option>
-                      <option value="ecommerce">E-commerce Store</option>
-                      <option value="local">Local Business</option>
-                      <option value="software">Software/App</option>
-                      <option value="service">Service Provider</option>
-                      <option value="personal">Personal Brand</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Monthly Ad Budget
-                    </label>
-                    <select
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                      value={userDetails.budget || ""}
-                      onChange={(e) =>
-                        setUserDetails({
-                          ...userDetails,
-                          budget: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="">Select budget range</option>
-                      <option value="under500">Less than $500</option>
-                      <option value="500-2000">$500 - $2,000</option>
-                      <option value="2000-5000">$2,000 - $5,000</option>
-                      <option value="5000-10000">$5,000 - $10,000</option>
-                      <option value="10000plus">$10,000+</option>
-                    </select>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
-            <div className="flex justify-between mt-6">
-              <button
-                onClick={handleBack}
-                className="py-2 px-4 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleCompleteRegistration}
-                disabled={!isFormValid() || isPending}
-                className={`py-2 px-4 rounded-md text-white transition-colors ${
-                  isFormValid() && !isPending
-                    ? "bg-indigo-600 hover:bg-indigo-700"
-                    : "bg-gray-400 cursor-not-allowed"
-                }`}
-              >
-                {isPending ? (
-                  <svg
-                    className="animate-spin h-5 w-5 mx-auto text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
-                    ></path>
-                  </svg>
-                ) : (
-                  "Complete Registration"
-                )}
-              </button>
+          ) : (
+            /* Advertiser Setup */
+            <div className="space-y-6">
+              {/* Business Type */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Business Type
+                  <span className="text-red-400 ml-1">*</span>
+                </label>
+                <select
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
+                  value={userDetails.businessType || ""}
+                  onChange={(e) =>
+                    setUserDetails({
+                      ...userDetails,
+                      businessType: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Select business type</option>
+                  <option value="ecommerce">E-commerce Store</option>
+                  <option value="local">Local Business</option>
+                  <option value="software">Software/App</option>
+                  <option value="service">Service Provider</option>
+                  <option value="personal">Personal Brand</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Budget */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Monthly Ad Budget
+                  <span className="text-red-400 ml-1">*</span>
+                </label>
+                <select
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
+                  value={userDetails.budget || ""}
+                  onChange={(e) =>
+                    setUserDetails({
+                      ...userDetails,
+                      budget: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Select budget range</option>
+                  <option value="under500">Less than $500</option>
+                  <option value="500-2000">$500 - $2,000</option>
+                  <option value="2000-5000">$2,000 - $5,000</option>
+                  <option value="5000-10000">$5,000 - $10,000</option>
+                  <option value="10000plus">$10,000+</option>
+                </select>
+              </div>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isPending && (
+        <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start">
+          <Loader2 className="animate-spin text-emerald-400 mr-3 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-emerald-400">
+              Setting up your account
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Please wait while we complete your registration...
+            </p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      {showNextStep && (
+        <div className="mt-6 flex justify-end pt-4 border-t border-slate-700/50 gap-4">
+          <button
+            onClick={handleBack}
+            disabled={isPending}
+            className="px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Back
+          </button>
+          <button
+            onClick={handleCompleteRegistration}
+            disabled={!isFormValid() || isPending}
+            className="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md shadow-emerald-500/25"
+          >
+            {isPending ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="animate-spin h-4 w-4" />
+                <span>Processing...</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-4 w-4" />
+                <span>Complete Registration</span>
+              </div>
+            )}
+          </button>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
 
 export default GetStartedModal;

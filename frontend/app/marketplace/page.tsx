@@ -62,6 +62,7 @@ interface Brief {
   targetAudience: number; // Audience category (mapped via audienceMap)
   verificationDeadline: number; // Verification deadline (seconds)
   requirements?: string; // Optional campaign requirements
+  hasApplied: boolean;
   applicationsCount?: number; // Number of applications
 }
 
@@ -133,6 +134,18 @@ export default function Marketplace() {
 
   // Determine button state for each brief
   const getButtonState = (brief: Brief) => {
+    // First check if user has already applied
+    if (brief.hasApplied) {
+      return {
+        text: "Applied",
+        disabled: true,
+        onClick: () => {},
+        variant: "blue",
+        icon: <Check className="w-4 h-4 mr-1" />,
+      };
+    }
+
+    // Then check if assigned (keep your existing logic for this)
     const status = applicationStatus[brief.id];
     if (status === "assigned") {
       return {
@@ -143,16 +156,8 @@ export default function Marketplace() {
         icon: <UserCheck className="w-4 h-4 mr-1" />,
       };
     }
-    if (status === "applied") {
-      return {
-        text: "Applied",
-        disabled: true,
-        onClick: () => {},
-        variant: "blue",
-        icon: <Check className="w-4 h-4 mr-1" />,
-      };
-    }
 
+    // Rest of your existing conditions...
     if (!isConnected) {
       return {
         text: "Connect Wallet to Apply",
@@ -501,6 +506,7 @@ export default function Marketplace() {
               ? {
                   id: selectedBrief.id,
                   title: selectedBrief.title,
+                  description: selectedBrief.description,
                   business: selectedBrief.business,
                   budget: selectedBrief.budget,
                   requirements:
