@@ -94,17 +94,19 @@ const BrandDashboard = () => {
   } = useCompleteCampaign();
 
   // Create a map to store application counts for each brief
-  const [applicationCounts, setApplicationCounts] = useState<{[key: string]: number}>({});
+  const [applicationCounts, setApplicationCounts] = useState<{
+    [key: string]: number;
+  }>({});
 
 
   useEffect(() => {
     if (briefs && briefs.length > 0) {
-      briefs.forEach(brief => {
+      briefs.forEach((brief) => {
         // This would need to be implemented to get application count for each brief
         // For now, using a placeholder - you'd need to add a hook or API call to get this data
-        setApplicationCounts(prev => ({
+        setApplicationCounts((prev) => ({
           ...prev,
-          [brief.id]: Math.floor(Math.random() * 20) // Placeholder - replace with actual count
+          [brief.id]: Math.floor(Math.random() * 20), // Placeholder - replace with actual count
         }));
       });
     }
@@ -125,9 +127,11 @@ const BrandDashboard = () => {
       0: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
       1: "bg-blue-500/10 text-blue-400 border-blue-500/20",
       2: "bg-green-500/10 text-green-400 border-green-500/20",
-      3: "bg-red-500/10 text-red-400 border-red-500/20"
+      3: "bg-red-500/10 text-red-400 border-red-500/20",
     };
-    return colorMap[statusCode] || "bg-gray-500/10 text-gray-400 border-gray-500/20";
+    return (
+      colorMap[statusCode] || "bg-gray-500/10 text-gray-400 border-gray-500/20"
+    );
   };
 
   useEffect(() => {
@@ -194,13 +198,19 @@ const BrandDashboard = () => {
     : 0;
 
   // Filter briefs based on search and filter criteria
-  const filteredBriefs = briefs ? briefs.filter(brief => {
-    const matchesSearch = brief.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = selectedFilter === "all" ||
-      (selectedFilter === "active" && (brief.status === 0 || brief.status === 1)) ||
-      (selectedFilter === "completed" && brief.status === 2);
-    return matchesSearch && matchesFilter;
-  }) : [];
+  const filteredBriefs = briefs
+    ? briefs.filter((brief) => {
+        const matchesSearch = brief.title
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const matchesFilter =
+          selectedFilter === "all" ||
+          (selectedFilter === "active" &&
+            (brief.status === 0 || brief.status === 1)) ||
+          (selectedFilter === "completed" && brief.status === 2);
+        return matchesSearch && matchesFilter;
+      })
+    : [];
 
   const isFormValid = () => {
     return (
@@ -262,9 +272,12 @@ const BrandDashboard = () => {
           <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-6">
             <Briefcase className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-4">Business Account Required</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Business Account Required
+          </h2>
           <p className="text-slate-400 mb-8 leading-relaxed">
-            You need to register as a business to access the brand dashboard and create campaigns.
+            You need to register as a business to access the brand dashboard and
+            create campaigns.
           </p>
           <Link href="/">
             <button className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
@@ -279,7 +292,7 @@ const BrandDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-28">
       <Toaster position="top-right" />
-      
+
       <div className="px-4 sm:px-6 lg:px-8 pb-8">
         {/* Header Section */}
         <div className="mb-12">
@@ -292,7 +305,7 @@ const BrandDashboard = () => {
                 Manage your campaigns and track performance
               </p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               {/* Search */}
               <div className="relative">
@@ -305,7 +318,7 @@ const BrandDashboard = () => {
                   className="w-full sm:w-80 pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 transition-all backdrop-blur-sm"
                 />
               </div>
-              
+
               {/* Filter */}
               <div className="relative">
                 <select
@@ -319,9 +332,9 @@ const BrandDashboard = () => {
                 </select>
                 <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
               </div>
-              
+
               {/* Create Campaign Button */}
-              <button 
+              <button
                 onClick={() => setShowCreateModal(true)}
                 className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25 flex items-center gap-2 group"
               >
@@ -341,7 +354,9 @@ const BrandDashboard = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">{activeBriefs.length}</p>
+              <p className="text-2xl font-bold text-white">
+                {activeBriefs.length}
+              </p>
               <p className="text-slate-400 font-medium">Active Campaigns</p>
             </div>
           </div>
@@ -353,7 +368,9 @@ const BrandDashboard = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">{completedBriefs.length}</p>
+              <p className="text-2xl font-bold text-white">
+                {completedBriefs.length}
+              </p>
               <p className="text-slate-400 font-medium">Completed Campaigns</p>
             </div>
           </div>
@@ -365,7 +382,9 @@ const BrandDashboard = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">{totalBudget.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-white">
+                {totalBudget.toLocaleString()}
+              </p>
               <p className="text-slate-400 font-medium">Total Budget (cUSD)</p>
             </div>
           </div>
@@ -377,7 +396,9 @@ const BrandDashboard = () => {
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">{totalInfluencers}</p>
+              <p className="text-2xl font-bold text-white">
+                {totalInfluencers}
+              </p>
               <p className="text-slate-400 font-medium">Active Influencers</p>
             </div>
           </div>
@@ -388,7 +409,9 @@ const BrandDashboard = () => {
           <div className="p-6 border-b border-slate-700/50">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Your Campaigns</h2>
-              <span className="text-slate-400">{filteredBriefs.length} campaigns</span>
+              <span className="text-slate-400">
+                {filteredBriefs.length} campaigns
+              </span>
             </div>
           </div>
 
@@ -401,14 +424,21 @@ const BrandDashboard = () => {
             ) : filteredBriefs.length === 0 ? (
               <div className="p-12 text-center">
                 <Briefcase className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No campaigns found</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  No campaigns found
+                </h3>
                 <p className="text-slate-400 max-w-md mx-auto">
-                  {searchTerm ? "Try adjusting your search or filter criteria." : "Create your first campaign to get started with influencer marketing."}
+                  {searchTerm
+                    ? "Try adjusting your search or filter criteria."
+                    : "Create your first campaign to get started with influencer marketing."}
                 </p>
               </div>
             ) : (
               filteredBriefs.map((brief) => (
-                <div key={brief.id} className="p-6 hover:bg-slate-800/30 transition-all duration-200 group">
+                <div
+                  key={brief.id}
+                  className="p-6 hover:bg-slate-800/30 transition-all duration-200 group"
+                >
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     {/* Campaign Info */}
                     <div className="flex-1">
@@ -416,23 +446,33 @@ const BrandDashboard = () => {
                         <div className="p-3 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl border border-slate-600/50 group-hover:border-emerald-500/30 transition-colors">
                           <Target className="w-5 h-5 text-slate-300" />
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-white truncate">{brief.title}</h3>
-                            <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(brief.status)}`}>
+                            <h3 className="text-lg font-semibold text-white truncate">
+                              {brief.title}
+                            </h3>
+                            <span
+                              className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(
+                                brief.status
+                              )}`}
+                            >
                               {getStatusString(brief.status)}
                             </span>
                           </div>
-                          
-                          <p className="text-slate-400 text-sm mb-3 line-clamp-2">{brief.description}</p>
-                          
+
+                          <p className="text-slate-400 text-sm mb-3 line-clamp-2">
+                            {brief.description}
+                          </p>
+
                           <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
                             <div className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />
                               <span>
                                 {format(
-                                  new Date(Number(brief.applicationDeadline) * 1000),
+                                  new Date(
+                                    Number(brief.applicationDeadline) * 1000
+                                  ),
                                   "MMM d, yyyy"
                                 )}
                               </span>
@@ -440,15 +480,25 @@ const BrandDashboard = () => {
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
                               <span>
-                                {Math.max(0, Math.ceil(
-                                  (new Date(Number(brief.applicationDeadline) * 1000).getTime() - new Date().getTime()) /
-                                  (1000 * 60 * 60 * 24)
-                                ))} days left
+                                {Math.max(
+                                  0,
+                                  Math.ceil(
+                                    (new Date(
+                                      Number(brief.applicationDeadline) * 1000
+                                    ).getTime() -
+                                      new Date().getTime()) /
+                                      (1000 * 60 * 60 * 24)
+                                  )
+                                )}{" "}
+                                days left
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Users className="w-4 h-4" />
-                              <span>{brief.selectedInfluencersCount}/{Number(brief.maxInfluencers)} influencers</span>
+                              <span>
+                                {brief.selectedInfluencersCount}/
+                                {Number(brief.maxInfluencers)} influencers
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -464,12 +514,12 @@ const BrandDashboard = () => {
                         <div className="text-sm text-slate-400">
                           0 spent (0%)
                         </div>
-                        
+
                         {/* Progress Bar */}
                         <div className="w-24 h-2 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300"
-                            style={{ width: '0%' }}
+                            style={{ width: "0%" }}
                           />
                         </div>
                       </div>
