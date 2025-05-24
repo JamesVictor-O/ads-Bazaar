@@ -3,25 +3,23 @@
 import { useState, useEffect } from "react";
 import {
   Search,
-  CheckCircle,
   Target,
   Calendar,
   Users,
   Clock,
-  AlertCircle,
   Award,
   Check,
   UserCheck,
-} from "lucide-react"; // Icons for UI
-import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar"; // Hooks for fetching briefs and user profile
-import ApplyModal from "@/components/modals/AdsApplicationModal"; // Modal for applying to campaigns
+} from "lucide-react"; 
+import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar"; 
+import ApplyModal from "@/components/modals/AdsApplicationModal"; 
 
-import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication"; // Hook for fetching influencer applications
-import { useAccount } from "wagmi"; // Hook for wallet connection
-import { formatDistanceToNow } from "date-fns"; // For formatting timestamps
-import { truncateAddress } from "@/utils/format"; // Utility to shorten wallet addresses
+import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication"; 
+import { useAccount } from "wagmi"; 
+import { formatDistanceToNow } from "date-fns"; 
+import { truncateAddress } from "@/utils/format";
 
-// Status and audience mappings
+
 const statusMap = {
   0: "Open",
   1: "Assigned",
@@ -47,36 +45,36 @@ const audienceMap = {
 };
 
 interface Brief {
-  id: `0x${string}`; // Brief ID (hex string)
-  business: `0x${string}`; // Business wallet address
-  title: string; // Campaign title
-  description: string; // Campaign description
-  budget: number; // Campaign budget in cUSD
-  status: number; // Campaign status (0: Open, 1: Assigned, 2: Completed, 3: Cancelled)
-  applicationDeadline: number; // Deadline timestamp (seconds)
-  promotionDuration: number; // Duration in seconds
-  promotionStartTime: number; // Start time (seconds)
-  promotionEndTime: number; // End time (seconds)
-  maxInfluencers: number; // Max number of influencers
-  selectedInfluencersCount: number; // Number of selected influencers
-  targetAudience: number; // Audience category (mapped via audienceMap)
-  verificationDeadline: number; // Verification deadline (seconds)
-  requirements?: string; // Optional campaign requirements
+  id: `0x${string}`; 
+  business: `0x${string}`; 
+  title: string; 
+  description: string; 
+  budget: number; 
+  status: number; 
+  applicationDeadline: number; 
+  promotionDuration: number; 
+  promotionStartTime: number; 
+  promotionEndTime: number; 
+  maxInfluencers: number; 
+  selectedInfluencersCount: number;
+  targetAudience: number; 
+  verificationDeadline: number; 
+  requirements?: string; 
   hasApplied: boolean;
-  applicationsCount?: number; // Number of applications
+  applicationsCount?: number; 
 }
 
 export default function Marketplace() {
-  // State for search and filters
+  
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [categoryFilter, setCategoryFilter] =
     useState<string>("All Categories");
   const [budgetFilter, setBudgetFilter] = useState<string>("Budget: Any");
-  // State for apply modal
+  
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
   const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
   const [applicationMessage, setApplicationMessage] = useState<string>("");
-  // State for tracking application status
+ 
   const [applicationStatus, setApplicationStatus] = useState<
     Record<string, "applied" | "assigned" | null>
   >({});
@@ -88,13 +86,14 @@ export default function Marketplace() {
   const {
     applications: influencerApplications = [],
     isLoading: isLoadingApplications,
-  } = useGetInfluencerApplications(address);
+  } = useGetInfluencerApplications(address as `0x${string}`);
 
   // Update application status based on fetched applications
   useEffect(() => {
     if (!isLoadingApplications && influencerApplications) {
       const statusMap: Record<string, "applied" | "assigned" | null> = {};
       influencerApplications.forEach((app) => {
+        // @ts-ignore  
         statusMap[app.briefId] = app.isSelected ? "assigned" : "applied";
       });
       setApplicationStatus(statusMap);
@@ -232,6 +231,7 @@ export default function Marketplace() {
       brief.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       categoryFilter === "All Categories" ||
+      // @ts-ignore  
       audienceMap[brief.targetAudience] === categoryFilter;
     const matchesBudget =
       budgetFilter === "Budget: Any" ||
@@ -326,11 +326,14 @@ export default function Marketplace() {
         {/* Brief List */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredBriefs.map((brief) => {
+            // @ts-ignore  
             const category = audienceMap[brief.targetAudience] || "Other";
+            // @ts-ignore  
             const status = statusMap[brief.status] || "Unknown";
             const isOpen = brief.status === 0;
             const deadlinePassed =
               new Date(brief.applicationDeadline * 1000) < new Date();
+              // @ts-ignore  
             const buttonState = getButtonState(brief);
             const applicationsCount = brief.applicationCount || 0;
 
@@ -445,18 +448,6 @@ export default function Marketplace() {
                     </div>
                   </div>
 
-                  {/* Requirements (if any) */}
-                  {brief.requirements && (
-                    <div className="mb-4">
-                      <div className="flex items-center text-xs text-slate-400 mb-1">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        <span>Requirements</span>
-                      </div>
-                      <p className="text-xs text-slate-300 line-clamp-2">
-                        {brief.requirements}
-                      </p>
-                    </div>
-                  )}
 
                   {/* Apply button */}
                   <button

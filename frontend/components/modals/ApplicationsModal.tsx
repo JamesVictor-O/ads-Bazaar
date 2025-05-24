@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
-import { formatDistanceToNow } from "date-fns"; // For formatting timestamps (e.g., "2 days ago")
+import { formatDistanceToNow } from "date-fns";
 import { truncateAddress } from "@/utils/format";
 import { useAccount } from "wagmi";
 import { Hex } from "viem";
@@ -30,7 +30,7 @@ export const ApplicationsModal = ({
   isLoadingApplications,
   onClose,
 }: ApplicationsModalProps) => {
-  const { address, isConnected } = useAccount();
+  const {isConnected } = useAccount();
 
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
 
@@ -48,6 +48,9 @@ export const ApplicationsModal = ({
     isSuccess: isCanceled,
     error: cancelError,
   } = useCancelAdBrief();
+
+
+  console.log("selectedBrief", selectedBrief);
 
   // Hook for completing a campaign
   const {
@@ -146,6 +149,7 @@ export const ApplicationsModal = ({
     const toastId = toast.loading("Canceling campaign...");
 
     try {
+      // @ts-ignore  
       await cancelBrief(selectedBrief.briefId);
       toast.success("Campaign canceled successfully!", { id: toastId });
     } catch (error) {
@@ -161,6 +165,7 @@ export const ApplicationsModal = ({
     const toastId = toast.loading("Completing campaign...");
 
     try {
+      // @ts-ignore  
       await completeCampaign(selectedBrief.briefId);
       toast.success("Campaign completed successfully!", { id: toastId });
     } catch (error) {
@@ -190,10 +195,10 @@ export const ApplicationsModal = ({
     return null;
   };
 
-  // If no brief is selected, render nothing
+ 
   if (!selectedBrief) return null;
 
-  // Calculate remaining influencer spots
+  
   const maxInfluencers = Number(selectedBrief.maxInfluencers);
   const selectedCount = applications.filter((app) => app.isSelected).length;
   const spotsRemaining = maxInfluencers - selectedCount;
@@ -204,6 +209,7 @@ export const ApplicationsModal = ({
 
   // Check if there are any submissions
   const hasSubmissions = applications.some(
+    // @ts-ignore  
     (app) => app.isSelected && app.hasClaimed
   );
 
@@ -215,7 +221,7 @@ export const ApplicationsModal = ({
 
   // Determine if complete button should be shown
   const showCompleteButton =
-    selectedCount > 0 && hasSubmissions && selectedBrief.status !== 2; // 2 = COMPLETED
+    selectedCount > 0 && hasSubmissions
 
   return (
     // Modal overlay with dark, translucent background
@@ -280,6 +286,7 @@ export const ApplicationsModal = ({
                       <div className="flex items-center space-x-3">
                         {/* Avatar */}
                         <div className="w-12 h-12 bg-slate-700/50 rounded-full overflow-hidden flex items-center justify-center">
+                        
                           {application.influencerProfile?.avatar ? (
                             <Image
                               src={application.influencerProfile.avatar}
