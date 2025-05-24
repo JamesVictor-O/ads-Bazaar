@@ -23,7 +23,7 @@ export default function Home() {
         "title": "AdsBazaar",
         "action": {
           "type": "launch_frame",
-          "name": "Uniframe",
+          "name": "Ads-Bazaar",
           "url": "https://ads-bazaar.vercel.app/",
           "splashImageUrl": "https://ads-bazaar.vercel.app/adsBazaar-logo.png",
           "splashBackgroundColor": "#059669"
