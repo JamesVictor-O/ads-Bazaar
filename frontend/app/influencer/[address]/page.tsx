@@ -1,8 +1,11 @@
+
+
+
 "use client";
 
 import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
-import { useState, useEffect } from "react";
+import { useState, useEffect} from "react";
 import {
   Briefcase,
   Link as LinkIcon,
@@ -25,6 +28,24 @@ import {
 import Link from "next/link";
 import { Toaster } from "react-hot-toast";
 
+interface SocialAccount {
+  platform: string;
+  username: string;
+  followers: number;
+  verified: boolean;
+  url: string;
+}
+
+interface ProfileData {
+  name: string;
+  bio: string;
+  website: string;
+  niche: string;
+  totalFollowers: number;
+  avgEngagement: number;
+  successRate: number;
+}
+
 export default function InfluencerProfile() {
   const { address: profileAddress } = useParams();
   const { address: connectedAddress, isConnected } = useAccount();
@@ -32,8 +53,7 @@ export default function InfluencerProfile() {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
 
-  // Sample social accounts data structure
-  const [socialAccounts, setSocialAccounts] = useState([
+  const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([
     {
       platform: "twitter",
       username: "johndoe",
@@ -57,7 +77,7 @@ export default function InfluencerProfile() {
     },
   ]);
 
-  const [profileData, setProfileData] = useState({
+  const [profileData, setProfileData] = useState<ProfileData>({
     name: "John Doe",
     bio: "Digital creator specializing in tech reviews and tutorials. Collaborating with brands to create authentic content.",
     website: "https://johndoe.com",
@@ -79,9 +99,7 @@ export default function InfluencerProfile() {
   }, [isConnected, connectedAddress, profileAddress]);
 
   const handleSaveProfile = () => {
-    // In a real app, this would save to the contract/database
     setEditMode(false);
-    // Recalculate total followers
     setProfileData((prev) => ({
       ...prev,
       totalFollowers: socialAccounts.reduce(
@@ -97,8 +115,12 @@ export default function InfluencerProfile() {
       { platform: "", username: "", followers: 0, verified: false, url: "" },
     ]);
   };
-
-  const updateSocialAccount = (index: number, field: string, value: any) => {
+  
+  const updateSocialAccount = (
+    index: number,
+    field: keyof SocialAccount,
+    value: string | number | boolean
+  ) => {
     const updated = [...socialAccounts];
     updated[index] = { ...updated[index], [field]: value };
     setSocialAccounts(updated);
@@ -107,17 +129,6 @@ export default function InfluencerProfile() {
   const removeSocialAccount = (index: number) => {
     setSocialAccounts(socialAccounts.filter((_, i) => i !== index));
   };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading profile...</p>
-        </div>
-      </div>
-    );
-  }
 
   const PlatformIcon = ({ platform }: { platform: string }) => {
     switch (platform.toLowerCase()) {
@@ -140,13 +151,25 @@ export default function InfluencerProfile() {
     }
   };
 
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-28 pb-12 px-4 sm:px-6 lg:px-8">
       <Toaster position="top-right" />
 
       <div className="max-w-6xl mx-auto">
         {/* Profile Header */}
-        <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 mb-8">
+       <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 mb-8">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-8">
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-4">

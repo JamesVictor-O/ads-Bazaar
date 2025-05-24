@@ -235,7 +235,7 @@ export default function ApplyModal({
             </div>
             <p className="mt-2 text-xs text-slate-400">
               Minimum 20 characters required. Be specific about your approach and
-              why you're the right fit.
+              why youre the right fit.
             </p>
           </div>
 

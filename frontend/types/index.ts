@@ -109,4 +109,13 @@ export interface ApplicationsModalProps {
   isLoadingApplications: boolean;
   onClose: () => void;
 }
+export type Transaction = {
+    id: string;
+    type: string;
+    amount: number;
+    from: string;
+    date: string;
+    txHash: string;
+    status: string;
+  };
 

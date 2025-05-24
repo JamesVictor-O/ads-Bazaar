@@ -227,16 +227,16 @@ export function SubmitPostModal({
                 !postLink.trim() ||
                 isSubmitting ||
                 (transactionStatus.stage !== "idle" &&
-                  transactionStatus.stage !== "error")
+                  transactionStatus.stage !== "error" &&
+                  transactionStatus.stage !== "success")
                   ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
-                  : transactionStatus.stage === "success"
-                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-md shadow-emerald-500/25"
                   : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-md shadow-emerald-500/25"
               }`}
             >
               {isSubmitting ||
               (transactionStatus.stage !== "idle" &&
-                transactionStatus.stage !== "error") ? (
+                transactionStatus.stage !== "error" &&
+                transactionStatus.stage !== "success") ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>{getButtonText()}</span>
