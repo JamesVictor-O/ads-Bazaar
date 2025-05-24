@@ -8,26 +8,19 @@
     "homeUrl": "https://ads-bazaar.vercel.app/",
     "imageUrl": "https://ads-bazaar.vercel.app/adsBazaar-heroPage.png",
     "buttonTitle": "🚩 Let's Explore",
-    "subtitle": "Decentralized Influencer Marketing Platform",
-    "description": "Connects businesses directly with verified content creators, ensuring guaranteed payments, transparent processes, and authentic partnerships - all powered by smart contracts and privacy-preserving identity verification",
+    "subtitle": "Influencer Marketing Onchain",
+    "description": "Connects businesses directly with verified influencers, all powered by smart contracts and privacy identity verification",
     "screenshotUrls": [
       "https://ads-bazaar.vercel.app/adsBazaar-heroPage.png",
       "https://ads-bazaar.vercel.app/adsBazaar-Applications.png",
-      "https://ads-bazaar.vercel.app/adsBazaar-Branddashboard.png",
-      "https://ads-bazaar.vercel.app/adsBazaar-GetStartedInfluencer.png",
-      "https://ads-bazaar.vercel.app/adsBazaar-GettingStarted.png",
-      "https://ads-bazaar.vercel.app/adsBazaar-HeroNotRegistered.png",
-      "https://ads-bazaar.vercel.app/adsBazaar-logo.png",
-      "https://ads-bazaar.vercel.app/adsBazaar-Marketbusiness.png",
-      "https://ads-bazaar.vercel.app/adsBazaar-marketInfluencer.png",
       "https://ads-bazaar.vercel.app/adsBazaar-Submissions.png"
     ],
     "primaryCategory": "social",
     "tags": ["jobs", "influencers", "warpcast", "earn", "businesses"],
     "heroImageUrl": "https://ads-bazaar.vercel.app/adsBazaar-heroPage.png",
-    "tagline": "Decentralized Influencer Marketing Platform",
+    "tagline": "Influencer Marketing Onchain",
     "ogTitle": "Ads-Bazaar",
-    "ogDescription": "Connects businesses directly with verified content creators, ensuring guaranteed payments, transparent processes, and authentic partnerships - all powered by smart contracts and privacy-preserving identity verification",
+    "ogDescription": "Connects businesses directly with verified influencers, all powered by smart contracts and privacy identity verification",
     "ogImageUrl": "https://ads-bazaar.vercel.app/adsBazaar-heroPage.png"
   }
 }
