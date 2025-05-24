@@ -69,7 +69,13 @@ interface SubmitProofResult {
   hash?: string;
 }
 
-type TxStage = "idle" | "error" | "success" | "preparing" | "confirming" | "mining";
+type TxStage =
+  | "idle"
+  | "error"
+  | "success"
+  | "preparing"
+  | "confirming"
+  | "mining";
 
 export default function InfluencerDashboard() {
   const { status } = useSession();
@@ -83,7 +89,9 @@ export default function InfluencerDashboard() {
   const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [postLink, setPostLink] = useState("");
-  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>(
+    []
+  );
 
   const [txStatus, setTxStatus] = useState<{
     stage: TxStage;
@@ -163,7 +171,8 @@ export default function InfluencerDashboard() {
     if (isSubmittingError && txStatus.stage !== "error") {
       setTxStatus({
         stage: "error",
-        message: submitError?.message || "Transaction failed. Please try again.",
+        message:
+          submitError?.message || "Transaction failed. Please try again.",
         hash: txStatus.hash,
       });
       toast.error(submitError?.message || "Transaction failed");
@@ -412,21 +421,23 @@ export default function InfluencerDashboard() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              <Link
-                href="/selfVerification"
-                className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 rounded-xl transition-all"
-              >
-                Verify with self
-                <ExternalLink className="w-4 h-4" />
-              </Link>
+              <div className=" flex flex-row justify-between">
+                <Link
+                  href="/selfVerification"
+                  className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-white hover:text-slate-300 bg-emerald-600  hover:bg-slate-800/70 border border-slate-700/50 rounded-xl transition-all "
+                >
+                  Verify with self
+                  <ExternalLink className="w-4 h-4" />
+                </Link>
 
-              <Link
-                href={`/influencer/${address}`}
-                className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 rounded-xl transition-all"
-              >
-                View Public Profile
-                <ExternalLink className="w-4 h-4" />
-              </Link>
+                <Link
+                  href={`/influencer/${address}`}
+                  className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 rounded-xl transition-all"
+                >
+                  View Public Profile
+                  <ExternalLink className="w-4 h-4" />
+                </Link>
+              </div>
 
               <Link href="/marketplace">
                 <button className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
@@ -439,7 +450,7 @@ export default function InfluencerDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
             <div className="flex items-start justify-between mb-4">
               <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl border border-blue-500/20">
@@ -544,7 +555,7 @@ export default function InfluencerDashboard() {
                       Number(brief.brief.applicationDeadline) * 1000;
                     const verificationDeadline =
                       Number(brief.brief.verificationDeadline) * 1000;
-                       // @ts-expect-error:Brief ID should be typed but API currently accepts any string
+                    // @ts-expect-error:Brief ID should be typed but API currently accepts any string
                     const paymentStatus = getPaymentStatus(brief.application);
                     const budget = Number(brief.brief.budget) / 1e18;
 
@@ -613,64 +624,65 @@ export default function InfluencerDashboard() {
                                   </div>
                                 </div>
 
-                                {brief.application && brief.application.isSelected && (
-                                  <div className="mt-4">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        {getTaskStatusIcon(brief.application)}
-                                        <span className="text-sm font-medium text-slate-300">
-                                          Content Submission
-                                        </span>
-                                        {brief.brief.status !== 1 && (
-                                          <span className="ml-2 text-xs text-amber-400 bg-amber-900/30 px-2 py-1 rounded-full border border-amber-800/50">
-                                            Waiting for assignment...
+                                {brief.application &&
+                                  brief.application.isSelected && (
+                                    <div className="mt-4">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          {getTaskStatusIcon(brief.application)}
+                                          <span className="text-sm font-medium text-slate-300">
+                                            Content Submission
                                           </span>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        {brief.application.proofLink ? (
-                                          <a
-                                            href={brief.application.proofLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs"
-                                          >
-                                            <LinkIcon className="w-3 h-3" />
-                                            View Content
-                                          </a>
-                                           // @ts-expect-error:Brief ID should be typed but API currently accepts any string
-                                        ) : canSubmitProof(brief) ? (
-                                          <button
-                                            onClick={() => {
-                                               // @ts-expect-error:Brief ID should be typed but API currently accepts any string
-                                              setSelectedCampaign(brief);
-                                              setSelectedTask({
-                                                name: brief.brief.description,
-                                              });
-                                              setShowSubmitModal(true);
-                                            }}
-                                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs"
-                                            disabled={isSubmittingProof}
-                                          >
-                                            {isSubmittingProof ? (
-                                              "Submitting..."
-                                            ) : (
-                                              <>
-                                                <LinkIcon className="w-3 h-3" />
-                                                Submit Content
-                                              </>
-                                            )}
-                                          </button>
-                                        ) : brief.application.isSelected &&
-                                          brief.brief.status !== 1 ? (
-                                          <span className="text-xs text-slate-500 italic">
-                                            Submit when assigned
-                                          </span>
-                                        ) : null}
+                                          {brief.brief.status !== 1 && (
+                                            <span className="ml-2 text-xs text-amber-400 bg-amber-900/30 px-2 py-1 rounded-full border border-amber-800/50">
+                                              Waiting for assignment...
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          {brief.application.proofLink ? (
+                                            <a
+                                              href={brief.application.proofLink}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs"
+                                            >
+                                              <LinkIcon className="w-3 h-3" />
+                                              View Content
+                                            </a>
+                                          ) : // @ts-expect-error:Brief ID should be typed but API currently accepts any string
+                                          canSubmitProof(brief) ? (
+                                            <button
+                                              onClick={() => {
+                                                // @ts-expect-error:Brief ID should be typed but API currently accepts any string
+                                                setSelectedCampaign(brief);
+                                                setSelectedTask({
+                                                  name: brief.brief.description,
+                                                });
+                                                setShowSubmitModal(true);
+                                              }}
+                                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs"
+                                              disabled={isSubmittingProof}
+                                            >
+                                              {isSubmittingProof ? (
+                                                "Submitting..."
+                                              ) : (
+                                                <>
+                                                  <LinkIcon className="w-3 h-3" />
+                                                  Submit Content
+                                                </>
+                                              )}
+                                            </button>
+                                          ) : brief.application.isSelected &&
+                                            brief.brief.status !== 1 ? (
+                                            <span className="text-xs text-slate-500 italic">
+                                              Submit when assigned
+                                            </span>
+                                          ) : null}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )}
                               </div>
                             </div>
                           </div>
@@ -691,7 +703,9 @@ export default function InfluencerDashboard() {
                               brief.application.isApproved &&
                               !brief.application.hasClaimed && (
                                 <button
-                                  onClick={() => handleClaimFunds(brief.briefId)}
+                                  onClick={() =>
+                                    handleClaimFunds(brief.briefId)
+                                  }
                                   className="flex items-center gap-1 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-sm font-medium"
                                 >
                                   <CheckCircle className="w-4 h-4" />

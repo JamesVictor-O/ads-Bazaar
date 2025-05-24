@@ -155,7 +155,7 @@ export default function SelfVerification() {
 
   if (!isConnected || !address) {
     return (
-      <div className="flex flex-col min-h-screen bg-slate-900">
+      <div className="flex flex-col min-h-screen bg-slate-900 pt-10 md:pt-20">
         <div className="p-6 lg:p-8 max-w-3xl mx-auto">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-white">Identity Verification</h2>
@@ -185,7 +185,7 @@ export default function SelfVerification() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-900">
+    <div className="flex flex-col min-h-screen bg-slate-900 pt-10 md:pt-24">
       <div className="p-6 lg:p-8 max-w-3xl mx-auto">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-white">Identity Verification</h2>
