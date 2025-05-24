@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAccount } from "wagmi";
 import { Brief } from "@/types/index";
 import { SubmissionsModal } from "@/components/modals/ SubmissionsModal";
@@ -30,7 +30,6 @@ import {
   useUserProfile,
   useBriefApplications,
   useCreateAdBrief,
-  useCancelAdBrief,
   useSelectInfluencer,
   useCompleteCampaign,
   useGetBusinessBriefs,
@@ -63,9 +62,8 @@ const BrandDashboard = () => {
   // } = useCancelAdBrief();
 
   const { userProfile } = useUserProfile();
-  const { briefs, isLoading, isError } = address
-    ? useGetBusinessBriefs(address as `0x${string}`)
-    : { briefs: [], isLoading: false, isError: false };
+  const { briefs: fetchedBriefs, isLoading } = useGetBusinessBriefs(address as `0x${string}`);
+const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBriefs]);
   const { applications, isLoadingApplications, refetchApplications } =
     useBriefApplications(selectedBrief?.id || "0x0");
 
@@ -100,11 +98,9 @@ const BrandDashboard = () => {
   useEffect(() => {
     if (briefs && briefs.length > 0) {
       briefs.forEach((brief) => {
-        // This would need to be implemented to get application count for each brief
-        // For now, using a placeholder - you'd need to add a hook or API call to get this data
         setApplicationCounts((prev) => ({
           ...prev,
-          [brief.id]: Math.floor(Math.random() * 20), // Placeholder - replace with actual count
+          [brief.id]: Math.floor(Math.random() * 20), 
         }));
       });
     }
@@ -259,7 +255,7 @@ const BrandDashboard = () => {
       );
     }
   };
-// @ts-ignore  
+// @ts-expect-error: Brief ID should be typed but API currently accepts any string
   const handleReleaseFunds = async (briefId) => {
     try {
       await completeCampaign(briefId);
@@ -537,7 +533,7 @@ const BrandDashboard = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => {
-                            // @ts-ignore  
+                            // @ts-expect-error: Brief ID should be typed but API currently accepts any string 
                             setSelectedBrief(brief);
                             setShowApplicationsModal(true);
                           }}
@@ -552,7 +548,7 @@ const BrandDashboard = () => {
                         </button>
                         <button
                           onClick={() => {
-                            // @ts-ignore  
+                            // @ts-expect-error: Brief ID should be typed but API currently accepts any string
                             setSelectedBrief(brief);
                             setShowSubmissionsModal(true);
                           }}

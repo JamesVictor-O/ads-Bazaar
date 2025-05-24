@@ -1,10 +1,9 @@
-
-
-import { getDefaultConfig, connectorsForWallets } from '@rainbow-me/rainbowkit';
+import { createConfig, http } from 'wagmi';
 import { celoAlfajores } from 'wagmi/chains';
+import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { injectedWallet, metaMaskWallet } from '@rainbow-me/rainbowkit/wallets';
-import { http } from 'wagmi';
 
+const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'YOUR_PROJECT_ID';
 
 const connectors = connectorsForWallets(
   [
@@ -13,24 +12,19 @@ const connectors = connectorsForWallets(
       wallets: [
         injectedWallet, // Browser-injected wallets (e.g., MetaMask)
         metaMaskWallet, // MetaMask specifically
-      
       ],
     },
   ],
   {
-    appName: 'Ads-bazzar',
-    projectId: "YOUR_PROJECT_ID",
+    appName: 'AdsBazaar',
+    projectId,
   }
 );
 
-export const wagmiConfig = getDefaultConfig({
-  appName: 'Ads-bazzar',
-  projectId: "YOUR_PROJECT_ID",
+export const wagmiConfig = createConfig({
   chains: [celoAlfajores],
-  connectors, // Use the custom connectors list
-  reconnect: false, // Still disable reconnect for safety,
+  connectors, // Pass custom connectors directly
   transports: {
-    [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
-  }
+    [celoAlfajores.id]: http('https://alfajores-forno.celo-testnet.org'),
+  },
 });
-

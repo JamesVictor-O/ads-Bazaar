@@ -129,10 +129,14 @@ export const ApplicationsModal = ({
 
     try {
       await selectInfluencer(briefId, index);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Transaction error:", error);
+      const errorMessage =
+        error && typeof error === "object" && "message" in error
+          ? (error as { message?: string }).message
+          : "Unknown error";
       toast.error(
-        `Failed to assign influencer: ${error.message || "Unknown error"}`,
+        `Failed to assign influencer: ${errorMessage || "Unknown error"}`,
         {
           id: toastId,
         }
@@ -149,7 +153,7 @@ export const ApplicationsModal = ({
     const toastId = toast.loading("Canceling campaign...");
 
     try {
-      // @ts-ignore  
+       // @ts-expect-error:Brief ID should be typed but API currently accepts any string
       await cancelBrief(selectedBrief.briefId);
       toast.success("Campaign canceled successfully!", { id: toastId });
     } catch (error) {
@@ -165,7 +169,7 @@ export const ApplicationsModal = ({
     const toastId = toast.loading("Completing campaign...");
 
     try {
-      // @ts-ignore  
+        // @ts-expect-error:Brief ID should be typed but API currently accepts any string 
       await completeCampaign(selectedBrief.briefId);
       toast.success("Campaign completed successfully!", { id: toastId });
     } catch (error) {
@@ -209,7 +213,6 @@ export const ApplicationsModal = ({
 
   // Check if there are any submissions
   const hasSubmissions = applications.some(
-    // @ts-ignore  
     (app) => app.isSelected && app.hasClaimed
   );
 

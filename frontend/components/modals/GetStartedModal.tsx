@@ -10,6 +10,7 @@ import { useAccount } from "wagmi";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRegisterUser } from "../../hooks/adsBazaar";
+import Image from "next/image";
 
 interface GetStartedModalProps {
   isOpen?: boolean;
@@ -39,13 +40,14 @@ const GetStartedModal = ({
     connectedPlatforms: [],
   });
   const router = useRouter();
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
 
   // Use the registration hook
   const { register, isPending, isSuccess, isError, error } = useRegisterUser();
 
   const [showNextStep, setShowNextStep] = useState(false);
-  const [connecting, setConnecting] = useState<SocialPlatform | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_connecting, setConnecting] = useState<SocialPlatform | null>(null);
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isFarcasterLoading, setIsFarcasterLoading] = useState(false);
@@ -142,20 +144,7 @@ const GetStartedModal = ({
     setShowNextStep(false);
   };
 
-  const handleConnect = (platform: SocialPlatform) => {
-    setConnecting(platform);
-    setTimeout(() => {
-      const connectedPlatforms = userDetails.connectedPlatforms || [];
-      if (!connectedPlatforms.includes(platform)) {
-        setUserDetails({
-          ...userDetails,
-          connectedPlatforms: [...connectedPlatforms, platform],
-        });
-      }
-      setConnecting(null);
-    }, 1000);
-  };
-
+  
   const handleDisconnect = (platform: SocialPlatform) => {
     const connectedPlatforms = userDetails.connectedPlatforms || [];
     setUserDetails({
@@ -284,7 +273,7 @@ const GetStartedModal = ({
                   </div>
                   <div className="text-left">
                     <h3 className="text-lg font-medium text-white group-hover:text-emerald-300 transition-colors duration-200">
-                      I'm an Influencer
+                      Im an Influencer
                     </h3>
                     <p className="text-sm text-slate-400 mt-1">
                       I want to monetize my audience and work with brands
@@ -309,7 +298,7 @@ const GetStartedModal = ({
                       I want to run ads
                     </h3>
                     <p className="text-sm text-slate-400 mt-1">
-                      I'm looking to promote my business or product
+                      Im looking to promote my business or product
                     </p>
                   </div>
                 </div>
@@ -380,11 +369,7 @@ const GetStartedModal = ({
                       <div className="flex items-center gap-3">
                         <div className="flex items-center">
                           {userDetails.farcasterPfp && (
-                            <img
-                              src={userDetails.farcasterPfp}
-                              alt="Profile"
-                              className="w-6 h-6 rounded-full mr-2"
-                            />
+                            <Image src={userDetails.farcasterPfp} alt="Profile" className="w-6 h-6 rounded-full mr-2" />
                           )}
                           <span className="text-sm font-medium text-slate-300">
                             {getUserDisplayName()}
@@ -404,6 +389,7 @@ const GetStartedModal = ({
                       </div>
                     ) : (
                       <SignInButton
+                       // @ts-expect-error:Brief ID should be typed but API currently accepts any string
                         onSuccess={handleSuccess}
                         onError={(error) => {
                           console.error("Farcaster auth error:", error);

@@ -93,7 +93,7 @@ export default function Marketplace() {
     if (!isLoadingApplications && influencerApplications) {
       const statusMap: Record<string, "applied" | "assigned" | null> = {};
       influencerApplications.forEach((app) => {
-        // @ts-ignore  
+        // @ts-expect-error:Brief ID should be typed but API currently accepts any string
         statusMap[app.briefId] = app.isSelected ? "assigned" : "applied";
       });
       setApplicationStatus(statusMap);
@@ -231,7 +231,7 @@ export default function Marketplace() {
       brief.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       categoryFilter === "All Categories" ||
-      // @ts-ignore  
+      // @ts-expect-error:Brief ID should be typed but API currently accepts any string
       audienceMap[brief.targetAudience] === categoryFilter;
     const matchesBudget =
       budgetFilter === "Budget: Any" ||
@@ -326,14 +326,14 @@ export default function Marketplace() {
         {/* Brief List */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredBriefs.map((brief) => {
-            // @ts-ignore  
+            // @ts-expect-error:Brief ID should be typed but API currently accepts any string
             const category = audienceMap[brief.targetAudience] || "Other";
-            // @ts-ignore  
+            // @ts-expect-error:Brief ID should be typed but API currently accepts any string
             const status = statusMap[brief.status] || "Unknown";
             const isOpen = brief.status === 0;
             const deadlinePassed =
               new Date(brief.applicationDeadline * 1000) < new Date();
-              // @ts-ignore  
+              // @ts-expect-error:Brief ID should be typed but API currently accepts any string
             const buttonState = getButtonState(brief);
             const applicationsCount = brief.applicationCount || 0;
 

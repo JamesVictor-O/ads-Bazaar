@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useReadContract, useAccount, usePublicClient } from "wagmi";
 
-import { formatEther } from "viem";
+import { formatEther, Hex } from "viem";
 type Bytes32 = Hex;
 import ABI from "../lib/AdsBazaar.json";
 import { CONTRACT_ADDRESS } from "../lib/contracts";
@@ -208,7 +208,7 @@ export function useGetInfluencerApplications(influencerAddress: `0x${string}`) {
         maxInfluencers: Number(rawData[10]),
         selectedInfluencersCount: Number(rawData[11]),
         targetAudience: Number(rawData[12]),
-        verificationDeadline: Number(rawData[13] || 0n), // Handle optional field
+        verificationDeadline: Number(rawData[13] || 0), // Handle optional field
       };
     } catch (err) {
       console.error(`Error formatting brief ${briefId}:`, err);

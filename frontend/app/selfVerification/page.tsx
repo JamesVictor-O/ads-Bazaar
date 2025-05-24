@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { CheckCircle, AlertCircle, User, ArrowRight } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useUserProfile } from "@/hooks/adsBazaar";
 import { useVerifySelfProof } from "@/hooks/adsBazaar";
@@ -10,37 +10,48 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 
-// Mock verification check (replace with actual backend API call)
-const mockVerifyProof = async (
-  proof: string,
-  publicSignals: string[]
-): Promise<{ isValid: boolean; credentialSubject?: any; error?: string }> => {
+interface VerificationResult {
+  isValid: boolean;
+  credentialSubject?: { isOver18: boolean; nationality: string };
+  error?: string;
+}
+
+const mockVerifyProof = async (): Promise<VerificationResult> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // Simulate successful verification
       resolve({
         isValid: true,
         credentialSubject: { isOver18: true, nationality: "US" },
       });
-      // Simulate failure: resolve({ isValid: false, error: "Invalid proof" });
     }, 2000);
   });
 };
 
 export default function SelfVerification() {
-  // State
   const [isVerified, setIsVerified] = useState<boolean>(false);
-  const [_isVerifying, setIsVerifying] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-
+  const [selfApp, setSelfApp] = useState<SelfApp | null>(null);
   const { address, isConnected } = useAccount();
-
   const { userProfile, isLoadingProfile } = useUserProfile();
-
   const { verifySelfProof, isPending, isSuccess } = useVerifySelfProof();
 
-  const handleVerify = async (proof: any, publicSignals: string[]) => {
+  // Initialize SelfApp when address becomes available
+  useEffect(() => {
+    if (address) {
+      const app = new SelfAppBuilder({
+        appName: "AdsBazaar",
+        scope: "adsbazaar-scope",
+        endpoint: CONTRACT_ADDRESS,
+        endpointType: "staging_celo",
+        userId: address,
+        userIdType: "hex",
+        devMode: true,
+      } as Partial<SelfApp>).build();
+      setSelfApp(app);
+    }
+  }, [address]);
+
+  const handleVerify = useCallback(async (proof: unknown, publicSignals: string[]) => {
     if (!isConnected || !address) {
       toast.error("Please connect your wallet to verify your identity.");
       return;
@@ -56,9 +67,7 @@ export default function SelfVerification() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-
+  }, [isConnected, address, verifySelfProof]);
 
   useEffect(() => {
     const checkVerification = async () => {
@@ -67,34 +76,23 @@ export default function SelfVerification() {
         return;
       }
 
-      const proofParam = new URLSearchParams(window.location.search).get(
-        "proof"
-      );
-      const publicSignalsParam = new URLSearchParams(
-        window.location.search
-      ).get("publicSignals");
+      const proofParam = new URLSearchParams(window.location.search).get("proof");
+      const publicSignalsParam = new URLSearchParams(window.location.search).get("publicSignals");
 
       if (proofParam && publicSignalsParam && !isVerified) {
-        setIsVerifying(true);
         try {
           const proof = JSON.parse(decodeURIComponent(proofParam));
-          const publicSignals = JSON.parse(
-            decodeURIComponent(publicSignalsParam)
-          );
+          const publicSignals = JSON.parse(decodeURIComponent(publicSignalsParam));
 
           if (publicSignals.length !== 21) {
-            throw new Error(
-              `Expected 21 public signals, got ${publicSignals.length}`
-            );
+            throw new Error(`Expected 21 public signals, got ${publicSignals.length}`);
           }
 
-          const result = await mockVerifyProof(proofParam, publicSignals);
+          const result = await mockVerifyProof();
 
           if (result.isValid) {
             await handleVerify(proof, publicSignals);
-
             console.log("Verified attributes:", result.credentialSubject);
-
             window.history.replaceState({}, "", window.location.pathname);
           } else {
             toast.error(`Verification failed: ${result.error}`);
@@ -103,14 +101,12 @@ export default function SelfVerification() {
           toast.error("Error verifying identity");
           console.error(error);
         }
-        setIsVerifying(false);
       }
       setIsLoading(false);
     };
     checkVerification();
-  }, [isVerified, isConnected, address, verifySelfProof]);
+  }, [isVerified, isConnected, address, handleVerify]);
 
-  // Handle transaction confirmation
   useEffect(() => {
     if (isSuccess) {
       setIsVerified(true);
@@ -118,30 +114,14 @@ export default function SelfVerification() {
     }
   }, [isSuccess]);
 
-  
-
-  const selfApp = new SelfAppBuilder({
-    appName: "AdsBazaar",
-    scope: "adsbazaar-scope",
-    endpoint: CONTRACT_ADDRESS,
-    endpointType: "staging_celo",
-    userId: address,
-    userIdType: "hex",
-    devMode: true,
-  } as Partial<SelfApp>).build();
-
   const handleVerificationSuccess = () => {
     setIsVerified(true);
     toast.success("Identity verified successfully!");
   };
 
-  // Loading state
-  if (isLoading || isLoadingProfile || !isConnected) {
+  if (isLoading || isLoadingProfile) {
     return (
-      <div
-        className="flex justify-center items-center min-h-screen bg-slate-900"
-        aria-live="polite"
-      >
+      <div className="flex justify-center items-center min-h-screen bg-slate-900" aria-live="polite">
         <div className="text-center">
           <svg
             className="animate-spin h-12 w-12 text-emerald-500 mx-auto"
@@ -173,15 +153,12 @@ export default function SelfVerification() {
     );
   }
 
-  // Wallet not connected state
   if (!isConnected || !address) {
     return (
       <div className="flex flex-col min-h-screen bg-slate-900">
         <div className="p-6 lg:p-8 max-w-3xl mx-auto">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white">
-              Identity Verification
-            </h2>
+            <h2 className="text-3xl font-bold text-white">Identity Verification</h2>
             <p className="text-sm text-slate-400 mt-2">
               Connect your wallet to verify your identity on AdsBazaar
             </p>
@@ -189,12 +166,9 @@ export default function SelfVerification() {
           <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-lg shadow-emerald-500/10">
             <div className="flex flex-col items-center text-center">
               <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-4">
-                Wallet Not Connected
-              </h3>
+              <h3 className="text-xl font-semibold text-white mb-4">Wallet Not Connected</h3>
               <p className="text-sm text-slate-300 mb-6 max-w-md">
-                Please connect your wallet to proceed with identity
-                verification.
+                Please connect your wallet to proceed with identity verification.
               </p>
               <Link
                 href="/connect"
@@ -213,20 +187,15 @@ export default function SelfVerification() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-900">
       <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white">
-            Identity Verification
-          </h2>
+          <h2 className="text-3xl font-bold text-white">Identity Verification</h2>
           <p className="text-sm text-slate-400 mt-2">
             Verify your identity to unlock campaign applications on AdsBazaar
           </p>
         </div>
 
-        {/* Verification Card */}
         <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-lg shadow-emerald-500/10">
           <div className="flex flex-col items-center text-center">
-            {/* Verification Status */}
             <div className="mb-6">
               <span
                 className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border ${
@@ -249,11 +218,8 @@ export default function SelfVerification() {
               </span>
             </div>
 
-            {/* Instructions */}
             <h3 className="text-xl font-semibold text-white mb-4">
-              {isVerified
-                ? "You're Verified!"
-                : "Verify Your Identity with Self Protocol"}
+              {isVerified ? "You're Verified!" : "Verify Your Identity with Self Protocol"}
             </h3>
             <p className="text-sm text-slate-300 mb-6 max-w-md">
               {isVerified
@@ -261,8 +227,7 @@ export default function SelfVerification() {
                 : "Scan the QR code below with the Self app to verify your identity. This process is secure and privacy-preserving."}
             </p>
 
-            {/* QR Code or Success State */}
-            {!isVerified && selfApp && (
+            {!isVerified && selfApp ? (
               <div className="mb-6">
                 <SelfQRcodeWrapper
                   selfApp={selfApp}
@@ -270,18 +235,16 @@ export default function SelfVerification() {
                   size={250}
                 />
                 <p className="text-xs text-slate-400 mt-2">
-                  Wallet:{" "}
-                  {`${address.substring(0, 6)}...${address.substring(
-                    address.length - 4
-                  )}`}
+                  Wallet: {`${address.substring(0, 6)}...${address.substring(address.length - 4)}`}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
                   Session ID: {address.substring(0, 8)}...
                 </p>
               </div>
-            )}
+            ) : !isVerified ? (
+              <div className="mb-6 text-slate-400">Initializing verification...</div>
+            ) : null}
 
-            {/* Navigation Links */}
             <div className="mt-6 flex flex-col sm:flex-row gap-4">
               {isVerified && (
                 <Link
@@ -292,19 +255,17 @@ export default function SelfVerification() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               )}
-              {isConnected &&
-                (!userProfile?.isRegistered || !userProfile.isInfluencer) && (
-                  <Link
-                    href="/register"
-                    className="inline-flex items-center px-6 py-3 rounded-xl text-sm font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 transition-all duration-200"
-                  >
-                    Register as Influencer
-                  </Link>
-                )}
+              {isConnected && (!userProfile?.isRegistered || !userProfile.isInfluencer) && (
+                <Link
+                  href="/register"
+                  className="inline-flex items-center px-6 py-3 rounded-xl text-sm font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 transition-all duration-200"
+                >
+                  Register as Influencer
+                </Link>
+              )}
             </div>
           </div>
 
-          {/* Additional Info */}
           {!isVerified && (
             <div className="mt-8 border-t border-slate-700/50 pt-6">
               <h4 className="text-sm font-semibold text-white mb-2">
@@ -314,22 +275,19 @@ export default function SelfVerification() {
                 <li className="flex items-start">
                   <CheckCircle className="w-4 h-4 text-emerald-400 mr-2 mt-1" />
                   <span>
-                    Ensures only real humans can apply to campaigns, preventing
-                    bots.
+                    Ensures only real humans can apply to campaigns, preventing bots.
                   </span>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="w-4 h-4 text-emerald-400 mr-2 mt-1" />
                   <span>
-                    Privacy-preserving: only necessary attributes are shared
-                    (e.g., age over 18).
+                    Privacy-preserving: only necessary attributes are shared.
                   </span>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="w-4 h-4 text-emerald-400 mr-2 mt-1" />
                   <span>
-                    Compliant with sanction lists (e.g., OFAC) for secure
-                    advertising.
+                    Compliant with sanction lists for secure advertising.
                   </span>
                 </li>
               </ul>

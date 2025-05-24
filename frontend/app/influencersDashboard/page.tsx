@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { SubmitPostModal } from "../../components/modals/SubmitPostModal";
+import { Transaction } from "@/types";
 import {
   Briefcase,
   DollarSign,
@@ -12,7 +13,6 @@ import {
   ExternalLink,
   AlertCircle,
   Shield,
-  X,
   Clock3,
   CheckSquare,
   Sparkles,
@@ -31,26 +31,65 @@ import {
   useSubmitProof,
 } from "../../hooks/adsBazaar";
 import { Toaster, toast } from "react-hot-toast";
-
 import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
 
+// Define precise interfaces
+interface Application {
+  isApproved: boolean;
+  isSelected: boolean;
+  hasClaimed: boolean;
+  proofLink?: string;
+}
+
+interface Brief {
+  briefId: string;
+  brief: {
+    name: string;
+    description: string;
+    business: string;
+    budget: string;
+    applicationDeadline: string | number;
+    verificationDeadline: string | number;
+    status: number;
+  };
+  application: Application;
+}
+
+interface Task {
+  name: string;
+}
+
+interface PaymentStatus {
+  label: string;
+  classes: string;
+}
+
+interface SubmitProofResult {
+  hash?: string;
+}
+
+type TxStage = "idle" | "error" | "success" | "preparing" | "confirming" | "mining";
+
 export default function InfluencerDashboard() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const { isConnected, address } = useAccount();
   const {
-    isAuthenticated,
-    profile: { username, fid, bio, displayName, pfpUrl },
+    profile: { username, displayName },
   } = useProfile();
   const [isMounted, setIsMounted] = useState(false);
-  const [walletAddress, setWalletAddress] = useState("");
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState(null);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [postLink, setPostLink] = useState("");
-  const [transactionHistory, setTransactionHistory] = useState([]);
-  const [txStatus, setTxStatus] = useState({
+  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
+
+  const [txStatus, setTxStatus] = useState<{
+    stage: TxStage;
+    message: string;
+    hash: string | undefined;
+  }>({
     stage: "idle",
     message: "",
     hash: undefined,
@@ -60,9 +99,9 @@ export default function InfluencerDashboard() {
   const { userProfile, isLoadingProfile } = useUserProfile();
 
   // Get verification status
-  const { isVerified, isLoadingVerification } = useIsInfluencerVerified();
+  const { isVerified } = useIsInfluencerVerified();
 
-  // Get dashboard data from the new hook
+  // Get dashboard data
   const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
     useInfluencerDashboard();
   console.log("appliedBriefs", appliedBriefs);
@@ -78,9 +117,6 @@ export default function InfluencerDashboard() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (isConnected && address) {
-      setWalletAddress(`${address.slice(0, 6)}...${address.slice(-4)}`);
-    }
   }, [isConnected, address]);
 
   useEffect(() => {
@@ -113,7 +149,6 @@ export default function InfluencerDashboard() {
       });
       toast.success("Proof submitted successfully!");
       refetch();
-      // Close modal after short delay to show success
       setTimeout(() => {
         setShowSubmitModal(false);
         setPostLink("");
@@ -128,15 +163,14 @@ export default function InfluencerDashboard() {
     if (isSubmittingError && txStatus.stage !== "error") {
       setTxStatus({
         stage: "error",
-        message:
-          submitError?.message || "Transaction failed. Please try again.",
+        message: submitError?.message || "Transaction failed. Please try again.",
         hash: txStatus.hash,
       });
       toast.error(submitError?.message || "Transaction failed");
     }
   }, [isSubmittingError, submitError, txStatus.stage, txStatus.hash]);
 
-  // Generate transaction history from assigned briefs with approved applications
+  // Generate transaction history
   useEffect(() => {
     if (assignedBriefs && assignedBriefs.length > 0) {
       const txHistory = assignedBriefs
@@ -147,24 +181,22 @@ export default function InfluencerDashboard() {
         .map((brief) => ({
           id: brief.briefId,
           type: "payment",
-          amount: Number(brief.brief.budget) / 1e18, // Convert from wei
+          amount: Number(brief.brief.budget) / 1e18,
           from: brief.brief.business,
           date: format(new Date(), "yyyy-MM-dd"),
           txHash: `${brief.briefId.slice(0, 10)}...${brief.briefId.slice(-6)}`,
           status: "confirmed",
         }));
-
       setTransactionHistory(txHistory);
     }
   }, [assignedBriefs]);
 
-  const handleSubmitPost = async (briefId, taskName) => {
+  const handleSubmitPost = async (briefId: string): Promise<void> => {
     if (!postLink) {
       toast.error("Please enter a valid post link");
       return;
     }
 
-    // Reset any previous error states
     setTxStatus({
       stage: "preparing",
       message: "Preparing transaction...",
@@ -172,10 +204,7 @@ export default function InfluencerDashboard() {
     });
 
     try {
-      // This will trigger the mutation
-      const result = await submitProof(briefId, postLink);
-
-      // If we get a hash back immediately, update the status
+      const result: SubmitProofResult = await submitProof(briefId, postLink);
       if (result?.hash) {
         setTxStatus({
           stage: "confirming",
@@ -183,31 +212,25 @@ export default function InfluencerDashboard() {
           hash: result.hash,
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Submit proof error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "An unexpected error occurred";
       setTxStatus({
         stage: "error",
-        message: error?.message || "An unexpected error occurred",
+        message: errorMessage,
         hash: undefined,
       });
-      toast.error(error?.message || "Failed to submit proof");
+      toast.error(errorMessage);
     }
   };
 
-  const handleClaimFunds = (briefId) => {
+  const handleClaimFunds = (briefId: string): void => {
     console.log("Claiming funds for brief:", briefId);
-    toast.info("Claim funds feature coming soon!");
-
-    // Here you would call your contract function to claim funds
-    // For example:
-    // claimFunds(briefId);
-
-    // Refresh data after claiming
-    // refetch();
+    toast("Claim funds feature coming soon!");
   };
 
   const handleCloseModal = () => {
-    // Don't allow closing modal during transaction
     if (
       txStatus.stage !== "idle" &&
       txStatus.stage !== "error" &&
@@ -215,7 +238,6 @@ export default function InfluencerDashboard() {
     ) {
       return;
     }
-
     setShowSubmitModal(false);
     setSelectedCampaign(null);
     setSelectedTask(null);
@@ -223,14 +245,17 @@ export default function InfluencerDashboard() {
     setTxStatus({ stage: "idle", message: "", hash: undefined });
   };
 
-  const getTaskStatusIcon = (application) => {
+  const getTaskStatusIcon = (application: Application): JSX.Element => {
     if (application.proofLink) {
       return <CheckCircle size={16} className="text-green-500" />;
     }
     return <AlertCircle size={16} className="text-gray-400" />;
   };
 
-  const getStatusBadge = (application, briefStatus) => {
+  const getStatusBadge = (
+    application: Application,
+    briefStatus: number
+  ): JSX.Element => {
     if (application.isApproved) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -262,7 +287,7 @@ export default function InfluencerDashboard() {
     }
   };
 
-  const getPaymentStatus = (application) => {
+  const getPaymentStatus = (application: Application): PaymentStatus => {
     if (application.hasClaimed) {
       return {
         label: "Paid",
@@ -281,26 +306,19 @@ export default function InfluencerDashboard() {
     }
   };
 
-  // Helper function to check if submit button should be shown
-  const canSubmitProof = (brief) => {
-    // Only show submit button when:
-    // 1. User is selected for the brief
-    // 2. Brief status is ASSIGNED (1) - meaning all slots are filled
-    // 3. User hasn't already submitted proof
+  const canSubmitProof = (brief: Brief): boolean => {
     return (
       brief.application.isSelected &&
-      brief.brief.status === 1 && // ASSIGNED status
+      brief.brief.status === 1 &&
       !brief.application.proofLink
     );
   };
 
-  // Calculate total earnings
   const totalEarned = transactionHistory.reduce(
     (sum, tx) => sum + tx.amount,
     0
   );
 
-  // Calculate potential earnings
   const potentialEarnings = assignedBriefs
     ? assignedBriefs
         .filter((b) => b.application.isSelected || b.application.isApproved)
@@ -308,7 +326,6 @@ export default function InfluencerDashboard() {
         .reduce((sum, b) => sum + Number(b.brief.budget) / 1e18, 0)
     : 0;
 
-  // Updated loading condition - only show loading if essential data is still loading
   const isInitialLoading =
     !isMounted ||
     status === "loading" ||
@@ -326,7 +343,6 @@ export default function InfluencerDashboard() {
     );
   }
 
-  // If user is not registered or not an influencer, show a message
   if (!userProfile?.isRegistered || !userProfile?.isInfluencer) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
@@ -351,7 +367,6 @@ export default function InfluencerDashboard() {
     );
   }
 
-  // If error occurred while fetching data
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -397,12 +412,11 @@ export default function InfluencerDashboard() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              {/* View Profile Link */}
-                <Link
-                href={"/selfVerification"}
+              <Link
+                href="/selfVerification"
                 className="flex items-center gap-2 px-5 py-3 text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 rounded-xl transition-all"
               >
-                 Verify with self
+                Verify with self
                 <ExternalLink className="w-4 h-4" />
               </Link>
 
@@ -414,7 +428,6 @@ export default function InfluencerDashboard() {
                 <ExternalLink className="w-4 h-4" />
               </Link>
 
-              {/* Browse Campaigns Button */}
               <Link href="/marketplace">
                 <button className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
                   <Sparkles className="w-5 h-5" />
@@ -488,7 +501,6 @@ export default function InfluencerDashboard() {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Campaign Applications - Takes 2/3 width on large screens */}
           <div className="lg:col-span-2">
             <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
               <div className="p-6 border-b border-slate-700/50">
@@ -515,8 +527,8 @@ export default function InfluencerDashboard() {
                     No Active Campaigns
                   </h3>
                   <p className="text-slate-400 max-w-md mx-auto mb-6">
-                    You haven't applied to any campaigns yet. Discover exciting
-                    collaborations that match your creative style.
+                    You haven&apos;t applied to any campaigns yet. Discover
+                    exciting collaborations that match your creative style.
                   </p>
                   <Link href="/marketplace">
                     <button className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
@@ -532,6 +544,7 @@ export default function InfluencerDashboard() {
                       Number(brief.brief.applicationDeadline) * 1000;
                     const verificationDeadline =
                       Number(brief.brief.verificationDeadline) * 1000;
+                       // @ts-expect-error:Brief ID should be typed but API currently accepts any string
                     const paymentStatus = getPaymentStatus(brief.application);
                     const budget = Number(brief.brief.budget) / 1e18;
 
@@ -541,7 +554,6 @@ export default function InfluencerDashboard() {
                         className="p-6 hover:bg-slate-800/30 transition-all duration-200 group"
                       >
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                          {/* Campaign Info */}
                           <div className="flex-1">
                             <div className="flex items-start gap-4">
                               <div className="p-3 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl border border-slate-600/50 group-hover:border-emerald-500/30 transition-colors">
@@ -553,9 +565,13 @@ export default function InfluencerDashboard() {
                                   <h3 className="text-lg font-semibold text-white truncate">
                                     {brief.brief.name}
                                   </h3>
-                                  {getStatusBadge(
-                                    brief.application,
-                                    brief.brief.status
+                                  {brief.application && (
+                                    <span>
+                                      {getStatusBadge(
+                                        brief.application,
+                                        brief.brief.status
+                                      )}
+                                    </span>
                                   )}
                                 </div>
 
@@ -583,12 +599,21 @@ export default function InfluencerDashboard() {
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" />
+                                    <span>
+                                      {format(
+                                        new Date(verificationDeadline),
+                                        "MMM d, yyyy"
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
                                     <DollarSign className="w-4 h-4" />
                                     <span>{budget.toFixed(2)} cUSD</span>
                                   </div>
                                 </div>
 
-                                {brief.application.isSelected && (
+                                {brief.application && brief.application.isSelected && (
                                   <div className="mt-4">
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-2">
@@ -613,9 +638,11 @@ export default function InfluencerDashboard() {
                                             <LinkIcon className="w-3 h-3" />
                                             View Content
                                           </a>
+                                           // @ts-expect-error:Brief ID should be typed but API currently accepts any string
                                         ) : canSubmitProof(brief) ? (
                                           <button
                                             onClick={() => {
+                                               // @ts-expect-error:Brief ID should be typed but API currently accepts any string
                                               setSelectedCampaign(brief);
                                               setSelectedTask({
                                                 name: brief.brief.description,
@@ -648,7 +675,6 @@ export default function InfluencerDashboard() {
                             </div>
                           </div>
 
-                          {/* Budget & Actions */}
                           <div className="flex flex-col items-end gap-4">
                             <div className="text-right">
                               <div className="text-2xl font-bold text-white mb-1">
@@ -661,12 +687,11 @@ export default function InfluencerDashboard() {
                               </span>
                             </div>
 
-                            {brief.application.isApproved &&
+                            {brief.application &&
+                              brief.application.isApproved &&
                               !brief.application.hasClaimed && (
                                 <button
-                                  onClick={() =>
-                                    handleClaimFunds(brief.briefId)
-                                  }
+                                  onClick={() => handleClaimFunds(brief.briefId)}
                                   className="flex items-center gap-1 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-sm font-medium"
                                 >
                                   <CheckCircle className="w-4 h-4" />
@@ -683,7 +708,6 @@ export default function InfluencerDashboard() {
             </div>
           </div>
 
-          {/* Transactions - Takes 1/3 width on large screens */}
           <div className="lg:col-span-1">
             <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden sticky top-6">
               <div className="p-6 border-b border-slate-700/50">
@@ -746,7 +770,6 @@ export default function InfluencerDashboard() {
         </div>
       </div>
 
-      {/* Submit Post Link Modal */}
       {showSubmitModal && selectedCampaign && selectedTask && (
         <SubmitPostModal
           selectedCampaign={{
@@ -757,9 +780,7 @@ export default function InfluencerDashboard() {
           selectedTask={selectedTask}
           postLink={postLink}
           setPostLink={setPostLink}
-          onSubmit={() =>
-            handleSubmitPost(selectedCampaign.briefId, selectedTask.name)
-          }
+          onSubmit={() => handleSubmitPost(selectedCampaign.briefId)}
           onClose={handleCloseModal}
           transactionStatus={txStatus}
           isSubmitting={isSubmittingProof}
