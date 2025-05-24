@@ -5,7 +5,7 @@ import GetStartedModal from "@/components/modals/GetStartedModal";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const closeModal = () => {
     setIsModalOpen(false);
   };

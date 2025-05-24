@@ -1,0 +1,26 @@
+{
+  "frame": {
+    "version": "1",
+    "name": "Ads-Bazaar",
+    "iconUrl": "https://ads-bazaar.vercel.app/adsBazaar-logo.png",
+    "splashImageUrl": "https://ads-bazaar.vercel.app/adsBazaar-logo.png",
+    "splashBackgroundColor": "#059669",
+    "homeUrl": "https://ads-bazaar.vercel.app/",
+    "imageUrl": "https://ads-bazaar.vercel.app/adsBazaar-heroPage.png",
+    "buttonTitle": "🚩 Let's Explore",
+    "subtitle": "Influencer Marketing Onchain",
+    "description": "Connects businesses directly with verified influencers, all powered by smart contracts and privacy identity verification",
+    "screenshotUrls": [
+      "https://ads-bazaar.vercel.app/adsBazaar-heroPage.png",
+      "https://ads-bazaar.vercel.app/adsBazaar-Applications.png",
+      "https://ads-bazaar.vercel.app/adsBazaar-Submissions.png"
+    ],
+    "primaryCategory": "social",
+    "tags": ["jobs", "influencers", "warpcast", "earn", "businesses"],
+    "heroImageUrl": "https://ads-bazaar.vercel.app/adsBazaar-heroPage.png",
+    "tagline": "Influencer Marketing Onchain",
+    "ogTitle": "Ads-Bazaar",
+    "ogDescription": "Connects businesses directly with verified influencers",
+    "ogImageUrl": "https://ads-bazaar.vercel.app/adsBazaar-heroPage.png"
+  }
+}
