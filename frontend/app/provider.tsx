@@ -4,17 +4,41 @@ import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { wagmiConfig } from "@/lib/wagmi";
 import "@rainbow-me/rainbowkit/styles.css";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState, PropsWithChildren } from "react";
 import { SessionProvider } from "next-auth/react";
 import { AuthKitProvider } from "@farcaster/auth-kit";
 import "@farcaster/auth-kit/styles.css";
+import { sdk } from "@farcaster/frame-sdk";
+import { connect } from "wagmi/actions";
+import farcasterFrame from "@farcaster/frame-wagmi-connector";
 
 const farcasterConfig = {
   relay: "https://relay.farcaster.xyz",
   rpcUrl: "https://mainnet.optimism.io",
-  domain: process.env.NEXT_PUBLIC_APP_DOMAIN || "localhost:3000",
-  siweUri: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  domain: process.env.NEXT_PUBLIC_APP_DOMAIN || "ads-bazaar.vercel.app",
+  siweUri: process.env.NEXT_PUBLIC_APP_URL || "https://ads-bazaar.vercel.app",
 };
+
+function FarcasterFrameProvider({ children }: PropsWithChildren) {
+  useEffect(() => {
+    const init = async () => {
+      const context = await sdk.context;
+
+      // Autoconnect if running in a frame.
+      if (context?.client.clientFid) {
+        connect(wagmiConfig, { connector: farcasterFrame() });
+      }
+
+      // Hide splash screen after UI renders.
+      setTimeout(() => {
+        sdk.actions.ready();
+      }, 500);
+    };
+    init();
+  }, []);
+
+  return <>{children}</>;
+}
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -25,7 +49,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <RainbowKitProvider>
           <AuthKitProvider config={farcasterConfig}>
             <SessionProvider refetchInterval={60 * 5}>
-              {children}
+              <FarcasterFrameProvider>{children}</FarcasterFrameProvider>
             </SessionProvider>
           </AuthKitProvider>
         </RainbowKitProvider>

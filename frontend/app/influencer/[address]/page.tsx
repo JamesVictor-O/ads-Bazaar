@@ -1,11 +1,8 @@
-
-
-
 "use client";
 
 import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
-import { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import {
   Briefcase,
   Link as LinkIcon,
@@ -78,7 +75,7 @@ export default function InfluencerProfile() {
   ]);
 
   const [profileData, setProfileData] = useState<ProfileData>({
-    name: "John Doe",
+    name: "Influencer",
     bio: "Digital creator specializing in tech reviews and tutorials. Collaborating with brands to create authentic content.",
     website: "https://johndoe.com",
     niche: "Tech & Gadgets",
@@ -115,7 +112,7 @@ export default function InfluencerProfile() {
       { platform: "", username: "", followers: 0, verified: false, url: "" },
     ]);
   };
-  
+
   const updateSocialAccount = (
     index: number,
     field: keyof SocialAccount,
@@ -151,7 +148,6 @@ export default function InfluencerProfile() {
     }
   };
 
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -169,7 +165,7 @@ export default function InfluencerProfile() {
 
       <div className="max-w-6xl mx-auto">
         {/* Profile Header */}
-       <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 mb-8">
+        <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 mb-8">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-8">
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-4">
