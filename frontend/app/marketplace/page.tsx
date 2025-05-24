@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -263,7 +262,7 @@ export default function Marketplace() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-900">
+    <div className="flex flex-col min-h-screen bg-slate-900 pt-10 md:pt-28">
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-8">
