@@ -3,6 +3,7 @@ import { celoAlfajores } from "wagmi/chains";
 // import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 // import { injectedWallet, metaMaskWallet } from "@rainbow-me/rainbowkit/wallets";
 import { farcasterFrame as miniAppConnector } from "@farcaster/frame-wagmi-connector";
+import { alfajores } from "./chain";
 
 // const projectId =
 //   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "YOUR_PROJECT_ID";
@@ -23,7 +24,7 @@ import { farcasterFrame as miniAppConnector } from "@farcaster/frame-wagmi-conne
 const farcasterConnector = miniAppConnector();
 
 export const wagmiConfig = createConfig({
-  chains: [celoAlfajores],
+  chains: [alfajores],
   connectors: [farcasterConnector],
   transports: {
     [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),

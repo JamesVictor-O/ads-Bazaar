@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRegisterUser } from "../../hooks/adsBazaar";
 import { motion, AnimatePresence } from "framer-motion";
+import { withNetworkGuard } from "../WithNetworkGuard";
 
 interface GetStartedModalProps {
   isOpen?: boolean;
@@ -26,7 +27,10 @@ interface UserDetails {
 const GetStartedModal = ({
   isOpen = true,
   onClose = () => {},
-}: GetStartedModalProps) => {
+  guardedAction,
+}: GetStartedModalProps & {
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
+}) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({
     userType: "",
   });
@@ -75,6 +79,7 @@ const GetStartedModal = ({
     }
 
     try {
+      // Prepare profile data
       const profileData = JSON.stringify({
         userType: userDetails.userType,
         ...(userDetails.userType === "influencer"
@@ -85,11 +90,24 @@ const GetStartedModal = ({
             }),
       });
 
-      await register(
-        userDetails.userType === "advertiser",
-        userDetails.userType === "influencer",
-        profileData
-      );
+      // If using guardedAction (HOC pattern)
+      if (guardedAction) {
+        await guardedAction(async () => {
+          await register(
+            userDetails.userType === "advertiser",
+            userDetails.userType === "influencer",
+            profileData
+          );
+        });
+      }
+      // Fallback direct call (not recommended)
+      else {
+        await register(
+          userDetails.userType === "advertiser",
+          userDetails.userType === "influencer",
+          profileData
+        );
+      }
     } catch (err) {
       console.error("Registration error:", err);
       toast.error("Failed to complete registration", {
@@ -355,4 +373,4 @@ const GetStartedModal = ({
   );
 };
 
-export default GetStartedModal;
+export default withNetworkGuard(GetStartedModal);
