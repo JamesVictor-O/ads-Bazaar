@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -13,6 +14,9 @@ import {
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useRouter } from "next/navigation";
+import { useUserProfile } from "../../hooks/adsBazaar";
+import Link from "next/link";
 
 interface HeroSectionProps {
   setIsModalOpen: (isOpen: boolean) => void;
@@ -24,26 +28,36 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   const [isButtonPressed, setIsButtonPressed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { isConnected: wagmiConnected, address } = useAccount();
+  const { userProfile, isLoadingProfile } = useUserProfile();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // const handleGetStartedClick = () => {
-  //   console.log("okay");
-  //   setAnimationPhase(0);
-  //   setIsModalOpen(true);
-  // };
   const handleGetStartedClick = async () => {
-    console.log("Button clicked");
     setIsButtonPressed(true);
     setAnimationPhase(0);
-
-    // Small delay to ensure animations complete
     await new Promise((resolve) => setTimeout(resolve, 50));
-
     setIsModalOpen(true);
     setIsButtonPressed(false);
+  };
+
+  const handleDashboardClick = async () => {
+    if (isLoadingProfile) return;
+
+    const url = getDashboardUrl();
+    if (url !== "#") {
+      router.push(url);
+    }
+  };
+
+  const getDashboardUrl = () => {
+    if (!userProfile || isLoadingProfile) return "#";
+    if (!userProfile.isRegistered) return "/";
+    if (userProfile.isBusiness) return "/brandsDashBoard";
+    if (userProfile.isInfluencer) return "/influencersDashboard";
+    return "/";
   };
 
   // Animation cycle for mobile floating elements
@@ -54,7 +68,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Animation variants for mobile
   const mobileContainerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -107,7 +120,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                 : "animate-ping"
             }`}
           ></div>
-          {/* Floating particles */}
           <div className="absolute top-20 left-1/4 w-2 h-2 bg-emerald-400 rounded-full animate-pulse opacity-60"></div>
           <div className="absolute top-40 right-1/3 w-1 h-1 bg-white rounded-full animate-ping opacity-40"></div>
           <div className="absolute bottom-40 left-1/3 w-3 h-3 bg-indigo-400 rounded-full animate-bounce opacity-50"></div>
@@ -124,7 +136,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               Web3 Creator Economy
             </span>
           </motion.div>
-
           <motion.h1
             className="text-2xl font-bold text-white leading-tight px-2"
             variants={mobileItemVariants}
@@ -137,7 +148,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               Guaranteed Growth & Earnings
             </span>
           </motion.h1>
-
           <motion.p
             className="text-slate-300 text-base leading-relaxed px-4 max-w-sm mx-auto"
             variants={mobileItemVariants}
@@ -192,47 +202,65 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           ))}
         </motion.div>
 
-       
-
         {/* CTA Section */}
         <motion.div
           className="px-4 space-y-4 pb-8"
           variants={mobileContainerVariants}
         >
           {mounted && wagmiConnected ? (
-            <div className="space-y-3 max-w-sm mx-auto relative">
-              {/* Debugging overlay - remove in production */}
-              <div className="absolute inset-0 border-2 border-red-500 z-[9998] pointer-events-none opacity-20"></div>
-
-              <motion.button
-                className={`w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-medium py-4 rounded-xl transition-all duration-300 hover:shadow-xl flex items-center justify-center relative z-50 ${
-                  isButtonPressed ? "scale-95" : "hover:scale-102"
-                }`}
-                onClick={handleGetStartedClick}
-                onTouchStart={() => setIsHovered(true)}
-                onTouchEnd={() => setIsHovered(false)}
-                whileTap={{ scale: 0.95 }}
-                disabled={isButtonPressed}
-              >
-                {!isButtonPressed ? (
-                  <>
-                    Get Started
-                    <ArrowRight size={18} className="ml-2" />
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-white rounded-full animate-spin"></div>
-                  </div>
-                )}
-              </motion.button>
-
+            <div className="space-y-3 max-w-sm mx-auto">
+              {userProfile?.isRegistered ? (
+                <motion.button
+                  className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium py-4 rounded-xl transition-all duration-300 hover:shadow-xl flex items-center justify-center relative"
+                  onClick={handleDashboardClick}
+                  onTouchStart={() => setIsHovered(true)}
+                  onTouchEnd={() => setIsHovered(false)}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={isLoadingProfile}
+                  aria-label="Go to Dashboard"
+                >
+                  {!isLoadingProfile ? (
+                    <>
+                      <Users className="w-5 h-5 mr-2" />
+                      Go to Dashboard
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </motion.button>
+              ) : (
+                <motion.button
+                  className={`w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-medium py-4 rounded-xl transition-all duration-300 hover:shadow-xl flex items-center justify-center ${
+                    isButtonPressed ? "scale-95" : "hover:scale-102"
+                  }`}
+                  onClick={handleGetStartedClick}
+                  onTouchStart={() => setIsHovered(true)}
+                  onTouchEnd={() => setIsHovered(false)}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={isButtonPressed}
+                  aria-label="Get Started"
+                >
+                  {!isButtonPressed ? (
+                    <>
+                      Get Started
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </motion.button>
+              )}
             </div>
           ) : (
             <motion.div
               className="max-w-sm mx-auto"
               variants={mobileItemVariants}
             >
-              <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white w-full py-4 rounded-xl transition-all duration-300 hover:shadow-xl hover:scale-102 pt-10">
+              <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white w-full py-4 rounded-xl transition-all duration-300 hover:shadow-xl hover:scale-102">
                 <ConnectButton.Custom>
                   {({
                     account,
@@ -248,6 +276,9 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                         }
                         className="w-full flex items-center justify-center gap-2"
                         whileTap={{ scale: 0.95 }}
+                        aria-label={
+                          connected ? "View Account" : "Connect Wallet"
+                        }
                       >
                         {connected ? (
                           <span className="text-white font-medium">
@@ -268,7 +299,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               </div>
             </motion.div>
           )}
-
           <motion.div
             className="flex justify-center items-center gap-4 pt-10 opacity-60"
             variants={mobileItemVariants}
@@ -315,20 +345,41 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           </div>
           {mounted && wagmiConnected ? (
             <div className="flex flex-wrap justify-center lg:justify-start gap-4 pt-2">
-              <button
-                className="px-6 sm:px-8 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition shadow-lg flex items-center group"
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                onClick={handleGetStartedClick}
-              >
-                Get Started
-                <ArrowRight
-                  size={18}
-                  className={`ml-2 transition-transform duration-300 ${
-                    isHovered ? "transform translate-x-1" : ""
-                  }`}
-                />
-              </button>
+              {userProfile?.isRegistered ? (
+                <Link href={getDashboardUrl()}>
+                  <button
+                    className="px-6 sm:px-8 py-3 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition shadow-lg flex items-center group"
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    disabled={isLoadingProfile}
+                    aria-label="Go to Dashboard"
+                  >
+                    Go to Dashboard
+                    <Users
+                      size={18}
+                      className={`ml-2 transition-transform duration-300 ${
+                        isHovered ? "transform translate-x-1" : ""
+                      }`}
+                    />
+                  </button>
+                </Link>
+              ) : (
+                <button
+                  className="px-6 sm:px-8 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition shadow-lg flex items-center group"
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                  onClick={handleGetStartedClick}
+                  aria-label="Get Started"
+                >
+                  Get Started
+                  <ArrowRight
+                    size={18}
+                    className={`ml-2 transition-transform duration-300 ${
+                      isHovered ? "transform translate-x-1" : ""
+                    }`}
+                  />
+                </button>
+              )}
               <button className="px-6 sm:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-lg hover:bg-slate-700/50 transition">
                 Learn More
               </button>
@@ -344,6 +395,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                         <button
                           onClick={openAccountModal}
                           className="flex items-center"
+                          aria-label="View Account"
                         >
                           <span className="text-white font-medium">
                             {account.address}
@@ -353,6 +405,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                         <button
                           onClick={openConnectModal}
                           className="flex items-center"
+                          aria-label="Connect Wallet"
                         >
                           <span className="text-white font-medium">
                             Connect Wallet
@@ -365,7 +418,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               </ConnectButton.Custom>
             </div>
           )}
-
           <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 pt-6 md:pt-8 max-w-lg mx-auto lg:mx-0">
             <div className="text-center border rounded-lg py-2 sm:py-3 px-1 sm:px-2">
               <div className="flex justify-center mb-1 sm:mb-2">
@@ -399,7 +451,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           <div className="relative w-full max-w-sm sm:max-w-md">
             <div className="absolute -top-6 -left-6 w-48 h-48 md:w-64 md:h-64 bg-emerald-500/10 rounded-full filter blur-3xl"></div>
             <div className="absolute -bottom-10 -right-10 w-48 h-48 md:w-64 md:h-64 bg-indigo-500/10 rounded-full filter blur-3xl"></div>
-
             <div className="bg-white dark:bg-slate-800 border border-slate-700/50 rounded-2xl shadow-xl overflow-hidden z-10 relative">
               <div className="bg-gradient-to-r from-slate-700 to-slate-800 p-4 sm:p-6">
                 <div className="flex justify-between items-center">
@@ -411,7 +462,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                   </span>
                 </div>
               </div>
-
               <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                 <div className="bg-slate-100 dark:bg-slate-700/40 rounded-xl p-4 sm:p-6 hover:shadow-md transition">
                   <div className="flex justify-between items-start mb-3 sm:mb-4">
@@ -447,7 +497,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                     Apply Now
                   </button>
                 </div>
-
                 <div className="bg-slate-100 dark:bg-slate-700/40 rounded-xl p-4 sm:p-6 opacity-70">
                   <div className="flex justify-between items-start">
                     <div>
