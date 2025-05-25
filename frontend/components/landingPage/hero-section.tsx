@@ -229,7 +229,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               <span className="md:hidden ">
                 Connect{" "}
                 <span className="text-emerald-400 animate-pulse">Brands</span> with{" "}
-                <span className="text-emerald-400 animate-pulse">Creators</span>
+                <span className="text-emerald-400 animate-pulse">Creators / Influencers</span>
                 <br />
                 <span className="text-xl block mt-2 bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
                   Guaranteed Growth & Earnings
