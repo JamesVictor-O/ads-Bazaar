@@ -205,7 +205,7 @@ export default function SelfVerification() {
               Please connect your wallet to proceed with verification.
             </p>
             <Link
-              href="/connect"
+              href="/"
               className="inline-flex items-center px-4 py-2 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
             >
               Connect Wallet
@@ -314,7 +314,7 @@ export default function SelfVerification() {
             {isConnected &&
               (!userProfile?.isRegistered || !userProfile.isInfluencer) && (
                 <Link
-                  href="/register"
+                  href="/"
                   className="inline-flex items-center px-4 py-2 rounded-lg text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 transition-all"
                 >
                   Register as Influencer
