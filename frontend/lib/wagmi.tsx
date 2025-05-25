@@ -14,16 +14,31 @@
 // });
 
 
+// import { createConfig, http, injected } from "wagmi";
+// import { celoAlfajores } from "wagmi/chains";
+// import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
+
+// export const wagmiConfig = createConfig({
+//   chains: [celoAlfajores],
+//   connectors: [farcasterFrame(), injected()],
+//   transports: {
+//     [celoAlfajores.id]: http(
+//       process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://alfajores-forno.celo-testnet.org"
+//     ),
+//   },
+// });
+
 import { createConfig, http, injected } from "wagmi";
 import { celoAlfajores } from "wagmi/chains";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 
 export const wagmiConfig = createConfig({
   chains: [celoAlfajores],
-  connectors: [farcasterFrame(), injected()],
+  connectors: [
+    farcasterFrame(),
+    injected(),
+  ],
   transports: {
-    [celoAlfajores.id]: http(
-      process.env.NEXT_PUBLIC_CELO_RPC_URL || "https://alfajores-forno.celo-testnet.org"
-    ),
+    [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
   },
 });
