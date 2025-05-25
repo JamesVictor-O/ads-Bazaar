@@ -35,6 +35,7 @@ import {
 import { Toaster, toast } from "react-hot-toast";
 import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
+import Image from "next/image";
 
 // Define precise interfaces
 interface Application {
@@ -412,7 +413,7 @@ export default function InfluencerDashboard() {
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center overflow-hidden">
                 {pfpUrl ? (
-                  <img src={pfpUrl} alt="Profile" className="w-full h-full object-cover" />
+                  <Image src={pfpUrl} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 )}
