@@ -24,7 +24,7 @@ const farcasterConnector = miniAppConnector();
 
 export const wagmiConfig = createConfig({
   chains: [celoAlfajores],
-  connectors: [...rainbowKitConnectors, farcasterConnector],
+  connectors: [farcasterConnector],
   transports: {
     [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
   },
