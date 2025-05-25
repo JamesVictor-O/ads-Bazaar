@@ -5,7 +5,7 @@ import { useAccount } from "wagmi";
 import { Brief } from "@/types/index";
 import { SubmissionsModal } from "@/components/modals/ SubmissionsModal";
 import { ApplicationsModal } from "@/components/modals/ApplicationsModal";
-import { CreateCampaignModal } from "@/components/modals/CreateCampaignModal";
+import CreateCampaignModal from "@/components/modals/CreateCampaignModal";
 import { useRouter } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 // Import custom hooks
 import {
@@ -55,15 +56,9 @@ const BrandDashboard = () => {
     verificationPeriod: "86400",
   });
 
-  // const {
-  //   cancelBrief,
-  //   isPending: isCancellingBrief,
-  //   isSuccess: isCancelSuccess,
-  // } = useCancelAdBrief();
-
   const { userProfile } = useUserProfile();
   const { briefs: fetchedBriefs, isLoading } = useGetBusinessBriefs(address as `0x${string}`);
-const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBriefs]);
+  const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBriefs]);
   const { applications, isLoadingApplications, refetchApplications } =
     useBriefApplications(selectedBrief?.id || "0x0");
 
@@ -94,13 +89,12 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
     [key: string]: number;
   }>({});
 
-
   useEffect(() => {
     if (briefs && briefs.length > 0) {
       briefs.forEach((brief) => {
         setApplicationCounts((prev) => ({
           ...prev,
-          [brief.id]: Math.floor(Math.random() * 20), 
+          [brief.id]: Math.floor(Math.random() * 20),
         }));
       });
     }
@@ -131,9 +125,7 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
       2: "bg-green-500/10 text-green-400 border-green-500/20",
       3: "bg-red-500/10 text-red-400 border-red-500/20",
     };
-    return (
-      colorMap[statusCode] || "bg-gray-500/10 text-gray-400 border-gray-500/20"
-    );
+    return colorMap[statusCode] || "bg-gray-500/10 text-gray-400 border-gray-500/20";
   };
 
   useEffect(() => {
@@ -144,9 +136,7 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
     }
 
     if (isCreateError) {
-      toast.error(
-        `Failed to create campaign: ${createError?.message || "Unknown error"}`
-      );
+      toast.error(`Failed to create campaign: ${createError?.message || "Unknown error"}`);
     }
   }, [isCreateSuccess, isCreateError, createError, router]);
 
@@ -157,11 +147,7 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
     }
 
     if (isSelectError) {
-      toast.error(
-        `Failed to select influencer: ${
-          selectError?.message || "Unknown error"
-        }`
-      );
+      toast.error(`Failed to select influencer: ${selectError?.message || "Unknown error"}`);
     }
   }, [isSelectSuccess, isSelectError, selectError, refetchApplications]);
 
@@ -172,43 +158,24 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
     }
 
     if (isCompleteError) {
-      toast.error(
-        `Failed to complete campaign: ${
-          completeError?.message || "Unknown error"
-        }`
-      );
+      toast.error(`Failed to complete campaign: ${completeError?.message || "Unknown error"}`);
     }
   }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications]);
 
-  const activeBriefs = briefs
-    ? briefs.filter((brief) => brief.status === 0 || brief.status === 1)
-    : [];
-
-  const completedBriefs = briefs
-    ? briefs.filter((brief) => brief.status === 2)
-    : [];
-
-  const totalBudget = briefs
-    ? briefs.reduce((sum, brief) => sum + Number(brief.budget), 0)
-    : 0;
-
+  const activeBriefs = briefs ? briefs.filter((brief) => brief.status === 0 || brief.status === 1) : [];
+  const completedBriefs = briefs ? briefs.filter((brief) => brief.status === 2) : [];
+  const totalBudget = briefs ? briefs.reduce((sum, brief) => sum + Number(brief.budget), 0) : 0;
   const totalInfluencers = briefs
-    ? briefs.reduce(
-        (sum, brief) => sum + Number(brief.selectedInfluencersCount),
-        0
-      )
+    ? briefs.reduce((sum, brief) => sum + Number(brief.selectedInfluencersCount), 0)
     : 0;
 
   // Filter briefs based on search and filter criteria
   const filteredBriefs = briefs
     ? briefs.filter((brief) => {
-        const matchesSearch = brief.title
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+        const matchesSearch = brief.title.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesFilter =
           selectedFilter === "all" ||
-          (selectedFilter === "active" &&
-            (brief.status === 0 || brief.status === 1)) ||
+          (selectedFilter === "active" && (brief.status === 0 || brief.status === 1)) ||
           (selectedFilter === "completed" && brief.status === 2);
         return matchesSearch && matchesFilter;
       })
@@ -230,9 +197,7 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
     }
 
     try {
-      const deadline = Math.floor(
-        new Date(formData.applicationDeadline).getTime() / 1000
-      );
+      const deadline = Math.floor(new Date(formData.applicationDeadline).getTime() / 1000);
 
       await createBrief(
         formData.name,
@@ -255,10 +220,10 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
       );
     }
   };
-// @ts-expect-error: Brief ID should be typed but API currently accepts any string
-  const handleReleaseFunds = async (briefId) => {
+
+  const handleReleaseFunds = async (briefId: string) => {
     try {
-      await completeCampaign(briefId);
+      await completeCampaign(briefId as `0x${string}`);
     } catch (error) {
       console.error("Error releasing funds:", error);
       toast.error(
@@ -274,54 +239,66 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
   if (!userProfile?.isRegistered || !userProfile?.isBusiness) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 max-w-md text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-6">
-            <Briefcase className="w-8 h-8 text-white" />
+        <motion.div
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 max-w-[90vw] sm:max-w-md text-center"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <Briefcase className="w-6 h-6 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-3">
             Business Account Required
           </h2>
-          <p className="text-slate-400 mb-8 leading-relaxed">
-            You need to register as a business to access the brand dashboard and
-            create campaigns.
+          <p className="text-slate-400 text-sm sm:text-base mb-6 leading-relaxed">
+            You need to register as a business to access the brand dashboard and create campaigns.
           </p>
           <Link href="/">
-            <button className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
+            <motion.button
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-md shadow-emerald-500/20"
+              whileTap={{ scale: 0.95 }}
+            >
               Register as Business
-            </button>
+            </motion.button>
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-28">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 sm:pt-24 md:pt-40">
       <Toaster position="top-right" />
 
-      <div className="px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="px-4 sm:px-6 md:px-8 pb-8">
         {/* Header Section */}
-        <div className="mb-12">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex flex-col gap-4 sm:gap-6">
             <div>
-              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">
+              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
                 Brand Dashboard
               </h1>
-              <p className="text-xl text-slate-400">
+              <p className="text-base sm:text-lg text-slate-400">
                 Manage your campaigns and track performance
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search campaigns..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full sm:w-80 pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 transition-all backdrop-blur-sm"
+                  className="w-full pl-10 pr-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500/50 focus:bg-slate-800/80 transition-all backdrop-blur-sm"
                 />
               </div>
 
@@ -330,243 +307,229 @@ const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBr
                 <select
                   value={selectedFilter}
                   onChange={(e) => setSelectedFilter(e.target.value)}
-                  className="appearance-none bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500/50 cursor-pointer backdrop-blur-sm min-w-32"
+                  className="appearance-none bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 cursor-pointer backdrop-blur-sm min-w-[120px]"
                 >
                   <option value="all">All Campaigns</option>
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
                 </select>
-                <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+                <Filter className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
               </div>
 
               {/* Create Campaign Button */}
-              <button
+              <motion.button
                 onClick={() => setShowCreateModal(true)}
-                className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25 flex items-center gap-2 group"
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-md shadow-emerald-500/20 flex items-center gap-1.5"
+                whileTap={{ scale: 0.95 }}
               >
-                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                New Campaign
-              </button>
+                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                <span className="text-sm">New Campaign</span>
+              </motion.button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl border border-blue-500/20">
-                <Activity className="w-6 h-6 text-blue-400" />
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
+          {[
+            {
+              icon: Activity,
+              color: "blue-400",
+              value: activeBriefs.length,
+              label: "Active Campaigns",
+            },
+            {
+              icon: CheckCircle,
+              color: "green-400",
+              value: completedBriefs.length,
+              label: "Completed Campaigns",
+            },
+            {
+              icon: DollarSign,
+              color: "emerald-400",
+              value: totalBudget.toLocaleString(),
+              label: "Total Budget (cUSD)",
+            },
+            {
+              icon: Users,
+              color: "orange-400",
+              value: totalInfluencers,
+              label: "Active Influencers",
+            },
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4 hover:bg-slate-800/70 transition-all duration-200"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div
+                  className={`p-2 bg-gradient-to-br from-${stat.color}/20 to-${stat.color}/30 rounded-lg border border-${stat.color}/20`}
+                >
+                  <stat.icon className={`w-5 h-5 text-${stat.color}`} />
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">
-                {activeBriefs.length}
-              </p>
-              <p className="text-slate-400 font-medium">Active Campaigns</p>
-            </div>
-          </div>
-
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl border border-green-500/20">
-                <CheckCircle className="w-6 h-6 text-green-400" />
+              <div className="space-y-0.5">
+                <p className="text-xl font-bold text-white">{stat.value}</p>
+                <p className="text-slate-400 text-sm">{stat.label}</p>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">
-                {completedBriefs.length}
-              </p>
-              <p className="text-slate-400 font-medium">Completed Campaigns</p>
-            </div>
-          </div>
-
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-xl border border-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">
-                {totalBudget.toLocaleString()}
-              </p>
-              <p className="text-slate-400 font-medium">Total Budget (cUSD)</p>
-            </div>
-          </div>
-
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-all duration-200 group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-xl border border-orange-500/20">
-                <Users className="w-6 h-6 text-orange-400" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-white">
-                {totalInfluencers}
-              </p>
-              <p className="text-slate-400 font-medium">Active Influencers</p>
-            </div>
-          </div>
+            </motion.div>
+          ))}
         </div>
 
         {/* Campaigns List */}
-        <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-slate-700/50">
+        <motion.div
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="p-4 sm:p-5 border-b border-slate-700/50">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">Your Campaigns</h2>
-              <span className="text-slate-400">
-                {filteredBriefs.length} campaigns
-              </span>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Your Campaigns</h2>
+              <span className="text-slate-400 text-sm">{filteredBriefs.length} campaigns</span>
             </div>
           </div>
 
           <div className="divide-y divide-slate-700/50">
             {isLoading ? (
-              <div className="p-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-4"></div>
-                <p className="text-slate-400">Loading campaigns...</p>
+              <div className="p-8 text-center">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500 mb-3"></div>
+                <p className="text-slate-400 text-sm">Loading campaigns...</p>
               </div>
             ) : filteredBriefs.length === 0 ? (
-              <div className="p-12 text-center">
-                <Briefcase className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  No campaigns found
-                </h3>
-                <p className="text-slate-400 max-w-md mx-auto">
+              <div className="p-8 text-center">
+                <Briefcase className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-white mb-2">No campaigns found</h3>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">
                   {searchTerm
                     ? "Try adjusting your search or filter criteria."
                     : "Create your first campaign to get started with influencer marketing."}
                 </p>
               </div>
             ) : (
-              filteredBriefs.map((brief) => (
-                <div
+              filteredBriefs.map((brief, index) => (
+                <motion.div
                   key={brief.id}
-                  className="p-6 hover:bg-slate-800/30 transition-all duration-200 group"
+                  className="p-4 sm:p-5 hover:bg-slate-800/30 transition-all duration-200"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex flex-col gap-4">
                     {/* Campaign Info */}
-                    <div className="flex-1">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl border border-slate-600/50 group-hover:border-emerald-500/30 transition-colors">
-                          <Target className="w-5 h-5 text-slate-300" />
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg border border-slate-600/50 hover:border-emerald-500/30 transition-colors">
+                        <Target className="w-4 h-4 text-slate-300" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                          <h3 className="text-base sm:text-lg font-semibold text-white truncate">
+                            {brief.title}
+                          </h3>
+                          <span
+                            className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(
+                              brief.status
+                            )}`}
+                          >
+                            {getStatusString(brief.status)}
+                          </span>
                         </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-white truncate">
-                              {brief.title}
-                            </h3>
-                            <span
-                              className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(
-                                brief.status
-                              )}`}
-                            >
-                              {getStatusString(brief.status)}
+                        <p className="text-slate-400 text-xs sm:text-sm mb-2 line-clamp-2">
+                          {brief.description}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>
+                              {format(
+                                new Date(Number(brief.applicationDeadline) * 1000),
+                                "MMM d, yyyy"
+                              )}
                             </span>
                           </div>
-
-                          <p className="text-slate-400 text-sm mb-3 line-clamp-2">
-                            {brief.description}
-                          </p>
-
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>
-                                {format(
-                                  new Date(
-                                    Number(brief.applicationDeadline) * 1000
-                                  ),
-                                  "MMM d, yyyy"
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              <span>
-                                {Math.max(
-                                  0,
-                                  Math.ceil(
-                                    (new Date(
-                                      Number(brief.applicationDeadline) * 1000
-                                    ).getTime() -
-                                      new Date().getTime()) /
-                                      (1000 * 60 * 60 * 24)
-                                  )
-                                )}{" "}
-                                days left
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              <span>
-                                {brief.selectedInfluencersCount}/
-                                {Number(brief.maxInfluencers)} influencers
-                              </span>
-                            </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>
+                              {Math.max(
+                                0,
+                                Math.ceil(
+                                  (new Date(Number(brief.applicationDeadline) * 1000).getTime() -
+                                    new Date().getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                )
+                              )}{" "}
+                              days left
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3.5 h-3.5" />
+                            <span>
+                              {brief.selectedInfluencersCount}/{Number(brief.maxInfluencers)} influencers
+                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Budget & Actions */}
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-white mb-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="text-lg sm:text-xl font-bold text-white mb-1">
                           {Number(brief.budget).toLocaleString()} cUSD
                         </div>
-                        <div className="text-sm text-slate-400">
-                          0 spent (0%)
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-24 h-2 bg-slate-700/50 rounded-full mt-2 overflow-hidden">
+                        <div className="text-xs text-slate-400">0 spent (0%)</div>
+                        <div className="w-20 h-1.5 bg-slate-700/50 rounded-full mt-1.5 overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300"
                             style={{ width: "0%" }}
                           />
                         </div>
                       </div>
-
                       <div className="flex gap-2">
-                        <button
+                        <motion.button
                           onClick={() => {
-                            // @ts-expect-error: Brief ID should be typed but API currently accepts any string 
+                              // @ts-expect-error: expect undefine
                             setSelectedBrief(brief);
                             setShowApplicationsModal(true);
                           }}
-                          className="relative px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg border border-slate-600/50 hover:border-slate-500 transition-all text-sm font-medium"
+                          className="relative px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg border border-slate-600/50 hover:border-slate-500 transition-all text-xs font-medium"
+                          whileTap={{ scale: 0.95 }}
                         >
                           Applications
                           {applicationCounts[brief.id] > 0 && (
-                            <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg">
+                            <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
                               {applications.length}
                             </span>
                           )}
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
                           onClick={() => {
-                            // @ts-expect-error: Brief ID should be typed but API currently accepts any string
+                            // @ts-expect-error:expect undefine
                             setSelectedBrief(brief);
                             setShowSubmissionsModal(true);
                           }}
-                          className="px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-sm font-medium"
+                          className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs font-medium"
+                          whileTap={{ scale: 0.95 }}
                         >
                           Submissions
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        </motion.button>
+                        <motion.button
+                          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </motion.button>
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {showCreateModal && (

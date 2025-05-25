@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SubmitPostModal } from "../../components/modals/SubmitPostModal";
+import SubmitPostModal from "@/components/modals/SubmitPostModal";
 import { Transaction } from "@/types";
 import { motion } from "framer-motion";
 import {
   Briefcase,
   DollarSign,
   Calendar,
-  Clock,
+  TrendingUp,
   CheckCircle,
   Link as LinkIcon,
   ExternalLink,
@@ -17,16 +17,13 @@ import {
   Clock3,
   CheckSquare,
   Sparkles,
-  Award,
-  TrendingUp,
-  Target,
-  User
+  User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@farcaster/auth-kit";
 import { useAccount } from "wagmi";
-import { format, formatDistanceToNow } from "date-fns";
+import { format} from "date-fns";
 import {
   useUserProfile,
   useIsInfluencerVerified,
@@ -72,13 +69,7 @@ interface SubmitProofResult {
   hash?: string;
 }
 
-type TxStage =
-  | "idle"
-  | "error"
-  | "success"
-  | "preparing"
-  | "confirming"
-  | "mining";
+type TxStage = "idle" | "error" | "success" | "preparing" | "confirming" | "mining";
 
 export default function InfluencerDashboard() {
   const { status } = useSession();
@@ -92,10 +83,9 @@ export default function InfluencerDashboard() {
   const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [postLink, setPostLink] = useState("");
-  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>(
-    []
-  );
- 
+  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
+  const [expandedBriefId, setExpandedBriefId] = useState<string | null>(null);
+
   const [txStatus, setTxStatus] = useState<{
     stage: TxStage;
     message: string;
@@ -106,17 +96,9 @@ export default function InfluencerDashboard() {
     hash: undefined,
   });
 
-  // Get user profile data
   const { userProfile, isLoadingProfile } = useUserProfile();
-
-  // Get verification status
   const { isVerified } = useIsInfluencerVerified();
-
-  // Get dashboard data
-  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
-    useInfluencerDashboard();
-  console.log("appliedBriefs", appliedBriefs);
-  console.log("assignedBriefs", assignedBriefs);
+  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } = useInfluencerDashboard();
 
   const {
     submitProof,
@@ -136,16 +118,11 @@ export default function InfluencerDashboard() {
     }
   }, [status, router]);
 
-  // Handle submission state changes
   useEffect(() => {
-    if (
-      isSubmittingProof &&
-      txStatus.stage !== "mining" &&
-      txStatus.stage !== "confirming"
-    ) {
+    if (isSubmittingProof && txStatus.stage !== "mining" && txStatus.stage !== "confirming") {
       setTxStatus({
         stage: "mining",
-        message: "Transaction submitted. Waiting for confirmation...",
+        message: "Submitting post...",
         hash: txStatus.hash,
       });
     }
@@ -155,10 +132,10 @@ export default function InfluencerDashboard() {
     if (isSubmittingSuccess && txStatus.stage !== "success") {
       setTxStatus({
         stage: "success",
-        message: "Proof submitted successfully!",
+        message: "Post submitted successfully!",
         hash: txStatus.hash,
       });
-      toast.success("Proof submitted successfully!");
+      toast.success("Post submitted successfully!");
       refetch();
       setTimeout(() => {
         setShowSubmitModal(false);
@@ -166,7 +143,7 @@ export default function InfluencerDashboard() {
         setTxStatus({ stage: "idle", message: "", hash: undefined });
         setSelectedCampaign(null);
         setSelectedTask(null);
-      }, 2000);
+      }, 1500);
     }
   }, [isSubmittingSuccess, txStatus.stage, txStatus.hash, refetch]);
 
@@ -174,22 +151,17 @@ export default function InfluencerDashboard() {
     if (isSubmittingError && txStatus.stage !== "error") {
       setTxStatus({
         stage: "error",
-        message:
-          submitError?.message || "Transaction failed. Please try again.",
+        message: submitError?.message || "Submission failed. Try again.",
         hash: txStatus.hash,
       });
-      toast.error(submitError?.message || "Transaction failed");
+      toast.error(submitError?.message || "Submission failed");
     }
   }, [isSubmittingError, submitError, txStatus.stage, txStatus.hash]);
 
-  // Generate transaction history
   useEffect(() => {
     if (assignedBriefs && assignedBriefs.length > 0) {
       const txHistory = assignedBriefs
-        .filter(
-          (brief) =>
-            brief.application.isApproved && brief.application.hasClaimed
-        )
+        .filter((brief) => brief.application.isApproved && brief.application.hasClaimed)
         .map((brief) => ({
           id: brief.briefId,
           type: "payment",
@@ -204,50 +176,44 @@ export default function InfluencerDashboard() {
   }, [assignedBriefs]);
 
   const handleSubmitPost = async (briefId: string): Promise<void> => {
-    if (!postLink) {
-      toast.error("Please enter a valid post link");
-      return;
-    }
+  if (!postLink) {
+    toast.error("Please enter a post link");
+    return;
+  }
 
+  setTxStatus({
+    stage: "preparing",
+    message: "Preparing submission...",
+    hash: undefined,
+  });
+
+  try {
+    const result: SubmitProofResult = await submitProof(briefId, postLink); 
+    if (result?.hash) {
+      setTxStatus({
+        stage: "confirming",
+        message: "Confirm in wallet",
+        hash: result.hash,
+      });
+    }
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Submission failed";
     setTxStatus({
-      stage: "preparing",
-      message: "Preparing transaction...",
+      stage: "error",
+      message: errorMessage,
       hash: undefined,
     });
-
-    try {
-      const result: SubmitProofResult = await submitProof(briefId, postLink);
-      if (result?.hash) {
-        setTxStatus({
-          stage: "confirming",
-          message: "Confirm transaction in your wallet",
-          hash: result.hash,
-        });
-      }
-    } catch (error: unknown) {
-      console.error("Submit proof error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      setTxStatus({
-        stage: "error",
-        message: errorMessage,
-        hash: undefined,
-      });
-      toast.error(errorMessage);
-    }
-  };
+    toast.error(errorMessage);
+  }
+}
 
   const handleClaimFunds = (briefId: string): void => {
-    console.log("Claiming funds for brief:", briefId);
-    toast("Claim funds feature coming soon!");
+    toast(`Claim funds coming soon! for ${briefId}` );
   };
 
   const handleCloseModal = () => {
-    if (
-      txStatus.stage !== "idle" &&
-      txStatus.stage !== "error" &&
-      txStatus.stage !== "success"
-    ) {
+    if (txStatus.stage !== "idle" && txStatus.stage !== "error" && txStatus.stage !== "success") {
       return;
     }
     setShowSubmitModal(false);
@@ -259,40 +225,37 @@ export default function InfluencerDashboard() {
 
   const getTaskStatusIcon = (application: Application): JSX.Element => {
     if (application.proofLink) {
-      return <CheckCircle size={16} className="text-green-500" />;
+      return <CheckCircle size={14} className="text-green-400" />;
     }
-    return <AlertCircle size={16} className="text-gray-400" />;
+    return <AlertCircle size={14} className="text-slate-500" />;
   };
 
-  const getStatusBadge = (
-    application: Application,
-    briefStatus: number
-  ): JSX.Element => {
+  const getStatusBadge = (application: Application, briefStatus: number): JSX.Element => {
     if (application.isApproved) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckSquare size={12} className="mr-1" />
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+          <CheckSquare size={10} className="mr-0.5" />
           Approved
         </span>
       );
     } else if (application.isSelected && briefStatus === 1) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          <CheckCircle size={12} className="mr-1" />
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+          <CheckCircle size={10} className="mr-0.5" />
           Assigned
         </span>
       );
     } else if (application.isSelected) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          <CheckCircle size={12} className="mr-1" />
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <CheckCircle size={10} className="mr-0.5" />
           Selected
         </span>
       );
     } else {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-          <Clock3 size={12} className="mr-1" />
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-700/50 text-slate-400 border border-slate-700">
+          <Clock3 size={10} className="mr-0.5" />
           Pending
         </span>
       );
@@ -303,34 +266,26 @@ export default function InfluencerDashboard() {
     if (application.hasClaimed) {
       return {
         label: "Paid",
-        classes: "bg-green-100 text-green-800",
+        classes: "bg-green-500/20 text-green-400 border border-green-500/30",
       };
     } else if (application.isApproved) {
       return {
-        label: "Ready to Claim",
-        classes: "bg-blue-100 text-blue-800",
+        label: "Claim",
+        classes: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
       };
     } else {
       return {
         label: "Pending",
-        classes: "bg-yellow-100 text-yellow-800",
+        classes: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
       };
     }
   };
 
   const canSubmitProof = (brief: Brief): boolean => {
-    return (
-      brief.application.isSelected &&
-      brief.brief.status === 1 &&
-      !brief.application.proofLink
-    );
+    return brief.application.isSelected && brief.brief.status === 1 && !brief.application.proofLink;
   };
 
-  const totalEarned = transactionHistory.reduce(
-    (sum, tx) => sum + tx.amount,
-    0
-  );
-
+  const totalEarned = transactionHistory.reduce((sum, tx) => sum + tx.amount, 0);
   const potentialEarnings = assignedBriefs
     ? assignedBriefs
         .filter((b) => b.application.isSelected || b.application.isApproved)
@@ -346,115 +301,134 @@ export default function InfluencerDashboard() {
 
   if (isInitialLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Loading your dashboard...</p>
-        </div>
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-emerald-500 mx-auto mb-2"></div>
+          <p className="text-slate-400 text-xs">Loading dashboard...</p>
+        </motion.div>
       </div>
     );
   }
 
   if (!userProfile?.isRegistered || !userProfile?.isInfluencer) {
     return (
-      <div className="min-h-screen bg-gradient-to-br  from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 max-w-md text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-6">
-            <Briefcase className="w-8 h-8 text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <motion.div
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg p-6 max-w-[90vw] sm:max-w-sm text-center"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mx-auto mb-3">
+            <Briefcase className="w-5 h-5 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-white mb-2">
             Influencer Account Required
           </h2>
-          <p className="text-slate-400 mb-8 leading-relaxed">
-            You need to register as an influencer to access the influencer
-            dashboard and apply for promotions.
+          <p className="text-slate-400 text-xs sm:text-sm mb-4 leading-relaxed">
+            Register as an influencer to access the dashboard and apply for campaigns.
           </p>
           <Link href="/">
-            <button className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
-              Register as Influencer
-            </button>
+            <motion.button
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-2 px-3 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md shadow-emerald-500/20"
+              whileTap={{ scale: 0.95 }}
+            >
+              Register
+            </motion.button>
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="text-center p-8 max-w-md">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Error Loading Dashboard</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <motion.div
+          className="text-center p-6 max-w-[90vw] sm:max-w-sm"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+          <h2 className="text-lg font-bold text-white mb-1">Error Loading Dashboard</h2>
+          <p className="text-slate-400 text-xs mb-3">{error}</p>
+          <motion.button
             onClick={refetch}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-xs"
+            whileTap={{ scale: 0.95 }}
           >
-            Try Again
-          </button>
-        </div>
+            Retry
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-28 md:pt-36">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 sm:pt-24 md:pt-40 pb-20">
       <Toaster position="top-right" />
 
-      <div className="px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="px-4 sm:px-6 md:px-8 pb-8">
         {/* Header Section */}
-          <motion.div
-          className="mb-10"
-          initial={{ y: 20, opacity: 0 }}
+        <motion.div
+          className="mb-6"
+          initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          transition={{ duration: 0.2 }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center overflow-hidden">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center overflow-hidden">
                 {pfpUrl ? (
-                  <Image src={pfpUrl} alt="Profile" className="w-full h-full object-cover" />
+                  <Image
+                    src={pfpUrl}
+                    alt="Profile"
+                    width={50}
+                    height={50}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  <User className="w-7 h-7 text-white" />
                 )}
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
-                  Hi, <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
-                    {username || displayName || "Creator"}
+                <h1 className="text-lg sm:text-xl md:text-3xl font-bold text-white flex items-center gap-1.5">
+                  Hi,{" "}
+                  <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
+                    {username || displayName || "Influencer"}
                   </span>
                   {isVerified && (
-                    <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      <Shield className="w-3 h-3 mr-1" /> Verified
+                    <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <Shield className="w-2 h-2 mr-0.5" /> Verified
                     </span>
                   )}
                 </h1>
-                <p className="text-base sm:text-lg text-slate-300 mt-1">Manage your collaborations and earnings</p>
+                <p className="text-xs sm:text-sm md:text-xl text-slate-400 mt-0.5">
+                  Manage your campaigns
+                </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               <Link href="/selfVerification">
                 <motion.button
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600/80 hover:bg-emerald-700 rounded-xl transition-all shadow-sm"
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs md:text-sm font-medium text-white bg-emerald-600/80 hover:bg-emerald-700 rounded-lg transition-all shadow-sm"
                   whileTap={{ scale: 0.95 }}
                 >
-                  Verify Profile <ExternalLink className="w-4 h-4" />
+                  Verify With Self Protocol <ExternalLink className="w-3 h-3" />
                 </motion.button>
               </Link>
               <Link href={`/influencer/${address}`}>
                 <motion.button
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-200 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/50 transition-all shadow-sm"
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs md:text-sm font-medium text-slate-300 bg-slate-800/50 hover:bg-slate-800 rounded-lg border border-slate-700/50 transition-all shadow-sm"
                   whileTap={{ scale: 0.95 }}
                 >
-                  Public Profile <ExternalLink className="w-4 h-4" />
-                </motion.button>
-              </Link>
-              <Link href="/marketplace">
-                <motion.button
-                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-4 py-2 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md shadow-emerald-500/25"
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Sparkles className="w-4 h-4" /> Browse Campaigns
+                  Profile <ExternalLink className="w-3 h-3" />
                 </motion.button>
               </Link>
             </div>
@@ -462,309 +436,271 @@ export default function InfluencerDashboard() {
         </motion.div>
 
         {/* Stats Grid */}
-        <motion.div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-10"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
+        <div className="grid grid-cols-2 gap-3 mb-6">
           {[
-            { icon: Briefcase, value: appliedBriefs?.length || 0, label: "Applications", color: "blue-400" },
-            { icon: Award, value: assignedBriefs?.length || 0, label: "Selected", color: "emerald-400" },
-            { icon: DollarSign, value: totalEarned.toFixed(2), label: "Earned (cUSD)", color: "purple-400" },
-            { icon: TrendingUp, value: potentialEarnings.toFixed(2), label: "Potential (cUSD)", color: "amber-400" },
+            { icon: Briefcase, value: appliedBriefs?.length || 0, label: "Applied", color: "blue-400" },
+            { icon: CheckCircle, value: assignedBriefs?.length || 0, label: "Selected", color: "emerald-400" },
+            { icon: DollarSign, value: totalEarned.toFixed(2), label: "Earned", color: "purple-400" },
+            { icon: TrendingUp, value: potentialEarnings.toFixed(2), label: "Pending", color: "amber-400" },
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
-              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl p-4 sm:p-5 hover:bg-slate-800/80 transition-all duration-200 shadow-sm"
-              whileHover={{ scale: 1.02 }}
+              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-lg p-2.5 transition-all duration-200 shadow-sm"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 * index }}
+              transition={{ duration: 0.2, delay: 0.05 * index }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className={`p-2 bg-${stat.color}/10 rounded-lg border border-${stat.color}/20`}>
-                  <stat.icon className={`w-5 h-5 text-${stat.color}`} />
+              <div className="flex items-center justify-between mb-1.5">
+                <div className={`p-1 bg-${stat.color}/10 rounded-md border border-${stat.color}/20`}>
+                  <stat.icon className={`w-3.5 h-3.5 text-${stat.color}`} />
                 </div>
               </div>
-              <p className="text-xl sm:text-2xl font-bold text-white">{stat.value}</p>
-              <p className="text-sm text-slate-300">{stat.label}</p>
+              <p className="text-base font-bold text-white">{stat.value}</p>
+              <p className="text-[10px] text-slate-400">{stat.label}</p>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
-              <div className="p-6 border-b border-slate-700/50">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-emerald-400" />
-                    Your Campaigns
-                  </h2>
-                  <span className="text-slate-400">
-                    {appliedBriefs?.length || 0} campaigns
-                  </span>
-                </div>
-              </div>
-
-              {isLoading && appliedBriefs === undefined ? (
-                <div className="p-12 text-center">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-4"></div>
-                  <p className="text-slate-400">Loading applications...</p>
-                </div>
-              ) : !appliedBriefs || appliedBriefs.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Briefcase className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    No Active Campaigns
-                  </h3>
-                  <p className="text-slate-400 max-w-md mx-auto mb-6">
-                    You haven&apos;t applied to any campaigns yet. Discover
-                    exciting collaborations that match your creative style.
-                  </p>
-                  <Link href="/marketplace">
-                    <button className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-500/25">
-                      <Sparkles className="w-5 h-5" />
-                      Explore Marketplace
-                    </button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-700/50">
-                  {appliedBriefs.map((brief) => {
-                    const applicationDeadline =
-                      Number(brief.brief.applicationDeadline) * 1000;
-                    const verificationDeadline =
-                      Number(brief.brief.verificationDeadline) * 1000;
-                    // @ts-expect-error:Brief ID should be typed but API currently accepts any string
-                    const paymentStatus = getPaymentStatus(brief.application);
-                    const budget = Number(brief.brief.budget) / 1e18;
-
-                    return (
-                      <div
-                        key={brief.briefId}
-                        className="p-6 hover:bg-slate-800/30 transition-all duration-200 group"
-                      >
-                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-start gap-4">
-                              <div className="p-3 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl border border-slate-600/50 group-hover:border-emerald-500/30 transition-colors">
-                                <Target className="w-5 h-5 text-slate-300" />
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="text-lg font-semibold text-white truncate">
-                                    {brief.brief.name}
-                                  </h3>
-                                  {brief.application && (
-                                    <span>
-                                      {getStatusBadge(
-                                        brief.application,
-                                        brief.brief.status
-                                      )}
-                                    </span>
-                                  )}
-                                </div>
-
-                                <p className="text-slate-400 text-sm mb-3 line-clamp-2">
-                                  {brief.brief.description}
-                                </p>
-
-                                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" />
-                                    <span>
-                                      {format(
-                                        new Date(applicationDeadline),
-                                        "MMM d, yyyy"
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="w-4 h-4" />
-                                    <span>
-                                      {formatDistanceToNow(
-                                        new Date(applicationDeadline),
-                                        { addSuffix: true }
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" />
-                                    <span>
-                                      {format(
-                                        new Date(verificationDeadline),
-                                        "MMM d, yyyy"
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <DollarSign className="w-4 h-4" />
-                                    <span>{budget.toFixed(2)} cUSD</span>
-                                  </div>
-                                </div>
-
-                                {brief.application &&
-                                  brief.application.isSelected && (
-                                    <div className="mt-4">
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                          {getTaskStatusIcon(brief.application)}
-                                          <span className="text-sm font-medium text-slate-300">
-                                            Content Submission
-                                          </span>
-                                          {brief.brief.status !== 1 && (
-                                            <span className="ml-2 text-xs text-amber-400 bg-amber-900/30 px-2 py-1 rounded-full border border-amber-800/50">
-                                              Waiting for assignment...
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          {brief.application.proofLink ? (
-                                            <a
-                                              href={brief.application.proofLink}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs"
-                                            >
-                                              <LinkIcon className="w-3 h-3" />
-                                              View Content
-                                            </a>
-                                          ) : // @ts-expect-error:Brief ID should be typed but API currently accepts any string
-                                          canSubmitProof(brief) ? (
-                                            <button
-                                              onClick={() => {
-                                                // @ts-expect-error:Brief ID should be typed but API currently accepts any string
-                                                setSelectedCampaign(brief);
-                                                setSelectedTask({
-                                                  name: brief.brief.description,
-                                                });
-                                                setShowSubmitModal(true);
-                                              }}
-                                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs"
-                                              disabled={isSubmittingProof}
-                                            >
-                                              {isSubmittingProof ? (
-                                                "Submitting..."
-                                              ) : (
-                                                <>
-                                                  <LinkIcon className="w-3 h-3" />
-                                                  Submit Content
-                                                </>
-                                              )}
-                                            </button>
-                                          ) : brief.application.isSelected &&
-                                            brief.brief.status !== 1 ? (
-                                            <span className="text-xs text-slate-500 italic">
-                                              Submit when assigned
-                                            </span>
-                                          ) : null}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col items-end gap-4">
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-white mb-1">
-                                {budget.toFixed(2)} cUSD
-                              </div>
-                              <span
-                                className={`text-xs px-3 py-1 rounded-full ${paymentStatus.classes}`}
-                              >
-                                {paymentStatus.label}
-                              </span>
-                            </div>
-
-                            {brief.application &&
-                              brief.application.isApproved &&
-                              !brief.application.hasClaimed && (
-                                <button
-                                  onClick={() =>
-                                    handleClaimFunds(brief.briefId)
-                                  }
-                                  className="flex items-center gap-1 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-sm font-medium"
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                  Claim Funds
-                                </button>
-                              )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+        {/* Campaigns List */}
+        <motion.div
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg overflow-hidden mb-6"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="p-3 sm:p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5">
+                <Briefcase className="w-5 h-5 md:text-xl text-emerald-400" /> Campaigns
+              </h2>
+              <span className="text-xs text-slate-400">{appliedBriefs?.length || 0}</span>
             </div>
           </div>
 
-          <div className="lg:col-span-1">
-            <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden sticky top-6">
-              <div className="p-6 border-b border-slate-700/50">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-amber-400" />
-                    Transaction History
-                  </h2>
-                  <span className="text-slate-400">
-                    {transactionHistory.length} transactions
-                  </span>
-                </div>
-              </div>
+          {isLoading && appliedBriefs === undefined ? (
+            <div className="p-6 text-center">
+              <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-500 mb-2"></div>
+              <p className="text-slate-400 text-xs">Loading...</p>
+            </div>
+          ) : !appliedBriefs || appliedBriefs.length === 0 ? (
+            <div className="p-6 text-center">
+              <Briefcase className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+              <h3 className="text-base font-semibold text-white mb-1">No Campaigns</h3>
+              <p className="text-slate-400 text-xs mb-3">Apply to campaigns to get started.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {appliedBriefs.map((brief, index) => {
+                const applicationDeadline = Number(brief.brief.applicationDeadline) * 1000;
+                const budget = Number(brief.brief.budget) / 1e18;
+                // @ts-expect-error:expect undefine
+                const paymentStatus = getPaymentStatus(brief.application);
+                const isExpanded = expandedBriefId === brief.briefId;
 
-              {transactionHistory.length === 0 ? (
-                <div className="p-12 text-center">
-                  <DollarSign className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    No Transactions Yet
-                  </h3>
-                  <p className="text-slate-400">
-                    Your completed earnings will appear here
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-700/50">
-                  {transactionHistory.map((tx) => (
+                return (
+                  <motion.div
+                    key={brief.briefId}
+                    className="p-3 sm:p-4 transition-all duration-200"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                  >
                     <div
-                      key={tx.id}
-                      className="p-4 hover:bg-slate-800/30 transition-all duration-200"
+                      className="flex flex-col gap-2"
+                      onClick={() =>
+                        setExpandedBriefId(isExpanded ? null : brief.briefId)
+                      }
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-emerald-900/20 rounded-lg border border-emerald-800/30">
-                          <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      <div className="flex items-start gap-2">
+                        <div className="p-1.5 bg-gradient-to-br from-slate-700 to-slate-800 rounded-md border border-slate-600/50">
+                          <Briefcase className="w-3.5 h-3.5  text-slate-300" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-white truncate">
-                            +{tx.amount.toFixed(2)} cUSD
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 mb-1">
+                            <h3 className="text-sm md:text-lg font-semibold text-white truncate">
+                              {brief.brief.name}
+                            </h3>
+                            {brief.application && (
+                              <span>{getStatusBadge(brief.application, brief.brief.status)}</span>
+                            )}
+                          </div>
+                          <p className="text-slate-400 text-xs md:text-lg mb-1.5 line-clamp-1">
+                            {brief.brief.description}
                           </p>
-                          <p className="text-xs text-slate-400 truncate">
-                            From {tx.from}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>{format(new Date(applicationDeadline), "MMM d")}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="w-3 h-3" />
+                              <span>{budget.toFixed(2)} cUSD</span>
+                            </div>
+                          </div>
                         </div>
-                        <a
-                          href={`https://explorer.celo.org/tx/${tx.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-slate-400 hover:text-emerald-400 transition-colors"
-                          title="View on explorer"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
                       </div>
+
+                      {isExpanded && (
+                        <motion.div
+                          className="mt-2 pl-8"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {brief.application && brief.application.isSelected && (
+                            <div className="flex flex-col gap-2 mb-2">
+                              <div className="flex items-center gap-1.5">
+                                {getTaskStatusIcon(brief.application)}
+                                <span className="text-xs text-slate-300">Content Submission</span>
+                                {brief.brief.status !== 1 && (
+                                  <span className="text-[10px] text-amber-400 bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-800/50">
+                                    Waiting...
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                {brief.application.proofLink ? (
+                                  <a
+                                    href={brief.application.proofLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                  >
+                                    <LinkIcon className="w-3 h-3" />
+                                    View
+                                  </a>
+                                   // @ts-expect-error:expect undefine
+                                ) : canSubmitProof(brief) ? (
+                                  <motion.button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                       // @ts-expect-error:expect undefine
+                                      setSelectedCampaign(brief);
+                                      setSelectedTask({ name: brief.brief.description });
+                                      setShowSubmitModal(true);
+                                    }}
+                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                    disabled={isSubmittingProof}
+                                    whileTap={{ scale: 0.95 }}
+                                  >
+                                    {isSubmittingProof ? (
+                                      "Submitting..."
+                                    ) : (
+                                      <>
+                                        <LinkIcon className="w-3 h-3" />
+                                        Submit
+                                      </>
+                                    )}
+                                  </motion.button>
+                                ) : brief.application.isSelected && brief.brief.status !== 1 ? (
+                                  <span className="text-xs text-slate-500">Submit when assigned</span>
+                                ) : null}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${paymentStatus.classes}`}>
+                              {paymentStatus.label}
+                            </span>
+                            {brief.application && brief.application.isApproved && !brief.application.hasClaimed && (
+                              <motion.button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleClaimFunds(brief.briefId);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <CheckCircle className="w-3 h-3" />
+                                Claim
+                              </motion.button>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Transaction History */}
+        <motion.div
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg overflow-hidden"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="p-3 sm:p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                Transactions
+              </h2>
+              <span className="text-xs text-slate-400">{transactionHistory.length}</span>
             </div>
           </div>
-        </div>
+
+          {transactionHistory.length === 0 ? (
+            <div className="p-6 text-center">
+              <DollarSign className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+              <h3 className="text-base font-semibold text-white mb-1">No Transactions</h3>
+              <p className="text-slate-400 text-xs">Earnings will appear here.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {transactionHistory.map((tx, index) => (
+                <motion.div
+                  key={tx.id}
+                  className="p-2.5 sm:p-3 transition-all duration-200"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 bg-emerald-900/20 rounded-md border border-emerald-800/30">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-white truncate">
+                        +{tx.amount.toFixed(2)} cUSD
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">From {tx.from}</p>
+                    </div>
+                    <a
+                      href={`https://explorer.celo.org/tx/${tx.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-slate-400 hover:text-emerald-400 transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Sticky Browse Button */}
+        <motion.div
+          className="fixed bottom-9 right-9"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: 0.3 }}
+        >
+          <Link href="/marketplace">
+            <motion.button
+              className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-3.5 py-2 rounded-full shadow-lg shadow-emerald-500/20"
+              whileTap={{ scale: 0.95 }}
+            >
+              <Sparkles className="w-4 h-4" />
+              Browse
+            </motion.button>
+          </Link>
+        </motion.div>
       </div>
 
       {showSubmitModal && selectedCampaign && selectedTask && (
