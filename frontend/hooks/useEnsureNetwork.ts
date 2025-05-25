@@ -1,24 +1,51 @@
 import { useAccount, useSwitchChain } from "wagmi";
 import { toast } from "react-toastify";
-import { alfajores } from "@/lib/chain";
+import { celoAlfajores } from "wagmi/chains";
 
 export const useEnsureNetwork = () => {
   const { isConnected, chain } = useAccount();
-  const { switchChain } = useSwitchChain();
+  const { switchChainAsync, isPending, error } = useSwitchChain();
 
   const ensureNetwork = async () => {
     if (!isConnected) {
-      toast.error("Please connect your wallet first");
+      toast.error("Please connect your wallet first", { position: "bottom-center" });
       return false;
     }
 
-    if (chain?.id !== alfajores.id) {
+    if (chain?.id !== celoAlfajores.id) {
       try {
-        await switchChain({ chainId: alfajores.id });
+        await switchChainAsync({ chainId: celoAlfajores.id });
+        toast.success("Switched to Celo Alfajores testnet", { position: "bottom-center" });
         return true;
-      } catch (err) {
-        toast.error("Failed to switch to Celo Alfajores network");
-        console.error(err);
+      } catch (err: any) {
+        console.error("Chain switch error:", err);
+        if (err.code === 4902) {
+          try {
+            await window.ethereum?.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: `0x${celoAlfajores.id.toString(16)}`,
+                  chainName: "Celo Alfajores Testnet",
+                  rpcUrls: ["https://alfajores-forno.celo-testnet.org"],
+                  nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
+                  blockExplorerUrls: ["https://alfajores.celoscan.io"],
+                },
+              ],
+            });
+            await switchChainAsync({ chainId: celoAlfajores.id });
+            toast.success("Added and switched to Celo Alfajores testnet", {
+              position: "bottom-center",
+            });
+            return true;
+          } catch (addErr) {
+            toast.error("Failed to add Celo Alfajores to wallet", { position: "bottom-center" });
+            return false;
+          }
+        }
+        toast.error(`Failed to switch to Celo Alfajores: ${err.message || "Unknown error"}`, {
+          position: "bottom-center",
+        });
         return false;
       }
     }
@@ -28,6 +55,8 @@ export const useEnsureNetwork = () => {
   return {
     ensureNetwork,
     isConnected,
-    isCorrectChain: chain?.id === alfajores.id,
+    isCorrectChain: chain?.id === celoAlfajores.id,
+    isSwitching: isPending,
+    switchError: error,
   };
 };
