@@ -1,4 +1,9 @@
 {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjY1MzgxNywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDJBMThDNEUzQ0RlNkQ1NjJCMDZEMkREMTI1MjhFNTgxZTMzMEFBRGQifQ",
+    "payload": "eyJkb21haW4iOiJhZHMtYmF6YWFyLnZlcmNlbC5hcHAifQ",
+    "signature": "MHhlNjM5NmExMWYzNmNmYmFhZjk4NTM5ZjJhZGU2MTdhYmRjOGYxODcyNDNiYWI5ZGM0OTlhYzM4YWJkMmU3NDU5MDE1ZGE4YTRkN2EyZDRiNTM5ODU0ZTRlNzgwNDZmOWE1YzQ3OTRiOGIzMTgyZmIyYTllNDUzNzhjNTljNjA0ZjFi"
+  },
   "frame": {
     "version": "1",
     "name": "Ads-Bazaar",
