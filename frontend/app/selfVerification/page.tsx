@@ -1,6 +1,7 @@
 "use client";
+
 import { useState, useEffect, useCallback } from "react";
-import { CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, AlertCircle, ArrowRight, Home } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useUserProfile } from "@/hooks/adsBazaar";
 import { useVerifySelfProof } from "@/hooks/adsBazaar";
@@ -8,6 +9,7 @@ import { SelfAppBuilder, SelfApp } from "@selfxyz/qrcode";
 import SelfQRcodeWrapper from "@selfxyz/qrcode";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 
 interface VerificationResult {
@@ -35,7 +37,6 @@ export default function SelfVerification() {
   const { userProfile, isLoadingProfile } = useUserProfile();
   const { verifySelfProof, isPending, isSuccess } = useVerifySelfProof();
 
-  // Initialize SelfApp when address becomes available
   useEffect(() => {
     if (address) {
       const app = new SelfAppBuilder({
@@ -51,23 +52,26 @@ export default function SelfVerification() {
     }
   }, [address]);
 
-  const handleVerify = useCallback(async (proof: unknown, publicSignals: string[]) => {
-    if (!isConnected || !address) {
-      toast.error("Please connect your wallet to verify your identity.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      await verifySelfProof(proof, publicSignals);
-      toast.success("Proof submitted for on-chain verification!");
-    } catch (error) {
-      console.error("On-chain verification failed:", error);
-      toast.error("On-chain verification failed");
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isConnected, address, verifySelfProof]);
+  const handleVerify = useCallback(
+    async (proof: unknown, publicSignals: string[]) => {
+      if (!isConnected || !address) {
+        toast.error("Please connect your wallet to verify.");
+        return;
+      }
+      setIsLoading(true);
+      try {
+        await verifySelfProof(proof, publicSignals);
+        toast.success("Proof submitted for verification!");
+      } catch (error) {
+        console.error("Verification failed:", error);
+        toast.error("Verification failed");
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isConnected, address, verifySelfProof]
+  );
 
   useEffect(() => {
     const checkVerification = async () => {
@@ -92,7 +96,6 @@ export default function SelfVerification() {
 
           if (result.isValid) {
             await handleVerify(proof, publicSignals);
-            console.log("Verified attributes:", result.credentialSubject);
             window.history.replaceState({}, "", window.location.pathname);
           } else {
             toast.error(`Verification failed: ${result.error}`);
@@ -110,7 +113,7 @@ export default function SelfVerification() {
   useEffect(() => {
     if (isSuccess) {
       setIsVerified(true);
-      toast.success("Identity verified on-chain successfully!");
+      toast.success("Identity verified successfully!");
     }
   }, [isSuccess]);
 
@@ -121,10 +124,15 @@ export default function SelfVerification() {
 
   if (isLoading || isLoadingProfile) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-slate-900" aria-live="polite">
-        <div className="text-center">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
           <svg
-            className="animate-spin h-12 w-12 text-emerald-500 mx-auto"
+            className="animate-spin h-6 w-6 text-emerald-500 mx-auto mb-2"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -143,157 +151,184 @@ export default function SelfVerification() {
               d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
             ></path>
           </svg>
-          <p className="mt-4 text-slate-400">
-            {isPending
-              ? "Submitting verification to blockchain..."
-              : "Confirming transaction..."}
+          <p className="text-xs text-slate-400">
+            {isPending ? "Submitting to blockchain..." : "Loading..."}
           </p>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
   if (!isConnected || !address) {
     return (
-      <div className="flex flex-col min-h-screen bg-slate-900 pt-10 md:pt-20">
-        <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white">Identity Verification</h2>
-            <p className="text-sm text-slate-400 mt-2">
-              Connect your wallet to verify your identity on AdsBazaar
-            </p>
-          </div>
-          <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-lg shadow-emerald-500/10">
-            <div className="flex flex-col items-center text-center">
-              <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-4">Wallet Not Connected</h3>
-              <p className="text-sm text-slate-300 mb-6 max-w-md">
-                Please connect your wallet to proceed with identity verification.
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-16 sm:pt-20 pb-20">
+        <div className="px-4 sm:px-6 md:px-8 max-w-xl mx-auto">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-white">Identity Verification</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Connect your wallet to verify your identity
               </p>
-              <Link
-                href="/connect"
-                className="inline-flex items-center px-6 py-3 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all duration-200"
-              >
-                Connect Wallet
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
             </div>
+            <Link href="/">
+              <motion.button
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md shadow-emerald-500/20"
+                whileTap={{ scale: 0.95 }}
+                aria-label="Back to Home"
+              >
+                <Home className="w-3.5 h-3.5" />
+                Home
+              </motion.button>
+            </Link>
           </div>
+          <motion.div
+            className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg p-6 text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-3">Wallet Not Connected</h3>
+            <p className="text-xs text-slate-400 mb-4 max-w-sm mx-auto">
+              Please connect your wallet to proceed with verification.
+            </p>
+            <Link
+              href="/connect"
+              className="inline-flex items-center px-4 py-2 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
+            >
+              Connect Wallet
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Link>
+          </motion.div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-900 pt-10 md:pt-24">
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white">Identity Verification</h2>
-          <p className="text-sm text-slate-400 mt-2">
-            Verify your identity to unlock campaign applications on AdsBazaar
-          </p>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-16 sm:pt-20 md:pt-40 pb-20">
+      <div className="px-4 sm:px-6 md:px-8 max-w-xl mx-auto">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-white">Identity Verification</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Verify your identity to unlock campaigns
+            </p>
+          </div>
+          <Link href={userProfile?.isInfluencer ? "/influencersDashboard" : "/"}>
+            <motion.button
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md shadow-emerald-500/20"
+              whileTap={{ scale: 0.95 }}
+              aria-label="Back to Home"
+            >
+              <Home className="w-3.5 h-3.5" />
+              Dashboard
+            </motion.button>
+          </Link>
         </div>
 
-        <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-lg shadow-emerald-500/10">
-          <div className="flex flex-col items-center text-center">
-            <div className="mb-6">
-              <span
-                className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border ${
-                  isVerified
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                    : "bg-red-500/10 text-red-400 border-red-500/20"
-                }`}
-              >
-                {isVerified ? (
-                  <>
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Verified
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="w-5 h-5 mr-2" />
-                    Not Verified
-                  </>
-                )}
-              </span>
-            </div>
-
-            <h3 className="text-xl font-semibold text-white mb-4">
-              {isVerified ? "You're Verified!" : "Verify Your Identity with Self Protocol"}
-            </h3>
-            <p className="text-sm text-slate-300 mb-6 max-w-md">
-              {isVerified
-                ? "Your identity has been successfully verified. You can now apply to campaigns in the marketplace."
-                : "Scan the QR code below with the Self app to verify your identity. This process is secure and privacy-preserving."}
-            </p>
-
-            {!isVerified && selfApp ? (
-              <div className="mb-6">
-                <SelfQRcodeWrapper
-                  selfApp={selfApp}
-                  onSuccess={handleVerificationSuccess}
-                  size={250}
-                />
-                <p className="text-xs text-slate-400 mt-2">
-                  Wallet: {`${address.substring(0, 6)}...${address.substring(address.length - 4)}`}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Session ID: {address.substring(0, 8)}...
-                </p>
-              </div>
-            ) : !isVerified ? (
-              <div className="mb-6 text-slate-400">Initializing verification...</div>
-            ) : null}
-
-            <div className="mt-6 flex flex-col sm:flex-row gap-4">
-              {isVerified && (
-                <Link
-                  href="/marketplace"
-                  className="inline-flex items-center px-6 py-3 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all duration-200"
-                >
-                  Go to Marketplace
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
+        <motion.div
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg p-6 text-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="mb-4">
+            <span
+              className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${
+                isVerified
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  : "bg-red-500/10 text-red-400 border-red-500/20"
+              }`}
+            >
+              {isVerified ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Verified
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  Not Verified
+                </>
               )}
-              {isConnected && (!userProfile?.isRegistered || !userProfile.isInfluencer) && (
-                <Link
-                  href="/register"
-                  className="inline-flex items-center px-6 py-3 rounded-xl text-sm font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 transition-all duration-200"
-                >
-                  Register as Influencer
-                </Link>
-              )}
-            </div>
+            </span>
           </div>
 
-          {!isVerified && (
-            <div className="mt-8 border-t border-slate-700/50 pt-6">
-              <h4 className="text-sm font-semibold text-white mb-2">
-                Why Verify with Self Protocol?
-              </h4>
-              <ul className="text-xs text-slate-300 space-y-2">
-                <li className="flex items-start">
-                  <CheckCircle className="w-4 h-4 text-emerald-400 mr-2 mt-1" />
-                  <span>
-                    Ensures only real humans can apply to campaigns, preventing bots.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-4 h-4 text-emerald-400 mr-2 mt-1" />
-                  <span>
-                    Privacy-preserving: only necessary attributes are shared.
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-4 h-4 text-emerald-400 mr-2 mt-1" />
-                  <span>
-                    Compliant with sanction lists for secure advertising.
-                  </span>
-                </li>
-              </ul>
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-3">
+            {isVerified ? "You're Verified!" : "Verify with Self Protocol"}
+          </h3>
+          <p className="text-xs text-slate-400 mb-4 max-w-sm mx-auto">
+            {isVerified
+              ? "Your identity is verified. You can now apply to campaigns."
+              : "Scan the QR code with the Self app to verify your identity securely."}
+          </p>
+
+          {!isVerified && selfApp ? (
+            <div className="mb-4 max-w-[80vw] mx-auto">
+              <SelfQRcodeWrapper
+                selfApp={selfApp}
+                onSuccess={handleVerificationSuccess}
+                size={Math.min(200, window.innerWidth * 0.6)}
+              />
+              <p className="text-[10px] text-slate-400 mt-1.5">
+                Wallet: {`${address.substring(0, 6)}...${address.substring(address.length - 4)}`}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                Session ID: {address.substring(0, 8)}...
+              </p>
             </div>
-          )}
-        </div>
+          ) : !isVerified ? (
+            <div className="mb-4 text-slate-400 text-xs">Initializing...</div>
+          ) : null}
+
+          <div className="mt-4 flex flex-col gap-2">
+            {isVerified && (
+              <Link
+                href="/marketplace"
+                className="inline-flex items-center px-4 py-2 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
+              >
+                Go to Marketplace
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </Link>
+            )}
+            {isConnected && (!userProfile?.isRegistered || !userProfile.isInfluencer) && (
+              <Link
+                href="/register"
+                className="inline-flex items-center px-4 py-2 rounded-lg text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20 hover:bg-slate-500/20 transition-all"
+              >
+                Register as Influencer
+              </Link>
+            )}
+          </div>
+        </motion.div>
+
+        {!isVerified && (
+          <motion.div
+            className="mt-6 border-t border-slate-700/50 pt-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <h4 className="text-sm font-semibold text-white mb-1.5">
+              Why Verify with Self Protocol?
+            </h4>
+            <ul className="text-xs text-slate-400 space-y-1.5">
+              <li className="flex items-start">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mr-1.5 mt-0.5" />
+                <span>Prevents bots by ensuring only real humans apply.</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mr-1.5 mt-0.5" />
+                <span>Privacy-preserving: shares only necessary attributes.</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-400 mr-1.5 mt-0.5" />
+                <span>Compliant with sanction lists for secure advertising.</span>
+              </li>
+            </ul>
+          </motion.div>
+        )}
       </div>
     </div>
   );

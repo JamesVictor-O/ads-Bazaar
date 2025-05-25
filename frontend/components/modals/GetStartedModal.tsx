@@ -1,16 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Share2, User, Target, CheckCircle, Loader2 } from "lucide-react";
+import { X, User, Target, CheckCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { signIn, getCsrfToken } from "next-auth/react";
-import { SignInButton } from "@farcaster/auth-kit";
-import "@farcaster/auth-kit/styles.css";
 import { useAccount } from "wagmi";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRegisterUser } from "../../hooks/adsBazaar";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface GetStartedModalProps {
@@ -19,17 +15,12 @@ interface GetStartedModalProps {
 }
 
 type UserType = "influencer" | "advertiser";
-type SocialPlatform = "farcaster";
 
 interface UserDetails {
   userType: UserType | "";
   niche?: string;
-  connectedPlatforms?: SocialPlatform[];
   businessType?: string;
   budget?: string;
-  farcasterUsername?: string;
-  farcasterPfp?: string;
-  farcasterId?: string;
 }
 
 const GetStartedModal = ({
@@ -38,23 +29,11 @@ const GetStartedModal = ({
 }: GetStartedModalProps) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({
     userType: "",
-    connectedPlatforms: [],
   });
   const router = useRouter();
   const { isConnected } = useAccount();
   const { register, isPending, isSuccess, isError, error } = useRegisterUser();
   const [showNextStep, setShowNextStep] = useState(false);
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [isFarcasterLoading, setIsFarcasterLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchCsrfToken = async () => {
-      const token = await getCsrfToken();
-      setCsrfToken(token ?? null);
-    };
-    fetchCsrfToken();
-  }, []);
 
   useEffect(() => {
     if (isError && error) {
@@ -78,48 +57,6 @@ const GetStartedModal = ({
     }
   }, [isSuccess, userDetails.userType, router, onClose]);
 
-  const handleSuccess = async (data: {
-    message: string;
-    signature: `0x${string}`;
-    name: string;
-    pfp: string;
-    fid?: string;
-  }) => {
-    setIsFarcasterLoading(true);
-    try {
-      const userName =
-        data.name ||
-        (data.fid ? `Farcaster User ${data.fid}` : "Farcaster User");
-
-      const result = await signIn("farcaster", {
-        message: data.message,
-        signature: data.signature,
-        name: userName,
-        pfp: data.pfp,
-        fid: data.fid,
-        callbackUrl: "/",
-        redirect: false,
-      });
-
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-
-      setUserDetails((prev) => ({
-        ...prev,
-        connectedPlatforms: [...(prev.connectedPlatforms || []), "farcaster"],
-        farcasterUsername: userName,
-        farcasterPfp: data.pfp,
-        farcasterId: data.fid,
-      }));
-    } catch (err) {
-      console.error("Farcaster auth error:", err);
-      setAuthError(err instanceof Error ? err.message : "Sign in failed");
-    } finally {
-      setIsFarcasterLoading(false);
-    }
-  };
-
   const handleUserTypeSelection = (type: UserType) => {
     setUserDetails({ ...userDetails, userType: type });
     setShowNextStep(true);
@@ -127,21 +64,6 @@ const GetStartedModal = ({
 
   const handleBack = () => {
     setShowNextStep(false);
-  };
-
-  const handleDisconnect = (platform: SocialPlatform) => {
-    const connectedPlatforms = userDetails.connectedPlatforms || [];
-    setUserDetails({
-      ...userDetails,
-      connectedPlatforms: connectedPlatforms.filter((p) => p !== platform),
-      ...(platform === "farcaster"
-        ? {
-            farcasterUsername: undefined,
-            farcasterPfp: undefined,
-            farcasterId: undefined,
-          }
-        : {}),
-    });
   };
 
   const handleCompleteRegistration = async () => {
@@ -156,11 +78,7 @@ const GetStartedModal = ({
       const profileData = JSON.stringify({
         userType: userDetails.userType,
         ...(userDetails.userType === "influencer"
-          ? {
-              niche: userDetails.niche || "",
-              farcasterUsername: userDetails.farcasterUsername || "",
-              farcasterId: userDetails.farcasterId || "",
-            }
+          ? { niche: userDetails.niche || "" }
           : {
               businessType: userDetails.businessType || "",
               budget: userDetails.budget || "",
@@ -182,26 +100,9 @@ const GetStartedModal = ({
 
   const isFormValid = () => {
     if (userDetails.userType === "influencer") {
-      return (
-        !!userDetails.niche &&
-        Array.isArray(userDetails.connectedPlatforms) &&
-        userDetails.connectedPlatforms.length > 0
-      );
+      return !!userDetails.niche;
     }
     return !!userDetails.businessType && !!userDetails.budget;
-  };
-
-  const getUserDisplayName = () => {
-    if (
-      userDetails.farcasterUsername &&
-      userDetails.farcasterUsername !==
-        `Farcaster User ${userDetails.farcasterId}`
-    ) {
-      return userDetails.farcasterUsername;
-    } else if (userDetails.farcasterId) {
-      return `Farcaster ID: ${userDetails.farcasterId}`;
-    }
-    return "Connected";
   };
 
   if (!isOpen) return null;
@@ -342,82 +243,6 @@ const GetStartedModal = ({
                         <option value="gaming">Gaming</option>
                         <option value="other">Other</option>
                       </select>
-                    </div>
-
-                    {/* Social Media Connection */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Connect Your Social Media
-                        <span className="text-red-400 ml-1">*</span>
-                      </label>
-
-                      {authError && (
-                        <div className="mb-4 p-3 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-                          <p className="text-xs sm:text-sm text-red-400">{authError}</p>
-                        </div>
-                      )}
-
-                      <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 sm:p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-500/10 rounded-full flex items-center justify-center border border-purple-500/20">
-                              <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
-                            </div>
-                            <div>
-                              <p className="text-base sm:text-lg font-medium text-white">Farcaster</p>
-                              <p className="text-xs text-slate-400">Connect your profile</p>
-                            </div>
-                          </div>
-
-                          {userDetails.connectedPlatforms?.includes("farcaster") ? (
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div className="flex items-center">
-                                {userDetails.farcasterPfp && (
-                                  <Image
-                                    src={userDetails.farcasterPfp}
-                                    alt="Profile"
-                                    width={24}
-                                    height={24}
-                                    className="w-6 h-6 rounded-full mr-2"
-                                  />
-                                )}
-                                <span className="text-xs sm:text-sm font-medium text-slate-300">
-                                  {getUserDisplayName()}
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => handleDisconnect("farcaster")}
-                                className="px-2 sm:px-3 py-1 bg-slate-700/50 text-slate-400 text-xs sm:text-sm rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:text-white transition-all duration-200"
-                              >
-                                Disconnect
-                              </button>
-                            </div>
-                          ) : isFarcasterLoading ? (
-                            <div className="flex items-center">
-                              <Loader2 className="animate-spin w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 mr-2" />
-                              <span className="text-xs sm:text-sm text-slate-400">Connecting...</span>
-                            </div>
-                          ) : (
-                            <SignInButton
-                              // @ts-expect-error: FID should be typed but API accepts any string
-                              onSuccess={handleSuccess}
-                              onError={(error) => {
-                                console.error("Farcaster auth error:", error);
-                                setAuthError("Failed to authenticate with Farcaster");
-                              }}
-                              domain="localhost:3000"
-                              siweUri="http://localhost:3000"
-                              nonce={csrfToken || undefined}
-                              timeout={300000}
-                            >
-                              <button className="px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 flex items-center gap-2">
-                                <Share2 className="w-4 h-4" />
-                                Connect Farcaster
-                              </button>
-                            </SignInButton>
-                          )}
-                        </div>
-                      </div>
                     </div>
                   </>
                 ) : (

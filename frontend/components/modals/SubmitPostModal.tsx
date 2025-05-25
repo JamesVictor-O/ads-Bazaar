@@ -1,3 +1,4 @@
+import React, { ReactNode } from "react";
 import {
   Loader2,
   CheckCircle,
@@ -8,7 +9,6 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
-import { ReactNode } from "react";
 
 interface TransactionStatus {
   stage: "idle" | "preparing" | "confirming" | "mining" | "success" | "error";
@@ -33,7 +33,7 @@ interface SubmitPostModalProps {
   isSubmitting?: boolean;
 }
 
-export function SubmitPostModal({
+export default function SubmitPostModal({
   selectedCampaign,
   selectedTask,
   postLink,
@@ -63,13 +63,13 @@ export function SubmitPostModal({
   const getButtonText = (): string => {
     switch (transactionStatus.stage) {
       case "preparing":
-        return "Preparing Transaction...";
+        return "Preparing...";
       case "confirming":
-        return "Confirm in Wallet...";
+        return "Confirm in Wallet";
       case "mining":
-        return "Processing Transaction...";
+        return "Processing...";
       case "success":
-        return "Successfully Submitted!";
+        return "Submitted!";
       case "error":
         return "Try Again";
       default:
@@ -88,66 +88,73 @@ export function SubmitPostModal({
     }
   };
 
+  const isDisabled = 
+    transactionStatus.stage !== "idle" &&
+    transactionStatus.stage !== "error" &&
+    transactionStatus.stage !== "success";
+
   return (
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300">
-      <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-emerald-500/10 w-full max-w-lg mx-auto animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-slate-800 sm:bg-slate-800/90 sm:backdrop-blur-xl border-0 sm:border sm:border-slate-700/50 rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-emerald-500/10 w-full sm:w-full sm:max-w-lg mx-auto transform transition-all duration-300 ease-out max-h-[90vh] sm:max-h-none overflow-hidden">
+        
+        {/* Mobile drag indicator */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-8 h-1 bg-slate-600 rounded-full"></div>
+        </div>
+
         {/* Header */}
-        <div className="relative px-8 pt-8 pb-6">
+        <div className="relative px-4 sm:px-8 pt-4 sm:pt-8 pb-4 sm:pb-6">
           <button
             onClick={onClose}
-            className="absolute right-6 top-6 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-full p-2"
-            disabled={
-              transactionStatus.stage !== "idle" &&
-              transactionStatus.stage !== "error" &&
-              transactionStatus.stage !== "success"
-            }
+            className="absolute right-4 sm:right-6 top-4 sm:top-6 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-full p-2"
+            disabled={isDisabled}
           >
             <X size={20} />
           </button>
 
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-              <Send className="h-5 w-5 text-emerald-400" />
+          <div className="flex items-start sm:items-center gap-3 mb-2 pr-12 sm:pr-0">
+            <div className="p-2 sm:p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 flex-shrink-0 mt-1 sm:mt-0">
+              <Send className="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400" />
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-white">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl font-semibold text-white leading-tight">
                 Submit Your Post
               </h2>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-slate-400 mt-1 leading-relaxed">
                 Share your content link to complete the task
               </p>
             </div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="px-8 pb-8 space-y-6">
+        {/* Scrollable Content */}
+        <div className="px-4 sm:px-8 pb-4 sm:pb-8 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(90vh-160px)] sm:max-h-none">
           {/* Campaign Info */}
-          <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5 shadow-sm">
-            <div className="space-y-4">
+          <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-emerald-400" />
-                  <label className="text-sm font-medium text-slate-300 uppercase tracking-wide">
+                  <Sparkles className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-emerald-400" />
+                  <label className="text-xs sm:text-sm font-medium text-slate-300 uppercase tracking-wide">
                     Campaign
                   </label>
                 </div>
-                <p className="text-white font-medium text-lg">
+                <p className="text-white font-medium text-base sm:text-lg leading-tight">
                   {selectedCampaign.title}
                 </p>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-400 mt-1">
                   by {selectedCampaign.brand}
                 </p>
               </div>
 
-              <div className="border-t border-slate-700/50 pt-4">
+              <div className="border-t border-slate-700/50 pt-3 sm:pt-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                  <label className="text-sm font-medium text-slate-300 uppercase tracking-wide">
+                  <label className="text-xs sm:text-sm font-medium text-slate-300 uppercase tracking-wide">
                     Task
                   </label>
                 </div>
-                <p className="text-white font-medium">{selectedTask.name}</p>
+                <p className="text-white font-medium leading-tight">{selectedTask.name}</p>
               </div>
             </div>
           </div>
@@ -158,20 +165,19 @@ export function SubmitPostModal({
               Post Link <span className="text-red-400">*</span>
             </label>
             <div className="relative">
-              <Link className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <Link className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-slate-400 pointer-events-none" />
               <input
                 type="url"
                 value={postLink}
                 onChange={(e) => setPostLink(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-300 placeholder-slate-500 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full pl-11 sm:pl-12 pr-4 py-3.5 sm:py-4 bg-slate-900/50 border border-slate-700/50 rounded-xl text-sm text-slate-300 placeholder-slate-500 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="https://warpcast.com/~/cast/..."
-                disabled={
-                  transactionStatus.stage !== "idle" &&
-                  transactionStatus.stage !== "error"
-                }
+                disabled={isDisabled}
+                autoComplete="url"
+                inputMode="url"
               />
             </div>
-            <p className="text-xs text-slate-400 mt-2">
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
               Paste the direct link to your social media post
             </p>
           </div>
@@ -180,9 +186,11 @@ export function SubmitPostModal({
           {transactionStatus.stage !== "idle" && (
             <div className={`rounded-xl border p-4 ${getStatusStyles()}`}>
               <div className="flex items-start gap-3">
-                {getStatusIcon()}
+                <div className="flex-shrink-0 mt-0.5">
+                  {getStatusIcon()}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white">
+                  <p className="font-medium text-white text-sm sm:text-base leading-tight">
                     {transactionStatus.message}
                   </p>
                   {transactionStatus.hash && (
@@ -192,25 +200,23 @@ export function SubmitPostModal({
                       rel="noopener noreferrer"
                       className="inline-flex items-center text-xs mt-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
                     >
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      View transaction details
+                      <ExternalLink className="h-3 w-3 mr-1 flex-shrink-0" />
+                      <span>View transaction details</span>
                     </a>
                   )}
                 </div>
               </div>
             </div>
           )}
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
+        {/* Fixed Action Buttons */}
+        <div className="border-t border-slate-700/50 bg-slate-800/90 backdrop-blur-sm p-4 sm:p-6 sm:pt-4 sm:border-t-0 sm:bg-transparent sm:backdrop-blur-none">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-xl border border-slate-600/50 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={
-                transactionStatus.stage !== "idle" &&
-                transactionStatus.stage !== "error" &&
-                transactionStatus.stage !== "success"
-              }
+              className="order-2 sm:order-1 flex-1 px-4 sm:px-6 py-3.5 sm:py-3 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 active:bg-slate-600 rounded-xl border border-slate-600/50 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isDisabled}
             >
               {transactionStatus.stage === "success" ? "Close" : "Cancel"}
             </button>
@@ -223,14 +229,14 @@ export function SubmitPostModal({
                 (transactionStatus.stage !== "idle" &&
                   transactionStatus.stage !== "error")
               }
-              className={`flex-1 px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
+              className={`order-1 sm:order-2 flex-1 px-4 sm:px-6 py-3.5 sm:py-3 text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
                 !postLink.trim() ||
                 isSubmitting ||
                 (transactionStatus.stage !== "idle" &&
                   transactionStatus.stage !== "error" &&
                   transactionStatus.stage !== "success")
                   ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
-                  : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-md shadow-emerald-500/25"
+                  : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 shadow-md shadow-emerald-500/25"
               }`}
             >
               {isSubmitting ||
@@ -238,18 +244,18 @@ export function SubmitPostModal({
                 transactionStatus.stage !== "error" &&
                 transactionStatus.stage !== "success") ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>{getButtonText()}</span>
+                  <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+                  <span className="truncate">{getButtonText()}</span>
                 </>
               ) : transactionStatus.stage === "success" ? (
                 <>
-                  <CheckCircle className="h-4 w-4" />
-                  <span>{getButtonText()}</span>
+                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{getButtonText()}</span>
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4" />
-                  <span>{getButtonText()}</span>
+                  <Send className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{getButtonText()}</span>
                 </>
               )}
             </button>

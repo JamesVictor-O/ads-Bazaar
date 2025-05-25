@@ -218,7 +218,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             >
               <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
               <span className="text-emerald-400 text-sm font-medium">
-                Web3 Creator Economy
+                Web3 Influencer  Economy
               </span>
             </motion.div>
             
@@ -253,7 +253,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               variants={itemVariants}
             >
               <span className="md:hidden">
-                Verified creators, secure crypto payments, transparent campaigns with real results.
+                Verified creators / Influencers, secure crypto payments, transparent campaigns with real results.
               </span>
               <span className="hidden md:block">
                 The trusted marketplace where verified creators help brands increase visibility and sales, with transparent campaigns, secure payments, and performance tracking.
