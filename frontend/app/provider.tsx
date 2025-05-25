@@ -14,7 +14,7 @@ import farcasterFrame from "@farcaster/frame-wagmi-connector";
 
 const farcasterConfig = {
   relay: "https://relay.farcaster.xyz",
-  rpcUrl: "https://mainnet.optimism.io",
+  rpcUrl: "https://alfajores-forno.celo-testnet.org",
   domain: process.env.NEXT_PUBLIC_APP_DOMAIN || "ads-bazaar.vercel.app",
   siweUri: process.env.NEXT_PUBLIC_APP_URL || "https://ads-bazaar.vercel.app",
 };
@@ -24,12 +24,18 @@ function FarcasterFrameProvider({ children }: PropsWithChildren) {
     const init = async () => {
       const context = await sdk.context;
 
-      // Autoconnect if running in a frame.
+      // Autoconnect if running in a frame
       if (context?.client.clientFid) {
-        connect(wagmiConfig, { connector: farcasterFrame() });
+        try {
+          await connect(wagmiConfig, { 
+            connector: farcasterFrame()
+          });
+        } catch (error) {
+          console.error("Failed to connect Farcaster frame:", error);
+        }
       }
 
-      // Hide splash screen after UI renders.
+      // Hide splash screen after UI renders
       setTimeout(() => {
         sdk.actions.ready();
       }, 500);
