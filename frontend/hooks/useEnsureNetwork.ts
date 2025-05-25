@@ -18,6 +18,7 @@ export const useEnsureNetwork = () => {
         return true;
       } catch (err) {
         toast.error("Failed to switch to Celo Alfajores network");
+        console.error(err);
         return false;
       }
     }

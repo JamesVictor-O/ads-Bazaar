@@ -1,10 +1,16 @@
+// withNetworkGuard.tsx
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { toast } from "react-toastify";
+import { ComponentType } from "react";
 
-export const withNetworkGuard = (
-  WrappedComponent: React.ComponentType<any>
+type WithNetworkGuardProps = {
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
+};
+
+export const withNetworkGuard = <P extends object>(
+  WrappedComponent: ComponentType<P & WithNetworkGuardProps>
 ) => {
-  return (props: any) => {
+  const ComponentWithNetworkGuard = (props: P) => {
     const { ensureNetwork, isConnected, isCorrectChain } = useEnsureNetwork();
 
     const guardedAction = async (action: () => Promise<void>) => {
@@ -23,4 +29,11 @@ export const withNetworkGuard = (
 
     return <WrappedComponent {...props} guardedAction={guardedAction} />;
   };
+
+  // Add display name for debugging
+  ComponentWithNetworkGuard.displayName = `withNetworkGuard(${
+    WrappedComponent.displayName || WrappedComponent.name || "Component"
+  })`;
+
+  return ComponentWithNetworkGuard;
 };
