@@ -15,11 +15,13 @@ AdsBazaar is a revolutionary blockchain-based marketplace that eliminates the mi
 ## Live Demo & Links
 
 ### Website
+
 - **Mini App in Farcaster**: [https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar](https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar)
 - **Live Platform**: [https://ads-bazaar.vercel.app](https://ads-bazaar.vercel.app/)
 - **Pitch Deck**: [https://adsbazaar-lwrzii4.gamma.site/](https://adsbazaar-lwrzii4.gamma.site/)
 
 ### Video Demo
+
 - **Quick Overview**: [https://www.loom.com/share/2ef728b6756d4c9b80e48f5ed0d0bf0a](https://www.loom.com/share/2ef728b6756d4c9b80e48f5ed0d0bf0a)
 
 ### Smart Contract
@@ -206,6 +208,7 @@ _"As an influencer, I want to verify my identity privately so that I can access 
 6. Receives verified status (one-time process)
 7. Can now claim payments
 
+![self](https://ads-bazaar.vercel.app/adsBazaar-self)
 ![Influencer page](https://ads-bazaar.vercel.app/adsBazaar-InfluencerPage.png)
 ![Influencer page Verification](https://ads-bazaar.vercel.app/ads-Bazaar-SelfVerification.png)
 
