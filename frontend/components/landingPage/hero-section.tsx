@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -44,26 +44,29 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
     }
   };
 
-  const handleDashboardClick = async () => {
-    if (isLoadingProfile) return;
-    
-    try {
-      const url = getDashboardUrl();
-      if (url !== "#" && url !== "/") {
-        router.push(url);
-      }
-    } catch (error) {
-      console.error('Error navigating to dashboard:', error);
-    }
-  };
 
-  const getDashboardUrl = () => {
-    if (!userProfile || isLoadingProfile) return "#";
-    if (!userProfile.isRegistered) return "/";
-    if (userProfile.isBusiness) return "/brandsDashBoard";
-    if (userProfile.isInfluencer) return "/influencersDashboard";
-    return "/";
-  };
+
+  const getDashboardUrl = useCallback(() => {
+  if (!userProfile || isLoadingProfile) return "#";
+  if (!userProfile.isRegistered) return "/";
+  if (userProfile.isBusiness) return "/brandsDashBoard";
+  if (userProfile.isInfluencer) return "/influencersDashboard";
+  return "/";
+}, [userProfile, isLoadingProfile]);
+
+
+  const handleDashboardClick = useCallback(async () => {
+  if (isLoadingProfile) return;
+  try {
+    const url = getDashboardUrl();
+    if (url !== "#" && url !== "/") {
+      router.push(url);
+    }
+  } catch (error) {
+    console.error('Error navigating to dashboard:', error);
+  }
+}, [getDashboardUrl, isLoadingProfile]);
+
 
   // Animation cycle for floating elements
   useEffect(() => {
