@@ -39,17 +39,23 @@ const GetStartedModal = ({
   // Handle registration errors
   useEffect(() => {
     if (isError && error) {
-      toast.error(`Transaction failed: ${error.message}`, { position: "bottom-center" });
+      toast.error(`Transaction failed: ${error.message}`, {
+        position: "bottom-center",
+      });
     }
   }, [isError, error]);
 
   // Handle successful registration
   useEffect(() => {
     if (isSuccess) {
-      toast.success("Registration completed successfully!", { position: "bottom-center" });
+      toast.success("Registration completed successfully!", {
+        position: "bottom-center",
+      });
       onClose();
       router.push(
-        userDetails.userType === "influencer" ? "/influencersDashboard" : "/brandsDashBoard"
+        userDetails.userType === "influencer"
+          ? "/influencersDashboard"
+          : "/brandsDashBoard"
       );
     }
   }, [isSuccess, userDetails.userType, router, onClose]);
@@ -74,7 +80,10 @@ const GetStartedModal = ({
         userType: userDetails.userType,
         ...(userDetails.userType === "influencer"
           ? { niche: userDetails.niche || "" }
-          : { businessType: userDetails.businessType || "", budget: userDetails.budget || "" }),
+          : {
+              businessType: userDetails.businessType || "",
+              budget: userDetails.budget || "",
+            }),
       });
 
       await register(
@@ -112,7 +121,9 @@ const GetStartedModal = ({
         {/* Header */}
         <div className="flex justify-between items-center p-4 sm:p-6 border-b border-slate-700/50">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white">Get Started</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">
+              Get Started
+            </h2>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
               {!showNextStep
                 ? "Choose your path to start"
@@ -138,22 +149,26 @@ const GetStartedModal = ({
             <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start">
               <Loader2 className="text-amber-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
               <div>
-                <p className="text-sm font-medium text-amber-400">Wallet Not Connected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  Wallet Not Connected
+                </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  Please connect a wallet (e.g., MetaMask) with Celo Alfajores testnet.
+                  Please connect a wallet (e.g., MetaMask) with Celo
                 </p>
               </div>
             </div>
           )}
 
           {/* Wrong Chain */}
-          {isConnected && chain?.id !== 44787 && (
+          {isConnected && chain?.id !== 42220 && (
             <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start">
               <Loader2 className="animate-spin text-amber-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
               <div>
-                <p className="text-sm font-medium text-amber-400">Wrong Network</p>
+                <p className="text-sm font-medium text-amber-400">
+                  Wrong Network
+                </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  Please switch to Celo Alfajores testnet by clicking Complete Registration
+                  Please switch to Celo by clicking Complete Registration
                 </p>
               </div>
             </div>
@@ -228,12 +243,18 @@ const GetStartedModal = ({
                 {userDetails.userType === "influencer" ? (
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Niche/Category <span className="text-red-400 ml-1">*</span>
+                      Niche/Category{" "}
+                      <span className="text-red-400 ml-1">*</span>
                     </label>
                     <select
                       className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 sm:p-4 text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
                       value={userDetails.niche || ""}
-                      onChange={(e) => setUserDetails({ ...userDetails, niche: e.target.value })}
+                      onChange={(e) =>
+                        setUserDetails({
+                          ...userDetails,
+                          niche: e.target.value,
+                        })
+                      }
                     >
                       <option value="">Select a category</option>
                       <option value="fashion">Fashion & Style</option>
@@ -250,12 +271,18 @@ const GetStartedModal = ({
                   <>
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Business Type <span className="text-red-400 ml-1">*</span>
+                        Business Type{" "}
+                        <span className="text-red-400 ml-1">*</span>
                       </label>
                       <select
                         className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 sm:p-4 text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
                         value={userDetails.businessType || ""}
-                        onChange={(e) => setUserDetails({ ...userDetails, businessType: e.target.value })}
+                        onChange={(e) =>
+                          setUserDetails({
+                            ...userDetails,
+                            businessType: e.target.value,
+                          })
+                        }
                       >
                         <option value="">Select business type</option>
                         <option value="ecommerce">E-commerce Store</option>
@@ -268,12 +295,18 @@ const GetStartedModal = ({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Monthly Ad Budget <span className="text-red-400 ml-1">*</span>
+                        Monthly Ad Budget{" "}
+                        <span className="text-red-400 ml-1">*</span>
                       </label>
                       <select
                         className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 sm:p-4 text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
                         value={userDetails.budget || ""}
-                        onChange={(e) => setUserDetails({ ...userDetails, budget: e.target.value })}
+                        onChange={(e) =>
+                          setUserDetails({
+                            ...userDetails,
+                            budget: e.target.value,
+                          })
+                        }
                       >
                         <option value="">Select budget range</option>
                         <option value="under500">Less than $500</option>
@@ -294,7 +327,9 @@ const GetStartedModal = ({
             <div className="mt-6 p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start">
               <Loader2 className="animate-spin text-emerald-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
               <div>
-                <p className="text-sm font-medium text-emerald-400">Setting up your account</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  Setting up your account
+                </p>
                 <p className="text-xs text-slate-400 mt-1">
                   Please wait while we complete your registration...
                 </p>
