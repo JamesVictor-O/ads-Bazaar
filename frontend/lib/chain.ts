@@ -1,4 +1,3 @@
-// @/config/chains.ts
 import { celoAlfajores } from "wagmi/chains";
 import { Chain } from "viem";
 
