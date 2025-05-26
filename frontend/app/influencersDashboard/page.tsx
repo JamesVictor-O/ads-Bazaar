@@ -23,7 +23,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@farcaster/auth-kit";
 import { useAccount } from "wagmi";
-import { format} from "date-fns";
+import { format } from "date-fns";
 import {
   useUserProfile,
   useIsInfluencerVerified,
@@ -33,6 +33,7 @@ import { Toaster, toast } from "react-hot-toast";
 import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
 import Image from "next/image";
+import { stat } from "fs";
 
 // Define precise interfaces
 interface Application {
@@ -69,7 +70,13 @@ interface SubmitProofResult {
   hash?: string;
 }
 
-type TxStage = "idle" | "error" | "success" | "preparing" | "confirming" | "mining";
+type TxStage =
+  | "idle"
+  | "error"
+  | "success"
+  | "preparing"
+  | "confirming"
+  | "mining";
 
 export default function InfluencerDashboard() {
   const { status } = useSession();
@@ -83,7 +90,9 @@ export default function InfluencerDashboard() {
   const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [postLink, setPostLink] = useState("");
-  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>(
+    []
+  );
   const [expandedBriefId, setExpandedBriefId] = useState<string | null>(null);
 
   const [txStatus, setTxStatus] = useState<{
@@ -98,8 +107,9 @@ export default function InfluencerDashboard() {
 
   const { userProfile, isLoadingProfile } = useUserProfile();
   const { isVerified } = useIsInfluencerVerified();
-  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } = useInfluencerDashboard();
-
+  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
+    useInfluencerDashboard();
+    
   const {
     submitProof,
     isPending: isSubmittingProof,
@@ -111,15 +121,13 @@ export default function InfluencerDashboard() {
   useEffect(() => {
     setIsMounted(true);
   }, [isConnected, address]);
-
+  
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/");
-    }
-  }, [status, router]);
-
-  useEffect(() => {
-    if (isSubmittingProof && txStatus.stage !== "mining" && txStatus.stage !== "confirming") {
+    if (
+      isSubmittingProof &&
+      txStatus.stage !== "mining" &&
+      txStatus.stage !== "confirming"
+    ) {
       setTxStatus({
         stage: "mining",
         message: "Submitting post...",
@@ -161,7 +169,10 @@ export default function InfluencerDashboard() {
   useEffect(() => {
     if (assignedBriefs && assignedBriefs.length > 0) {
       const txHistory = assignedBriefs
-        .filter((brief) => brief.application.isApproved && brief.application.hasClaimed)
+        .filter(
+          (brief) =>
+            brief.application.isApproved && brief.application.hasClaimed
+        )
         .map((brief) => ({
           id: brief.briefId,
           type: "payment",
@@ -176,44 +187,48 @@ export default function InfluencerDashboard() {
   }, [assignedBriefs]);
 
   const handleSubmitPost = async (briefId: string): Promise<void> => {
-  if (!postLink) {
-    toast.error("Please enter a post link");
-    return;
-  }
-
-  setTxStatus({
-    stage: "preparing",
-    message: "Preparing submission...",
-    hash: undefined,
-  });
-
-  try {
-    const result: SubmitProofResult = await submitProof(briefId, postLink); 
-    if (result?.hash) {
-      setTxStatus({
-        stage: "confirming",
-        message: "Confirm in wallet",
-        hash: result.hash,
-      });
+    if (!postLink) {
+      toast.error("Please enter a post link");
+      return;
     }
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Submission failed";
+
     setTxStatus({
-      stage: "error",
-      message: errorMessage,
+      stage: "preparing",
+      message: "Preparing submission...",
       hash: undefined,
     });
-    toast.error(errorMessage);
-  }
-}
+
+    try {
+      const result: SubmitProofResult = await submitProof(briefId, postLink);
+      if (result?.hash) {
+        setTxStatus({
+          stage: "confirming",
+          message: "Confirm in wallet",
+          hash: result.hash,
+        });
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Submission failed";
+      setTxStatus({
+        stage: "error",
+        message: errorMessage,
+        hash: undefined,
+      });
+      toast.error(errorMessage);
+    }
+  };
 
   const handleClaimFunds = (briefId: string): void => {
-    toast(`Claim funds coming soon! for ${briefId}` );
+    toast(`Claim funds coming soon! for ${briefId}`);
   };
 
   const handleCloseModal = () => {
-    if (txStatus.stage !== "idle" && txStatus.stage !== "error" && txStatus.stage !== "success") {
+    if (
+      txStatus.stage !== "idle" &&
+      txStatus.stage !== "error" &&
+      txStatus.stage !== "success"
+    ) {
       return;
     }
     setShowSubmitModal(false);
@@ -230,7 +245,10 @@ export default function InfluencerDashboard() {
     return <AlertCircle size={14} className="text-slate-500" />;
   };
 
-  const getStatusBadge = (application: Application, briefStatus: number): JSX.Element => {
+  const getStatusBadge = (
+    application: Application,
+    briefStatus: number
+  ): JSX.Element => {
     if (application.isApproved) {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500/20 text-green-400 border border-green-500/30">
@@ -282,10 +300,17 @@ export default function InfluencerDashboard() {
   };
 
   const canSubmitProof = (brief: Brief): boolean => {
-    return brief.application.isSelected && brief.brief.status === 1 && !brief.application.proofLink;
+    return (
+      brief.application.isSelected &&
+      brief.brief.status === 1 &&
+      !brief.application.proofLink
+    );
   };
 
-  const totalEarned = transactionHistory.reduce((sum, tx) => sum + tx.amount, 0);
+  const totalEarned = transactionHistory.reduce(
+    (sum, tx) => sum + tx.amount,
+    0
+  );
   const potentialEarnings = assignedBriefs
     ? assignedBriefs
         .filter((b) => b.application.isSelected || b.application.isApproved)
@@ -331,7 +356,8 @@ export default function InfluencerDashboard() {
             Influencer Account Required
           </h2>
           <p className="text-slate-400 text-xs sm:text-sm mb-4 leading-relaxed">
-            Register as an influencer to access the dashboard and apply for campaigns.
+            Register as an influencer to access the dashboard and apply for
+            campaigns.
           </p>
           <Link href="/">
             <motion.button
@@ -356,7 +382,9 @@ export default function InfluencerDashboard() {
           transition={{ duration: 0.2 }}
         >
           <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
-          <h2 className="text-lg font-bold text-white mb-1">Error Loading Dashboard</h2>
+          <h2 className="text-lg font-bold text-white mb-1">
+            Error Loading Dashboard
+          </h2>
           <p className="text-slate-400 text-xs mb-3">{error}</p>
           <motion.button
             onClick={refetch}
@@ -438,25 +466,95 @@ export default function InfluencerDashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           {[
-            { icon: Briefcase, value: appliedBriefs?.length || 0, label: "Applied", color: "blue-400" },
-            { icon: CheckCircle, value: assignedBriefs?.length || 0, label: "Selected", color: "emerald-400" },
-            { icon: DollarSign, value: totalEarned.toFixed(2), label: "Earned", color: "purple-400" },
-            { icon: TrendingUp, value: potentialEarnings.toFixed(2), label: "Pending", color: "amber-400" },
+            {
+              icon: Briefcase,
+              value: appliedBriefs?.length || 0,
+              label: "Applied",
+              color: "blue-400",
+            },
+            {
+              icon: CheckCircle,
+              value: assignedBriefs?.length || 0,
+              label: "Selected",
+              color: "emerald-400",
+            },
+            {
+              icon: DollarSign,
+              value: totalEarned.toFixed(2),
+              label: "Earned",
+              color: "purple-400",
+            },
+            {
+              icon: TrendingUp,
+              value: potentialEarnings.toFixed(2),
+              label: "Pending",
+              color: "amber-400",
+              hasClaimable: potentialEarnings > 0 && isVerified,
+            },
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
-              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-lg p-2.5 transition-all duration-200 shadow-sm"
+              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-lg p-2.5 transition-all duration-200 shadow-sm relative"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: 0.05 * index }}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <div className={`p-1 bg-${stat.color}/10 rounded-md border border-${stat.color}/20`}>
+                <div
+                  className={`p-1 bg-${stat.color}/10 rounded-md border border-${stat.color}/20`}
+                >
                   <stat.icon className={`w-3.5 h-3.5 text-${stat.color}`} />
                 </div>
+                {stat.hasClaimable && (
+                  <motion.button
+                    onClick={() => {
+                      // Find all claimable briefs
+                      const claimableBriefs = assignedBriefs?.filter(
+                        (b) =>
+                          b.application.isApproved && !b.application.hasClaimed
+                      );
+                      if (claimableBriefs && claimableBriefs.length > 0) {
+                        // You might want to implement batch claiming or show a modal
+                        toast.success(
+                          `You have ${claimableBriefs.length} campaigns ready to claim!`
+                        );
+                      }
+                    }}
+                    className="absolute top-1 right-1 p-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Claim rewards"
+                  >
+                    <DollarSign className="w-3 h-3 text-amber-400" />
+                  </motion.button>
+                )}
               </div>
               <p className="text-base font-bold text-white">{stat.value}</p>
               <p className="text-[10px] text-slate-400">{stat.label}</p>
+
+              {/* Add a full-width claim button if there are claimable earnings */}
+              {stat.hasClaimable && (
+                <motion.button
+                  onClick={() => {
+                    const claimableBriefs = assignedBriefs?.filter(
+                      (b) =>
+                        b.application.isApproved && !b.application.hasClaimed
+                    );
+                    if (claimableBriefs && claimableBriefs.length > 0) {
+                      // Implement your claim logic here
+                      claimableBriefs.forEach((brief) => {
+                        handleClaimFunds(brief.briefId);
+                      });
+                    }
+                  }}
+                  className="w-full mt-2 py-1 text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-md flex items-center justify-center gap-1"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <DollarSign className="w-3 h-3" />
+                  Claim All
+                </motion.button>
+              )}
             </motion.div>
           ))}
         </div>
@@ -471,9 +569,12 @@ export default function InfluencerDashboard() {
           <div className="p-3 sm:p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
             <div className="flex items-center justify-between">
               <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5">
-                <Briefcase className="w-5 h-5 md:text-xl text-emerald-400" /> Campaigns
+                <Briefcase className="w-5 h-5 md:text-xl text-emerald-400" />{" "}
+                Campaigns
               </h2>
-              <span className="text-xs text-slate-400">{appliedBriefs?.length || 0}</span>
+              <span className="text-xs text-slate-400">
+                {appliedBriefs?.length || 0}
+              </span>
             </div>
           </div>
 
@@ -485,13 +586,18 @@ export default function InfluencerDashboard() {
           ) : !appliedBriefs || appliedBriefs.length === 0 ? (
             <div className="p-6 text-center">
               <Briefcase className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <h3 className="text-base font-semibold text-white mb-1">No Campaigns</h3>
-              <p className="text-slate-400 text-xs mb-3">Apply to campaigns to get started.</p>
+              <h3 className="text-base font-semibold text-white mb-1">
+                No Campaigns
+              </h3>
+              <p className="text-slate-400 text-xs mb-3">
+                Apply to campaigns to get started.
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
               {appliedBriefs.map((brief, index) => {
-                const applicationDeadline = Number(brief.brief.applicationDeadline) * 1000;
+                const applicationDeadline =
+                  Number(brief.brief.applicationDeadline) * 1000;
                 const budget = Number(brief.brief.budget) / 1e18;
                 // @ts-expect-error:expect undefine
                 const paymentStatus = getPaymentStatus(brief.application);
@@ -521,7 +627,12 @@ export default function InfluencerDashboard() {
                               {brief.brief.name}
                             </h3>
                             {brief.application && (
-                              <span>{getStatusBadge(brief.application, brief.brief.status)}</span>
+                              <span>
+                                {getStatusBadge(
+                                  brief.application,
+                                  brief.brief.status
+                                )}
+                              </span>
                             )}
                           </div>
                           <p className="text-slate-400 text-xs md:text-lg mb-1.5 line-clamp-1">
@@ -530,7 +641,9 @@ export default function InfluencerDashboard() {
                           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
-                              <span>{format(new Date(applicationDeadline), "MMM d")}</span>
+                              <span>
+                                {format(new Date(applicationDeadline), "MMM d")}
+                              </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-3 h-3" />
@@ -547,74 +660,86 @@ export default function InfluencerDashboard() {
                           animate={{ height: "auto", opacity: 1 }}
                           transition={{ duration: 0.2 }}
                         >
-                          {brief.application && brief.application.isSelected && (
-                            <div className="flex flex-col gap-2 mb-2">
-                              <div className="flex items-center gap-1.5">
-                                {getTaskStatusIcon(brief.application)}
-                                <span className="text-xs text-slate-300">Content Submission</span>
-                                {brief.brief.status !== 1 && (
-                                  <span className="text-[10px] text-amber-400 bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-800/50">
-                                    Waiting...
+                          {brief.application &&
+                            brief.application.isSelected && (
+                              <div className="flex flex-col gap-2 mb-2">
+                                <div className="flex items-center gap-1.5">
+                                  {getTaskStatusIcon(brief.application)}
+                                  <span className="text-xs text-slate-300">
+                                    Content Submission
                                   </span>
-                                )}
+                                  {brief.brief.status !== 1 && (
+                                    <span className="text-[10px] text-amber-400 bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-800/50">
+                                      Waiting...
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  {brief.application.proofLink ? (
+                                    <a
+                                      href={brief.application.proofLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                    >
+                                      <LinkIcon className="w-3 h-3" />
+                                      View
+                                    </a>
+                                  ) : // @ts-expect-error:expect undefine
+                                  canSubmitProof(brief) ? (
+                                    <motion.button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // @ts-expect-error:expect undefine
+                                        setSelectedCampaign(brief);
+                                        setSelectedTask({
+                                          name: brief.brief.description,
+                                        });
+                                        setShowSubmitModal(true);
+                                      }}
+                                      className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                      disabled={isSubmittingProof}
+                                      whileTap={{ scale: 0.95 }}
+                                    >
+                                      {isSubmittingProof ? (
+                                        "Submitting..."
+                                      ) : (
+                                        <>
+                                          <LinkIcon className="w-3 h-3" />
+                                          Submit
+                                        </>
+                                      )}
+                                    </motion.button>
+                                  ) : brief.application.isSelected &&
+                                    brief.brief.status !== 1 ? (
+                                    <span className="text-xs text-slate-500">
+                                      Submit when assigned
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
-                              <div className="flex gap-2">
-                                {brief.application.proofLink ? (
-                                  <a
-                                    href={brief.application.proofLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                  >
-                                    <LinkIcon className="w-3 h-3" />
-                                    View
-                                  </a>
-                                   // @ts-expect-error:expect undefine
-                                ) : canSubmitProof(brief) ? (
-                                  <motion.button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                       // @ts-expect-error:expect undefine
-                                      setSelectedCampaign(brief);
-                                      setSelectedTask({ name: brief.brief.description });
-                                      setShowSubmitModal(true);
-                                    }}
-                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                    disabled={isSubmittingProof}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    {isSubmittingProof ? (
-                                      "Submitting..."
-                                    ) : (
-                                      <>
-                                        <LinkIcon className="w-3 h-3" />
-                                        Submit
-                                      </>
-                                    )}
-                                  </motion.button>
-                                ) : brief.application.isSelected && brief.brief.status !== 1 ? (
-                                  <span className="text-xs text-slate-500">Submit when assigned</span>
-                                ) : null}
-                              </div>
-                            </div>
-                          )}
+                            )}
                           <div className="flex items-center justify-between">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${paymentStatus.classes}`}>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${paymentStatus.classes}`}
+                            >
                               {paymentStatus.label}
                             </span>
-                            {brief.application && brief.application.isApproved && !brief.application.hasClaimed && (
-                              <motion.button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleClaimFunds(brief.briefId);
-                                }}
-                                className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <CheckCircle className="w-3 h-3" />
-                                Claim
-                              </motion.button>
-                            )}
+                            {brief.application &&
+                              brief.application.isApproved &&
+                              !brief.application.hasClaimed && (
+                                <motion.button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleClaimFunds(brief.briefId);
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  <CheckCircle className="w-3 h-3" />
+                                  Claim
+                                </motion.button>
+                              )}
                           </div>
                         </motion.div>
                       )}
@@ -639,15 +764,21 @@ export default function InfluencerDashboard() {
                 <DollarSign className="w-3.5 h-3.5 text-amber-400" />
                 Transactions
               </h2>
-              <span className="text-xs text-slate-400">{transactionHistory.length}</span>
+              <span className="text-xs text-slate-400">
+                {transactionHistory.length}
+              </span>
             </div>
           </div>
 
           {transactionHistory.length === 0 ? (
             <div className="p-6 text-center">
               <DollarSign className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <h3 className="text-base font-semibold text-white mb-1">No Transactions</h3>
-              <p className="text-slate-400 text-xs">Earnings will appear here.</p>
+              <h3 className="text-base font-semibold text-white mb-1">
+                No Transactions
+              </h3>
+              <p className="text-slate-400 text-xs">
+                Earnings will appear here.
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
@@ -667,7 +798,9 @@ export default function InfluencerDashboard() {
                       <p className="text-xs font-semibold text-white truncate">
                         +{tx.amount.toFixed(2)} cUSD
                       </p>
-                      <p className="text-[10px] text-slate-400 truncate">From {tx.from}</p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        From {tx.from}
+                      </p>
                     </div>
                     <a
                       href={`https://explorer.celo.org/tx/${tx.id}`}
