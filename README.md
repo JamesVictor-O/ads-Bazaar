@@ -17,14 +17,14 @@ AdsBazaar is a revolutionary blockchain-based marketplace that eliminates the mi
 ### Website
 - **Mini App in Farcaster**: [https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar](https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar)
 - **Live Platform**: [https://ads-bazaar.vercel.app](https://ads-bazaar.vercel.app/)
-- **Pitch Deck**: [[https://adsbazaar.com](https://adsbazaar-lwrzii4.gamma.site/)]([https://adsbazaar.com](https://adsbazaar-lwrzii4.gamma.site/))
+- **Pitch Deck**: [https://adsbazaar-lwrzii4.gamma.site/](https://adsbazaar-lwrzii4.gamma.site/)
 
 ### Video Demo
 - **Quick Overview**: [https://www.loom.com/share/2ef728b6756d4c9b80e48f5ed0d0bf0a](https://www.loom.com/share/2ef728b6756d4c9b80e48f5ed0d0bf0a)
 
 ### Smart Contract
 
-- **Celo Mainnet**: `[view on celo mainnet](https://celo.blockscout.com/address/0x106702795D0bd411B178e96Ad1f64cCB5971fCD7)`
+- **Celo Mainnet**: `[view on celo mainnet](https://celo.blockscout.com/address/0x106702795D0bd411B178e96Ad1f64cCB5971fCD7)
 - - **Celo Alfajores Testnet**: [view on Celo Alfajores blockscout explorer](https://celo-alfajores.blockscout.com/address/0xCC1281626e5616530B609f141eda1BE257940E13)
 
 ## Table of Contents
