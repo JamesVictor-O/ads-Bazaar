@@ -2,7 +2,8 @@
 
 import React from "react";
 import { X } from "lucide-react";
-import { motion} from "framer-motion";
+import { motion } from "framer-motion";
+import { withNetworkGuard } from "../WithNetworkGuard";
 
 // Mock date-fns format function for demonstration
 interface FormatFunction {
@@ -33,18 +34,30 @@ interface CreateCampaignModalProps {
   setFormData: (data: FormData) => void;
   isCreatingBrief: boolean;
   isFormValid: boolean;
-  onCreateCampaign: () => void;
+  onCreateCampaign: () => Promise<void>;
   onClose: () => void;
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
-export default function CreateCampaignModal({
+function CreateCampaignModal({
   formData,
   setFormData,
   isCreatingBrief,
   isFormValid,
   onCreateCampaign,
   onClose,
+  guardedAction,
 }: CreateCampaignModalProps) {
+  const handleCreateCampaign = async () => {
+    if (!guardedAction) {
+      await onCreateCampaign();
+      return;
+    }
+
+    await guardedAction(async () => {
+      await onCreateCampaign();
+    });
+  };
   return (
     <motion.div
       className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
@@ -275,7 +288,7 @@ export default function CreateCampaignModal({
               Cancel
             </button>
             <button
-              onClick={onCreateCampaign}
+              onClick={handleCreateCampaign}
               disabled={!isFormValid || isCreatingBrief}
               className="order-1 sm:order-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 transition-all duration-200 shadow-sm shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
@@ -313,3 +326,5 @@ export default function CreateCampaignModal({
     </motion.div>
   );
 }
+
+export default withNetworkGuard(CreateCampaignModal);
