@@ -1,9 +1,9 @@
-import { celoAlfajores } from "wagmi/chains";
+import { celo } from "wagmi/chains";
 import { Chain } from "viem";
 
-export const alfajores: Chain = {
-  ...celoAlfajores,
+export const celo_mainnet: Chain = {
+  ...celo,
 };
 
-export const SUPPORTED_CHAINS = [alfajores];
-export const DEFAULT_CHAIN = alfajores;
+export const SUPPORTED_CHAINS = [celo_mainnet];
+export const DEFAULT_CHAIN = celo_mainnet;

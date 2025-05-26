@@ -2,8 +2,7 @@
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { toast } from "react-toastify";
 import { ComponentType } from "react";
-import { sdk } from "@farcaster/frame-sdk"; 
-
+import { sdk } from "@farcaster/frame-sdk";
 
 type WithNetworkGuardProps = {
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
@@ -24,11 +23,11 @@ export const withNetworkGuard = <P extends object>(
       // Special handling for Farcaster frame
       const context = await sdk.context;
       const isFarcasterFrame = context?.client.clientFid;
-      
+
       if (!isCorrectChain) {
         if (isFarcasterFrame) {
           // Farcaster frames might not support chain switching
-          toast.error("Please switch to Celo Alfajores in your wallet");
+          toast.error("Please switch to Celo in your wallet");
           return;
         } else {
           const switched = await ensureNetwork();
