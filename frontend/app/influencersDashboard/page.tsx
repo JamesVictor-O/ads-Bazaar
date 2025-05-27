@@ -20,7 +20,6 @@ import {
   User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useProfile } from "@farcaster/auth-kit";
 import { useAccount } from "wagmi";
 import { format } from "date-fns";
@@ -33,7 +32,7 @@ import { Toaster, toast } from "react-hot-toast";
 import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
 import Image from "next/image";
-import { stat } from "fs";
+
 
 // Define precise interfaces
 interface Application {
@@ -80,7 +79,6 @@ type TxStage =
 
 export default function InfluencerDashboard() {
   const { status } = useSession();
-  const router = useRouter();
   const { isConnected, address } = useAccount();
   const {
     profile: { username, displayName, pfpUrl },
