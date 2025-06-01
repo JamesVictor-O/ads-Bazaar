@@ -16,6 +16,12 @@ contract AdsBazaar is SelfVerificationRoot {
     mapping(address => bool) public verifiedInfluencers;
     mapping(uint256 => bool) internal _nullifiers;
     
+    // Platform statistics
+    uint256 public totalInfluencers;
+    uint256 public totalBusinesses;
+    uint256 public totalUsers;
+    uint256 public totalEscrowAmount;
+    
     // Error definition
     error RegisteredNullifier();
 
@@ -123,6 +129,8 @@ contract AdsBazaar is SelfVerificationRoot {
         string[] proofLinks;
         bool[] isApproved;
     }
+
+    
    
     bytes32[] private allBriefIds;
     
@@ -177,16 +185,11 @@ contract AdsBazaar is SelfVerificationRoot {
         _;
     }
 
-    // Add modifier for verified influencers
-    modifier onlyVerifiedInfluencer() {
-        require(users[msg.sender].isInfluencer, "Not registered as influencer");
-        require(verifiedInfluencers[msg.sender], "Influencer identity not verified");
-        _;
-    }
     
     function registerUser(bool _isBusiness, bool _isInfluencer, string calldata _profileData) external {
         require(_isBusiness || _isInfluencer, "Must register as business or influencer");
         require(!(_isBusiness && _isInfluencer), "Cannot be both business and influencer");
+        require(!users[msg.sender].isRegistered, "User already registered");
         
         users[msg.sender] = UserProfile({
             isRegistered: true,
@@ -194,6 +197,15 @@ contract AdsBazaar is SelfVerificationRoot {
             isInfluencer: _isInfluencer,
             profileData: _profileData
         });
+        
+        // Update platform statistics
+        totalUsers++;
+        if (_isBusiness) {
+            totalBusinesses++;
+        }
+        if (_isInfluencer) {
+            totalInfluencers++;
+        }
         
         emit UserRegistered(msg.sender, _isBusiness, _isInfluencer);
     }
@@ -228,6 +240,9 @@ contract AdsBazaar is SelfVerificationRoot {
         
         // Transfer tokens from business to contract
         require(cUSD.transferFrom(msg.sender, address(this), _budget), "Token transfer failed");
+        
+        // Update total escrow amount
+        totalEscrowAmount += _budget;
         
         bytes32 briefId = keccak256(
             abi.encodePacked(
@@ -291,6 +306,9 @@ contract AdsBazaar is SelfVerificationRoot {
         
         brief.status = Status.CANCELLED;
         
+        // Update total escrow amount
+        totalEscrowAmount -= brief.budget;
+        
         // Refund the budget to business
         require(cUSD.transfer(brief.business, brief.budget), "Refund failed");
         
@@ -333,6 +351,9 @@ contract AdsBazaar is SelfVerificationRoot {
         
         // Mark as completed
         brief.status = Status.COMPLETED;
+        
+        // Update total escrow amount
+        totalEscrowAmount -= brief.budget;
         
         // Distribute budget equally among selected influencers
         uint256 equalShare = brief.budget / brief.selectedInfluencersCount;
@@ -413,10 +434,8 @@ contract AdsBazaar is SelfVerificationRoot {
         require(found, "Not selected for this brief");
     }
 
-    // Modified to require verification through Self protocol
+    // Modified to make verification optional - influencers can claim without verification
     function claimPayments() external onlyInfluencer {
-        require(verifiedInfluencers[msg.sender], "Identity verification required");
-        
         uint256 totalAmount = totalPendingAmount[msg.sender];
         require(totalAmount > 0, "No pending payments to claim");
         
@@ -455,7 +474,7 @@ contract AdsBazaar is SelfVerificationRoot {
         return false;
     }
 
-    // Implement Self protocol verification function
+    // Implement Self protocol verification function (optional for influencers)
     function verifySelfProof(
         ISelfVerificationRoot.DiscloseCircuitProof memory proof
     ) public override {
@@ -490,6 +509,23 @@ contract AdsBazaar is SelfVerificationRoot {
     // Get verification configuration
     function getVerificationConfig() external view returns (ISelfVerificationRoot.VerificationConfig memory) {
         return _getVerificationConfig();
+    }
+
+    // Get individual platform statistics
+    function getTotalInfluencers() external view returns (uint256) {
+        return totalInfluencers;
+    }
+
+    function getTotalBusinesses() external view returns (uint256) {
+        return totalBusinesses;
+    }
+
+    function getTotalUsers() external view returns (uint256) {
+        return totalUsers;
+    }
+
+    function getTotalEscrowAmount() external view returns (uint256) {
+        return totalEscrowAmount;
     }
 
     function getPendingPayments(address _influencer) external view returns (
@@ -597,7 +633,7 @@ contract AdsBazaar is SelfVerificationRoot {
         platformFeePercentage = _newFeePercentage;
     }
     
-    // Check if an influencer is verified
+    // Check if an influencer is verified (optional feature)
     function isInfluencerVerified(address _influencer) external view returns (bool) {
         return verifiedInfluencers[_influencer];
     }
@@ -609,6 +645,9 @@ contract AdsBazaar is SelfVerificationRoot {
         
         // Mark brief as completed
         brief.status = Status.COMPLETED;
+        
+        // Update total escrow amount
+        totalEscrowAmount -= brief.budget;
         
         // Calculate equal share for all selected influencers
         uint256 equalShare = brief.budget / brief.selectedInfluencersCount;
