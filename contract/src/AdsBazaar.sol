@@ -175,6 +175,8 @@ contract AdsBazaar is SelfVerificationRoot {
     event PlatformFeeTransferred(address indexed recipient, uint256 amount);
     event InfluencerProfileUpdated(address indexed influencer, string profileData);
     event UserStatusUpdated(address indexed user, UserStatus newStatus);
+    event ProofNotSubmitted(bytes32 indexed briefId, address indexed influencer);
+    event BudgetRefunded(bytes32 indexed briefId, address indexed business, uint256 amount);
     
     // Self protocol related events
     event VerificationConfigUpdated(address indexed updater);
@@ -357,47 +359,87 @@ contract AdsBazaar is SelfVerificationRoot {
         AdBrief storage brief = briefs[_briefId];
         require(brief.business == msg.sender, "Not the brief owner");
         require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
-        require(block.timestamp >= brief.promotionEndTime, "Promotion period not yet ended");
+        require(block.timestamp >= brief.promotionEndTime + 1 hours, "Promotion period not yet ended or Grace period for proof submission still active");
         
         // Mark as completed
         brief.status = CampaignStatus.COMPLETED;
         
+        // Count influencers who actually submitted proof
+        uint256 influencersWithProof = 0;
+        // uint256 totalUnusedBudget = 0;
+        
+        // First pass: Count valid submissions
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            if (applications[_briefId][i].isSelected) {
+                // Only count if proof was submitted
+                if (bytes(applications[_briefId][i].proofLink).length > 0) {
+                    influencersWithProof++;
+                }
+            }
+        }
+        
+        // Calculate payments only for performing influencers
+        uint256 equalShare = 0;
+        uint256 refundAmount = 0;
+        
+        if (influencersWithProof > 0) {
+            equalShare = brief.budget / influencersWithProof;  // Divide only among performers
+            refundAmount = brief.budget % influencersWithProof; // Handle remainder
+        } else {
+            // No one submitted proof - refund entire budget
+            refundAmount = brief.budget;
+        }
+        
         // Update total escrow amount
         totalEscrowAmount -= brief.budget;
         
-        // Distribute budget equally among selected influencers
-        uint256 equalShare = brief.budget / brief.selectedInfluencersCount;
-        
+        // Second pass: Process payments for valid submissions only
         for (uint256 i = 0; i < applications[_briefId].length; i++) {
-            if (applications[_briefId][i].isSelected) {
-                applications[_briefId][i].isApproved = true;
-                
-                // Calculate platform fee
-                uint256 platformFee = (equalShare * platformFeePercentage) / 1000;
-                uint256 influencerAmount = equalShare - platformFee;
-                
-                // Transfer platform fee directly to owner immediately
-                require(cUSD.transfer(owner, platformFee), "Platform fee transfer failed");
-                emit PlatformFeeTransferred(owner, platformFee);
-                
-                // Add to pending payments instead of direct transfer
-                address influencer = applications[_briefId][i].influencer;
-                PendingPayment memory payment = PendingPayment({
-                    briefId: _briefId,
-                    amount: influencerAmount,
-                    isApproved: true
-                });
-                
-                influencerPendingPayments[influencer].push(payment);
-                totalPendingAmount[influencer] += influencerAmount;
-                
-                // Update influencer's completed campaigns and status
-                users[influencer].completedCampaigns++;
-                _updateInfluencerStatus(influencer);
-                
-                emit ProofApproved(_briefId, influencer);
-                emit PaymentReleased(_briefId, influencer, influencerAmount);
+            InfluencerApplication storage application = applications[_briefId][i];
+            
+            if (application.isSelected) {
+                // Only approve and pay if proof was submitted
+                if (bytes(application.proofLink).length > 0) {
+                    application.isApproved = true;
+                    
+                    // Calculate platform fee
+                    uint256 platformFee = (equalShare * platformFeePercentage) / 1000;
+                    uint256 influencerAmount = equalShare - platformFee;
+                    
+                    // Transfer platform fee directly to owner immediately
+                    require(cUSD.transfer(owner, platformFee), "Platform fee transfer failed");
+                    emit PlatformFeeTransferred(owner, platformFee);
+                    
+                    // Add to pending payments
+                    address influencer = application.influencer;
+                    PendingPayment memory payment = PendingPayment({
+                        briefId: _briefId,
+                        amount: influencerAmount,
+                        isApproved: true
+                    });
+                    
+                    influencerPendingPayments[influencer].push(payment);
+                    totalPendingAmount[influencer] += influencerAmount;
+                    
+                    // Update influencer's completed campaigns and status
+                    users[influencer].completedCampaigns++;
+                    _updateInfluencerStatus(influencer);
+                    
+                    emit ProofApproved(_briefId, influencer);
+                    emit PaymentReleased(_briefId, influencer, influencerAmount);
+                }
+                // Non-performers don't get approved or paid
+                else {
+                    // Could emit an event for transparency
+                    emit ProofNotSubmitted(_briefId, application.influencer);
+                }
             }
+        }
+        
+        // Refund unused budget to business (for non-performers + remainder)
+        if (refundAmount > 0) {
+            require(cUSD.transfer(brief.business, refundAmount), "Refund transfer failed");
+            emit BudgetRefunded(_briefId, brief.business, refundAmount);
         }
     }
 
@@ -447,7 +489,7 @@ contract AdsBazaar is SelfVerificationRoot {
         require(found, "Not selected for this brief");
     }
 
-    // Modified to make verification optional - influencers can claim without verification
+    // make verification optional - influencers can claim without verification
     function claimPayments() external onlyInfluencer {
         uint256 totalAmount = totalPendingAmount[msg.sender];
         require(totalAmount > 0, "No pending payments to claim");
