@@ -7,6 +7,7 @@ import {SelfVerificationRoot} from "@selfxyz/contracts/contracts/abstract/SelfVe
 import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISelfVerificationRoot.sol";
 import {SelfCircuitLibrary} from "@selfxyz/contracts/contracts/libraries/SelfCircuitLibrary.sol";
 
+
 contract AdsBazaar is SelfVerificationRoot {
     address public owner;
     IERC20 public cUSD;
@@ -39,7 +40,15 @@ contract AdsBazaar is SelfVerificationRoot {
         owner = msg.sender;
     }
 
-    enum Status {
+    enum UserStatus {
+        NEW_COMER,
+        RISING,
+        POPULAR,
+        ELITE,
+        SUPERSTAR
+    }
+
+    enum CampaignStatus {
         OPEN,           
         ASSIGNED,       
         COMPLETED,      
@@ -69,9 +78,9 @@ contract AdsBazaar is SelfVerificationRoot {
         address business;
         string name; 
         string description;
+        string requirements;
         uint256 budget;
-        Status status;
-        uint256 applicationDeadline; 
+        CampaignStatus status;
         uint256 promotionDuration;   
         uint256 promotionStartTime;  
         uint256 promotionEndTime;  
@@ -79,6 +88,7 @@ contract AdsBazaar is SelfVerificationRoot {
         uint256 selectedInfluencersCount;
         TargetAudience targetAudience;
         uint256 verificationDeadline;
+        uint256 creationTime;
     }
 
     struct InfluencerApplication {
@@ -95,8 +105,12 @@ contract AdsBazaar is SelfVerificationRoot {
         bool isRegistered;
         bool isBusiness;
         bool isInfluencer;
+        UserStatus status;
         string profileData; 
+        uint256 completedCampaigns; // For influencers
+        uint256 totalEscrowed; // For businesses
     }
+
 
     struct PendingPayment {
         bytes32 briefId;
@@ -109,8 +123,7 @@ contract AdsBazaar is SelfVerificationRoot {
         string name; 
         string description;
         uint256 budget;
-        Status status;
-        uint256 applicationDeadline;
+        CampaignStatus status;
         uint256 promotionDuration;
         uint256 promotionStartTime;
         uint256 promotionEndTime;
@@ -161,6 +174,7 @@ contract AdsBazaar is SelfVerificationRoot {
     event InfluencerVerified(address indexed influencer);
     event PlatformFeeTransferred(address indexed recipient, uint256 amount);
     event InfluencerProfileUpdated(address indexed influencer, string profileData);
+    event UserStatusUpdated(address indexed user, UserStatus newStatus);
     
     // Self protocol related events
     event VerificationConfigUpdated(address indexed updater);
@@ -195,7 +209,10 @@ contract AdsBazaar is SelfVerificationRoot {
             isRegistered: true,
             isBusiness: _isBusiness,
             isInfluencer: _isInfluencer,
-            profileData: _profileData
+            profileData: _profileData,
+            status: UserStatus.NEW_COMER,
+            completedCampaigns: 0,
+            totalEscrowed: 0
         });
         
         // Update platform statistics
@@ -224,15 +241,14 @@ contract AdsBazaar is SelfVerificationRoot {
     function createAdBrief(
         string calldata _name,
         string calldata _description,
+        string calldata _requirements,
         uint256 _budget,
-        uint256 _applicationDeadline,
         uint256 _promotionDuration,
         uint256 _maxInfluencers,
         uint8 _targetAudience,
         uint256 _verificationPeriod  // Period in seconds after promotion ends for verification
     ) external onlyBusiness {
         require(_budget > 0, "Budget must be greater than 0");
-        require(_applicationDeadline > block.timestamp, "Application deadline must be in the future");
         require(_promotionDuration > 0, "Promotion duration must be greater than 0");
         require(_maxInfluencers > 0, "Max influencers must be greater than 0");
         require(_targetAudience < uint8(type(TargetAudience).max), "Invalid target audience");
@@ -240,6 +256,10 @@ contract AdsBazaar is SelfVerificationRoot {
         
         // Transfer tokens from business to contract
         require(cUSD.transferFrom(msg.sender, address(this), _budget), "Token transfer failed");
+
+        // Update business's total escrowed amount and status
+        users[msg.sender].totalEscrowed += _budget;
+        _updateBusinessStatus(msg.sender);
         
         // Update total escrow amount
         totalEscrowAmount += _budget;
@@ -247,9 +267,10 @@ contract AdsBazaar is SelfVerificationRoot {
         bytes32 briefId = keccak256(
             abi.encodePacked(
                 msg.sender,
+                _name,
                 _description,
+                _requirements,
                 _budget,
-                _applicationDeadline,
                 _promotionDuration,
                 block.timestamp
             )
@@ -261,16 +282,17 @@ contract AdsBazaar is SelfVerificationRoot {
             business: msg.sender,
             name: _name,
             description: _description,
+            requirements: _requirements,
             budget: _budget,
-            status: Status.OPEN,
-            applicationDeadline: _applicationDeadline,
+            status: CampaignStatus.OPEN,
             promotionDuration: _promotionDuration,
             promotionStartTime: 0, 
             promotionEndTime: 0,   
             maxInfluencers: _maxInfluencers,
             selectedInfluencersCount: 0,
             targetAudience: TargetAudience(_targetAudience),
-            verificationDeadline: 0  // Will be set when promotion starts
+            verificationDeadline: 0,
+            creationTime: block.timestamp
         });
         
         // Add to business briefs
@@ -283,28 +305,16 @@ contract AdsBazaar is SelfVerificationRoot {
     function cancelAdBrief(bytes32 _briefId) external onlyBusiness briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
         require(brief.business == msg.sender, "Not the brief owner");
-        require(brief.status == Status.OPEN, "Brief can only be cancelled if open");
+        require(brief.status == CampaignStatus.OPEN, "Brief can only be cancelled if open");
         
-        // 1. Can cancel if deadline passed with no applications
-        // 2. Can cancel if deadline passed and fewer influencers applied than maxInfluencers
-        bool canCancel = false;
+        // Can cancel if no influencers have been selected yet
+        require(brief.selectedInfluencersCount == 0, "Cannot cancel: influencers already selected");
         
-        // If application deadline has passed and no influencers applied
-        if (block.timestamp > brief.applicationDeadline && applications[_briefId].length == 0) {
-            canCancel = true;
-        }
-        // If application deadline has passed and fewer influencers applied than max expected
-        else if (block.timestamp > brief.applicationDeadline && applications[_briefId].length < brief.maxInfluencers) {
-            canCancel = true;
-        }
-        // If no influencers have been selected yet
-        else if (brief.selectedInfluencersCount == 0) {
-            canCancel = true;
-        }
+        brief.status = CampaignStatus.CANCELLED;
         
-        require(canCancel, "Cannot cancel: influencers already selected or conditions not met");
-        
-        brief.status = Status.CANCELLED;
+        // Update business's total escrowed amount and status
+        users[msg.sender].totalEscrowed -= brief.budget;
+        _updateBusinessStatus(msg.sender);
         
         // Update total escrow amount
         totalEscrowAmount -= brief.budget;
@@ -318,7 +328,7 @@ contract AdsBazaar is SelfVerificationRoot {
     function selectInfluencer(bytes32 _briefId, uint256 _applicationIndex) external onlyBusiness briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
         require(brief.business == msg.sender, "Not the brief owner");
-        require(brief.status == Status.OPEN, "Brief not in open status");
+        require(brief.status == CampaignStatus.OPEN, "Brief not in open status");
         require(brief.selectedInfluencersCount < brief.maxInfluencers, "Max influencers already selected");
         require(_applicationIndex < applications[_briefId].length, "Invalid application index");
         
@@ -330,7 +340,7 @@ contract AdsBazaar is SelfVerificationRoot {
         
         // If all slots filled, change status to ASSIGNED and set promotion period
         if (brief.selectedInfluencersCount == brief.maxInfluencers) {
-            brief.status = Status.ASSIGNED;
+            brief.status = CampaignStatus.ASSIGNED;
             brief.promotionStartTime = block.timestamp;
             brief.promotionEndTime = block.timestamp + brief.promotionDuration;
             // Set verification deadline (2 days after promotion ends)
@@ -346,11 +356,11 @@ contract AdsBazaar is SelfVerificationRoot {
     function completeCampaign(bytes32 _briefId) external onlyBusiness briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
         require(brief.business == msg.sender, "Not the brief owner");
-        require(brief.status == Status.ASSIGNED, "Brief not in assigned status");
+        require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
         require(block.timestamp >= brief.promotionEndTime, "Promotion period not yet ended");
         
         // Mark as completed
-        brief.status = Status.COMPLETED;
+        brief.status = CampaignStatus.COMPLETED;
         
         // Update total escrow amount
         totalEscrowAmount -= brief.budget;
@@ -381,6 +391,10 @@ contract AdsBazaar is SelfVerificationRoot {
                 influencerPendingPayments[influencer].push(payment);
                 totalPendingAmount[influencer] += influencerAmount;
                 
+                // Update influencer's completed campaigns and status
+                users[influencer].completedCampaigns++;
+                _updateInfluencerStatus(influencer);
+                
                 emit ProofApproved(_briefId, influencer);
                 emit PaymentReleased(_briefId, influencer, influencerAmount);
             }
@@ -389,8 +403,7 @@ contract AdsBazaar is SelfVerificationRoot {
 
     function applyToBrief(bytes32 _briefId, string calldata _message) external onlyInfluencer briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
-        require(brief.status == Status.OPEN, "Brief not open for applications");
-        require(block.timestamp < brief.applicationDeadline, "Application deadline passed");
+        require(brief.status == CampaignStatus.OPEN, "Brief not open for applications");
         
         // Check if influencer has already applied
         for (uint256 i = 0; i < applications[_briefId].length; i++) {
@@ -418,7 +431,7 @@ contract AdsBazaar is SelfVerificationRoot {
     
     function submitProof(bytes32 _briefId, string calldata _proofLink) external onlyInfluencer briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
-        require(brief.status == Status.ASSIGNED, "Brief not in assigned status");
+        require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
         require(block.timestamp <= brief.promotionEndTime, "Promotion period has ended");
         
         bool found = false;
@@ -562,7 +575,6 @@ contract AdsBazaar is SelfVerificationRoot {
             description: brief.description,
             budget: brief.budget,
             status: brief.status,
-            applicationDeadline: brief.applicationDeadline,
             promotionDuration: brief.promotionDuration,
             promotionStartTime: brief.promotionStartTime,
             promotionEndTime: brief.promotionEndTime,
@@ -640,11 +652,11 @@ contract AdsBazaar is SelfVerificationRoot {
 
     function triggerAutoApproval(bytes32 _briefId) external onlyOwner briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
-        require(brief.status == Status.ASSIGNED, "Brief not in assigned status");
+        require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
         require(block.timestamp > brief.verificationDeadline, "Verification deadline not yet passed");
         
         // Mark brief as completed
-        brief.status = Status.COMPLETED;
+        brief.status = CampaignStatus.COMPLETED;
         
         // Update total escrow amount
         totalEscrowAmount -= brief.budget;
@@ -686,4 +698,65 @@ contract AdsBazaar is SelfVerificationRoot {
         
         emit AutoApprovalTriggered(_briefId);
     }
+
+    function getUserStatus(address _user) external view returns (UserStatus) {
+        return users[_user].status;
+    }
+    
+    function getInfluencerStats(address _influencer) external view returns (uint256 completedCampaigns, UserStatus status) {
+        require(users[_influencer].isInfluencer, "Not an influencer");
+        return (users[_influencer].completedCampaigns, users[_influencer].status);
+    }
+    
+    function getBusinessStats(address _business) external view returns (uint256 totalEscrowed, UserStatus status) {
+        require(users[_business].isBusiness, "Not a business");
+        return (users[_business].totalEscrowed, users[_business].status);
+    }
+
+    // Helper functions to update user statuses
+    function _updateInfluencerStatus(address _influencer) internal {
+        uint256 completed = users[_influencer].completedCampaigns;
+        UserStatus newStatus;
+        
+        if (completed >= 20) {
+            newStatus = UserStatus.SUPERSTAR;
+        } else if (completed >= 10) {
+            newStatus = UserStatus.ELITE;
+        } else if (completed >= 5) {
+            newStatus = UserStatus.POPULAR;
+        } else if (completed >= 2) {
+            newStatus = UserStatus.RISING;
+        } else {
+            newStatus = UserStatus.NEW_COMER;
+        }
+        
+        if (users[_influencer].status != newStatus) {
+            users[_influencer].status = newStatus;
+            emit UserStatusUpdated(_influencer, newStatus);
+        }
+    }
+    
+    function _updateBusinessStatus(address _business) internal {
+        uint256 totalEscrowed = users[_business].totalEscrowed;
+        UserStatus newStatus;
+        
+        if (totalEscrowed >= 10000 ether) { 
+            newStatus = UserStatus.SUPERSTAR;
+        } else if (totalEscrowed >= 5000 ether) {
+            newStatus = UserStatus.ELITE;
+        } else if (totalEscrowed >= 1000 ether) {
+            newStatus = UserStatus.POPULAR;
+        } else if (totalEscrowed >= 500 ether) {
+            newStatus = UserStatus.RISING;
+        } else {
+            newStatus = UserStatus.NEW_COMER;
+        }
+        
+        if (users[_business].status != newStatus) {
+            users[_business].status = newStatus;
+            emit UserStatusUpdated(_business, newStatus);
+        }
+    }
+
+
 }
