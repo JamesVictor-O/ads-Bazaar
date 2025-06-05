@@ -16,6 +16,10 @@ contract AdsBazaar is SelfVerificationRoot {
     // Self protocol related mappings
     mapping(address => bool) public verifiedInfluencers;
     mapping(uint256 => bool) internal _nullifiers;
+
+    // Dispute resolution mappings
+    mapping(address => bool) public disputeResolvers;
+    address[] public disputeResolversList;
     
     // Platform statistics
     uint256 public totalInfluencers;
@@ -73,6 +77,13 @@ contract AdsBazaar is SelfVerificationRoot {
         OTHER
     }
 
+    enum DisputeStatus {
+        NONE,           // No dispute raised
+        FLAGGED,        // Business has flagged the submission
+        RESOLVED_VALID, // Dispute resolved - submission is valid
+        RESOLVED_INVALID // Dispute resolved - submission is invalid
+    }
+
     struct AdBrief {
         bytes32 briefId;
         address business;
@@ -98,7 +109,10 @@ contract AdsBazaar is SelfVerificationRoot {
         bool isSelected;
         bool hasClaimed;
         string proofLink;
-        bool isApproved;  
+        bool isApproved; 
+        DisputeStatus disputeStatus;
+        string disputeReason; // Reason provided by business for flagging
+        address resolvedBy;   // Address of resolver who made the decision 
     }
 
     struct UserProfile {
@@ -180,6 +194,12 @@ contract AdsBazaar is SelfVerificationRoot {
     
     // Self protocol related events
     event VerificationConfigUpdated(address indexed updater);
+
+    // Dispute resolution events
+    event DisputeResolverAdded(address indexed resolver);
+    event DisputeResolverRemoved(address indexed resolver);
+    event SubmissionFlagged(bytes32 indexed briefId, address indexed influencer, address indexed business, string reason);
+    event DisputeResolved(bytes32 indexed briefId, address indexed influencer, address indexed resolver, bool isValid);
     
     modifier onlyOwner() {
         require(msg.sender == owner, "Not authorized");
@@ -193,6 +213,11 @@ contract AdsBazaar is SelfVerificationRoot {
 
     modifier onlyInfluencer() {
         require(users[msg.sender].isInfluencer, "Not registered as influencer");
+        _;
+    }
+
+    modifier onlyDisputeResolver() {
+        require(disputeResolvers[msg.sender], "Not authorized dispute resolver");
         _;
     }
 
@@ -364,29 +389,30 @@ contract AdsBazaar is SelfVerificationRoot {
         // Mark as completed
         brief.status = CampaignStatus.COMPLETED;
         
-        // Count influencers who actually submitted proof
-        uint256 influencersWithProof = 0;
-        // uint256 totalUnusedBudget = 0;
+        // Count influencers who actually submitted valid proof (not flagged as invalid)
+        uint256 influencersWithValidProof = 0;
         
         // First pass: Count valid submissions
         for (uint256 i = 0; i < applications[_briefId].length; i++) {
-            if (applications[_briefId][i].isSelected) {
-                // Only count if proof was submitted
-                if (bytes(applications[_briefId][i].proofLink).length > 0) {
-                    influencersWithProof++;
+            InfluencerApplication storage application = applications[_briefId][i];
+            if (application.isSelected) {
+                // Only count if proof was submitted and is not resolved as invalid
+                if (bytes(application.proofLink).length > 0 && 
+                    application.disputeStatus != DisputeStatus.RESOLVED_INVALID) {
+                    influencersWithValidProof++;
                 }
             }
         }
         
-        // Calculate payments only for performing influencers
+        // Calculate payments only for valid performing influencers
         uint256 equalShare = 0;
         uint256 refundAmount = 0;
         
-        if (influencersWithProof > 0) {
-            equalShare = brief.budget / influencersWithProof;  // Divide only among performers
-            refundAmount = brief.budget % influencersWithProof; // Handle remainder
+        if (influencersWithValidProof > 0) {
+            equalShare = brief.budget / influencersWithValidProof;  // Divide only among valid performers
+            refundAmount = brief.budget % influencersWithValidProof; // Handle remainder
         } else {
-            // No one submitted proof - refund entire budget
+            // No valid submissions - refund entire budget
             refundAmount = brief.budget;
         }
         
@@ -398,8 +424,10 @@ contract AdsBazaar is SelfVerificationRoot {
             InfluencerApplication storage application = applications[_briefId][i];
             
             if (application.isSelected) {
-                // Only approve and pay if proof was submitted
-                if (bytes(application.proofLink).length > 0) {
+                // Only approve and pay if proof was submitted and is not resolved as invalid
+                if (bytes(application.proofLink).length > 0 && 
+                    application.disputeStatus != DisputeStatus.RESOLVED_INVALID) {
+                    
                     application.isApproved = true;
                     
                     // Calculate platform fee
@@ -428,15 +456,14 @@ contract AdsBazaar is SelfVerificationRoot {
                     emit ProofApproved(_briefId, influencer);
                     emit PaymentReleased(_briefId, influencer, influencerAmount);
                 }
-                // Non-performers don't get approved or paid
+                // Non-performers or invalid submissions don't get approved or paid
                 else {
-                    // Could emit an event for transparency
                     emit ProofNotSubmitted(_briefId, application.influencer);
                 }
             }
         }
         
-        // Refund unused budget to business (for non-performers + remainder)
+        // Refund unused budget to business (for non-performers/invalid submissions + remainder)
         if (refundAmount > 0) {
             require(cUSD.transfer(brief.business, refundAmount), "Refund transfer failed");
             emit BudgetRefunded(_briefId, brief.business, refundAmount);
@@ -462,7 +489,10 @@ contract AdsBazaar is SelfVerificationRoot {
             isSelected: false,
             hasClaimed: false,
             proofLink: "",
-            isApproved: false
+            isApproved: false,
+            disputeStatus: DisputeStatus.NONE,
+            disputeReason: "",
+            resolvedBy: address(0)
         });
         
         applications[_briefId].push(newApplication);
@@ -798,6 +828,99 @@ contract AdsBazaar is SelfVerificationRoot {
             users[_business].status = newStatus;
             emit UserStatusUpdated(_business, newStatus);
         }
+    }
+
+
+    //DISPUTE RESOLUTION FUNCTIONS
+
+     // Dispute resolution functions
+    function addDisputeResolver(address _resolver) external onlyOwner {
+        require(_resolver != address(0), "Invalid resolver address");
+        require(!disputeResolvers[_resolver], "Already a dispute resolver");
+        
+        disputeResolvers[_resolver] = true;
+        disputeResolversList.push(_resolver);
+        
+        emit DisputeResolverAdded(_resolver);
+    }
+
+    function removeDisputeResolver(address _resolver) external onlyOwner {
+        require(disputeResolvers[_resolver], "Not a dispute resolver");
+        
+        disputeResolvers[_resolver] = false;
+        
+        // Remove from array
+        for (uint256 i = 0; i < disputeResolversList.length; i++) {
+            if (disputeResolversList[i] == _resolver) {
+                disputeResolversList[i] = disputeResolversList[disputeResolversList.length - 1];
+                disputeResolversList.pop();
+                break;
+            }
+        }
+        
+        emit DisputeResolverRemoved(_resolver);
+    }
+
+    function getDisputeResolvers() external view returns (address[] memory) {
+        return disputeResolversList;
+    }
+
+    function flagSubmission(bytes32 _briefId, address _influencer, string calldata _reason) external onlyBusiness briefExists(_briefId) {
+        AdBrief storage brief = briefs[_briefId];
+        require(brief.business == msg.sender, "Not the brief owner");
+        require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
+        require(bytes(_reason).length > 0, "Dispute reason required");
+        
+        bool found = false;
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            InfluencerApplication storage application = applications[_briefId][i];
+            if (application.influencer == _influencer && application.isSelected) {
+                require(bytes(application.proofLink).length > 0, "No proof submitted yet");
+                require(application.disputeStatus == DisputeStatus.NONE, "Already flagged or resolved");
+                
+                application.disputeStatus = DisputeStatus.FLAGGED;
+                application.disputeReason = _reason;
+                found = true;
+                
+                emit SubmissionFlagged(_briefId, _influencer, msg.sender, _reason);
+                break;
+            }
+        }
+        
+        require(found, "Influencer not found or not selected");
+    }
+
+    function resolveDispute(bytes32 _briefId, address _influencer, bool _isValid) external onlyDisputeResolver briefExists(_briefId) {
+        bool found = false;
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            InfluencerApplication storage application = applications[_briefId][i];
+            if (application.influencer == _influencer && application.isSelected) {
+                require(application.disputeStatus == DisputeStatus.FLAGGED, "No active dispute to resolve");
+                
+                application.disputeStatus = _isValid ? DisputeStatus.RESOLVED_VALID : DisputeStatus.RESOLVED_INVALID;
+                application.resolvedBy = msg.sender;
+                found = true;
+                
+                emit DisputeResolved(_briefId, _influencer, msg.sender, _isValid);
+                break;
+            }
+        }
+        
+        require(found, "Influencer not found or not selected");
+    }
+
+    function getApplicationDispute(bytes32 _briefId, address _influencer) external view returns (
+        DisputeStatus disputeStatus,
+        string memory disputeReason,
+        address resolvedBy
+    ) {
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            InfluencerApplication storage application = applications[_briefId][i];
+            if (application.influencer == _influencer && application.isSelected) {
+                return (application.disputeStatus, application.disputeReason, application.resolvedBy);
+            }
+        }
+        revert("Influencer not found or not selected");
     }
 
 
