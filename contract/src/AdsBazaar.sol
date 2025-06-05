@@ -3,15 +3,24 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SelfVerificationRoot} from "@selfxyz/contracts/contracts/abstract/SelfVerificationRoot.sol";
 import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISelfVerificationRoot.sol";
 import {SelfCircuitLibrary} from "@selfxyz/contracts/contracts/libraries/SelfCircuitLibrary.sol";
 
 
-contract AdsBazaar is SelfVerificationRoot {
+contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
     address public owner;
     IERC20 public cUSD;
     uint256 public platformFeePercentage = 5; // 0.5%
+    
+    // Updated timing constants 
+    uint256 public constant CAMPAIGN_PREPARATION_PERIOD = 1 days;     
+    uint256 public constant PROOF_SUBMISSION_GRACE_PERIOD = 2 days;    
+    uint256 public constant VERIFICATION_PERIOD = 3 days;              
+    uint256 public constant SELECTION_DEADLINE_PERIOD = 5 days; 
+    uint256 public constant SELECTION_GRACE_PERIOD = 1 hours;
+    uint256 public constant DISPUTE_RESOLUTION_DEADLINE = 2 days;
     
     // Self protocol related mappings
     mapping(address => bool) public verifiedInfluencers;
@@ -20,6 +29,7 @@ contract AdsBazaar is SelfVerificationRoot {
     // Dispute resolution mappings
     mapping(address => bool) public disputeResolvers;
     address[] public disputeResolversList;
+    mapping(bytes32 => mapping(address => uint256)) public disputeTimestamp;
     
     // Platform statistics
     uint256 public totalInfluencers;
@@ -56,7 +66,8 @@ contract AdsBazaar is SelfVerificationRoot {
         OPEN,           
         ASSIGNED,       
         COMPLETED,      
-        CANCELLED       
+        CANCELLED,
+        EXPIRED         // NEW: For campaigns that exceed selection deadline
     }
 
     // Target audience enum
@@ -94,12 +105,14 @@ contract AdsBazaar is SelfVerificationRoot {
         CampaignStatus status;
         uint256 promotionDuration;   
         uint256 promotionStartTime;  
-        uint256 promotionEndTime;  
+        uint256 promotionEndTime;
+        uint256 proofSubmissionDeadline;  // promotionEndTime + PROOF_SUBMISSION_GRACE_PERIOD
+        uint256 verificationDeadline;     // proofSubmissionDeadline + VERIFICATION_PERIOD
         uint256 maxInfluencers;
         uint256 selectedInfluencersCount;
         TargetAudience targetAudience;
-        uint256 verificationDeadline;
         uint256 creationTime;
+        uint256 selectionDeadline;        // creationTime + SELECTION_DEADLINE_PERIOD
     }
 
     struct InfluencerApplication {
@@ -125,7 +138,6 @@ contract AdsBazaar is SelfVerificationRoot {
         uint256 totalEscrowed; // For businesses
     }
 
-
     struct PendingPayment {
         bytes32 briefId;
         uint256 amount;
@@ -141,10 +153,12 @@ contract AdsBazaar is SelfVerificationRoot {
         uint256 promotionDuration;
         uint256 promotionStartTime;
         uint256 promotionEndTime;
+        uint256 proofSubmissionDeadline;
+        uint256 verificationDeadline;
         uint256 maxInfluencers;
         uint256 selectedInfluencersCount;
         TargetAudience targetAudience;
-        uint256 verificationDeadline;
+        uint256 selectionDeadline;        // Added to return data
     }
     
     struct ApplicationData {
@@ -157,8 +171,6 @@ contract AdsBazaar is SelfVerificationRoot {
         bool[] isApproved;
     }
 
-    
-   
     bytes32[] private allBriefIds;
     
     mapping(bytes32 => AdBrief) public briefs;
@@ -174,16 +186,16 @@ contract AdsBazaar is SelfVerificationRoot {
 
     // Events
     event UserRegistered(address indexed user, bool isBusiness, bool isInfluencer);
-    event BriefCreated(bytes32 indexed briefId, address indexed business, uint256 budget, uint256 maxInfluencers, TargetAudience targetAudience);
+    event BriefCreated(bytes32 indexed briefId, address indexed business, uint256 budget, uint256 maxInfluencers, TargetAudience targetAudience, uint256 selectionDeadline);
     event BriefCancelled(bytes32 indexed briefId);
+    event BriefExpired(bytes32 indexed briefId);  // NEW: For expired campaigns
     event ApplicationSubmitted(bytes32 indexed briefId, address indexed influencer);
     event InfluencerSelected(bytes32 indexed briefId, address indexed influencer);
     event ProofSubmitted(bytes32 indexed briefId, address indexed influencer, string proofLink);
     event ProofApproved(bytes32 indexed briefId, address indexed influencer);
     event PaymentReleased(bytes32 indexed briefId, address indexed influencer, uint256 amount);
-    event PromotionStarted(bytes32 indexed briefId, uint256 startTime, uint256 endTime);
+    event PromotionStarted(bytes32 indexed briefId, uint256 startTime, uint256 endTime, uint256 proofDeadline, uint256 verificationDeadline);
     event PaymentClaimed(address indexed influencer, uint256 amount);
-    event VerificationDeadlineSet(bytes32 indexed briefId, uint256 deadline);
     event AutoApprovalTriggered(bytes32 indexed briefId);
     event InfluencerVerified(address indexed influencer);
     event PlatformFeeTransferred(address indexed recipient, uint256 amount);
@@ -191,6 +203,7 @@ contract AdsBazaar is SelfVerificationRoot {
     event UserStatusUpdated(address indexed user, UserStatus newStatus);
     event ProofNotSubmitted(bytes32 indexed briefId, address indexed influencer);
     event BudgetRefunded(bytes32 indexed briefId, address indexed business, uint256 amount);
+    event CampaignCompleted(bytes32 indexed briefId, uint256 totalRefunded);
     
     // Self protocol related events
     event VerificationConfigUpdated(address indexed updater);
@@ -226,7 +239,16 @@ contract AdsBazaar is SelfVerificationRoot {
         _;
     }
 
-    
+    modifier autoApprovalCheck(bytes32 _briefId) {
+        if (block.timestamp > briefs[_briefId].verificationDeadline && 
+            briefs[_briefId].status == CampaignStatus.ASSIGNED) {
+            _processPayments(_briefId);
+            briefs[_briefId].status = CampaignStatus.COMPLETED;
+        }
+        _;
+    }
+
+
     function registerUser(bool _isBusiness, bool _isInfluencer, string calldata _profileData) external {
         require(_isBusiness || _isInfluencer, "Must register as business or influencer");
         require(!(_isBusiness && _isInfluencer), "Cannot be both business and influencer");
@@ -272,14 +294,13 @@ contract AdsBazaar is SelfVerificationRoot {
         uint256 _budget,
         uint256 _promotionDuration,
         uint256 _maxInfluencers,
-        uint8 _targetAudience,
-        uint256 _verificationPeriod  // Period in seconds after promotion ends for verification
+        uint8 _targetAudience
     ) external onlyBusiness {
         require(_budget > 0, "Budget must be greater than 0");
-        require(_promotionDuration > 0, "Promotion duration must be greater than 0");
+        require(_promotionDuration >= 1 days, "Promotion duration must be at least 1 day");
         require(_maxInfluencers > 0, "Max influencers must be greater than 0");
+        require(_maxInfluencers <= 10, "Cannot select more than 10 influencers");
         require(_targetAudience < uint8(type(TargetAudience).max), "Invalid target audience");
-        require(_verificationPeriod > 0, "Verification period must be greater than 0");
         
         // Transfer tokens from business to contract
         require(cUSD.transferFrom(msg.sender, address(this), _budget), "Token transfer failed");
@@ -303,6 +324,9 @@ contract AdsBazaar is SelfVerificationRoot {
             )
         );
         
+        // FIXED: Calculate selection deadline
+        uint256 selectionDeadline = block.timestamp + SELECTION_DEADLINE_PERIOD;
+        
         // Create brief
         briefs[briefId] = AdBrief({
             briefId: briefId,
@@ -314,19 +338,21 @@ contract AdsBazaar is SelfVerificationRoot {
             status: CampaignStatus.OPEN,
             promotionDuration: _promotionDuration,
             promotionStartTime: 0, 
-            promotionEndTime: 0,   
+            promotionEndTime: 0,
+            proofSubmissionDeadline: 0,
+            verificationDeadline: 0,
             maxInfluencers: _maxInfluencers,
             selectedInfluencersCount: 0,
             targetAudience: TargetAudience(_targetAudience),
-            verificationDeadline: 0,
-            creationTime: block.timestamp
+            creationTime: block.timestamp,
+            selectionDeadline: selectionDeadline  // NEW: Set selection deadline
         });
         
         // Add to business briefs
         businessBriefs[msg.sender].push(briefId);
         allBriefIds.push(briefId);
         
-        emit BriefCreated(briefId, msg.sender, _budget, _maxInfluencers, TargetAudience(_targetAudience));
+        emit BriefCreated(briefId, msg.sender, _budget, _maxInfluencers, TargetAudience(_targetAudience), selectionDeadline);
     }
     
     function cancelAdBrief(bytes32 _briefId) external onlyBusiness briefExists(_briefId) {
@@ -351,11 +377,35 @@ contract AdsBazaar is SelfVerificationRoot {
         
         emit BriefCancelled(_briefId);
     }
+
+    // Function to expire campaigns that exceed selection deadline
+    function expireCampaign(bytes32 _briefId) external briefExists(_briefId) {
+        AdBrief storage brief = briefs[_briefId];
+        require(brief.status == CampaignStatus.OPEN, "Campaign is not open");
+        require(block.timestamp > brief.selectionDeadline + SELECTION_GRACE_PERIOD, "Grace period still active");
+        
+        brief.status = CampaignStatus.EXPIRED;
+        
+        // Update business's total escrowed amount and status
+        users[brief.business].totalEscrowed -= brief.budget;
+        _updateBusinessStatus(brief.business);
+        
+        // Update total escrow amount
+        totalEscrowAmount -= brief.budget;
+        
+        // Refund the budget to business
+        require(cUSD.transfer(brief.business, brief.budget), "Refund failed");
+        
+        emit BriefExpired(_briefId);
+        emit BudgetRefunded(_briefId, brief.business, brief.budget);
+    }
     
     function selectInfluencer(bytes32 _briefId, uint256 _applicationIndex) external onlyBusiness briefExists(_briefId) {
         AdBrief storage brief = briefs[_briefId];
         require(brief.business == msg.sender, "Not the brief owner");
         require(brief.status == CampaignStatus.OPEN, "Brief not in open status");
+        // Check selection deadline
+        require(block.timestamp <= brief.selectionDeadline + SELECTION_GRACE_PERIOD, "Selection period has ended");
         require(brief.selectedInfluencersCount < brief.maxInfluencers, "Max influencers already selected");
         require(_applicationIndex < applications[_briefId].length, "Invalid application index");
         
@@ -365,16 +415,22 @@ contract AdsBazaar is SelfVerificationRoot {
         application.isSelected = true;
         brief.selectedInfluencersCount++;
         
-        // If all slots filled, change status to ASSIGNED and set promotion period
+        // If all slots filled, change status to ASSIGNED and set all timing parameters
         if (brief.selectedInfluencersCount == brief.maxInfluencers) {
             brief.status = CampaignStatus.ASSIGNED;
-            brief.promotionStartTime = block.timestamp;
-            brief.promotionEndTime = block.timestamp + brief.promotionDuration;
-            // Set verification deadline (2 days after promotion ends)
-            brief.verificationDeadline = brief.promotionEndTime + 2 days;
+            // FIXED: Add preparation period before campaign starts
+            brief.promotionStartTime = block.timestamp + CAMPAIGN_PREPARATION_PERIOD;
+            brief.promotionEndTime = brief.promotionStartTime + brief.promotionDuration;
+            brief.proofSubmissionDeadline = brief.promotionEndTime + PROOF_SUBMISSION_GRACE_PERIOD;
+            brief.verificationDeadline = brief.proofSubmissionDeadline + VERIFICATION_PERIOD;
             
-            emit PromotionStarted(_briefId, brief.promotionStartTime, brief.promotionEndTime);
-            emit VerificationDeadlineSet(_briefId, brief.verificationDeadline);
+            emit PromotionStarted(
+                _briefId, 
+                brief.promotionStartTime, 
+                brief.promotionEndTime,
+                brief.proofSubmissionDeadline,
+                brief.verificationDeadline
+            );
         }
         
         emit InfluencerSelected(_briefId, application.influencer);
@@ -384,10 +440,125 @@ contract AdsBazaar is SelfVerificationRoot {
         AdBrief storage brief = briefs[_briefId];
         require(brief.business == msg.sender, "Not the brief owner");
         require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
-        require(block.timestamp >= brief.promotionEndTime + 1 hours, "Promotion period not yet ended or Grace period for proof submission still active");
+        require(block.timestamp >= brief.proofSubmissionDeadline, "Proof submission period still active");
         
         // Mark as completed
         brief.status = CampaignStatus.COMPLETED;
+        
+        // Process payments for all selected influencers
+        _processPayments(_briefId);
+    }
+
+    function applyToBrief(bytes32 _briefId, string calldata _message) external onlyInfluencer briefExists(_briefId) {
+        AdBrief storage brief = briefs[_briefId];
+        require(brief.status == CampaignStatus.OPEN, "Brief not open for applications");
+        // FIXED: Check if selection deadline has passed
+        require(block.timestamp <= brief.selectionDeadline, "Application period has ended");
+        
+        // Check if influencer has already applied
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            require(applications[_briefId][i].influencer != msg.sender, "Already applied");
+        }
+
+        briefApplicationCounts[_briefId]++;
+        
+        // Create application
+        InfluencerApplication memory newApplication = InfluencerApplication({
+            influencer: msg.sender,
+            message: _message,
+            timestamp: block.timestamp,
+            isSelected: false,
+            hasClaimed: false,
+            proofLink: "",
+            isApproved: false,
+            disputeStatus: DisputeStatus.NONE,
+            disputeReason: "",
+            resolvedBy: address(0)
+        });
+        
+        applications[_briefId].push(newApplication);
+        influencerApplications[msg.sender].push(_briefId);
+        
+        emit ApplicationSubmitted(_briefId, msg.sender);
+    }
+    
+    function submitProof(bytes32 _briefId, string calldata _proofLink) external onlyInfluencer briefExists(_briefId) {
+        AdBrief storage brief = briefs[_briefId];
+        require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
+        require(block.timestamp >= brief.promotionStartTime, "Promotion has not started yet");
+        require(block.timestamp <= brief.promotionEndTime, "Promotion has already ended");
+        require(block.timestamp <= brief.proofSubmissionDeadline, "Proof submission period has ended");
+        
+        bool found = false;
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            if (applications[_briefId][i].influencer == msg.sender && applications[_briefId][i].isSelected) {
+                applications[_briefId][i].proofLink = _proofLink;
+                found = true;
+                emit ProofSubmitted(_briefId, msg.sender, _proofLink);
+                break;
+            }
+        }
+        
+        require(found, "Not selected for this brief");
+    }
+
+    function claimPayments() external onlyInfluencer nonReentrant{
+        uint256 totalAmount = totalPendingAmount[msg.sender];
+        require(totalAmount > 0, "No pending payments to claim");
+        
+        // Reset pending amount
+        totalPendingAmount[msg.sender] = 0;
+        
+        // Mark all payments as claimed
+        PendingPayment[] storage payments = influencerPendingPayments[msg.sender];
+        for (uint256 i = 0; i < payments.length; i++) {
+            if (payments[i].isApproved && !findAndMarkAsClaimed(payments[i].briefId)) {
+                // This should never happen, but just in case
+                revert("Error marking payment as claimed");
+            }
+        }
+        
+        // Clear pending payments array
+        delete influencerPendingPayments[msg.sender];
+        
+        // Transfer total amount
+        require(cUSD.transfer(msg.sender, totalAmount), "Payment transfer failed");
+        
+        emit PaymentClaimed(msg.sender, totalAmount);
+    }
+    
+    // Helper function to find application and mark as claimed
+    function findAndMarkAsClaimed(bytes32 _briefId) internal returns (bool) {
+        InfluencerApplication[] storage briefApps = applications[_briefId];
+        
+        for (uint256 i = 0; i < briefApps.length; i++) {
+            if (briefApps[i].influencer == msg.sender && briefApps[i].isSelected) {
+                briefApps[i].hasClaimed = true;
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    // Auto-approval function - can only be called after verification deadline
+    function triggerAutoApproval(bytes32 _briefId) external briefExists(_briefId) {
+        AdBrief storage brief = briefs[_briefId];
+        require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
+        require(block.timestamp > brief.verificationDeadline, "Verification deadline not yet passed");
+        
+        // Mark brief as completed
+        brief.status = CampaignStatus.COMPLETED;
+        
+        // Process payments for all selected influencers
+        _processPayments(_briefId);
+        
+        emit AutoApprovalTriggered(_briefId);
+    }
+
+    // Internal function to process payments - handles both manual completion and auto-approval
+    function _processPayments(bytes32 _briefId) internal {
+        AdBrief storage brief = briefs[_briefId];
         
         // Count influencers who actually submitted valid proof (not flagged as invalid)
         uint256 influencersWithValidProof = 0;
@@ -468,95 +639,7 @@ contract AdsBazaar is SelfVerificationRoot {
             require(cUSD.transfer(brief.business, refundAmount), "Refund transfer failed");
             emit BudgetRefunded(_briefId, brief.business, refundAmount);
         }
-    }
-
-    function applyToBrief(bytes32 _briefId, string calldata _message) external onlyInfluencer briefExists(_briefId) {
-        AdBrief storage brief = briefs[_briefId];
-        require(brief.status == CampaignStatus.OPEN, "Brief not open for applications");
-        
-        // Check if influencer has already applied
-        for (uint256 i = 0; i < applications[_briefId].length; i++) {
-            require(applications[_briefId][i].influencer != msg.sender, "Already applied");
-        }
-
-        briefApplicationCounts[_briefId]++;
-        
-        // Create application
-        InfluencerApplication memory newApplication = InfluencerApplication({
-            influencer: msg.sender,
-            message: _message,
-            timestamp: block.timestamp,
-            isSelected: false,
-            hasClaimed: false,
-            proofLink: "",
-            isApproved: false,
-            disputeStatus: DisputeStatus.NONE,
-            disputeReason: "",
-            resolvedBy: address(0)
-        });
-        
-        applications[_briefId].push(newApplication);
-        influencerApplications[msg.sender].push(_briefId);
-        
-        emit ApplicationSubmitted(_briefId, msg.sender);
-    }
-    
-    function submitProof(bytes32 _briefId, string calldata _proofLink) external onlyInfluencer briefExists(_briefId) {
-        AdBrief storage brief = briefs[_briefId];
-        require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
-        require(block.timestamp <= brief.promotionEndTime, "Promotion period has ended");
-        
-        bool found = false;
-        for (uint256 i = 0; i < applications[_briefId].length; i++) {
-            if (applications[_briefId][i].influencer == msg.sender && applications[_briefId][i].isSelected) {
-                applications[_briefId][i].proofLink = _proofLink;
-                found = true;
-                emit ProofSubmitted(_briefId, msg.sender, _proofLink);
-                break;
-            }
-        }
-        
-        require(found, "Not selected for this brief");
-    }
-
-    // make verification optional - influencers can claim without verification
-    function claimPayments() external onlyInfluencer {
-        uint256 totalAmount = totalPendingAmount[msg.sender];
-        require(totalAmount > 0, "No pending payments to claim");
-        
-        // Reset pending amount
-        totalPendingAmount[msg.sender] = 0;
-        
-        // Mark all payments as claimed
-        PendingPayment[] storage payments = influencerPendingPayments[msg.sender];
-        for (uint256 i = 0; i < payments.length; i++) {
-            if (payments[i].isApproved && !findAndMarkAsClaimed(payments[i].briefId)) {
-                // This should never happen, but just in case
-                revert("Error marking payment as claimed");
-            }
-        }
-        
-        // Clear pending payments array
-        delete influencerPendingPayments[msg.sender];
-        
-        // Transfer total amount
-        require(cUSD.transfer(msg.sender, totalAmount), "Payment transfer failed");
-        
-        emit PaymentClaimed(msg.sender, totalAmount);
-    }
-    
-    // Helper function to find application and mark as claimed
-    function findAndMarkAsClaimed(bytes32 _briefId) internal returns (bool) {
-        InfluencerApplication[] storage briefApps = applications[_briefId];
-        
-        for (uint256 i = 0; i < briefApps.length; i++) {
-            if (briefApps[i].influencer == msg.sender && briefApps[i].isSelected) {
-                briefApps[i].hasClaimed = true;
-                return true;
-            }
-        }
-        
-        return false;
+        emit CampaignCompleted(_briefId,refundAmount);
     }
 
     // Implement Self protocol verification function (optional for influencers)
@@ -650,10 +733,12 @@ contract AdsBazaar is SelfVerificationRoot {
             promotionDuration: brief.promotionDuration,
             promotionStartTime: brief.promotionStartTime,
             promotionEndTime: brief.promotionEndTime,
+            proofSubmissionDeadline: brief.proofSubmissionDeadline,
+            verificationDeadline: brief.verificationDeadline,
             maxInfluencers: brief.maxInfluencers,
             selectedInfluencersCount: brief.selectedInfluencersCount,
             targetAudience: brief.targetAudience,
-            verificationDeadline: brief.verificationDeadline
+            selectionDeadline: brief.selectionDeadline
         });
     }
 
@@ -720,55 +805,6 @@ contract AdsBazaar is SelfVerificationRoot {
     // Check if an influencer is verified (optional feature)
     function isInfluencerVerified(address _influencer) external view returns (bool) {
         return verifiedInfluencers[_influencer];
-    }
-
-    function triggerAutoApproval(bytes32 _briefId) external onlyOwner briefExists(_briefId) {
-        AdBrief storage brief = briefs[_briefId];
-        require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
-        require(block.timestamp > brief.verificationDeadline, "Verification deadline not yet passed");
-        
-        // Mark brief as completed
-        brief.status = CampaignStatus.COMPLETED;
-        
-        // Update total escrow amount
-        totalEscrowAmount -= brief.budget;
-        
-        // Calculate equal share for all selected influencers
-        uint256 equalShare = brief.budget / brief.selectedInfluencersCount;
-        uint256 platformFee = (equalShare * platformFeePercentage) / 1000;
-        uint256 influencerAmount = equalShare - platformFee;
-        
-        // Process all selected applications
-        for (uint256 i = 0; i < applications[_briefId].length; i++) {
-            InfluencerApplication storage application = applications[_briefId][i];
-            
-            if (application.isSelected) {
-                // Only approve if proof was submitted
-                if (bytes(application.proofLink).length > 0) {
-                    application.isApproved = true;
-                    
-                    // Transfer platform fee directly to owner
-                    require(cUSD.transfer(owner, platformFee), "Platform fee transfer failed");
-                    emit PlatformFeeTransferred(owner, platformFee);
-                    
-                    // Add to pending payments
-                    address influencer = application.influencer;
-                    PendingPayment memory payment = PendingPayment({
-                        briefId: _briefId,
-                        amount: influencerAmount,
-                        isApproved: true
-                    });
-                    
-                    influencerPendingPayments[influencer].push(payment);
-                    totalPendingAmount[influencer] += influencerAmount;
-                    
-                    emit ProofApproved(_briefId, influencer);
-                    emit PaymentReleased(_briefId, influencer, influencerAmount);
-                }
-            }
-        }
-        
-        emit AutoApprovalTriggered(_briefId);
     }
 
     function getUserStatus(address _user) external view returns (UserStatus) {
@@ -888,9 +924,11 @@ contract AdsBazaar is SelfVerificationRoot {
         }
         
         require(found, "Influencer not found or not selected");
+        disputeTimestamp[_briefId][_influencer] = block.timestamp;
     }
 
     function resolveDispute(bytes32 _briefId, address _influencer, bool _isValid) external onlyDisputeResolver briefExists(_briefId) {
+        require(block.timestamp <= disputeTimestamp[_briefId][_influencer] + DISPUTE_RESOLUTION_DEADLINE,"Dispute resolution deadline passed");
         bool found = false;
         for (uint256 i = 0; i < applications[_briefId].length; i++) {
             InfluencerApplication storage application = applications[_briefId][i];
@@ -922,6 +960,5 @@ contract AdsBazaar is SelfVerificationRoot {
         }
         revert("Influencer not found or not selected");
     }
-
 
 }
