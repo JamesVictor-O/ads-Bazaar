@@ -5,28 +5,14 @@ import { X } from "lucide-react";
 import { motion } from "framer-motion";
 import { withNetworkGuard } from "../WithNetworkGuard";
 
-// Mock date-fns format function for demonstration
-interface FormatFunction {
-  (date: Date | string | number, formatString: string): string;
-}
-
-const format: FormatFunction = (date, formatString) => {
-  const d = new Date(date);
-  if (formatString === "yyyy-MM-dd") {
-    return d.toISOString().split("T")[0];
-  }
-  return d.toLocaleDateString();
-};
-
 interface FormData {
   name: string;
   description: string;
+  requirements: string;
   budget: string;
   maxInfluencers: string;
-  applicationDeadline: string;
   promotionDuration: string;
   targetAudience: string;
-  verificationPeriod: string;
 }
 
 interface CreateCampaignModalProps {
@@ -58,6 +44,7 @@ function CreateCampaignModal({
       await onCreateCampaign();
     });
   };
+
   return (
     <motion.div
       className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
@@ -129,6 +116,25 @@ function CreateCampaignModal({
               />
             </div>
 
+            {/* Campaign Requirements */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Campaign Requirements
+              </label>
+              <textarea
+                value={formData.requirements}
+                onChange={(e) =>
+                  setFormData({ ...formData, requirements: e.target.value })
+                }
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 resize-y text-sm"
+                rows={4}
+                placeholder="Specify campaign requirements (e.g., content type, posting guidelines)"
+                required
+                aria-required="true"
+                disabled={isCreatingBrief}
+              />
+            </div>
+
             {/* Grid Container */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Budget */}
@@ -138,7 +144,8 @@ function CreateCampaignModal({
                 </label>
                 <input
                   type="number"
-                  min="1"
+                  min="0.01"
+                  step="0.01"
                   value={formData.budget}
                   onChange={(e) =>
                     setFormData({ ...formData, budget: e.target.value })
@@ -159,34 +166,13 @@ function CreateCampaignModal({
                 <input
                   type="number"
                   min="1"
+                  max="10"
                   value={formData.maxInfluencers}
                   onChange={(e) =>
                     setFormData({ ...formData, maxInfluencers: e.target.value })
                   }
                   className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
-                  placeholder="Enter max influencers"
-                  required
-                  aria-required="true"
-                  disabled={isCreatingBrief}
-                />
-              </div>
-
-              {/* Application Deadline */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Application Deadline
-                </label>
-                <input
-                  type="date"
-                  min={format(new Date(), "yyyy-MM-dd")}
-                  value={formData.applicationDeadline}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      applicationDeadline: e.target.value,
-                    })
-                  }
-                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
+                  placeholder="Enter max influencers (1-10)"
                   required
                   aria-required="true"
                   disabled={isCreatingBrief}
@@ -216,6 +202,7 @@ function CreateCampaignModal({
                   <option value="432000">5 days</option>
                   <option value="518400">6 days</option>
                   <option value="604800">7 days</option>
+                  <option value="1209600">14 days</option>
                 </select>
               </div>
 
@@ -246,31 +233,6 @@ function CreateCampaignModal({
                   <option value="11">Sports</option>
                   <option value="12">Lifestyle</option>
                   <option value="13">Other</option>
-                </select>
-              </div>
-
-              {/* Verification Period */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Verification Period
-                </label>
-                <select
-                  value={formData.verificationPeriod}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      verificationPeriod: e.target.value,
-                    })
-                  }
-                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                  disabled={isCreatingBrief}
-                >
-                  <option value="3600">1 hour</option>
-                  <option value="7200">2 hours</option>
-                  <option value="14400">4 hours</option>
-                  <option value="28800">8 hours</option>
-                  <option value="86400">24 hours</option>
-                  <option value="172800">48 hours</option>
                 </select>
               </div>
             </div>

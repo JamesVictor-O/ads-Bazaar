@@ -816,6 +816,7 @@ export function useRegisterUser() {
 }
 
 // Create ad brief
+
 export function useCreateAdBrief() {
   const tx = useHandleTransaction();
   const { writeContract: approveCUSD } = useWriteContract();
@@ -824,45 +825,46 @@ export function useCreateAdBrief() {
   const createBrief = async (
     name: string,
     description: string,
+    requirements: string,
     budget: string, // In cUSD with decimals (e.g. "100.50")
-    applicationDeadline: number, // Unix timestamp
     promotionDuration: number, // In seconds
     maxInfluencers: number,
-    targetAudience: number,
-    verificationPeriod: number // In seconds
+    targetAudience: number // uint8 value
   ) => {
-    if (!address) return;
+    if (!address) {
+      throw new Error('Wallet not connected');
+    }
 
     try {
-      // Convert budget to the appropriate format (with 18 decimals for cUSD)
+      // Convert budget to wei (18 decimals for cUSD)
       const budgetInWei = parseUnits(budget, 18);
 
-      // First approve the contract to spend cUSD
-      const approvalTx = await approveCUSD({
+      // Approve cUSD transfer
+      await approveCUSD({
         address: cUSDContractConfig.address,
         abi: cUSDContractConfig.abi,
-        functionName: "approve",
+        functionName: 'approve',
         args: [CONTRACT_ADDRESS, budgetInWei],
       });
 
-      // Then create the brief
+      // Create the ad brief
       await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
-        functionName: "createAdBrief",
+        functionName: 'createAdBrief',
         args: [
           name,
           description,
+          requirements,
           budgetInWei,
-          BigInt(applicationDeadline),
           BigInt(promotionDuration),
           BigInt(maxInfluencers),
-          targetAudience,
-          BigInt(verificationPeriod),
+          targetAudience
         ],
       });
     } catch (error) {
-      console.error("Error creating ad brief:", error);
+      console.error('Error creating ad brief:', error);
+      throw error;
     }
   };
 
@@ -871,6 +873,21 @@ export function useCreateAdBrief() {
     ...tx,
   };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //Cancel ad brief
 export function useCancelAdBrief() {
