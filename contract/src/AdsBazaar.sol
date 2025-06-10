@@ -67,7 +67,7 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
         ASSIGNED,       
         COMPLETED,      
         CANCELLED,
-        EXPIRED         // NEW: For campaigns that exceed selection deadline
+        EXPIRED         // For campaigns that exceed selection deadline
     }
 
     // Target audience enum
@@ -345,7 +345,7 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
             selectedInfluencersCount: 0,
             targetAudience: TargetAudience(_targetAudience),
             creationTime: block.timestamp,
-            selectionDeadline: selectionDeadline  // NEW: Set selection deadline
+            selectionDeadline: selectionDeadline  // Set selection deadline
         });
         
         // Add to business briefs

@@ -39,8 +39,8 @@ contract DeployAdsBazaar is Script {
         // Deploy the contract
         console.log("Deploying AdsBazaar...");
         AdsBazaar adsBazaar = new AdsBazaar(
-            CELO_Cusd,
-            IDENTITY_VERIFICATION_HUB,
+            CELO_Cusd_Alfajores,
+            MOCK_IDENTITY_VERIFICATION_HUB,
             scope,
             attestationIds
         );

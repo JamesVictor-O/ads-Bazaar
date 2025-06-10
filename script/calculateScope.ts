@@ -16,7 +16,7 @@ require("dotenv").config();
 async function main() {
   // Replace with your actual wallet address and RPC URL
   const deployerAddress = "0x3b88C42331d81e0e9B3F9a02c1d270400a3DD289";
-  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+  const provider = new ethers.JsonRpcProvider(process.env.ALFAJORES_RPC_URL);
 
   // Get the current nonce for the deployer
   const nonce = await provider.getTransactionCount(deployerAddress);
