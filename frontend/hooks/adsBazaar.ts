@@ -12,7 +12,7 @@ import { formatEther } from "viem";
 import ABI from "../lib/AdsBazaar.json";
 import { toast } from "react-hot-toast";
 
-type Status = "OPEN" | "ASSIGNED" | "COMPLETED" | "CANCELLED";
+type Status = "OPEN" | "ASSIGNED" | "COMPLETED" | "CANCELLED" | "EXPIRED";
 type TargetAudience =
   | "GENERAL"
   | "FASHION"
@@ -34,16 +34,19 @@ interface FormattedBriefDataOutput {
   business: Address;
   title: string;
   description: string;
+  requirements: string;
   budget: number;
-  status: Status | number;
-  applicationDeadline: number;
+  status: Status;
   promotionDuration: number;
   promotionStartTime: number;
   promotionEndTime: number;
   maxInfluencers: number;
   selectedInfluencersCount: number;
-  targetAudience: TargetAudience | number;
+  targetAudience: TargetAudience;
   verificationDeadline: number;
+  proofSubmissionDeadline: number;
+  creationTime: number;
+  selectionDeadline: number;
 }
 export interface InfluencerApplication {
   influencer: string;
@@ -55,12 +58,11 @@ export interface InfluencerApplication {
   isApproved: boolean;
 }
 interface RawBriefData {
-  business: `0x${string}`;
+  business: Address;
   name: string;
   description: string;
   budget: bigint;
   status: bigint;
-  applicationDeadline: bigint;
   promotionDuration: bigint;
   promotionStartTime: bigint;
   promotionEndTime: bigint;
@@ -68,6 +70,9 @@ interface RawBriefData {
   selectedInfluencersCount: bigint;
   targetAudience: bigint;
   verificationDeadline: bigint;
+  proofSubmissionDeadline: bigint;
+  creationTime: bigint;
+  selectionDeadline: bigint;
 }
 
 interface FormattedBriefData {
@@ -76,16 +81,17 @@ interface FormattedBriefData {
   title: string;
   description: string;
   budget: number;
-  status: number;
-  applicationDeadline: number;
-  applicationCount: number;
+  status: Status;
   promotionDuration: number;
   promotionStartTime: number;
   promotionEndTime: number;
   maxInfluencers: number;
   selectedInfluencersCount: number;
-  targetAudience: number;
+  targetAudience: TargetAudience;
   verificationDeadline: number;
+  proofSubmissionDeadline: number;
+  creationTime: number;
+  selectionDeadline: number;
 }
 
 interface BriefData {
@@ -551,7 +557,7 @@ export function useBusinessBriefs(businessAddress?: Address) {
       try {
         const briefsData = await Promise.all(
           (briefIds as Bytes32[]).map(async (briefId) => {
-            // @ts-ignore  
+            // @ts-ignore
             const briefData = await publicClient.readContract({
               address: CONTRACT_ADDRESS,
               abi: ABI.abi,
@@ -719,11 +725,13 @@ export function usePendingPayments(influencerAddress?: Address) {
     Array.isArray((data as any).amounts) &&
     "approved" in data &&
     Array.isArray((data as any).approved)
-      ? ((data as any).briefIds as Bytes32[]).map((briefId: Bytes32, index: number) => ({
-          briefId,
-          amount: (data as any).amounts[index] as bigint,
-          approved: (data as any).approved[index] as boolean,
-        }))
+      ? ((data as any).briefIds as Bytes32[]).map(
+          (briefId: Bytes32, index: number) => ({
+            briefId,
+            amount: (data as any).amounts[index] as bigint,
+            approved: (data as any).approved[index] as boolean,
+          })
+        )
       : [];
 
   return {
@@ -900,7 +908,6 @@ export function useSelectInfluencer() {
     applicationIndex: number
   ) => {
     if (!address) return;
-  
 
     console.log("Calling selectInfluencer:", { briefId, applicationIndex });
 
@@ -1070,11 +1077,11 @@ export function useVerifySelfProof() {
       const formattedProof = {
         a: [proof.pi_a[0], proof.pi_a[1]],
         b: [
-          [proof.pi_b[0][1], proof.pi_b[0][0]], 
-          [proof.pi_b[1][1], proof.pi_b[1][0]]
+          [proof.pi_b[0][1], proof.pi_b[0][0]],
+          [proof.pi_b[1][1], proof.pi_b[1][0]],
         ],
         c: [proof.pi_c[0], proof.pi_c[1]],
-        pubSignals: publicSignals // This should be exactly 21 elements as per your ABI
+        pubSignals: publicSignals, // This should be exactly 21 elements as per your ABI
       };
 
       await tx.writeContract({

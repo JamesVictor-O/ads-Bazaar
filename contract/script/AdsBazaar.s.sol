@@ -7,9 +7,13 @@ import {AdsBazaar} from "../src/AdsBazaar.sol";
 contract DeployAdsBazaar is Script {
    
     address constant CELO_Cusd = 0x765DE816845861e75A25fCA122bb6898B8B1282a;
+
+    address constant CELO_Cusd_Alfajores = 0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1;
     
     // Self protocol integration parameters for celo mainnet
     address constant IDENTITY_VERIFICATION_HUB = 0x77117D60eaB7C044e785D68edB6C7E0e134970Ea;
+    address constant MOCK_IDENTITY_VERIFICATION_HUB = 0x3e2487a250e2A7b56c7ef5307Fb591Cc8C83623D;
+    
     
     function run() external {
         // Get the private key from the environment variable
@@ -35,8 +39,8 @@ contract DeployAdsBazaar is Script {
         // Deploy the contract
         console.log("Deploying AdsBazaar...");
         AdsBazaar adsBazaar = new AdsBazaar(
-            CELO_Cusd,
-            IDENTITY_VERIFICATION_HUB,
+            CELO_Cusd_Alfajores,
+            MOCK_IDENTITY_VERIFICATION_HUB,
             scope,
             attestationIds
         );

@@ -2,7 +2,7 @@
 
 > **Connecting verified influencers with businesses through trustless smart contracts and zero-knowledge identity verification**
 
-AdsBazaar is a revolutionary blockchain-based marketplace that eliminates the middleman in influencer marketing. Our platform connects businesses directly with verified influencers/content creators, ensuring guaranteed payments, transparent processes, and authentic partnerships - all powered by smart contracts and privacy-preserving identity verification.
+AdsBazaar is a decentralized advertising platform connecting businesses with influencers, featuring escrow payments, dispute resolution, and identity verification through Self protocol.
 
 ## What We Do
 

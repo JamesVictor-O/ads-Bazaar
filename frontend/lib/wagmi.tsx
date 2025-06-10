@@ -28,13 +28,14 @@
 // });
 
 import { createConfig, http, injected } from "wagmi";
-import { celo } from "wagmi/chains";
+import { celo, celoAlfajores } from "wagmi/chains";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 
 export const wagmiConfig = createConfig({
-  chains: [celo],
+  chains: [celo, celoAlfajores],
   connectors: [farcasterFrame(), injected()],
   transports: {
     [celo.id]: http(process.env.NEXT_PUBLIC_RPC_URL),
+    [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
   },
 });
