@@ -1,22 +1,26 @@
 
 import { Hex } from "viem";
-
 export interface Brief {
+  id: `0x${string}`;
+  business: `0x${string}`;
   title: string;
-  id: Hex;
-  name: string;
   description: string;
-  budget: string;
-  applicationDeadline: string;
-  promotionDuration: string;
-  maxInfluencers: string;
-  targetAudience: string;
-  verificationPeriod: string;
-  status: string;
-  promotionStartTime?: string;
-  promotionEndTime?: string;
-  verificationDeadline?: string;
+  requirements: string;
+  budget: number;
+  status: number; // CampaignStatus: 0=Open, 1=Assigned, 2=Completed, 3=Cancelled, 4=Expired
+  promotionDuration: number;
+  promotionStartTime: number;
+  promotionEndTime: number;
+  proofSubmissionDeadline: number;
+  verificationDeadline: number;
+  maxInfluencers: number;
+  selectedInfluencersCount: number;
+  targetAudience: number; // TargetAudience: 0=General, ..., 13=Other
+  creationTime: number;
+  selectionDeadline: number;
+  applicationCount: number;
 }
+
 
 export interface Application {
   influencer: Hex;

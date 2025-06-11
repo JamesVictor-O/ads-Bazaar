@@ -8,6 +8,7 @@ import {
 } from "wagmi";
 import { parseUnits, Hex } from "viem";
 import { cUSDContractConfig, CONTRACT_ADDRESS } from "../lib/contracts";
+import { Brief } from "../types";
 import { formatEther } from "viem";
 import ABI from "../lib/AdsBazaar.json";
 import { toast } from "react-hot-toast";
@@ -29,25 +30,7 @@ type TargetAudience =
   | "LIFESTYLE"
   | "OTHER";
 
-interface FormattedBriefDataOutput {
-  id: Bytes32;
-  business: Address;
-  title: string;
-  description: string;
-  requirements: string;
-  budget: number;
-  status: Status;
-  promotionDuration: number;
-  promotionStartTime: number;
-  promotionEndTime: number;
-  maxInfluencers: number;
-  selectedInfluencersCount: number;
-  targetAudience: TargetAudience;
-  verificationDeadline: number;
-  proofSubmissionDeadline: number;
-  creationTime: number;
-  selectionDeadline: number;
-}
+
 export interface InfluencerApplication {
   influencer: string;
   message: string;
@@ -57,42 +40,29 @@ export interface InfluencerApplication {
   proofLink: string;
   isApproved: boolean;
 }
-interface RawBriefData {
-  business: Address;
-  name: string;
-  description: string;
-  budget: bigint;
-  status: bigint;
-  promotionDuration: bigint;
-  promotionStartTime: bigint;
-  promotionEndTime: bigint;
-  maxInfluencers: bigint;
-  selectedInfluencersCount: bigint;
-  targetAudience: bigint;
-  verificationDeadline: bigint;
-  proofSubmissionDeadline: bigint;
-  creationTime: bigint;
-  selectionDeadline: bigint;
-}
+
 
 interface FormattedBriefData {
-  id: Bytes32;
-  business: string;
+  id: `0x${string}`;
+  business: `0x${string}`;
   title: string;
   description: string;
+  requirements: string;
   budget: number;
-  status: Status;
+  status: number; // CampaignStatus enum (0: OPEN, 1: ASSIGNED, 2: COMPLETED, 3: CANCELLED, 4: EXPIRED)
   promotionDuration: number;
   promotionStartTime: number;
   promotionEndTime: number;
+  proofSubmissionDeadline: number;
+  verificationDeadline: number;
   maxInfluencers: number;
   selectedInfluencersCount: number;
-  targetAudience: TargetAudience;
-  verificationDeadline: number;
-  proofSubmissionDeadline: number;
+  targetAudience: number; // TargetAudience enum (0: GENERAL, ..., 13: OTHER)
   creationTime: number;
   selectionDeadline: number;
+  applicationCount: number;
 }
+
 
 interface BriefData {
   business: Address;
@@ -182,27 +152,28 @@ export function useGetAllId() {
   };
 }
 
+// Define the interface for formatted brief data based on the new ABI
+
 export function useGetAllBriefs() {
-  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>(
-    []
-  );
+  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const publicClient = usePublicClient();
 
-  // First fetch all brief IDs
-  const {
+  // Fetch all brief IDs using getAllBriefs
+    const {
     data: briefIds,
     isLoading: isLoadingIds,
     isError: isErrorIds,
     error: idError,
   } = useGetAllId();
 
-  // Then fetch details for each brief
+  // Fetch details for each brief
   const fetchAllBriefDetails = useCallback(
     async (ids: `0x${string}`[]) => {
       if (!publicClient) {
         setError(new Error("Public client not available"));
+        setIsLoading(false);
         return;
       }
 
@@ -214,15 +185,6 @@ export function useGetAllBriefs() {
           ids.map(async (id) => {
             try {
               // Fetch brief details
-              if (!publicClient) {
-                throw new Error("Public client not available");
-              }
-              if (!publicClient) {
-                throw new Error("Public client not available");
-              }
-              if (!publicClient) {
-                throw new Error("Public client not available");
-              }
               const briefData = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
@@ -255,7 +217,7 @@ export function useGetAllBriefs() {
         );
       } catch (err) {
         console.error("Error fetching brief details:", err);
-        setError(err as Error);
+        setError(err instanceof Error ? err : new Error("Unknown error"));
       } finally {
         setIsLoading(false);
       }
@@ -263,20 +225,15 @@ export function useGetAllBriefs() {
     [publicClient]
   );
 
-  useEffect(() => {
-    if (briefIds && !isLoadingIds) {
-      fetchAllBriefDetails(briefIds as `0x${string}`[]);
-    }
-  }, [briefIds, isLoadingIds, fetchAllBriefDetails]);
-
+  // Format brief data based on the new ABI
   const formatBriefData = (
     briefId: `0x${string}`,
     rawData: any[],
     applicationCount: number
   ): FormattedBriefData | null => {
     try {
-      // Ensure rawData is an array with enough elements
-      if (!Array.isArray(rawData) || rawData.length < 13) {
+      // Ensure rawData has the expected 17 elements
+      if (!Array.isArray(rawData) || rawData.length < 17) {
         console.error("Invalid brief data format:", rawData);
         return null;
       }
@@ -286,23 +243,32 @@ export function useGetAllBriefs() {
         business: rawData[1] as `0x${string}`,
         title: rawData[2] as string,
         description: rawData[3] as string,
-        budget: Number(formatEther(rawData[4] as bigint)),
-        status: Number(rawData[5]),
-        applicationDeadline: Number(rawData[6]),
+        requirements: rawData[4] as string,
+        budget: Number(formatEther(rawData[5] as bigint)),
+        status: Number(rawData[6]),
         promotionDuration: Number(rawData[7]),
         promotionStartTime: Number(rawData[8]),
         promotionEndTime: Number(rawData[9]),
-        maxInfluencers: Number(rawData[10]),
-        selectedInfluencersCount: Number(rawData[11]),
-        targetAudience: Number(rawData[12]),
-        verificationDeadline: Number(rawData[13] || 0), // Handle optional field
-        applicationCount: applicationCount,
+        proofSubmissionDeadline: Number(rawData[10]),
+        verificationDeadline: Number(rawData[11]),
+        maxInfluencers: Number(rawData[12]),
+        selectedInfluencersCount: Number(rawData[13]),
+        targetAudience: Number(rawData[14]),
+        creationTime: Number(rawData[15]),
+        selectionDeadline: Number(rawData[16]),
+        applicationCount,
       };
     } catch (err) {
       console.error(`Error formatting brief ${briefId}:`, err);
       return null;
     }
   };
+
+  useEffect(() => {
+    if (briefIds && !isLoadingIds) {
+      fetchAllBriefDetails(briefIds as `0x${string}`[]);
+    }
+  }, [briefIds, isLoadingIds, fetchAllBriefDetails]);
 
   return {
     briefs: processedBriefs,
@@ -330,14 +296,12 @@ export function useGetBusinessBriefIds(businessAddress: `0x${string}`) {
 }
 
 export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
-  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>(
-    []
-  );
+  const [briefs, setBriefs] = useState<Brief[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const publicClient = usePublicClient();
 
-  // First fetch all brief IDs for this business
+  // Fetch brief IDs for the business
   const {
     data: briefIds,
     isLoading: isLoadingIds,
@@ -345,11 +309,79 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
     error: idError,
   } = useGetBusinessBriefIds(businessAddress);
 
-  // Then fetch details for each brief
+  // Format raw brief data from contract
+  const formatBriefData = useCallback(
+    (
+      briefId: `0x${string}`,
+      rawData: [
+        `0x${string}`, // briefId
+        `0x${string}`, // business
+        string,        // name
+        string,        // description
+        string,        // requirements
+        bigint,        // budget
+        bigint,        // status
+        bigint,        // promotionDuration
+        bigint,        // promotionStartTime
+        bigint,        // promotionEndTime
+        bigint,        // proofSubmissionDeadline
+        bigint,        // verificationDeadline
+        bigint,        // maxInfluencers
+        bigint,        // selectedInfluencersCount
+        bigint,        // targetAudience
+        bigint,        // creationTime
+        bigint         // selectionDeadline
+      ]
+    ): Brief | null => {
+      try {
+        // Validate rawData array length (17 fields)
+        if (!Array.isArray(rawData) || rawData.length < 17) {
+          console.error(`Invalid brief data format for ID ${briefId}:`, rawData);
+          return null;
+        }
+
+        // Log raw data for debugging
+        console.log(`Raw brief data for ID ${briefId}:`, rawData);
+
+        // Verify briefId matches the input id
+        if (rawData[0] !== briefId) {
+          console.warn(`Brief ID mismatch for ${briefId}: expected ${briefId}, got ${rawData[0]}`);
+        }
+
+        return {
+          id: briefId,
+          business: rawData[1] as `0x${string}`,
+          title: rawData[2] as string,
+          description: rawData[3] as string,
+          requirements: rawData[4] as string,
+          budget: Number(formatEther(rawData[5] as bigint)),
+          status: Number(rawData[6]),
+          promotionDuration: Number(rawData[7]),
+          promotionStartTime: Number(rawData[8]),
+          promotionEndTime: Number(rawData[9]),
+          proofSubmissionDeadline: Number(rawData[10]),
+          verificationDeadline: Number(rawData[11]),
+          maxInfluencers: Number(rawData[12]),
+          selectedInfluencersCount: Number(rawData[13]),
+          targetAudience: Number(rawData[14]),
+          creationTime: Number(rawData[15]),
+          selectionDeadline: Number(rawData[16]),
+          applicationCount: 0, // Default to 0; update if fetched separately
+        };
+      } catch (err) {
+        console.error(`Error formatting brief ${briefId}:`, err);
+        return null;
+      }
+    },
+    []
+  );
+
+  // Fetch details for each brief
   const fetchBusinessBriefDetails = useCallback(
     async (ids: `0x${string}`[]) => {
       if (!publicClient) {
         setError(new Error("Public client not available"));
+        setIsLoading(false);
         return;
       }
 
@@ -367,10 +399,31 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
                 args: [id],
               });
 
-              // Handle the array response properly
               if (Array.isArray(result)) {
-                return formatBriefData(id, result);
+                return formatBriefData(
+                  id,
+                  result as [
+                    `0x${string}`,
+                    `0x${string}`,
+                    string,
+                    string,
+                    string,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint,
+                    bigint
+                  ]
+                );
               }
+              console.error(`Unexpected brief data for ID ${id}:`, result);
               return null;
             } catch (err) {
               console.error(`Error fetching brief ${id}:`, err);
@@ -379,69 +432,34 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
           })
         );
 
-        setProcessedBriefs(
-          results.filter((brief): brief is FormattedBriefData => brief !== null)
-        );
+        const validBriefs = results.filter((brief): brief is Brief => brief !== null);
+        setBriefs(validBriefs);
       } catch (err) {
         console.error("Error fetching brief details:", err);
-        setError(err as Error);
+        setError(err instanceof Error ? err : new Error("Unknown error"));
       } finally {
         setIsLoading(false);
       }
     },
-    [publicClient]
+    [publicClient, formatBriefData]
   );
 
   useEffect(() => {
-    if (briefIds && !isLoadingIds) {
+    if (businessAddress && briefIds && !isLoadingIds) {
       fetchBusinessBriefDetails(briefIds as `0x${string}`[]);
+    } else if (!businessAddress) {
+      setBriefs([]);
+      setIsLoading(false);
     }
-  }, [briefIds, isLoadingIds, fetchBusinessBriefDetails]);
-
-  const formatBriefData = (
-    briefId: `0x${string}`,
-    rawData: any[]
-  ): FormattedBriefData | null => {
-    console.log("rawData", rawData);
-
-    try {
-      // Ensure rawData is an array with enough elements
-      if (!Array.isArray(rawData) || rawData.length < 13) {
-        console.error("Invalid brief data format:", rawData);
-        return null;
-      }
-
-      return {
-        id: briefId,
-        business: rawData[1] as `0x${string}`,
-        title: rawData[2] as string,
-        description: rawData[3] as string,
-        budget: Number(formatEther(rawData[4] as bigint)),
-        status: Number(rawData[5]),
-        applicationDeadline: Number(rawData[6]),
-        promotionDuration: Number(rawData[7]),
-        promotionStartTime: Number(rawData[8]),
-        promotionEndTime: Number(rawData[9]),
-        maxInfluencers: Number(rawData[10]),
-        selectedInfluencersCount: Number(rawData[11]),
-        targetAudience: Number(rawData[12]),
-        verificationDeadline: Number(rawData[13]),
-        applicationCount: 0, // Default to 0 or fetch actual count if available
-      };
-    } catch (err) {
-      console.error(`Error formatting brief ${briefId}:`, err);
-      return null;
-    }
-  };
+  }, [businessAddress, briefIds, isLoadingIds, fetchBusinessBriefDetails]);
 
   return {
-    briefs: processedBriefs,
+    briefs,
     isLoading: isLoading || isLoadingIds,
-    isError: isErrorIds || error !== null,
+    isError: isErrorIds || !!error,
     error: idError || error,
   };
 }
-
 // Get user profile
 export function useUserProfile(userAddress?: Address) {
   const { address } = useAccount();
@@ -817,10 +835,65 @@ export function useRegisterUser() {
 
 // Create ad brief
 
+
+
+
+
 export function useCreateAdBrief() {
   const tx = useHandleTransaction();
-  const { writeContract: approveCUSD } = useWriteContract();
+  const { writeContractAsync: approveCUSD, data: approveTxHash, error: approveError } = useWriteContract();
   const { address } = useAccount();
+  const [isApproving, setIsApproving] = useState(false);
+  const [briefData, setBriefData] = useState<{
+    name: string;
+    description: string;
+    requirements: string;
+    budget: string;
+    promotionDuration: number;
+    maxInfluencers: number;
+    targetAudience: number;
+  } | null>(null);
+
+  // Wait for approval transaction receipt
+  const { status: approvalStatus, error: receiptError } = useWaitForTransactionReceipt({
+    hash: approveTxHash,
+    confirmations: 1,
+  });
+
+  // Handle approval completion
+  useEffect(() => {
+    if (isApproving && approvalStatus === "success" && briefData) {
+      // Approval succeeded, proceed with write transaction
+      setIsApproving(false);
+      try {
+        tx.writeContract({
+          address: CONTRACT_ADDRESS,
+          abi: ABI.abi,
+          functionName: "createAdBrief",
+          args: [
+            briefData.name,
+            briefData.description,
+            briefData.requirements,
+            parseUnits(briefData.budget, 18),
+            BigInt(briefData.promotionDuration),
+            BigInt(briefData.maxInfluencers),
+            briefData.targetAudience,
+          ],
+        });
+      } catch (error) {
+        console.error("Error creating ad brief:", error);
+        setBriefData(null);
+        throw error;
+      }
+    } else if (isApproving && approvalStatus === "error") {
+      // Approval failed
+      setIsApproving(false);
+      setBriefData(null);
+      const error = receiptError || new Error("Approval transaction failed");
+      console.error("Approval failed:", error);
+      throw error;
+    }
+  }, [approvalStatus, receiptError, isApproving, briefData, tx]);
 
   const createBrief = async (
     name: string,
@@ -832,52 +905,50 @@ export function useCreateAdBrief() {
     targetAudience: number // uint8 value
   ) => {
     if (!address) {
-      throw new Error('Wallet not connected');
+      throw new Error("Wallet not connected");
     }
 
     try {
-      // Convert budget to wei (18 decimals for cUSD)
-      const budgetInWei = parseUnits(budget, 18);
+      // Store brief data for use after approval
+      setBriefData({
+        name,
+        description,
+        requirements,
+        budget,
+        promotionDuration,
+        maxInfluencers,
+        targetAudience,
+      });
 
-      // Approve cUSD transfer
+      // Start approval
+      setIsApproving(true);
       await approveCUSD({
         address: cUSDContractConfig.address,
         abi: cUSDContractConfig.abi,
-        functionName: 'approve',
-        args: [CONTRACT_ADDRESS, budgetInWei],
-      });
-
-      // Create the ad brief
-      await tx.writeContract({
-        address: CONTRACT_ADDRESS,
-        abi: ABI.abi,
-        functionName: 'createAdBrief',
-        args: [
-          name,
-          description,
-          requirements,
-          budgetInWei,
-          BigInt(promotionDuration),
-          BigInt(maxInfluencers),
-          targetAudience
-        ],
+        functionName: "approve",
+        args: [CONTRACT_ADDRESS, parseUnits(budget, 18)],
       });
     } catch (error) {
-      console.error('Error creating ad brief:', error);
+      console.error("Error initiating approval:", error);
+      setIsApproving(false);
+      setBriefData(null);
       throw error;
     }
   };
 
+  // Combine transaction states
+  const isPending = isApproving || tx.isPending;
+  const isError = !!approveError || !!receiptError || tx.isError;
+  const error = approveError || receiptError || tx.error;
+
   return {
     createBrief,
-    ...tx,
+    isPending,
+    isSuccess: tx.isSuccess && !isApproving,
+    isError,
+    error,
   };
 }
-
-
-
-
-
 
 
 

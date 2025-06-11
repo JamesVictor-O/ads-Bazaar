@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAccount } from "wagmi";
 import { Brief } from "@/types/index";
-import { SubmissionsModal } from "@/components/modals/ SubmissionsModal";
+import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
 import { ApplicationsModal } from "@/components/modals/ApplicationsModal";
 import CreateCampaignModal from "@/components/modals/CreateCampaignModal";
 import { useRouter } from "next/navigation";
@@ -48,17 +48,21 @@ const BrandDashboard = () => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    requirements: "",
     budget: "",
-    applicationDeadline: "",
-    promotionDuration: "604800",
+    promotionDuration: "604800", // 7 days in seconds
     maxInfluencers: "5",
     targetAudience: "0",
-    verificationPeriod: "86400",
   });
 
   const { userProfile } = useUserProfile();
-  const { briefs: fetchedBriefs, isLoading } = useGetBusinessBriefs(address as `0x${string}`);
-  const briefs = useMemo(() => (address ? fetchedBriefs : []), [address, fetchedBriefs]);
+  const { briefs: fetchedBriefs, isLoading } = useGetBusinessBriefs(
+    address as `0x${string}`
+  );
+  const briefs = useMemo(
+    () => (address ? fetchedBriefs : []),
+    [address, fetchedBriefs]
+  );
   const { applications, isLoadingApplications, refetchApplications } =
     useBriefApplications(selectedBrief?.id || "0x0");
 
@@ -89,6 +93,7 @@ const BrandDashboard = () => {
     [key: string]: number;
   }>({});
 
+  // Update application counts (using brief.applicationCount)
   useEffect(() => {
     if (briefs && briefs.length > 0) {
       briefs.forEach((brief) => {
@@ -114,29 +119,43 @@ const BrandDashboard = () => {
     return statusMap[statusCode] || "Unknown";
   };
 
-  interface StatusColorMap {
-    [key: number]: string;
-  }
-
   const getStatusColor = (statusCode: number): string => {
-    const colorMap: StatusColorMap = {
-      0: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-      1: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-      2: "bg-green-500/10 text-green-400 border-green-500/20",
-      3: "bg-red-500/10 text-red-400 border-red-500/20",
-    };
-    return colorMap[statusCode] || "bg-gray-500/10 text-gray-400 border-gray-500/20";
+    switch (statusCode) {
+      case 0:
+        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      case 1:
+        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case 2:
+        return "bg-green-500/10 text-green-400 border-green-500/20";
+      case 3:
+        return "bg-red-500/10 text-red-400 border-red-500/20";
+      case 4:
+        return "bg-blue-400/10 text-blue-400 border-blue-500/20";
+      default:
+        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+    }
   };
 
   useEffect(() => {
     if (isCreateSuccess) {
       toast.success("Campaign created successfully!");
       setShowCreateModal(false);
-      router.push("/brandsDashBoard");
+      setFormData({
+        name: "",
+        description: "",
+        requirements: "",
+        budget: "",
+        promotionDuration: "604800",
+        maxInfluencers: "5",
+        targetAudience: "0",
+      });
+      router.push("/brandsDashboard");
     }
 
     if (isCreateError) {
-      toast.error(`Failed to create campaign: ${createError?.message || "Unknown error"}`);
+      toast.error(
+        `Failed to create campaign: ${createError?.message || "Unknown error"}`
+      );
     }
   }, [isCreateSuccess, isCreateError, createError, router]);
 
@@ -147,7 +166,11 @@ const BrandDashboard = () => {
     }
 
     if (isSelectError) {
-      toast.error(`Failed to select influencer: ${selectError?.message || "Unknown error"}`);
+      toast.error(
+        `Failed to select influencer: ${
+          selectError?.message || "Unknown error"
+        }`
+      );
     }
   }, [isSelectSuccess, isSelectError, selectError, refetchApplications]);
 
@@ -158,64 +181,79 @@ const BrandDashboard = () => {
     }
 
     if (isCompleteError) {
-      toast.error(`Failed to complete campaign: ${completeError?.message || "Unknown error"}`);
+      toast.error(
+        `Failed to complete campaign: ${
+          completeError?.message || "Unknown error"
+        }`
+      );
     }
   }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications]);
 
-  const activeBriefs = briefs ? briefs.filter((brief) => brief.status === 0 || brief.status === 1) : [];
-  const completedBriefs = briefs ? briefs.filter((brief) => brief.status === 2) : [];
-  const totalBudget = briefs ? briefs.reduce((sum, brief) => sum + Number(brief.budget), 0) : 0;
+  const activeBriefs = briefs
+    ? briefs.filter((brief) => brief.status === 0 || brief.status === 1)
+    : [];
+  const completedBriefs = briefs
+    ? briefs.filter((brief) => brief.status === 2)
+    : [];
+  const totalBudget = briefs
+    ? briefs.reduce((sum, brief) => sum + Number(brief.budget), 0)
+    : 0;
   const totalInfluencers = briefs
-    ? briefs.reduce((sum, brief) => sum + Number(brief.selectedInfluencersCount), 0)
+    ? briefs.reduce(
+        (sum, brief) => sum + Number(brief.selectedInfluencersCount),
+        0
+      )
     : 0;
 
   // Filter briefs based on search and filter criteria
-  const filteredBriefs = briefs
-    ? briefs.filter((brief) => {
-        const matchesSearch = brief.title.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter =
-          selectedFilter === "all" ||
-          (selectedFilter === "active" && (brief.status === 0 || brief.status === 1)) ||
-          (selectedFilter === "completed" && brief.status === 2);
-        return matchesSearch && matchesFilter;
-      })
-    : [];
+  const filteredBriefs = briefs.filter((brief) => {
+    const matchesSearch = brief.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      selectedFilter === "all" ||
+      (selectedFilter === "active" &&
+        (brief.status === 0 || brief.status === 1)) ||
+      (selectedFilter === "completed" && brief.status === 2);
+    return matchesSearch && matchesFilter;
+  });
+
+  console.log("Filtered Briefs:", filteredBriefs);
 
   const isFormValid = () => {
     return (
       formData.name.trim() !== "" &&
       formData.description.trim() !== "" &&
+      formData.requirements.trim() !== "" &&
       formData.budget.trim() !== "" &&
-      formData.applicationDeadline.trim() !== ""
+      Number(formData.budget) > 0 &&
+      Number(formData.promotionDuration) >= 86400 &&
+      Number(formData.maxInfluencers) >= 1 &&
+      Number(formData.maxInfluencers) <= 10
     );
   };
 
   const handleCreateCampaign = async () => {
     if (!isFormValid()) {
-      toast.error("Please fill in all required fields");
+      toast.error("Please fill in all required fields correctly");
       return;
     }
 
     try {
-      const deadline = Math.floor(new Date(formData.applicationDeadline).getTime() / 1000);
-
       await createBrief(
         formData.name,
         formData.description,
+        formData.requirements,
         formData.budget,
-        deadline,
-        parseInt(formData.promotionDuration),
-        parseInt(formData.maxInfluencers),
-        parseInt(formData.targetAudience),
-        parseInt(formData.verificationPeriod)
+        Number(formData.promotionDuration),
+        Number(formData.maxInfluencers),
+        Number(formData.targetAudience)
       );
     } catch (error) {
       console.error("Error creating campaign:", error);
       toast.error(
         `Failed to create campaign: ${
-          typeof error === "object" && error !== null && "message" in error
-            ? (error as { message?: string }).message
-            : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -228,9 +266,7 @@ const BrandDashboard = () => {
       console.error("Error releasing funds:", error);
       toast.error(
         `Failed to release funds: ${
-          typeof error === "object" && error !== null && "message" in error
-            ? (error as { message?: string }).message
-            : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
@@ -252,7 +288,8 @@ const BrandDashboard = () => {
             Business Account Required
           </h2>
           <p className="text-slate-400 text-sm sm:text-base mb-6 leading-relaxed">
-            You need to register as a business to access the brand dashboard and create campaigns.
+            You need to register as a business to access the brand dashboard and
+            create campaigns.
           </p>
           <Link href="/">
             <motion.button
@@ -388,8 +425,12 @@ const BrandDashboard = () => {
         >
           <div className="p-4 sm:p-5 border-b border-slate-700/50">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl sm:text-2xl font-bold text-white">Your Campaigns</h2>
-              <span className="text-slate-400 text-sm">{filteredBriefs.length} campaigns</span>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                Your Campaigns
+              </h2>
+              <span className="text-slate-400 text-sm">
+                {filteredBriefs.length} campaigns
+              </span>
             </div>
           </div>
 
@@ -402,7 +443,9 @@ const BrandDashboard = () => {
             ) : filteredBriefs.length === 0 ? (
               <div className="p-8 text-center">
                 <Briefcase className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-white mb-2">No campaigns found</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  No campaigns found
+                </h3>
                 <p className="text-slate-400 text-sm max-w-md mx-auto">
                   {searchTerm
                     ? "Try adjusting your search or filter criteria."
@@ -445,7 +488,7 @@ const BrandDashboard = () => {
                             <Calendar className="w-3.5 h-3.5" />
                             <span>
                               {format(
-                                new Date(Number(brief.applicationDeadline) * 1000),
+                                new Date(brief.selectionDeadline * 1000),
                                 "MMM d, yyyy"
                               )}
                             </span>
@@ -456,7 +499,9 @@ const BrandDashboard = () => {
                               {Math.max(
                                 0,
                                 Math.ceil(
-                                  (new Date(Number(brief.applicationDeadline) * 1000).getTime() -
+                                  (new Date(
+                                    brief.selectionDeadline * 1000
+                                  ).getTime() -
                                     new Date().getTime()) /
                                     (1000 * 60 * 60 * 24)
                                 )
@@ -467,7 +512,8 @@ const BrandDashboard = () => {
                           <div className="flex items-center gap-1">
                             <Users className="w-3.5 h-3.5" />
                             <span>
-                              {brief.selectedInfluencersCount}/{Number(brief.maxInfluencers)} influencers
+                              {brief.selectedInfluencersCount}/
+                              {brief.maxInfluencers} influencers
                             </span>
                           </div>
                         </div>
@@ -478,9 +524,11 @@ const BrandDashboard = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <div className="text-lg sm:text-xl font-bold text-white mb-1">
-                          {Number(brief.budget).toLocaleString()} cUSD
+                          {brief.budget.toLocaleString()} cUSD
                         </div>
-                        <div className="text-xs text-slate-400">0 spent (0%)</div>
+                        <div className="text-xs text-slate-400">
+                          0 spent (0%)
+                        </div>
                         <div className="w-20 h-1.5 bg-slate-700/50 rounded-full mt-1.5 overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300"
@@ -491,7 +539,6 @@ const BrandDashboard = () => {
                       <div className="flex gap-2">
                         <motion.button
                           onClick={() => {
-                              // @ts-expect-error: expect undefine
                             setSelectedBrief(brief);
                             setShowApplicationsModal(true);
                           }}
@@ -501,13 +548,12 @@ const BrandDashboard = () => {
                           Applications
                           {applicationCounts[brief.id] > 0 && (
                             <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
-                              {applications.length}
+                              {applicationCounts[brief.id]}
                             </span>
                           )}
                         </motion.button>
                         <motion.button
                           onClick={() => {
-                            // @ts-expect-error:expect undefine
                             setSelectedBrief(brief);
                             setShowSubmissionsModal(true);
                           }}
