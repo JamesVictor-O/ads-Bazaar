@@ -1,3 +1,240 @@
+// @/hooks/useInfluencerDashboard.ts
+import { useState, useEffect, useCallback } from "react";
+import { useReadContracts, useAccount } from "wagmi";
+import { Brief, Application } from "@/types";
+import { formatEther } from "viem";
+import ABI from "../lib/AdsBazaar.json";
+import { CONTRACT_ADDRESS } from "../lib/contracts";
+import { Address } from "viem";
+
+interface DashboardBrief {
+  briefId: `0x${string}`;
+  brief: Brief;
+  application: Application;
+}
+
+interface InfluencerDashboardData {
+  appliedBriefs: DashboardBrief[];
+  assignedBriefs: DashboardBrief[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+export const useInfluencerDashboard = () => {
+  const [dashboardData, setDashboardData] = useState<InfluencerDashboardData>({
+    appliedBriefs: [],
+    assignedBriefs: [],
+    isLoading: true,
+    error: null,
+  });
+
+  const { address: influencerAddress } = useAccount();
+
+  // Step 1: Get influencer's applied brief IDs
+  const {
+    data: briefIdsData,
+    isLoading: isLoadingBriefIds,
+    error: briefIdsError,
+    refetch: refetchBriefIds,
+  } = useReadContracts({
+    contracts: influencerAddress
+      ? [
+          {
+            address: CONTRACT_ADDRESS as Address,
+            abi: ABI.abi,
+            functionName: "getInfluencerApplications",
+            args: [influencerAddress],
+          },
+        ]
+      : [],
+  });
+
+  const briefIds = briefIdsData?.[0]?.result as `0x${string}`[] | undefined;
+
+  // Step 2: Prepare contract calls for briefs and applications
+  const contractsToRead = briefIds
+    ? briefIds.flatMap((briefId) => [
+        {
+          address: CONTRACT_ADDRESS as Address,
+          abi: ABI.abi,
+          functionName: "briefs",
+          args: [briefId],
+        },
+        {
+          address: CONTRACT_ADDRESS as Address,
+          abi: ABI.abi,
+          functionName: "applications",
+          args: [briefId, influencerAddress],
+        },
+      ])
+    : [];
+
+  // Step 3: Fetch brief and application data
+  const {
+    data: briefsData,
+    isLoading: isLoadingBriefsData,
+    error: briefsDataError,
+    refetch: refetchBriefsData,
+  } = useReadContracts({
+    contracts: contractsToRead,
+  });
+
+  // Step 4: Process data
+  const processData = useCallback(() => {
+    if (!influencerAddress) {
+      setDashboardData({
+        appliedBriefs: [],
+        assignedBriefs: [],
+        isLoading: false,
+        error: "No influencer address available",
+      });
+      return;
+    }
+
+    if (isLoadingBriefIds || isLoadingBriefsData) {
+      setDashboardData((prev) => ({ ...prev, isLoading: true }));
+      return;
+    }
+
+    if (briefIdsError || briefsDataError) {
+      setDashboardData({
+        appliedBriefs: [],
+        assignedBriefs: [],
+        isLoading: false,
+        error:
+          briefIdsError?.message ||
+          briefsDataError?.message ||
+          "Failed to fetch data",
+      });
+      return;
+    }
+
+    if (!briefIds || !briefsData) {
+      setDashboardData({
+        appliedBriefs: [],
+        assignedBriefs: [],
+        isLoading: false,
+        error: null,
+      });
+      return;
+    }
+
+    try {
+      const appliedBriefs: DashboardBrief[] = [];
+      const assignedBriefs: DashboardBrief[] = [];
+
+      // Process data in pairs (brief, application)
+      for (let i = 0; i < briefIds.length; i++) {
+        const briefId = briefIds[i];
+        const briefResult = briefsData[i * 2]?.result;
+        const appResult = briefsData[i * 2 + 1]?.result;
+
+        if (!briefResult || !appResult) {
+          console.warn(`Missing data for brief ${briefId}`);
+          continue;
+        }
+
+        // Log raw data for debugging
+        console.log(`Raw brief data for ${briefId}:`, briefResult);
+        console.log(`Raw application data for ${briefId}:`, appResult);
+
+        // Validate brief data (expect 17 fields)
+        if (!Array.isArray(briefResult) || briefResult.length < 17) {
+          console.error(`Invalid brief data for ${briefId}:`, briefResult);
+          continue;
+        }
+
+        const brief: Brief = {
+          id: briefId,
+          business: briefResult[1] as `0x${string}`,
+          title: briefResult[2] as string, // Maps from 'name'
+          description: briefResult[3] as string,
+          requirements: (briefResult[4] as string) || "",
+          budget: Number(formatEther(briefResult[5] as bigint)),
+          status: Number(briefResult[6]),
+          promotionDuration: Number(briefResult[7]),
+          promotionStartTime: Number(briefResult[8]),
+          promotionEndTime: Number(briefResult[9]),
+          proofSubmissionDeadline: Number(briefResult[10]),
+          verificationDeadline: Number(briefResult[11]),
+          maxInfluencers: Number(briefResult[12]),
+          selectedInfluencersCount: Number(briefResult[13]),
+          targetAudience: Number(briefResult[14]),
+          creationTime: Number(briefResult[15] || 0),
+          selectionDeadline: Number(briefResult[16]),
+          applicationCount: 0,
+        };
+
+        // Validate application data
+        if (!Array.isArray(appResult) || appResult.length < 4) {
+          console.error(`Invalid application data for ${briefId}:`, appResult);
+          continue;
+        }
+
+        const application: Application = {
+          isApproved: appResult[0] as boolean,
+          isSelected: appResult[1] as boolean,
+          hasClaimed: appResult[2] as boolean,
+          proofLink: appResult[3] ? (appResult[3] as string) : undefined,
+        };
+
+        const dashboardBrief: DashboardBrief = { briefId, brief, application };
+        appliedBriefs.push(dashboardBrief);
+
+        if (application.isSelected || application.isApproved) {
+          assignedBriefs.push(dashboardBrief);
+        }
+      }
+
+      setDashboardData({
+        appliedBriefs,
+        assignedBriefs,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error) {
+      console.error("Error processing dashboard data:", error);
+      setDashboardData({
+        appliedBriefs: [],
+        assignedBriefs: [],
+        isLoading: false,
+        error: error instanceof Error ? error.message : "Failed to process data",
+      });
+    }
+  }, [
+    influencerAddress,
+    briefIds,
+    briefsData,
+    isLoadingBriefIds,
+    isLoadingBriefsData,
+    briefIdsError,
+    briefsDataError,
+  ]);
+
+  useEffect(() => {
+    processData();
+  }, [processData]);
+
+  const refetch = () => {
+    refetchBriefIds();
+    refetchBriefsData();
+  };
+
+  return { ...dashboardData, refetch };
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
 import { useState, useEffect } from "react";

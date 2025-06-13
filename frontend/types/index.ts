@@ -1,9 +1,8 @@
-
 import { Hex } from "viem";
 export interface Brief {
   id: `0x${string}`;
   business: `0x${string}`;
-  title: string;
+  name: string;
   description: string;
   requirements: string;
   budget: number;
@@ -21,7 +20,6 @@ export interface Brief {
   applicationCount: number;
 }
 
-
 export interface Application {
   influencer: Hex;
   message: string;
@@ -34,7 +32,7 @@ export interface Application {
     name?: string;
     // Add other fields as needed
   };
-   hasClaimed?: boolean;
+  hasClaimed?: boolean;
 }
 
 export interface FormData {
@@ -65,24 +63,24 @@ export interface Task {
   postLink?: string;
 }
 
-
 export interface BriefData {
   business: string;
   name: string;
   description: string;
   budget: string;
   status: number;
-  applicationDeadline: string;
   promotionDuration: string;
   promotionStartTime: string;
   promotionEndTime: string;
+  proofSubmissionDeadline:string;
   maxInfluencers: string;
   selectedInfluencersCount: string;
+  selectionDeadline:string,
   targetAudience: number;
   verificationDeadline: string;
 }
 
-export  interface ApplicationData {
+export interface ApplicationData {
   influencer: string;
   message: string;
   timestamp: string;
@@ -114,12 +112,11 @@ export interface ApplicationsModalProps {
   onClose: () => void;
 }
 export type Transaction = {
-    id: string;
-    type: string;
-    amount: number;
-    from: string;
-    date: string;
-    txHash: string;
-    status: string;
-  };
-
+  id: string;
+  type: string;
+  amount: number;
+  from: string;
+  date: string;
+  txHash: string;
+  status: string;
+};

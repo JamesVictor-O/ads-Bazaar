@@ -89,21 +89,21 @@ const BrandDashboard = () => {
   } = useCompleteCampaign();
 
   // Create a map to store application counts for each brief
-  const [applicationCounts, setApplicationCounts] = useState<{
-    [key: string]: number;
-  }>({});
+  // const [applicationCounts, setApplicationCounts] = useState<{
+  //   [key: string]: number;
+  // }>({});
 
   // Update application counts (using brief.applicationCount)
-  useEffect(() => {
-    if (briefs && briefs.length > 0) {
-      briefs.forEach((brief) => {
-        setApplicationCounts((prev) => ({
-          ...prev,
-          [brief.id]: Math.floor(Math.random() * 20),
-        }));
-      });
-    }
-  }, [briefs]);
+  // useEffect(() => {
+  //   if (briefs && briefs.length > 0) {
+  //     briefs.forEach((brief) => {
+  //       setApplicationCounts((prev) => ({
+  //         ...prev,
+  //         [brief.id]: Math.floor(Math.random() * 20),
+  //       }));
+  //     });
+  //   }
+  // }, [briefs]);
 
   interface StatusMap {
     [key: number]: string;
@@ -546,9 +546,9 @@ const BrandDashboard = () => {
                           whileTap={{ scale: 0.95 }}
                         >
                           Applications
-                          {applicationCounts[brief.id] > 0 && (
+                          {applications.length > 0 && (
                             <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
-                              {applicationCounts[brief.id]}
+                              {applications.length}
                             </span>
                           )}
                         </motion.button>

@@ -3,7 +3,15 @@
 import { useApplyToBrief } from "@/hooks/adsBazaar";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import { X, Loader2, Send, DollarSign, FileText, User, CheckSquare } from "lucide-react";
+import {
+  X,
+  Loader2,
+  Send,
+  DollarSign,
+  FileText,
+  User,
+  CheckSquare,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ApplyModalProps {
@@ -156,10 +164,10 @@ export default function ApplyModal({
                     <User className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                   </div>
                   <div>
+                    <p className="text-xs text-slate-400">Business</p>
                     <p className="text-base sm:text-lg font-medium text-white">
                       {selectedBrief.business}
                     </p>
-                    <p className="text-xs text-slate-400">Business</p>
                   </div>
                 </div>
 
@@ -170,11 +178,13 @@ export default function ApplyModal({
                   </div>
                   <div className="flex-1">
                     <div className="max-h-24 sm:max-h-32 overflow-y-auto pr-2">
+                      <p className="text-xs text-slate-400 mt-2">
+                        Campaign Description
+                      </p>
                       <p className="text-sm text-slate-300 leading-relaxed">
                         {selectedBrief.description}
                       </p>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2">Campaign Description</p>
                   </div>
                 </div>
 
@@ -184,10 +194,10 @@ export default function ApplyModal({
                     <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
                   </div>
                   <div>
+                    <p className="text-xs text-slate-400">Total Budget</p>
                     <p className="text-base sm:text-lg font-medium text-emerald-400">
                       {selectedBrief.budget} cUSD
                     </p>
-                    <p className="text-xs text-slate-400">Total Budget</p>
                   </div>
                 </div>
 
@@ -199,11 +209,13 @@ export default function ApplyModal({
                     </div>
                     <div className="flex-1">
                       <div className="max-h-24 sm:max-h-32 overflow-y-auto pr-2">
+                        <p className="text-xs text-slate-400 mt-2">
+                          Requirements
+                        </p>
                         <p className="text-sm text-slate-300 leading-relaxed">
                           {selectedBrief.requirements}
                         </p>
                       </div>
-                      <p className="text-xs text-slate-400 mt-2">Requirements</p>
                     </div>
                   </div>
                 )}
@@ -229,7 +241,8 @@ export default function ApplyModal({
                 </div>
               </div>
               <p className="mt-2 text-xs text-slate-400">
-                Minimum 20 characters required. Highlight your experience and approach.
+                Minimum 20 characters required. Highlight your experience and
+                approach.
               </p>
             </div>
 
