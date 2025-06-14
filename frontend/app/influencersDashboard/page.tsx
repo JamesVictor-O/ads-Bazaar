@@ -1,9 +1,8 @@
-// @/app/influencerDashboard/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import SubmitPostModal from "@/components/modals/SubmitPostModal";
-import { Transaction, Brief, Application } from "@/types";
+import { Transaction } from "@/types";
 import { motion } from "framer-motion";
 import {
   Briefcase,
@@ -34,6 +33,35 @@ import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
 import Image from "next/image";
 
+// Define precise interfaces
+interface Application {
+  isApproved: boolean;
+  isSelected: boolean;
+  hasClaimed: boolean;
+  proofLink?: string;
+}
+
+interface Brief {
+  briefId: string;
+  brief: {
+    budget: string;
+    business: string;
+    description: string;
+    maxInfluencers: string;
+    name: string;
+    promotionDuration: string;
+    promotionEndTime: string;
+    promotionStartTime: string;
+    proofSubmissionDeadline: string;
+    selectedInfluencersCount: string;
+    selectionDeadline: string;
+    status: number;
+    targetAudience: number;
+    verificationDeadline: string | number;
+  };
+  application: Application;
+}
+
 interface Task {
   name: string;
 }
@@ -63,14 +91,12 @@ export default function InfluencerDashboard() {
   } = useProfile();
   const [isMounted, setIsMounted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<{
-    briefId: string;
-    brief: Brief;
-    application: Application;
-  } | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [postLink, setPostLink] = useState("");
-  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>(
+    []
+  );
   const [expandedBriefId, setExpandedBriefId] = useState<string | null>(null);
 
   const [txStatus, setTxStatus] = useState<{
@@ -85,8 +111,11 @@ export default function InfluencerDashboard() {
 
   const { userProfile, isLoadingProfile } = useUserProfile();
   const { isVerified } = useIsInfluencerVerified();
-  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } = useInfluencerDashboard();
-  console.log(appliedBriefs)
+  const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
+    useInfluencerDashboard();
+
+  console.log("appliedBriefs", appliedBriefs);
+
   const {
     submitProof,
     isPending: isSubmittingProof,
@@ -151,18 +180,13 @@ export default function InfluencerDashboard() {
             brief.application.isApproved && brief.application.hasClaimed
         )
         .map((brief) => ({
-          id: brief.briefId as `0x${string}`,
-          type: "payment" as const,
-          amount: Number(brief.brief.budget),
+          id: brief.briefId,
+          type: "payment",
+          amount: Number(brief.brief.budget) / 1e18,
           from: brief.brief.business,
-          date: brief.brief.verificationDeadline
-            ? format(
-                new Date(Number(brief.brief.verificationDeadline) * 1000),
-                "yyyy-MM-dd"
-              )
-            : format(new Date(), "yyyy-MM-dd"),
+          date: format(new Date(), "yyyy-MM-dd"),
           txHash: `${brief.briefId.slice(0, 10)}...${brief.briefId.slice(-6)}`,
-          status: "confirmed" as const,
+          status: "confirmed",
         }));
       setTransactionHistory(txHistory);
     }
@@ -281,7 +305,8 @@ export default function InfluencerDashboard() {
     }
   };
 
-  const canSubmitProof = (brief: { brief: Brief; application: Application }): boolean => {
+  const canSubmitProof = (brief: Brief): boolean => {
+    console.log("Checking canSubmitProof for brief:", brief);
     return (
       brief.application.isSelected &&
       brief.brief.status === 1 &&
@@ -297,7 +322,7 @@ export default function InfluencerDashboard() {
     ? assignedBriefs
         .filter((b) => b.application.isSelected || b.application.isApproved)
         .filter((b) => !b.application.hasClaimed)
-        .reduce((sum, b) => sum + Number(b.brief.budget), 0)
+        .reduce((sum, b) => sum + Number(b.brief.budget) / 1e18, 0)
     : 0;
 
   const isInitialLoading =
@@ -490,11 +515,13 @@ export default function InfluencerDashboard() {
                 {stat.hasClaimable && (
                   <motion.button
                     onClick={() => {
+                      // Find all claimable briefs
                       const claimableBriefs = assignedBriefs?.filter(
                         (b) =>
                           b.application.isApproved && !b.application.hasClaimed
                       );
                       if (claimableBriefs && claimableBriefs.length > 0) {
+                        // You might want to implement batch claiming or show a modal
                         toast.success(
                           `You have ${claimableBriefs.length} campaigns ready to claim!`
                         );
@@ -511,6 +538,8 @@ export default function InfluencerDashboard() {
               </div>
               <p className="text-base font-bold text-white">{stat.value}</p>
               <p className="text-[10px] text-slate-400">{stat.label}</p>
+
+              {/* Add a full-width claim button if there are claimable earnings */}
               {stat.hasClaimable && (
                 <motion.button
                   onClick={() => {
@@ -519,6 +548,7 @@ export default function InfluencerDashboard() {
                         b.application.isApproved && !b.application.hasClaimed
                     );
                     if (claimableBriefs && claimableBriefs.length > 0) {
+                      // Implement your claim logic here
                       claimableBriefs.forEach((brief) => {
                         handleClaimFunds(brief.briefId);
                       });
@@ -546,7 +576,7 @@ export default function InfluencerDashboard() {
           <div className="p-3 sm:p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
             <div className="flex items-center justify-between">
               <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5">
-                <Briefcase className="w-5 h-5 md:text-xl text-emerald-400" />
+                <Briefcase className="w-5 h-5 md:text-xl text-emerald-400" />{" "}
                 Campaigns
               </h2>
               <span className="text-xs text-slate-400">
@@ -573,19 +603,13 @@ export default function InfluencerDashboard() {
           ) : (
             <div className="divide-y divide-slate-700/50">
               {appliedBriefs.map((brief, index) => {
-                const selectionDeadline =
-                  brief.brief.selectionDeadline &&
-                  Number.isFinite(brief.brief.selectionDeadline)
-                    ? Number(brief.brief.selectionDeadline) * 1000
-                    : null;
+                const budget =
+                  typeof brief.brief.budget === "bigint"
+                    ? Number(brief.brief.budget) / 1e18
+                    : Number(brief.brief.budget) / 1e18;
+                // @ts-expect-error:expect undefine
+                const paymentStatus = getPaymentStatus(brief.application);
                 const isExpanded = expandedBriefId === brief.briefId;
-                const paymentStatus = brief.application
-                  ? getPaymentStatus({
-                      ...brief.application,
-                      influencer: brief.application.influencer as `0x${string}`,
-                      timestamp: Number(brief.application.timestamp),
-                    })
-                  : { label: "Pending", classes: "bg-amber-500/20 text-amber-400 border border-amber-500/30" };
 
                 return (
                   <motion.div
@@ -603,25 +627,21 @@ export default function InfluencerDashboard() {
                     >
                       <div className="flex items-start gap-2">
                         <div className="p-1.5 bg-gradient-to-br from-slate-700 to-slate-800 rounded-md border border-slate-600/50">
-                          <Briefcase className="w-3.5 h-3.5 text-slate-300" />
+                          <Briefcase className="w-3.5 h-3.5  text-slate-300" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 mb-1">
                             <h3 className="text-sm md:text-lg font-semibold text-white truncate">
                               {brief.brief.name}
                             </h3>
-                            <span>
-                              {brief.application
-                                ? getStatusBadge(
-                                    {
-                                      ...brief.application,
-                                      influencer: brief.application.influencer as `0x${string}`,
-                                      timestamp: Number(brief.application.timestamp),
-                                    },
-                                    brief.brief.status
-                                  )
-                                : null}
-                            </span>
+                            {brief.application && (
+                              <span>
+                                {getStatusBadge(
+                                  brief.application,
+                                  brief.brief.status
+                                )}
+                              </span>
+                            )}
                           </div>
                           <p className="text-slate-400 text-xs md:text-lg mb-1.5 line-clamp-1">
                             {brief.brief.description}
@@ -630,102 +650,91 @@ export default function InfluencerDashboard() {
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               <span>
-                                {selectionDeadline
-                                  ? format(new Date(selectionDeadline), "MMM d")
-                                  : "N/A"}
+                                {format(
+                                  new Date(
+                                    typeof brief.brief.promotionStartTime === "bigint"
+                                      ? Number(brief.brief.promotionStartTime)
+                                      : brief.brief.promotionStartTime
+                                  ),
+                                  "MMM d"
+                                )}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-3 h-3" />
-                              <span>{Number(brief.brief.budget).toFixed(2)} cUSD</span>
+                              <span>{budget.toFixed(2)} cUSD</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {isExpanded && (
+                        console.log("Expanded brief:", brief),
                         <motion.div
                           className="mt-2 pl-8"
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           transition={{ duration: 0.2 }}
                         >
-                          {brief.application && brief.application.isSelected && (
-                            <div className="flex flex-col gap-2 mb-2">
-                              <div className="flex items-center gap-1.5">
-                                {getTaskStatusIcon({
-                                  ...brief.application,
-                                  influencer: brief.application.influencer as `0x${string}`,
-                                  timestamp: Number(brief.application.timestamp),
-                                })}
-                                <span className="text-xs text-slate-300">
-                                  Content Submission
-                                </span>
-                                {brief.brief.status !== 1 && (
-                                  <span className="text-[10px] text-amber-400 bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-800/50">
-                                    Waiting...
+                          {brief.application &&
+                            brief.application.isSelected && (
+                              <div className="flex flex-col gap-2 mb-2">
+                                <div className="flex items-center gap-1.5">
+                                  {getTaskStatusIcon(brief.application)}
+                                  <span className="text-xs text-slate-300">
+                                    Content Submission
                                   </span>
-                                )}
+                                  {brief.brief.status !== 1 && (
+                                    <span className="text-[10px] text-amber-400 bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-800/50">
+                                      Waiting...
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  {brief.application.proofLink ? (
+                                    <a
+                                      href={brief.application.proofLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                    >
+                                      <LinkIcon className="w-3 h-3" />
+                                      View
+                                    </a>
+                                  ) : // @ts-expect-error:expect undefine
+                                  canSubmitProof(brief) ? (
+                                    <motion.button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // @ts-expect-error:expect undefine
+                                        setSelectedCampaign(brief);
+                                        setSelectedTask({
+                                          name: brief.brief.description,
+                                        });
+                                        setShowSubmitModal(true);
+                                      }}
+                                      className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                      disabled={isSubmittingProof}
+                                      whileTap={{ scale: 0.95 }}
+                                    >
+                                      {isSubmittingProof ? (
+                                        "Submitting..."
+                                      ) : (
+                                        <>
+                                          <LinkIcon className="w-3 h-3" />
+                                          Submit
+                                        </>
+                                      )}
+                                    </motion.button>
+                                  ) : brief.application.isSelected &&
+                                    brief.brief.status !== 1 ? (
+                                    <span className="text-xs text-slate-500">
+                                      Submit when assigned
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
-                              <div className="flex gap-2">
-                                {brief.application.proofLink ? (
-                                  <a
-                                    href={brief.application.proofLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                  >
-                                    <LinkIcon className="w-3 h-3" />
-                                    View
-                                  </a>
-                                ) : canSubmitProof({
-                                    brief: {
-                                      ...brief.brief,
-                                      id: brief.briefId as `0x${string}`,
-                                      business: brief.brief.business as `0x${string}`,
-                                      applicationCount: brief.brief.applicationCount,
-                                      requirements: brief.brief.requirements,
-                                      creationTime: brief.brief.creationTime,
-                                      budget: Number(brief.brief.budget),
-                                      promotionDuration: Number(brief.brief.promotionDuration),
-                                    },
-                                    application: {
-                                      ...brief.application,
-                                      influencer: brief.application.influencer as `0x${string}`,
-                                      timestamp: Number(brief.application.timestamp),
-                                    },
-                                  }) ? (
-                                  <motion.button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedCampaign(brief);
-                                      setSelectedTask({
-                                        name: brief.brief.description,
-                                      });
-                                      setShowSubmitModal(true);
-                                    }}
-                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                    disabled={isSubmittingProof}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    {isSubmittingProof ? (
-                                      "Submitting..."
-                                    ) : (
-                                      <>
-                                        <LinkIcon className="w-3 h-3" />
-                                        Submit
-                                      </>
-                                    )}
-                                  </motion.button>
-                                ) : brief.application.isSelected &&
-                                  brief.brief.status !== 1 ? (
-                                  <span className="text-xs text-slate-500">
-                                    Submit when assigned
-                                  </span>
-                                ) : null}
-                              </div>
-                            </div>
-                          )}
+                            )}
                           <div className="flex items-center justify-between">
                             <span
                               className={`text-xs px-2 py-0.5 rounded-full ${paymentStatus.classes}`}
@@ -810,10 +819,10 @@ export default function InfluencerDashboard() {
                       </p>
                     </div>
                     <a
-                      href={`https://alfajores.celo.org/tx/${tx.id}`}
+                      href={`https://explorer.celo.org/tx/${tx.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-slate-400 hover:text-blue-400 transition-colors"
+                      className="text-slate-400 hover:text-emerald-400 transition-colors"
                     >
                       <ExternalLink className="w-3 h-3" />
                     </a>
@@ -833,7 +842,7 @@ export default function InfluencerDashboard() {
         >
           <Link href="/marketplace">
             <motion.button
-              className="flex items-center gap-1.5 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-semibold px-3.5 py-2 rounded-full shadow-lg shadow-emerald-500/20"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-3.5 py-2 rounded-full shadow-lg shadow-emerald-500/20"
               whileTap={{ scale: 0.95 }}
             >
               <Sparkles className="w-4 h-4" />
@@ -841,25 +850,24 @@ export default function InfluencerDashboard() {
             </motion.button>
           </Link>
         </motion.div>
-
-        {/* Submit Post Modal */}
-        {showSubmitModal && selectedCampaign && selectedTask && (
-          <SubmitPostModal
-            selectedCampaign={{
-              id: selectedCampaign.briefId,
-              title: selectedCampaign.brief.name,
-              brand: selectedCampaign.brief.business,
-            }}
-            selectedTask={selectedTask}
-            postLink={postLink}
-            setPostLink={setPostLink}
-            onSubmit={() => handleSubmitPost(selectedCampaign.briefId)}
-            onClose={handleCloseModal}
-            transactionStatus={txStatus}
-            isSubmitting={isSubmittingProof}
-          />
-        )}
       </div>
+
+      {showSubmitModal && selectedCampaign && selectedTask && (
+        <SubmitPostModal
+          selectedCampaign={{
+            id: selectedCampaign.briefId,
+            title: selectedCampaign.brief.name,
+            brand: selectedCampaign.brief.business,
+          }}
+          selectedTask={selectedTask}
+          postLink={postLink}
+          setPostLink={setPostLink}
+          onSubmit={() => handleSubmitPost(selectedCampaign.briefId)}
+          onClose={handleCloseModal}
+          transactionStatus={txStatus}
+          isSubmitting={isSubmittingProof}
+        />
+      )}
     </div>
   );
 }
