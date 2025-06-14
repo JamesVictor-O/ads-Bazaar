@@ -9,21 +9,20 @@ import {
   Award,
   Check,
   UserCheck,
-} from "lucide-react"; 
-import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar"; 
-import ApplyModal from "@/components/modals/AdsApplicationModal"; 
-
+} from "lucide-react";
+import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication"; 
-import { useAccount } from "wagmi"; 
-import { formatDistanceToNow } from "date-fns"; 
+import ApplyModal from "@/components/modals/AdsApplicationModal";
+import { useAccount } from "wagmi";
+import { formatDistanceToNow } from "date-fns";
 import { truncateAddress } from "@/utils/format";
-
 
 const statusMap = {
   0: "Open",
   1: "Assigned",
   2: "Completed",
   3: "Cancelled",
+  4: "Expired",
 };
 
 const audienceMap = {
@@ -44,36 +43,33 @@ const audienceMap = {
 };
 
 interface Brief {
-  id: `0x${string}`; 
-  business: `0x${string}`; 
-  title: string; 
-  description: string; 
-  budget: number; 
-  status: number; 
-  applicationDeadline: number; 
-  promotionDuration: number; 
-  promotionStartTime: number; 
-  promotionEndTime: number; 
-  maxInfluencers: number; 
+  id: `0x${string}`;
+  business: `0x${string}`;
+  title: string;
+  description: string;
+  requirements: string;
+  budget: number;
+  status: number;
+  promotionDuration: number;
+  promotionStartTime: number;
+  promotionEndTime: number;
+  proofSubmissionDeadline: number;
+  verificationDeadline: number;
+  maxInfluencers: number;
   selectedInfluencersCount: number;
-  targetAudience: number; 
-  verificationDeadline: number; 
-  requirements?: string; 
-  hasApplied: boolean;
-  applicationsCount?: number; 
+  targetAudience: number;
+  creationTime: number;
+  selectionDeadline: number;
+  applicationCount: number;
 }
 
 export default function Marketplace() {
-  
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] =
-    useState<string>("All Categories");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All Categories");
   const [budgetFilter, setBudgetFilter] = useState<string>("Budget: Any");
-  
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
   const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
   const [applicationMessage, setApplicationMessage] = useState<string>("");
- 
   const [applicationStatus, setApplicationStatus] = useState<
     Record<string, "applied" | "assigned" | null>
   >({});
@@ -82,13 +78,14 @@ export default function Marketplace() {
   const { briefs, isLoading } = useGetAllBriefs();
   const { address, isConnected } = useAccount();
   const { userProfile, isLoadingProfile } = useUserProfile();
-  const {
+    const {
     applications: influencerApplications = [],
     isLoading: isLoadingApplications,
   } = useGetInfluencerApplications(address as `0x${string}`);
 
-  // Update application status based on fetched applications
-  useEffect(() => {
+  // Update application status based on fetched application
+
+   useEffect(() => {
     if (!isLoadingApplications && influencerApplications) {
       const statusMap: Record<string, "applied" | "assigned" | null> = {};
       influencerApplications.forEach((app) => {
@@ -98,6 +95,7 @@ export default function Marketplace() {
       setApplicationStatus(statusMap);
     }
   }, [influencerApplications, isLoadingApplications]);
+
 
   // Loading state for the entire page
   if (isLoading) {
@@ -117,12 +115,12 @@ export default function Marketplace() {
               r="10"
               stroke="currentColor"
               strokeWidth="4"
-            ></circle>
+            />
             <path
               className="opacity-75"
               fill="currentColor"
               d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
-            ></path>
+            />
           </svg>
           <p className="mt-4 text-slate-400">Loading campaigns...</p>
         </div>
@@ -132,8 +130,12 @@ export default function Marketplace() {
 
   // Determine button state for each brief
   const getButtonState = (brief: Brief) => {
-    // First check if user has already applied
-    if (brief.hasApplied) {
+    const status = applicationStatus[brief.id];
+    const deadlinePassed = new Date(brief.selectionDeadline * 1000) < new Date();
+    const isOpen = brief.status === 0;
+
+    // Check if user has applied or been assigned
+    if (status === "applied") {
       return {
         text: "Applied",
         disabled: true,
@@ -142,9 +144,6 @@ export default function Marketplace() {
         icon: <Check className="w-4 h-4 mr-1" />,
       };
     }
-
-    // Then check if assigned (keep your existing logic for this)
-    const status = applicationStatus[brief.id];
     if (status === "assigned") {
       return {
         text: "Assigned",
@@ -155,7 +154,7 @@ export default function Marketplace() {
       };
     }
 
-    // Rest of your existing conditions...
+    // Check connection and profile status
     if (!isConnected) {
       return {
         text: "Connect Wallet to Apply",
@@ -164,7 +163,6 @@ export default function Marketplace() {
         variant: "slate",
       };
     }
-
     if (isLoadingProfile) {
       return {
         text: "Loading...",
@@ -173,7 +171,6 @@ export default function Marketplace() {
         variant: "slate",
       };
     }
-
     if (!userProfile?.isRegistered) {
       return {
         text: "Register as Influencer",
@@ -182,7 +179,6 @@ export default function Marketplace() {
         variant: "emerald",
       };
     }
-
     if (userProfile.isBusiness) {
       if (brief.business.toLowerCase() === address?.toLowerCase()) {
         return {
@@ -200,11 +196,10 @@ export default function Marketplace() {
       };
     }
 
-    const deadlinePassed =
-      new Date(brief.applicationDeadline * 1000) < new Date();
-    if (brief.status !== 0 || deadlinePassed) {
+    // Check campaign status and deadline
+    if (!isOpen || deadlinePassed) {
       return {
-        text: deadlinePassed ? "Deadline Passed" : "Closed",
+        text: deadlinePassed ? "Deadline Passed" : statusMap[brief.status],
         disabled: true,
         onClick: () => {},
         variant: "slate",
@@ -227,10 +222,10 @@ export default function Marketplace() {
     const budget = brief.budget;
     const matchesSearch =
       brief.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      brief.description.toLowerCase().includes(searchQuery.toLowerCase());
+      brief.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      brief.requirements.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       categoryFilter === "All Categories" ||
-      // @ts-expect-error:Brief ID should be typed but API currently accepts any string
       audienceMap[brief.targetAudience] === categoryFilter;
     const matchesBudget =
       budgetFilter === "Budget: Any" ||
@@ -266,9 +261,7 @@ export default function Marketplace() {
       <div className="p-6 lg:p-8">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white">
-            Campaign Marketplace
-          </h2>
+          <h2 className="text-3xl font-bold text-white">Campaign Marketplace</h2>
           <p className="text-sm text-slate-400 mt-2">
             Discover campaigns that match your influencer profile
           </p>
@@ -325,14 +318,10 @@ export default function Marketplace() {
         {/* Brief List */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredBriefs.map((brief) => {
-            // @ts-expect-error:Brief ID should be typed but API currently accepts any string
             const category = audienceMap[brief.targetAudience] || "Other";
-            // @ts-expect-error:Brief ID should be typed but API currently accepts any string
             const status = statusMap[brief.status] || "Unknown";
             const isOpen = brief.status === 0;
-            const deadlinePassed =
-              new Date(brief.applicationDeadline * 1000) < new Date();
-              // @ts-expect-error:Brief ID should be typed but API currently accepts any string
+            const deadlinePassed = new Date(brief.selectionDeadline * 1000) < new Date();
             const buttonState = getButtonState(brief);
             const applicationsCount = brief.applicationCount || 0;
 
@@ -345,9 +334,7 @@ export default function Marketplace() {
                 <div className="p-5 border-b border-slate-700/50">
                   <div className="flex justify-between items-start">
                     <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(
-                        category
-                      )}`}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(category)}`}
                     >
                       {category}
                     </span>
@@ -368,6 +355,9 @@ export default function Marketplace() {
                   <p className="text-sm text-slate-300 mb-4 line-clamp-3">
                     {brief.description}
                   </p>
+                  <p className="text-sm text-slate-400 mb-4 line-clamp-3">
+                    <strong>Requirements:</strong> {brief.requirements}
+                  </p>
 
                   {/* Status and deadline */}
                   <div className="flex items-center justify-between mb-4">
@@ -378,11 +368,7 @@ export default function Marketplace() {
                           : "bg-slate-500/10 text-slate-400 border-slate-500/20"
                       } border`}
                     >
-                      {isOpen && !deadlinePassed
-                        ? "Open"
-                        : deadlinePassed
-                        ? "Closed"
-                        : status}
+                      {isOpen && !deadlinePassed ? "Open" : status}
                     </span>
                     <div className="flex items-center text-xs text-slate-400">
                       <Clock className="w-4 h-4 mr-1" />
@@ -390,17 +376,15 @@ export default function Marketplace() {
                         <span>
                           Closed{" "}
                           {formatDistanceToNow(
-                            new Date(brief.applicationDeadline * 1000),
-                            {
-                              addSuffix: true,
-                            }
+                            new Date(brief.selectionDeadline * 1000),
+                            { addSuffix: true }
                           )}
                         </span>
                       ) : (
                         <span>
                           Closes in{" "}
                           {formatDistanceToNow(
-                            new Date(brief.applicationDeadline * 1000)
+                            new Date(brief.selectionDeadline * 1000)
                           )}
                         </span>
                       )}
@@ -446,7 +430,6 @@ export default function Marketplace() {
                       </div>
                     </div>
                   </div>
-
 
                   {/* Apply button */}
                   <button
@@ -499,8 +482,7 @@ export default function Marketplace() {
                   description: selectedBrief.description,
                   business: selectedBrief.business,
                   budget: selectedBrief.budget,
-                  requirements:
-                    selectedBrief.requirements || "No specific requirements",
+                  requirements: selectedBrief.requirements || "No specific requirements",
                 }
               : null
           }
@@ -511,3 +493,4 @@ export default function Marketplace() {
     </div>
   );
 }
+

@@ -33,6 +33,7 @@ import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
 import Image from "next/image";
 
+
 // Define precise interfaces
 interface Application {
   isApproved: boolean;
@@ -44,20 +45,13 @@ interface Application {
 interface Brief {
   briefId: string;
   brief: {
-    budget: string;
-    business: string;
-    description: string;
-    maxInfluencers: string;
     name: string;
-    promotionDuration: string;
-    promotionEndTime: string;
-    promotionStartTime: string;
-    proofSubmissionDeadline: string;
-    selectedInfluencersCount: string;
-    selectionDeadline: string;
-    status: number;
-    targetAudience: number;
+    description: string;
+    business: string;
+    budget: string;
+    applicationDeadline: string | number;
     verificationDeadline: string | number;
+    status: number;
   };
   application: Application;
 }
@@ -113,9 +107,7 @@ export default function InfluencerDashboard() {
   const { isVerified } = useIsInfluencerVerified();
   const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
     useInfluencerDashboard();
-
-  console.log("appliedBriefs", appliedBriefs);
-
+    
   const {
     submitProof,
     isPending: isSubmittingProof,
@@ -127,7 +119,7 @@ export default function InfluencerDashboard() {
   useEffect(() => {
     setIsMounted(true);
   }, [isConnected, address]);
-
+  
   useEffect(() => {
     if (
       isSubmittingProof &&
@@ -306,7 +298,6 @@ export default function InfluencerDashboard() {
   };
 
   const canSubmitProof = (brief: Brief): boolean => {
-    console.log("Checking canSubmitProof for brief:", brief);
     return (
       brief.application.isSelected &&
       brief.brief.status === 1 &&
@@ -603,10 +594,9 @@ export default function InfluencerDashboard() {
           ) : (
             <div className="divide-y divide-slate-700/50">
               {appliedBriefs.map((brief, index) => {
-                const budget =
-                  typeof brief.brief.budget === "bigint"
-                    ? Number(brief.brief.budget) / 1e18
-                    : Number(brief.brief.budget) / 1e18;
+                const applicationDeadline =
+                  Number(brief.brief.applicationDeadline) * 1000;
+                const budget = Number(brief.brief.budget) / 1e18;
                 // @ts-expect-error:expect undefine
                 const paymentStatus = getPaymentStatus(brief.application);
                 const isExpanded = expandedBriefId === brief.briefId;
@@ -650,14 +640,7 @@ export default function InfluencerDashboard() {
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               <span>
-                                {format(
-                                  new Date(
-                                    typeof brief.brief.promotionStartTime === "bigint"
-                                      ? Number(brief.brief.promotionStartTime)
-                                      : brief.brief.promotionStartTime
-                                  ),
-                                  "MMM d"
-                                )}
+                                {format(new Date(applicationDeadline), "MMM d")}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
@@ -669,7 +652,6 @@ export default function InfluencerDashboard() {
                       </div>
 
                       {isExpanded && (
-                        console.log("Expanded brief:", brief),
                         <motion.div
                           className="mt-2 pl-8"
                           initial={{ height: 0, opacity: 0 }}

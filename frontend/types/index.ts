@@ -1,21 +1,23 @@
-
 import { Hex } from "viem";
-
 export interface Brief {
-  title: string;
-  id: Hex;
+  id: `0x${string}`;
+  business: `0x${string}`;
   name: string;
   description: string;
-  budget: string;
-  applicationDeadline: string;
-  promotionDuration: string;
-  maxInfluencers: string;
-  targetAudience: string;
-  verificationPeriod: string;
-  status: string;
-  promotionStartTime?: string;
-  promotionEndTime?: string;
-  verificationDeadline?: string;
+  requirements: string;
+  budget: number;
+  status: number; // CampaignStatus: 0=Open, 1=Assigned, 2=Completed, 3=Cancelled, 4=Expired
+  promotionDuration: number;
+  promotionStartTime: number;
+  promotionEndTime: number;
+  proofSubmissionDeadline: number;
+  verificationDeadline: number;
+  maxInfluencers: number;
+  selectedInfluencersCount: number;
+  targetAudience: number; // TargetAudience: 0=General, ..., 13=Other
+  creationTime: number;
+  selectionDeadline: number;
+  applicationCount: number;
 }
 
 export interface Application {
@@ -30,7 +32,7 @@ export interface Application {
     name?: string;
     // Add other fields as needed
   };
-   hasClaimed?: boolean;
+  hasClaimed?: boolean;
 }
 
 export interface FormData {
@@ -61,24 +63,24 @@ export interface Task {
   postLink?: string;
 }
 
-
 export interface BriefData {
   business: string;
   name: string;
   description: string;
   budget: string;
   status: number;
-  applicationDeadline: string;
   promotionDuration: string;
   promotionStartTime: string;
   promotionEndTime: string;
+  proofSubmissionDeadline:string;
   maxInfluencers: string;
   selectedInfluencersCount: string;
+  selectionDeadline:string,
   targetAudience: number;
   verificationDeadline: string;
 }
 
-export  interface ApplicationData {
+export interface ApplicationData {
   influencer: string;
   message: string;
   timestamp: string;
@@ -110,12 +112,11 @@ export interface ApplicationsModalProps {
   onClose: () => void;
 }
 export type Transaction = {
-    id: string;
-    type: string;
-    amount: number;
-    from: string;
-    date: string;
-    txHash: string;
-    status: string;
-  };
-
+  id: string;
+  type: string;
+  amount: number;
+  from: string;
+  date: string;
+  txHash: string;
+  status: string;
+};
