@@ -11,11 +11,18 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
+import { withNetworkGuard } from "@/components/WithNetworkGuard";
+import { NetworkStatus } from "@/components/NetworkStatus";
+import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 
 interface VerificationResult {
   isValid: boolean;
   credentialSubject?: { isOver18: boolean; nationality: string };
   error?: string;
+}
+
+interface SelfVerificationProps {
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
 const mockVerifyProof = async (): Promise<VerificationResult> => {
@@ -29,11 +36,12 @@ const mockVerifyProof = async (): Promise<VerificationResult> => {
   });
 };
 
-export default function SelfVerification() {
+function SelfVerification({ guardedAction }: SelfVerificationProps) {
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selfApp, setSelfApp] = useState<SelfApp | null>(null);
   const { address, isConnected } = useAccount();
+  const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const { userProfile, isLoadingProfile } = useUserProfile();
   const { verifySelfProof, isPending, isSuccess } = useVerifySelfProof();
 
@@ -58,9 +66,19 @@ export default function SelfVerification() {
         toast.error("Please connect your wallet to verify.");
         return;
       }
+
+      if (!guardedAction) {
+        toast.error(
+          "Network configuration error. Please refresh and try again."
+        );
+        return;
+      }
+
       setIsLoading(true);
       try {
-        await verifySelfProof(proof, publicSignals);
+        await guardedAction(async () => {
+          await verifySelfProof(proof, publicSignals);
+        });
         toast.success("Proof submitted for verification!");
       } catch (error) {
         console.error("Verification failed:", error);
@@ -70,7 +88,7 @@ export default function SelfVerification() {
         setIsLoading(false);
       }
     },
-    [isConnected, address, verifySelfProof]
+    [isConnected, address, verifySelfProof, guardedAction]
   );
 
   useEffect(() => {
@@ -243,6 +261,13 @@ export default function SelfVerification() {
           </Link>
         </div>
 
+        {/* Network Status */}
+        {isConnected && (
+          <div className="mb-4">
+            <NetworkStatus className="bg-slate-800/60 border-slate-600/50" />
+          </div>
+        )}
+
         <motion.div
           className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg p-6 text-center"
           initial={{ opacity: 0, y: 10 }}
@@ -280,7 +305,7 @@ export default function SelfVerification() {
               : "Scan the QR code with the Self app to verify your identity securely."}
           </p>
 
-          {!isVerified && selfApp ? (
+          {!isVerified && selfApp && isConnected && isCorrectChain ? (
             <div className="mb-4 max-w-[80vw] mx-auto">
               <SelfQRcodeWrapper
                 selfApp={selfApp}
@@ -295,6 +320,14 @@ export default function SelfVerification() {
               </p>
               <p className="text-[10px] text-slate-400 mt-0.5">
                 Session ID: {address.substring(0, 8)}...
+              </p>
+            </div>
+          ) : !isVerified && (!isConnected || !isCorrectChain) ? (
+            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <p className="text-sm text-amber-400">
+                {!isConnected
+                  ? "Please connect your wallet to proceed"
+                  : `Please switch to ${currentNetwork.name} to verify`}
               </p>
             </div>
           ) : !isVerified ? (
@@ -357,3 +390,5 @@ export default function SelfVerification() {
     </div>
   );
 }
+
+export default withNetworkGuard(SelfVerification);
