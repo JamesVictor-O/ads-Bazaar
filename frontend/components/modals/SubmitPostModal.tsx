@@ -8,7 +8,12 @@ import {
   Link,
   Send,
   Sparkles,
+  AlertTriangle,
 } from "lucide-react";
+import { withNetworkGuard } from "@/components/WithNetworkGuard";
+import { NetworkStatus } from "@/components/NetworkStatus";
+import { useAccount } from "wagmi";
+import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 
 interface TransactionStatus {
   stage: "idle" | "preparing" | "confirming" | "mining" | "success" | "error";
@@ -31,9 +36,10 @@ interface SubmitPostModalProps {
   onClose: () => void;
   transactionStatus?: TransactionStatus;
   isSubmitting?: boolean;
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
-export default function SubmitPostModal({
+function SubmitPostModal({
   selectedCampaign,
   selectedTask,
   postLink,
@@ -42,7 +48,11 @@ export default function SubmitPostModal({
   onClose,
   transactionStatus = { stage: "idle", message: "" },
   isSubmitting = false,
+  guardedAction,
 }: SubmitPostModalProps) {
+  const { isConnected } = useAccount();
+  const { isCorrectChain, currentNetwork } = useEnsureNetwork();
+
   if (!selectedCampaign || !selectedTask) return null;
 
   const getStatusIcon = (): ReactNode => {
@@ -88,15 +98,37 @@ export default function SubmitPostModal({
     }
   };
 
-  const isDisabled = 
+  const isDisabled =
     transactionStatus.stage !== "idle" &&
     transactionStatus.stage !== "error" &&
     transactionStatus.stage !== "success";
 
+  const handleSubmit = async () => {
+    if (!guardedAction) {
+      // Fallback to direct submission if guardedAction is not available
+      await onSubmit();
+      return;
+    }
+
+    if (!postLink.trim()) {
+      return; // Let the existing validation handle this
+    }
+
+    await guardedAction(async () => {
+      await onSubmit();
+    });
+  };
+
+  const canSubmit =
+    postLink.trim() &&
+    !isSubmitting &&
+    isConnected &&
+    isCorrectChain &&
+    (transactionStatus.stage === "idle" || transactionStatus.stage === "error");
+
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <div className="bg-slate-800 sm:bg-slate-800/90 sm:backdrop-blur-xl border-0 sm:border sm:border-slate-700/50 rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-emerald-500/10 w-full sm:w-full sm:max-w-lg mx-auto transform transition-all duration-300 ease-out max-h-[90vh] sm:max-h-none overflow-hidden">
-        
         {/* Mobile drag indicator */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-8 h-1 bg-slate-600 rounded-full"></div>
@@ -129,6 +161,28 @@ export default function SubmitPostModal({
 
         {/* Scrollable Content */}
         <div className="px-4 sm:px-8 pb-4 sm:pb-8 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(90vh-160px)] sm:max-h-none">
+          {/* Network Status */}
+          {isConnected && (
+            <div>
+              <NetworkStatus className="bg-slate-900/30 border-slate-600/50" />
+            </div>
+          )}
+
+          {/* Connection Warning */}
+          {!isConnected && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start">
+              <AlertTriangle className="text-amber-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
+              <div>
+                <p className="text-sm font-medium text-amber-400">
+                  Wallet Not Connected
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Connect your wallet to submit proof
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Campaign Info */}
           <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 sm:p-5 shadow-sm">
             <div className="space-y-3 sm:space-y-4">
@@ -154,7 +208,9 @@ export default function SubmitPostModal({
                     Task
                   </label>
                 </div>
-                <p className="text-white font-medium leading-tight">{selectedTask.name}</p>
+                <p className="text-white font-medium leading-tight">
+                  {selectedTask.name}
+                </p>
               </div>
             </div>
           </div>
@@ -186,9 +242,7 @@ export default function SubmitPostModal({
           {transactionStatus.stage !== "idle" && (
             <div className={`rounded-xl border p-4 ${getStatusStyles()}`}>
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-0.5">
-                  {getStatusIcon()}
-                </div>
+                <div className="flex-shrink-0 mt-0.5">{getStatusIcon()}</div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-white text-sm sm:text-base leading-tight">
                     {transactionStatus.message}
@@ -222,19 +276,10 @@ export default function SubmitPostModal({
             </button>
 
             <button
-              onClick={onSubmit}
-              disabled={
-                !postLink.trim() ||
-                isSubmitting ||
-                (transactionStatus.stage !== "idle" &&
-                  transactionStatus.stage !== "error")
-              }
+              onClick={handleSubmit}
+              disabled={!canSubmit}
               className={`order-1 sm:order-2 flex-1 px-4 sm:px-6 py-3.5 sm:py-3 text-sm font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
-                !postLink.trim() ||
-                isSubmitting ||
-                (transactionStatus.stage !== "idle" &&
-                  transactionStatus.stage !== "error" &&
-                  transactionStatus.stage !== "success")
+                !canSubmit
                   ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
                   : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 shadow-md shadow-emerald-500/25"
               }`}
@@ -246,6 +291,18 @@ export default function SubmitPostModal({
                 <>
                   <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
                   <span className="truncate">{getButtonText()}</span>
+                </>
+              ) : !isConnected ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">Connect Wallet</span>
+                </>
+              ) : !isCorrectChain ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">
+                    Switch to {currentNetwork.name}
+                  </span>
                 </>
               ) : transactionStatus.stage === "success" ? (
                 <>
@@ -265,3 +322,5 @@ export default function SubmitPostModal({
     </div>
   );
 }
+
+export default withNetworkGuard(SubmitPostModal);
