@@ -27,6 +27,8 @@ import {
   Loader2,
   Wifi,
   WifiOff,
+  XCircle,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -39,6 +41,7 @@ import {
   useCreateAdBrief,
   useCompleteCampaign,
   useGetBusinessBriefs,
+  useCancelAdBrief,
 } from "../../hooks/adsBazaar";
 
 const BrandDashboard = () => {
@@ -52,6 +55,9 @@ const BrandDashboard = () => {
   const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(
+    null
+  );
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -89,6 +95,14 @@ const BrandDashboard = () => {
     error: completeError,
   } = useCompleteCampaign();
 
+  const {
+    cancelBrief,
+    isPending: isCancelingBrief,
+    isSuccess: isCancelSuccess,
+    isError: isCancelError,
+    error: cancelError,
+  } = useCancelAdBrief();
+
   interface StatusMap {
     [key: number]: string;
   }
@@ -99,6 +113,7 @@ const BrandDashboard = () => {
       1: "In Progress",
       2: "Completed",
       3: "Cancelled",
+      4: "Expired",
     };
     return statusMap[statusCode] || "Unknown";
   };
@@ -114,7 +129,7 @@ const BrandDashboard = () => {
       case 3:
         return "bg-red-500/10 text-red-400 border-red-500/20";
       case 4:
-        return "bg-blue-400/10 text-blue-400 border-blue-500/20";
+        return "bg-orange-500/10 text-orange-400 border-orange-500/20";
       default:
         return "bg-gray-500/10 text-gray-400 border-gray-500/20";
     }
@@ -147,7 +162,6 @@ const BrandDashboard = () => {
     if (isCompleteSuccess) {
       toast.success("Campaign completed and funds released successfully!");
       refetchApplications();
-      // Close submissions modal after successful completion
       setShowSubmissionsModal(false);
     }
 
@@ -159,6 +173,23 @@ const BrandDashboard = () => {
       );
     }
   }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications]);
+
+  // Handle cancel campaign success/error
+  useEffect(() => {
+    if (isCancelSuccess) {
+      toast.success("Campaign cancelled successfully!");
+      setShowCancelConfirm(null);
+      // Refresh the briefs list
+      router.refresh();
+    }
+
+    if (isCancelError) {
+      toast.error(
+        `Failed to cancel campaign: ${cancelError?.message || "Unknown error"}`
+      );
+      setShowCancelConfirm(null);
+    }
+  }, [isCancelSuccess, isCancelError, cancelError, router]);
 
   const activeBriefs = briefs
     ? briefs.filter((brief) => brief.status === 0 || brief.status === 1)
@@ -239,6 +270,27 @@ const BrandDashboard = () => {
         }`
       );
     }
+  };
+
+  const handleCancelCampaign = async (briefId: string) => {
+    try {
+      await cancelBrief(briefId as `0x${string}`);
+    } catch (error) {
+      console.error("Error canceling campaign:", error);
+      toast.error(
+        `Failed to cancel campaign: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const canCancelCampaign = (brief: Brief): boolean => {
+    // Can cancel if:
+    // 1. Campaign is still open (status 0)
+    // 2. No influencers have been selected yet
+    // 3. Or if deadline has passed but no selections made
+    return brief.status === 0 && brief.selectedInfluencersCount === 0;
   };
 
   const handleCreateCampaignClick = () => {
@@ -593,6 +645,23 @@ const BrandDashboard = () => {
                         >
                           Submissions
                         </motion.button>
+
+                        {/* Cancel Campaign Button */}
+                        {canCancelCampaign(brief) && (
+                          <motion.button
+                            onClick={() => setShowCancelConfirm(brief.id)}
+                            disabled={isCancelingBrief}
+                            className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg border border-red-500/30 hover:border-red-500/50 transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {isCancelingBrief ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                          </motion.button>
+                        )}
+
                         <motion.button
                           className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
                           whileTap={{ scale: 0.95 }}
@@ -608,6 +677,73 @@ const BrandDashboard = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <motion.div
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 max-w-md mx-auto shadow-2xl shadow-red-500/10"
+            initial={{ scale: 0.95, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.95, y: 20 }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
+                <XCircle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">
+                  Cancel Campaign
+                </h3>
+                <p className="text-sm text-slate-400">
+                  This action cannot be undone
+                </p>
+              </div>
+            </div>
+
+            <p className="text-slate-300 mb-6 leading-relaxed">
+              Are you sure you want to cancel this campaign? The budget will be
+              refunded to your wallet.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelConfirm(null)}
+                disabled={isCancelingBrief}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 transition-all disabled:opacity-50"
+              >
+                Keep Campaign
+              </button>
+              <button
+                onClick={() => {
+                  if (showCancelConfirm) {
+                    handleCancelCampaign(showCancelConfirm);
+                  }
+                }}
+                disabled={isCancelingBrief}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-xl hover:from-red-600 hover:to-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isCancelingBrief ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Canceling...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4" />
+                    Cancel Campaign
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
       {showCreateModal && (
         <CreateCampaignModal

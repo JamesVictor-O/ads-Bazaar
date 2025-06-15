@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import SubmitPostModal from "@/components/modals/SubmitPostModal";
+import ClaimPaymentsModal from "@/components/modals/ClaimPaymentsModal";
 import { Transaction } from "@/types";
 import { motion } from "framer-motion";
 import {
@@ -27,11 +28,14 @@ import {
   useUserProfile,
   useIsInfluencerVerified,
   useSubmitProof,
+  useTotalPendingAmount,
+  usePendingPayments,
 } from "../../hooks/adsBazaar";
 import { Toaster, toast } from "react-hot-toast";
 import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
 import Image from "next/image";
+import { formatEther } from "viem";
 
 // Define precise interfaces
 interface Application {
@@ -91,6 +95,7 @@ export default function InfluencerDashboard() {
   } = useProfile();
   const [isMounted, setIsMounted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [postLink, setPostLink] = useState("");
@@ -113,6 +118,13 @@ export default function InfluencerDashboard() {
   const { isVerified } = useIsInfluencerVerified();
   const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
     useInfluencerDashboard();
+
+  // Fetch pending payments data
+  const { totalPendingAmount, isLoadingTotalAmount } =
+    useTotalPendingAmount(address);
+
+  const { pendingPayments, isLoadingPayments, refetchPayments } =
+    usePendingPayments(address);
 
   console.log("appliedBriefs", appliedBriefs);
 
@@ -225,8 +237,19 @@ export default function InfluencerDashboard() {
     }
   };
 
-  const handleClaimFunds = (briefId: string): void => {
-    toast(`Claim funds coming soon! for ${briefId}`);
+  const handleOpenClaimModal = () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet to claim payments");
+      return;
+    }
+    setShowClaimModal(true);
+  };
+
+  const handleClaimSuccess = () => {
+    // Refresh payments data and brief data
+    refetchPayments();
+    refetch();
+    toast.success("Payments claimed successfully!");
   };
 
   const handleCloseModal = () => {
@@ -318,12 +341,14 @@ export default function InfluencerDashboard() {
     (sum, tx) => sum + tx.amount,
     0
   );
-  const potentialEarnings = assignedBriefs
-    ? assignedBriefs
-        .filter((b) => b.application.isSelected || b.application.isApproved)
-        .filter((b) => !b.application.hasClaimed)
-        .reduce((sum, b) => sum + Number(b.brief.budget) / 1e18, 0)
+
+  // Calculate pending earnings from total pending amount
+  const pendingEarnings = totalPendingAmount
+    ? parseFloat(formatEther(totalPendingAmount))
     : 0;
+
+  // Check if there are claimable payments
+  const hasClaimablePayments = pendingPayments && pendingPayments.length > 0;
 
   const isInitialLoading =
     !isMounted ||
@@ -493,10 +518,11 @@ export default function InfluencerDashboard() {
             },
             {
               icon: TrendingUp,
-              value: potentialEarnings.toFixed(2),
+              value: pendingEarnings.toFixed(2),
               label: "Pending",
               color: "amber-400",
-              hasClaimable: potentialEarnings > 0 && isVerified,
+              hasClaimable: hasClaimablePayments && isConnected,
+              isLoading: isLoadingTotalAmount || isLoadingPayments,
             },
           ].map((stat, index) => (
             <motion.div
@@ -512,21 +538,9 @@ export default function InfluencerDashboard() {
                 >
                   <stat.icon className={`w-3.5 h-3.5 text-${stat.color}`} />
                 </div>
-                {stat.hasClaimable && (
+                {stat.hasClaimable && !stat.isLoading && (
                   <motion.button
-                    onClick={() => {
-                      // Find all claimable briefs
-                      const claimableBriefs = assignedBriefs?.filter(
-                        (b) =>
-                          b.application.isApproved && !b.application.hasClaimed
-                      );
-                      if (claimableBriefs && claimableBriefs.length > 0) {
-                        // You might want to implement batch claiming or show a modal
-                        toast.success(
-                          `You have ${claimableBriefs.length} campaigns ready to claim!`
-                        );
-                      }
-                    }}
+                    onClick={handleOpenClaimModal}
                     className="absolute top-1 right-1 p-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -536,24 +550,19 @@ export default function InfluencerDashboard() {
                   </motion.button>
                 )}
               </div>
-              <p className="text-base font-bold text-white">{stat.value}</p>
+              <p className="text-base font-bold text-white">
+                {stat.isLoading ? (
+                  <span className="animate-pulse">...</span>
+                ) : (
+                  stat.value
+                )}
+              </p>
               <p className="text-[10px] text-slate-400">{stat.label}</p>
 
               {/* Add a full-width claim button if there are claimable earnings */}
-              {stat.hasClaimable && (
+              {stat.hasClaimable && !stat.isLoading && (
                 <motion.button
-                  onClick={() => {
-                    const claimableBriefs = assignedBriefs?.filter(
-                      (b) =>
-                        b.application.isApproved && !b.application.hasClaimed
-                    );
-                    if (claimableBriefs && claimableBriefs.length > 0) {
-                      // Implement your claim logic here
-                      claimableBriefs.forEach((brief) => {
-                        handleClaimFunds(brief.briefId);
-                      });
-                    }
-                  }}
+                  onClick={handleOpenClaimModal}
                   className="w-full mt-2 py-1 text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-md flex items-center justify-center gap-1"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -652,7 +661,8 @@ export default function InfluencerDashboard() {
                               <span>
                                 {format(
                                   new Date(
-                                    typeof brief.brief.promotionStartTime === "bigint"
+                                    typeof brief.brief.promotionStartTime ===
+                                    "bigint"
                                       ? Number(brief.brief.promotionStartTime)
                                       : brief.brief.promotionStartTime
                                   ),
@@ -668,97 +678,98 @@ export default function InfluencerDashboard() {
                         </div>
                       </div>
 
-                      {isExpanded && (
-                        console.log("Expanded brief:", brief),
-                        <motion.div
-                          className="mt-2 pl-8"
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {brief.application &&
-                            brief.application.isSelected && (
-                              <div className="flex flex-col gap-2 mb-2">
-                                <div className="flex items-center gap-1.5">
-                                  {getTaskStatusIcon(brief.application)}
-                                  <span className="text-xs text-slate-300">
-                                    Content Submission
-                                  </span>
-                                  {brief.brief.status !== 1 && (
-                                    <span className="text-[10px] text-amber-400 bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-800/50">
-                                      Waiting...
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex gap-2">
-                                  {brief.application.proofLink ? (
-                                    <a
-                                      href={brief.application.proofLink}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                    >
-                                      <LinkIcon className="w-3 h-3" />
-                                      View
-                                    </a>
-                                  ) : // @ts-expect-error:expect undefine
-                                  canSubmitProof(brief) ? (
-                                    <motion.button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        // @ts-expect-error:expect undefine
-                                        setSelectedCampaign(brief);
-                                        setSelectedTask({
-                                          name: brief.brief.description,
-                                        });
-                                        setShowSubmitModal(true);
-                                      }}
-                                      className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                      disabled={isSubmittingProof}
-                                      whileTap={{ scale: 0.95 }}
-                                    >
-                                      {isSubmittingProof ? (
-                                        "Submitting..."
-                                      ) : (
-                                        <>
-                                          <LinkIcon className="w-3 h-3" />
-                                          Submit
-                                        </>
-                                      )}
-                                    </motion.button>
-                                  ) : brief.application.isSelected &&
-                                    brief.brief.status !== 1 ? (
-                                    <span className="text-xs text-slate-500">
-                                      Submit when assigned
-                                    </span>
-                                  ) : null}
-                                </div>
-                              </div>
-                            )}
-                          <div className="flex items-center justify-between">
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full ${paymentStatus.classes}`}
-                            >
-                              {paymentStatus.label}
-                            </span>
+                      {isExpanded &&
+                        (console.log("Expanded brief:", brief),
+                        (
+                          <motion.div
+                            className="mt-2 pl-8"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            transition={{ duration: 0.2 }}
+                          >
                             {brief.application &&
-                              brief.application.isApproved &&
-                              !brief.application.hasClaimed && (
-                                <motion.button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleClaimFunds(brief.briefId);
-                                  }}
-                                  className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                  whileTap={{ scale: 0.95 }}
-                                >
-                                  <CheckCircle className="w-3 h-3" />
-                                  Claim
-                                </motion.button>
+                              brief.application.isSelected && (
+                                <div className="flex flex-col gap-2 mb-2">
+                                  <div className="flex items-center gap-1.5">
+                                    {getTaskStatusIcon(brief.application)}
+                                    <span className="text-xs text-slate-300">
+                                      Content Submission
+                                    </span>
+                                    {brief.brief.status !== 1 && (
+                                      <span className="text-[10px] text-amber-400 bg-amber-900/30 px-1.5 py-0.5 rounded-full border border-amber-800/50">
+                                        Waiting...
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    {brief.application.proofLink ? (
+                                      <a
+                                        href={brief.application.proofLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                      >
+                                        <LinkIcon className="w-3 h-3" />
+                                        View
+                                      </a>
+                                    ) : // @ts-expect-error:expect undefine
+                                    canSubmitProof(brief) ? (
+                                      <motion.button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // @ts-expect-error:expect undefine
+                                          setSelectedCampaign(brief);
+                                          setSelectedTask({
+                                            name: brief.brief.description,
+                                          });
+                                          setShowSubmitModal(true);
+                                        }}
+                                        className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                        disabled={isSubmittingProof}
+                                        whileTap={{ scale: 0.95 }}
+                                      >
+                                        {isSubmittingProof ? (
+                                          "Submitting..."
+                                        ) : (
+                                          <>
+                                            <LinkIcon className="w-3 h-3" />
+                                            Submit
+                                          </>
+                                        )}
+                                      </motion.button>
+                                    ) : brief.application.isSelected &&
+                                      brief.brief.status !== 1 ? (
+                                      <span className="text-xs text-slate-500">
+                                        Submit when assigned
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
                               )}
-                          </div>
-                        </motion.div>
-                      )}
+                            <div className="flex items-center justify-between">
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full ${paymentStatus.classes}`}
+                              >
+                                {paymentStatus.label}
+                              </span>
+                              {brief.application &&
+                                brief.application.isApproved &&
+                                !brief.application.hasClaimed && (
+                                  <motion.button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenClaimModal();
+                                    }}
+                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                    whileTap={{ scale: 0.95 }}
+                                  >
+                                    <CheckCircle className="w-3 h-3" />
+                                    Claim
+                                  </motion.button>
+                                )}
+                            </div>
+                          </motion.div>
+                        ))}
                     </div>
                   </motion.div>
                 );
@@ -852,6 +863,7 @@ export default function InfluencerDashboard() {
         </motion.div>
       </div>
 
+      {/* Modals */}
       {showSubmitModal && selectedCampaign && selectedTask && (
         <SubmitPostModal
           selectedCampaign={{
@@ -866,6 +878,13 @@ export default function InfluencerDashboard() {
           onClose={handleCloseModal}
           transactionStatus={txStatus}
           isSubmitting={isSubmittingProof}
+        />
+      )}
+
+      {showClaimModal && (
+        <ClaimPaymentsModal
+          isOpen={showClaimModal}
+          onClose={() => setShowClaimModal(false)}
         />
       )}
     </div>
