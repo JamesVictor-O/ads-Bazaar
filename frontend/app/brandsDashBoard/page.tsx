@@ -29,6 +29,7 @@ import {
   WifiOff,
   XCircle,
   Trash2,
+  Ban,
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -289,7 +290,6 @@ const BrandDashboard = () => {
     // Can cancel if:
     // 1. Campaign is still open (status 0)
     // 2. No influencers have been selected yet
-    // 3. Or if deadline has passed but no selections made
     return brief.status === 0 && brief.selectedInfluencersCount === 0;
   };
 
@@ -555,13 +555,18 @@ const BrandDashboard = () => {
                           <h3 className="text-base sm:text-lg font-semibold text-white truncate">
                             {brief.name}
                           </h3>
-                          <span
-                            className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(
-                              brief.status
-                            )}`}
-                          >
-                            {getStatusString(brief.status)}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(
+                                brief.status
+                              )}`}
+                            >
+                              {brief.status === 3 && (
+                                <Ban className="w-3 h-3 mr-1" />
+                              )}
+                              {getStatusString(brief.status)}
+                            </span>
+                          </div>
                         </div>
                         <p className="text-slate-400 text-xs sm:text-sm mb-2 line-clamp-2">
                           {brief.description}
@@ -625,11 +630,16 @@ const BrandDashboard = () => {
                             setSelectedBrief(brief);
                             setShowApplicationsModal(true);
                           }}
-                          className="relative px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg border border-slate-600/50 hover:border-slate-500 transition-all text-xs font-medium"
-                          whileTap={{ scale: 0.95 }}
+                          disabled={brief.status === 3}
+                          className={`relative px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
+                            brief.status === 3
+                              ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
+                              : "bg-slate-700/50 hover:bg-slate-700 text-white border-slate-600/50 hover:border-slate-500"
+                          }`}
+                          whileTap={brief.status !== 3 ? { scale: 0.95 } : {}}
                         >
                           Applications
-                          {applications.length > 0 && (
+                          {applications.length > 0 && brief.status !== 3 && (
                             <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
                               {applications.length}
                             </span>
@@ -640,19 +650,25 @@ const BrandDashboard = () => {
                             setSelectedBrief(brief);
                             setShowSubmissionsModal(true);
                           }}
-                          className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all text-xs font-medium"
-                          whileTap={{ scale: 0.95 }}
+                          disabled={brief.status === 3}
+                          className={`px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
+                            brief.status === 3
+                              ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
+                              : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/50"
+                          }`}
+                          whileTap={brief.status !== 3 ? { scale: 0.95 } : {}}
                         >
                           Submissions
                         </motion.button>
 
-                        {/* Cancel Campaign Button */}
+                        {/* Cancel Campaign Button - Only show when cancellation is possible */}
                         {canCancelCampaign(brief) && (
                           <motion.button
                             onClick={() => setShowCancelConfirm(brief.id)}
                             disabled={isCancelingBrief}
-                            className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg border border-red-500/30 hover:border-red-500/50 transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg border border-red-500/30 hover:border-red-500/50 transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                             whileTap={{ scale: 0.95 }}
+                            title="Cancel Campaign"
                           >
                             {isCancelingBrief ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
