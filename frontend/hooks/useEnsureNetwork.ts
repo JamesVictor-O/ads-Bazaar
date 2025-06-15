@@ -1,75 +1,85 @@
 import { useAccount, useSwitchChain } from "wagmi";
-import { toast } from "react-toastify";
-import { celoAlfajores } from "wagmi/chains";
+import { toast } from "react-hot-toast";
+import {
+  CURRENT_NETWORK,
+  getCurrentNetworkConfig,
+  isCorrectNetwork,
+} from "../lib/networks";
 
 export const useEnsureNetwork = () => {
   const { isConnected, chain } = useAccount();
   const { switchChainAsync, isPending, error } = useSwitchChain();
 
+  const currentNetworkConfig = getCurrentNetworkConfig();
+
   const ensureNetwork = async () => {
     if (!isConnected) {
-      toast.error("Please connect your wallet first", {
-        position: "bottom-center",
-      });
+      toast.error("Please connect your wallet first");
       return false;
     }
 
-    if (chain?.id !== celoAlfajores.id) {
+    if (!isCorrectNetwork(chain?.id)) {
       try {
-        await switchChainAsync({ chainId: celoAlfajores.id });
-        toast.success("Switched to Celo", {
-          position: "bottom-center",
-        });
+        await switchChainAsync({ chainId: CURRENT_NETWORK.id });
+        toast.success(`Switched to ${currentNetworkConfig.name}`);
         return true;
       } catch (err: any) {
         console.error("Chain switch error:", err);
-        if (err.code === 4902) {
+
+        // Error code 4902 means the chain is not added to the wallet
+        if (err.code === 4902 || err.code === -32603) {
           try {
+            // Add the network to the wallet
             await window.ethereum?.request({
               method: "wallet_addEthereumChain",
               params: [
                 {
-                  chainId: `0x${celoAlfajores.id.toString(16)}`,
-                  chainName: "Celo Mainnet",
-                  rpcUrls: [process.env.NEXT_PUBLIC_RPC_URL],
-                  nativeCurrency: {
-                    name: "CELO",
-                    symbol: "CELO",
-                    decimals: 18,
-                  },
-                  blockExplorerUrls: ["https://celo.blockscout.com/"],
+                  chainId: `0x${CURRENT_NETWORK.id.toString(16)}`,
+                  chainName: currentNetworkConfig.name,
+                  rpcUrls: [currentNetworkConfig.rpcUrl],
+                  nativeCurrency: currentNetworkConfig.nativeCurrency,
+                  blockExplorerUrls: [currentNetworkConfig.explorerUrl],
                 },
               ],
             });
-            await switchChainAsync({ chainId: celoAlfajores.id });
-            toast.success("Added and switched to Celo", {
-              position: "bottom-center",
-            });
+
+            // Try switching again after adding
+            await switchChainAsync({ chainId: CURRENT_NETWORK.id });
+            toast.success(`Added and switched to ${currentNetworkConfig.name}`);
             return true;
-          } catch (addErr) {
-            toast.error("Failed to add Celo to wallet", {
-              position: "bottom-center",
-            });
+          } catch (addErr: any) {
+            console.error("Failed to add network:", addErr);
+            toast.error(`Failed to add ${currentNetworkConfig.name} to wallet`);
             return false;
           }
         }
+
+        // Handle user rejection
+        if (err.code === 4001) {
+          toast.error("Network switch was cancelled by user");
+          return false;
+        }
+
+        // Generic error handling
         toast.error(
-          `Failed to switch to Celo: ${err.message || "Unknown error"}`,
-          {
-            position: "bottom-center",
-          }
+          `Failed to switch to ${currentNetworkConfig.name}: ${
+            err.message || "Unknown error"
+          }`
         );
         return false;
       }
     }
+
     return true;
   };
 
   return {
     ensureNetwork,
     isConnected,
-    isCorrectChain: chain?.id === celoAlfajores.id,
+    isCorrectChain: isCorrectNetwork(chain?.id),
     isSwitching: isPending,
     switchError: error,
+    currentNetwork: currentNetworkConfig,
+    requiredNetwork: CURRENT_NETWORK,
   };
 };
