@@ -18,11 +18,7 @@ import { toast } from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 import { truncateAddress } from "@/utils/format";
 import { Hex } from "viem";
-import {
-  useCancelAdBrief,
-  useSelectInfluencer,
-  useCompleteCampaign,
-} from "@/hooks/adsBazaar";
+import { useSelectInfluencer, useCompleteCampaign } from "@/hooks/adsBazaar";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { motion } from "framer-motion";
 
@@ -39,7 +35,7 @@ const ApplicationsModal = ({
 }: EnhancedApplicationsModalProps) => {
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [transactionPhase, setTransactionPhase] = useState<
-    "idle" | "selecting" | "canceling" | "completing"
+    "idle" | "selecting" | "completing"
   >("idle");
 
   const {
@@ -48,13 +44,6 @@ const ApplicationsModal = ({
     isSuccess: isInfluencerSelected,
     error: selectError,
   } = useSelectInfluencer();
-
-  const {
-    cancelBrief,
-    isPending: isCanceling,
-    isSuccess: isCanceled,
-    error: cancelError,
-  } = useCancelAdBrief();
 
   const {
     completeCampaign,
@@ -67,19 +56,16 @@ const ApplicationsModal = ({
   useEffect(() => {
     if (isSelectingInfluencer && transactionPhase !== "selecting") {
       setTransactionPhase("selecting");
-    } else if (isCanceling && transactionPhase !== "canceling") {
-      setTransactionPhase("canceling");
     } else if (isCompleting && transactionPhase !== "completing") {
       setTransactionPhase("completing");
     } else if (
       !isSelectingInfluencer &&
-      !isCanceling &&
       !isCompleting &&
       transactionPhase !== "idle"
     ) {
       setTransactionPhase("idle");
     }
-  }, [isSelectingInfluencer, isCanceling, isCompleting, transactionPhase]);
+  }, [isSelectingInfluencer, isCompleting, transactionPhase]);
 
   // Handle success states
   useEffect(() => {
@@ -91,13 +77,6 @@ const ApplicationsModal = ({
   }, [isInfluencerSelected]);
 
   useEffect(() => {
-    if (isCanceled) {
-      toast.success("Campaign canceled successfully!");
-      onClose();
-    }
-  }, [isCanceled, onClose]);
-
-  useEffect(() => {
     if (isCompleted) {
       toast.success("Campaign completed successfully!");
       onClose();
@@ -106,7 +85,7 @@ const ApplicationsModal = ({
 
   // Handle errors
   useEffect(() => {
-    const error = selectError || cancelError || completeError;
+    const error = selectError || completeError;
     if (!error) return;
 
     let errorMessage = "Transaction failed";
@@ -129,7 +108,7 @@ const ApplicationsModal = ({
     toast.error(errorMessage, { duration: 5000 });
     setPendingIndex(null);
     setTransactionPhase("idle");
-  }, [selectError, cancelError, completeError]);
+  }, [selectError, completeError]);
 
   const handleAssignInfluencer = async (briefId: Hex, index: number) => {
     if (!guardedAction) {
@@ -146,18 +125,6 @@ const ApplicationsModal = ({
 
     await guardedAction(async () => {
       await selectInfluencer(briefId, index);
-    });
-  };
-
-  const handleCancelCampaign = async () => {
-    if (!selectedBrief || !guardedAction) {
-      toast.error("Network configuration error. Please refresh and try again.");
-      return;
-    }
-
-    await guardedAction(async () => {
-      // @ts-expect-error: Brief ID should be typed but API currently accepts any string
-      await cancelBrief(selectedBrief.briefId);
     });
   };
 
@@ -206,18 +173,10 @@ const ApplicationsModal = ({
     (app) => app.isSelected && app.hasClaimed
   );
 
-  const showCancelButton =
-    deadlinePassed ||
-    applications.length === 0 ||
-    (selectedCount === 0 && applications.length > 0);
-
   const showCompleteButton = selectedCount > 0 && hasSubmissions;
 
   const isTransactionInProgress =
-    transactionPhase !== "idle" ||
-    isSelectingInfluencer ||
-    isCanceling ||
-    isCompleting;
+    transactionPhase !== "idle" || isSelectingInfluencer || isCompleting;
 
   return (
     <motion.div
@@ -278,7 +237,6 @@ const ApplicationsModal = ({
               </p>
               <p className="text-xs text-slate-400 mt-1">
                 {transactionPhase === "selecting" && "Assigning influencer..."}
-                {transactionPhase === "canceling" && "Canceling campaign..."}
                 {transactionPhase === "completing" && "Completing campaign..."}
               </p>
             </div>
@@ -451,67 +409,6 @@ const ApplicationsModal = ({
               <p className="text-sm mt-1">Check back later for updates</p>
             </div>
           )}
-        </div>
-
-        {/* Action buttons */}
-        <div className="mt-6 flex justify-end pt-4 border-t border-slate-700/50 gap-4">
-          {showCancelButton && (
-            <motion.button
-              onClick={handleCancelCampaign}
-              disabled={isTransactionInProgress}
-              className={`mr-auto px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 ${
-                isTransactionInProgress
-                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
-                  : "text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/25"
-              }`}
-              whileTap={!isTransactionInProgress ? { scale: 0.95 } : {}}
-            >
-              {transactionPhase === "canceling" ? (
-                <>
-                  <Loader2 className="animate-spin h-4 w-4" />
-                  <span>Canceling...</span>
-                </>
-              ) : (
-                <>
-                  <XCircle className="h-4 w-4" />
-                  <span>Cancel Campaign</span>
-                </>
-              )}
-            </motion.button>
-          )}
-
-          {showCompleteButton && (
-            <motion.button
-              onClick={handleCompleteCampaign}
-              disabled={isTransactionInProgress}
-              className={`px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 ${
-                isTransactionInProgress
-                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
-                  : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
-              }`}
-              whileTap={!isTransactionInProgress ? { scale: 0.95 } : {}}
-            >
-              {transactionPhase === "completing" ? (
-                <>
-                  <Loader2 className="animate-spin h-4 w-4" />
-                  <span>Completing...</span>
-                </>
-              ) : (
-                <>
-                  <Award className="h-4 w-4" />
-                  <span>Complete Campaign</span>
-                </>
-              )}
-            </motion.button>
-          )}
-
-          <button
-            onClick={onClose}
-            disabled={isTransactionInProgress}
-            className="px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Close
-          </button>
         </div>
       </motion.div>
     </motion.div>
