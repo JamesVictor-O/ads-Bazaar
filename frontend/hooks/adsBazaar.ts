@@ -12,6 +12,7 @@ import { Brief } from "../types";
 import { formatEther } from "viem";
 import ABI from "../lib/AdsBazaar.json";
 import { toast } from "react-hot-toast";
+import { useEnsureNetwork } from "./useEnsureNetwork";
 
 type Status = "OPEN" | "ASSIGNED" | "COMPLETED" | "CANCELLED" | "EXPIRED";
 type TargetAudience =
@@ -959,14 +960,24 @@ export function useCreateAdBrief() {
 
 //Cancel ad brief
 export function useCancelAdBrief() {
-  const tx = useHandleTransaction();
+  const { writeContract, hash, isPending, isSuccess, isError, error } =
+    useHandleTransaction();
   const { address } = useAccount();
+  const { isCorrectChain, ensureNetwork } = useEnsureNetwork();
 
   const cancelBrief = async (briefId: Bytes32) => {
-    if (!address) return;
+    if (!address) {
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    if (!isCorrectChain) {
+      const switched = await ensureNetwork();
+      if (!switched) return;
+    }
 
     try {
-      await tx.writeContract({
+      await writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "cancelAdBrief",
@@ -974,12 +985,17 @@ export function useCancelAdBrief() {
       });
     } catch (error) {
       console.error("Error cancelling ad brief:", error);
+      throw error;
     }
   };
 
   return {
     cancelBrief,
-    ...tx,
+    hash,
+    isPending,
+    isSuccess,
+    isError,
+    error,
   };
 }
 
