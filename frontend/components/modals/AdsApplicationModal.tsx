@@ -3,6 +3,10 @@
 import { useApplyToBrief } from "@/hooks/adsBazaar";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import { useAccount } from "wagmi";
+import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
+import { NetworkStatus } from "@/components/NetworkStatus";
+import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import {
   X,
   Loader2,
@@ -11,6 +15,8 @@ import {
   FileText,
   User,
   CheckSquare,
+  AlertTriangle,
+  CheckCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -27,32 +33,52 @@ interface ApplyModalProps {
   } | null;
   applicationMessage: string;
   setApplicationMessage: (message: string) => void;
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
-export default function ApplyModal({
+function ApplyModal({
   showApplyModal,
   setShowApplyModal,
   selectedBrief,
   applicationMessage,
   setApplicationMessage,
+  guardedAction,
 }: ApplyModalProps) {
   const [isClient, setIsClient] = useState(false);
   const { applyToBrief, isPending, isSuccess, error } = useApplyToBrief();
+  const { isConnected } = useAccount();
+  const { isCorrectChain, currentNetwork } = useEnsureNetwork();
+  const [transactionPhase, setTransactionPhase] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
+    if (isPending && transactionPhase !== "submitting") {
+      setTransactionPhase("submitting");
+    }
+  }, [isPending, transactionPhase]);
+
+  useEffect(() => {
     if (isSuccess) {
+      setTransactionPhase("success");
       toast.success("Application submitted successfully!");
-      setShowApplyModal(false);
-      setApplicationMessage("");
+
+      // Auto-close after success
+      setTimeout(() => {
+        setShowApplyModal(false);
+        setApplicationMessage("");
+        setTransactionPhase("idle");
+      }, 2000);
     }
   }, [isSuccess, setShowApplyModal, setApplicationMessage]);
 
   useEffect(() => {
     if (error) {
+      setTransactionPhase("error");
       let errorMessage = "Transaction failed";
       if (typeof error === "string") {
         errorMessage = error;
@@ -70,10 +96,20 @@ export default function ApplyModal({
         }
       }
       toast.error(errorMessage, { duration: 5000 });
+
+      // Reset phase after showing error
+      setTimeout(() => {
+        setTransactionPhase("idle");
+      }, 3000);
     }
   }, [error]);
 
   const handleApply = async (): Promise<void> => {
+    if (!guardedAction) {
+      toast.error("Network guard not available. Please refresh and try again.");
+      return;
+    }
+
     if (!applicationMessage.trim()) {
       toast.error("Please enter an application message");
       return;
@@ -86,11 +122,17 @@ export default function ApplyModal({
       toast.error("Application message must be at least 20 characters");
       return;
     }
-    try {
-      await applyToBrief(selectedBrief.id, applicationMessage);
-    } catch (err) {
-      console.error("Application failed:", err);
-    }
+
+    setTransactionPhase("idle");
+
+    await guardedAction(async () => {
+      try {
+        await applyToBrief(selectedBrief.id, applicationMessage);
+      } catch (err) {
+        console.error("Application failed:", err);
+        throw err;
+      }
+    });
   };
 
   const extractRevertReason = (message: string): string | null => {
@@ -111,6 +153,48 @@ export default function ApplyModal({
     }
     return null;
   };
+
+  const getTransactionMessage = () => {
+    switch (transactionPhase) {
+      case "submitting":
+        return {
+          title: "Submitting Application",
+          description: "Please confirm the transaction in your wallet...",
+          icon: <Loader2 className="w-5 h-5 animate-spin text-blue-400" />,
+          bgColor: "bg-blue-500/10 border-blue-500/20",
+          textColor: "text-blue-400",
+        };
+      case "success":
+        return {
+          title: "Application Submitted!",
+          description:
+            "Your application has been successfully submitted to the campaign.",
+          icon: <CheckCircle className="w-5 h-5 text-green-400" />,
+          bgColor: "bg-green-500/10 border-green-500/20",
+          textColor: "text-green-400",
+        };
+      case "error":
+        return {
+          title: "Application Failed",
+          description:
+            "There was an error submitting your application. Please try again.",
+          icon: <AlertTriangle className="w-5 h-5 text-red-400" />,
+          bgColor: "bg-red-500/10 border-red-500/20",
+          textColor: "text-red-400",
+        };
+      default:
+        return null;
+    }
+  };
+
+  const isTransactionInProgress =
+    isPending || transactionPhase === "submitting";
+  const canSubmit =
+    isConnected &&
+    isCorrectChain &&
+    applicationMessage.trim().length >= 20 &&
+    !isTransactionInProgress &&
+    transactionPhase !== "success";
 
   if (!showApplyModal || !selectedBrief || !isClient) return null;
 
@@ -145,12 +229,66 @@ export default function ApplyModal({
               <button
                 onClick={() => setShowApplyModal(false)}
                 className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
-                disabled={isPending}
+                disabled={
+                  isTransactionInProgress && transactionPhase !== "error"
+                }
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Network Status */}
+            {isConnected && (
+              <div className="mb-4">
+                <NetworkStatus className="bg-slate-900/30 border-slate-600/50" />
+              </div>
+            )}
+
+            {/* Connection Warning */}
+            {!isConnected && (
+              <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start">
+                <AlertTriangle className="text-amber-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-400">
+                    Wallet Not Connected
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Connect your wallet to apply for campaigns
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Transaction Status */}
+            {transactionPhase !== "idle" && (
+              <div className="mb-4">
+                {(() => {
+                  const txMessage = getTransactionMessage();
+                  if (!txMessage) return null;
+
+                  return (
+                    <div
+                      className={`p-3 rounded-xl border flex items-start ${txMessage.bgColor}`}
+                    >
+                      <div className="mr-3 mt-0.5 flex-shrink-0">
+                        {txMessage.icon}
+                      </div>
+                      <div>
+                        <p
+                          className={`text-sm font-medium ${txMessage.textColor}`}
+                        >
+                          {txMessage.title}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {txMessage.description}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Campaign Details */}
             <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-sm">
@@ -165,8 +303,9 @@ export default function ApplyModal({
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Business</p>
-                    <p className="text-base sm:text-lg font-medium text-white">
-                      {selectedBrief.business}
+                    <p className="text-base sm:text-lg font-medium text-white truncate">
+                      {selectedBrief.business.slice(0, 10)}...
+                      {selectedBrief.business.slice(-6)}
                     </p>
                   </div>
                 </div>
@@ -196,7 +335,7 @@ export default function ApplyModal({
                   <div>
                     <p className="text-xs text-slate-400">Total Budget</p>
                     <p className="text-base sm:text-lg font-medium text-emerald-400">
-                      {selectedBrief.budget} cUSD
+                      {selectedBrief.budget.toLocaleString()} cUSD
                     </p>
                   </div>
                 </div>
@@ -234,7 +373,7 @@ export default function ApplyModal({
                   onChange={(e) => setApplicationMessage(e.target.value)}
                   className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 sm:p-4 text-sm text-slate-300 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 resize-none min-h-[100px] sm:min-h-[120px]"
                   placeholder="Explain why you're a great fit for this campaign..."
-                  disabled={isPending}
+                  disabled={isTransactionInProgress}
                 />
                 <div className="absolute bottom-2 sm:bottom-3 right-3 text-xs text-slate-500">
                   {applicationMessage.length}/20 min
@@ -245,21 +384,6 @@ export default function ApplyModal({
                 approach.
               </p>
             </div>
-
-            {/* Loading State */}
-            {isPending && (
-              <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start">
-                <Loader2 className="animate-spin text-emerald-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
-                <div>
-                  <p className="text-sm font-medium text-emerald-400">
-                    Transaction in progress
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Please wait while we process your application...
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -268,26 +392,37 @@ export default function ApplyModal({
           <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
             <motion.button
               onClick={() => setShowApplyModal(false)}
-              disabled={isPending}
+              disabled={isTransactionInProgress && transactionPhase !== "error"}
               className="px-4 sm:px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
               whileTap={{ scale: 0.95 }}
             >
-              Cancel
+              {transactionPhase === "success" ? "Close" : "Cancel"}
             </motion.button>
             <motion.button
               onClick={handleApply}
-              disabled={
-                !applicationMessage.trim() ||
-                applicationMessage.length < 20 ||
-                isPending
-              }
+              disabled={!canSubmit}
               className="px-4 sm:px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md shadow-emerald-500/25 order-1 sm:order-2"
               whileTap={{ scale: 0.95 }}
             >
-              {isPending ? (
+              {isTransactionInProgress ? (
                 <div className="flex items-center space-x-2">
                   <Loader2 className="animate-spin h-4 w-4" />
-                  <span>Processing...</span>
+                  <span>Submitting...</span>
+                </div>
+              ) : !isConnected ? (
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Connect Wallet</span>
+                </div>
+              ) : !isCorrectChain ? (
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Switch to {currentNetwork.name}</span>
+                </div>
+              ) : transactionPhase === "success" ? (
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Application Submitted!</span>
                 </div>
               ) : (
                 <div className="flex items-center space-x-2">
@@ -302,3 +437,5 @@ export default function ApplyModal({
     </motion.div>
   );
 }
+
+export default withNetworkGuard(ApplyModal);
