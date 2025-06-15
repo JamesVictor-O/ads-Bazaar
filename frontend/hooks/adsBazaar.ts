@@ -30,7 +30,6 @@ type TargetAudience =
   | "LIFESTYLE"
   | "OTHER";
 
-
 export interface InfluencerApplication {
   influencer: string;
   message: string;
@@ -40,7 +39,6 @@ export interface InfluencerApplication {
   proofLink: string;
   isApproved: boolean;
 }
-
 
 interface FormattedBriefData {
   id: `0x${string}`;
@@ -62,7 +60,6 @@ interface FormattedBriefData {
   selectionDeadline: number;
   applicationCount: number;
 }
-
 
 interface BriefData {
   business: Address;
@@ -155,13 +152,15 @@ export function useGetAllId() {
 // Define the interface for formatted brief data based on the new ABI
 
 export function useGetAllBriefs() {
-  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>([]);
+  const [processedBriefs, setProcessedBriefs] = useState<FormattedBriefData[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const publicClient = usePublicClient();
 
   // Fetch all brief IDs using getAllBriefs
-    const {
+  const {
     data: briefIds,
     isLoading: isLoadingIds,
     isError: isErrorIds,
@@ -316,27 +315,30 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
       rawData: [
         `0x${string}`, // briefId
         `0x${string}`, // business
-        string,        // name
-        string,        // description
-        string,        // requirements
-        bigint,        // budget
-        bigint,        // status
-        bigint,        // promotionDuration
-        bigint,        // promotionStartTime
-        bigint,        // promotionEndTime
-        bigint,        // proofSubmissionDeadline
-        bigint,        // verificationDeadline
-        bigint,        // maxInfluencers
-        bigint,        // selectedInfluencersCount
-        bigint,        // targetAudience
-        bigint,        // creationTime
-        bigint         // selectionDeadline
+        string, // name
+        string, // description
+        string, // requirements
+        bigint, // budget
+        bigint, // status
+        bigint, // promotionDuration
+        bigint, // promotionStartTime
+        bigint, // promotionEndTime
+        bigint, // proofSubmissionDeadline
+        bigint, // verificationDeadline
+        bigint, // maxInfluencers
+        bigint, // selectedInfluencersCount
+        bigint, // targetAudience
+        bigint, // creationTime
+        bigint // selectionDeadline
       ]
     ): Brief | null => {
       try {
         // Validate rawData array length (17 fields)
         if (!Array.isArray(rawData) || rawData.length < 17) {
-          console.error(`Invalid brief data format for ID ${briefId}:`, rawData);
+          console.error(
+            `Invalid brief data format for ID ${briefId}:`,
+            rawData
+          );
           return null;
         }
 
@@ -345,13 +347,15 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
 
         // Verify briefId matches the input id
         if (rawData[0] !== briefId) {
-          console.warn(`Brief ID mismatch for ${briefId}: expected ${briefId}, got ${rawData[0]}`);
+          console.warn(
+            `Brief ID mismatch for ${briefId}: expected ${briefId}, got ${rawData[0]}`
+          );
         }
 
         return {
           id: briefId,
           business: rawData[1] as `0x${string}`,
-          title: rawData[2] as string,
+          name: rawData[2] as string,
           description: rawData[3] as string,
           requirements: rawData[4] as string,
           budget: Number(formatEther(rawData[5] as bigint)),
@@ -432,7 +436,9 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
           })
         );
 
-        const validBriefs = results.filter((brief): brief is Brief => brief !== null);
+        const validBriefs = results.filter(
+          (brief): brief is Brief => brief !== null
+        );
         setBriefs(validBriefs);
       } catch (err) {
         console.error("Error fetching brief details:", err);
@@ -835,13 +841,13 @@ export function useRegisterUser() {
 
 // Create ad brief
 
-
-
-
-
 export function useCreateAdBrief() {
   const tx = useHandleTransaction();
-  const { writeContractAsync: approveCUSD, data: approveTxHash, error: approveError } = useWriteContract();
+  const {
+    writeContractAsync: approveCUSD,
+    data: approveTxHash,
+    error: approveError,
+  } = useWriteContract();
   const { address } = useAccount();
   const [isApproving, setIsApproving] = useState(false);
   const [briefData, setBriefData] = useState<{
@@ -855,10 +861,11 @@ export function useCreateAdBrief() {
   } | null>(null);
 
   // Wait for approval transaction receipt
-  const { status: approvalStatus, error: receiptError } = useWaitForTransactionReceipt({
-    hash: approveTxHash,
-    confirmations: 1,
-  });
+  const { status: approvalStatus, error: receiptError } =
+    useWaitForTransactionReceipt({
+      hash: approveTxHash,
+      confirmations: 1,
+    });
 
   // Handle approval completion
   useEffect(() => {
@@ -949,16 +956,6 @@ export function useCreateAdBrief() {
     error,
   };
 }
-
-
-
-
-
-
-
-
-
-
 
 //Cancel ad brief
 export function useCancelAdBrief() {
