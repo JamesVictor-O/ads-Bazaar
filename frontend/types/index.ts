@@ -20,19 +20,86 @@ export interface Brief {
   applicationCount: number;
 }
 
+export interface FormattedBriefData {
+  id: `0x${string}`;
+  business: `0x${string}`;
+  name: string;
+  description: string;
+  requirements: string;
+  budget: number;
+  status: number; // CampaignStatus enum
+  promotionDuration: number;
+  promotionStartTime: number;
+  promotionEndTime: number;
+  proofSubmissionDeadline: number;
+  verificationDeadline: number;
+  maxInfluencers: number;
+  selectedInfluencersCount: number;
+  targetAudience: number; // TargetAudience enum
+  creationTime: number;
+  selectionDeadline: number; // Correct deadline field from contract
+  applicationCount: number;
+}
+
+export interface BriefData {
+  business: `0x${string}`;
+  name: string;
+  description: string;
+  budget: bigint;
+  status: number;
+  promotionDuration: bigint;
+  promotionStartTime: bigint;
+  promotionEndTime: bigint;
+  proofSubmissionDeadline: bigint;
+  verificationDeadline: bigint;
+  maxInfluencers: bigint;
+  selectedInfluencersCount: bigint;
+  targetAudience: number;
+  selectionDeadline: bigint;
+}
+
+export interface Brief extends FormattedBriefData {}
+
 export interface Application {
-  influencer: Hex;
+  influencer: `0x${string}`;
   message: string;
   timestamp: number;
   isSelected: boolean;
-  isApproved?: boolean;
-  proofLink?: string;
+  hasClaimed: boolean;
+  proofLink: string;
+  isApproved: boolean;
+  disputeStatus?: number;
+  disputeReason?: string;
+  resolvedBy?: `0x${string}`;
   influencerProfile?: {
-    avatar?: string;
     name?: string;
-    // Add other fields as needed
+    avatar?: string;
   };
-  hasClaimed?: boolean;
+}
+
+export enum TargetAudience {
+  GENERAL = 0,
+  FASHION = 1,
+  TECH = 2,
+  GAMING = 3,
+  FITNESS = 4,
+  BEAUTY = 5,
+  FOOD = 6,
+  TRAVEL = 7,
+  BUSINESS = 8,
+  EDUCATION = 9,
+  ENTERTAINMENT = 10,
+  SPORTS = 11,
+  LIFESTYLE = 12,
+  OTHER = 13,
+}
+
+export enum CampaignStatus {
+  OPEN = 0,
+  ASSIGNED = 1,
+  COMPLETED = 2,
+  CANCELLED = 3,
+  EXPIRED = 4,
 }
 
 export interface FormData {
@@ -63,23 +130,6 @@ export interface Task {
   postLink?: string;
 }
 
-export interface BriefData {
-  business: string;
-  name: string;
-  description: string;
-  budget: string;
-  status: number;
-  promotionDuration: string;
-  promotionStartTime: string;
-  promotionEndTime: string;
-  proofSubmissionDeadline:string;
-  maxInfluencers: string;
-  selectedInfluencersCount: string;
-  selectionDeadline:string,
-  targetAudience: number;
-  verificationDeadline: string;
-}
-
 export interface ApplicationData {
   influencer: string;
   message: string;
@@ -90,17 +140,27 @@ export interface ApplicationData {
   isApproved: boolean;
 }
 
+export interface UserProfile {
+  isRegistered: boolean;
+  isBusiness: boolean;
+  isInfluencer: boolean;
+  status: number;
+  profileData: string;
+  completedCampaigns: number;
+  totalEscrowed: number;
+}
+
 export interface InfluencerDashboardData {
-  appliedBriefs: {
+  appliedBriefs: Array<{
     briefId: string;
-    brief: BriefData;
-    application: ApplicationData | null;
-  }[];
-  assignedBriefs: {
+    brief: any;
+    application: Application;
+  }>;
+  assignedBriefs: Array<{
     briefId: string;
-    brief: BriefData;
-    application: ApplicationData;
-  }[];
+    brief: any;
+    application: Application;
+  }>;
   isLoading: boolean;
   error: string | null;
 }
@@ -111,12 +171,53 @@ export interface ApplicationsModalProps {
   isLoadingApplications: boolean;
   onClose: () => void;
 }
-export type Transaction = {
+
+export interface SubmissionsModalProps {
+  selectedBrief: Brief | null;
+  applications: Application[];
+  isLoadingApplications: boolean;
+  isCompletingCampaign: boolean;
+  onReleaseFunds: (briefId: `0x${string}`) => void;
+  onClose: () => void;
+}
+
+export interface Transaction {
   id: string;
-  type: string;
+  type: "payment" | "application" | "submission";
   amount: number;
   from: string;
+  to?: string;
   date: string;
   txHash: string;
-  status: string;
-};
+  status: "pending" | "confirmed" | "failed";
+  description?: string;
+}
+
+export type EthereumAddress = `0x${string}`;
+export type TransactionHash = `0x${string}`;
+
+// Constants
+export const STATUS_LABELS = {
+  [CampaignStatus.OPEN]: "Open",
+  [CampaignStatus.ASSIGNED]: "In Progress",
+  [CampaignStatus.COMPLETED]: "Completed",
+  [CampaignStatus.CANCELLED]: "Cancelled",
+  [CampaignStatus.EXPIRED]: "Expired",
+} as const;
+
+export const AUDIENCE_LABELS = {
+  [TargetAudience.GENERAL]: "General",
+  [TargetAudience.FASHION]: "Fashion",
+  [TargetAudience.TECH]: "Tech",
+  [TargetAudience.GAMING]: "Gaming",
+  [TargetAudience.FITNESS]: "Fitness",
+  [TargetAudience.BEAUTY]: "Beauty",
+  [TargetAudience.FOOD]: "Food",
+  [TargetAudience.TRAVEL]: "Travel",
+  [TargetAudience.BUSINESS]: "Business",
+  [TargetAudience.EDUCATION]: "Education",
+  [TargetAudience.ENTERTAINMENT]: "Entertainment",
+  [TargetAudience.SPORTS]: "Sports",
+  [TargetAudience.LIFESTYLE]: "Lifestyle",
+  [TargetAudience.OTHER]: "Other",
+} as const;
