@@ -6,8 +6,10 @@ import { Brief } from "@/types/index";
 import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
 import { ApplicationsModal } from "@/components/modals/ApplicationsModal";
 import CreateCampaignModal from "@/components/modals/CreateCampaignModal";
+import { NetworkStatus } from "@/components/NetworkStatus";
 import { useRouter } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
+import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import {
   Users,
   Briefcase,
@@ -21,6 +23,7 @@ import {
   MoreVertical,
   Activity,
   Target,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -38,7 +41,9 @@ import {
 
 const BrandDashboard = () => {
   const router = useRouter();
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  const { isCorrectChain, currentNetwork } = useEnsureNetwork();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
@@ -87,23 +92,6 @@ const BrandDashboard = () => {
     isError: isCompleteError,
     error: completeError,
   } = useCompleteCampaign();
-
-  // Create a map to store application counts for each brief
-  // const [applicationCounts, setApplicationCounts] = useState<{
-  //   [key: string]: number;
-  // }>({});
-
-  // Update application counts (using brief.applicationCount)
-  // useEffect(() => {
-  //   if (briefs && briefs.length > 0) {
-  //     briefs.forEach((brief) => {
-  //       setApplicationCounts((prev) => ({
-  //         ...prev,
-  //         [brief.id]: Math.floor(Math.random() * 20),
-  //       }));
-  //     });
-  //   }
-  // }, [briefs]);
 
   interface StatusMap {
     [key: number]: string;
@@ -207,7 +195,7 @@ const BrandDashboard = () => {
 
   // Filter briefs based on search and filter criteria
   const filteredBriefs = briefs.filter((brief) => {
-    const matchesSearch = brief.title
+    const matchesSearch = brief.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesFilter =
@@ -217,8 +205,6 @@ const BrandDashboard = () => {
       (selectedFilter === "completed" && brief.status === 2);
     return matchesSearch && matchesFilter;
   });
-
-  console.log("Filtered Briefs:", filteredBriefs);
 
   const isFormValid = () => {
     return (
@@ -272,6 +258,18 @@ const BrandDashboard = () => {
     }
   };
 
+  const handleCreateCampaignClick = () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    if (!isCorrectChain) {
+      toast.error(`Please switch to ${currentNetwork.name} first`);
+      return;
+    }
+    setShowCreateModal(true);
+  };
+
   if (!userProfile?.isRegistered || !userProfile?.isBusiness) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
@@ -309,6 +307,13 @@ const BrandDashboard = () => {
       <Toaster position="top-right" />
 
       <div className="px-4 sm:px-6 md:px-8 pb-8">
+        {/* Network Status - Show when connected but wrong network */}
+        {isConnected && !isCorrectChain && (
+          <div className="mb-6">
+            <NetworkStatus className="bg-slate-800/60 border-amber-500/50" />
+          </div>
+        )}
+
         {/* Header Section */}
         <motion.div
           className="mb-8"
@@ -355,12 +360,27 @@ const BrandDashboard = () => {
 
               {/* Create Campaign Button */}
               <motion.button
-                onClick={() => setShowCreateModal(true)}
-                className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-md shadow-emerald-500/20 flex items-center gap-1.5"
+                onClick={handleCreateCampaignClick}
+                disabled={!isConnected || !isCorrectChain}
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-md shadow-emerald-500/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 whileTap={{ scale: 0.95 }}
               >
-                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
-                <span className="text-sm">New Campaign</span>
+                {!isConnected ? (
+                  <>
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-sm">Connect Wallet</span>
+                  </>
+                ) : !isCorrectChain ? (
+                  <>
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-sm">Wrong Network</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                    <span className="text-sm">New Campaign</span>
+                  </>
+                )}
               </motion.button>
             </div>
           </div>
@@ -470,7 +490,7 @@ const BrandDashboard = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                           <h3 className="text-base sm:text-lg font-semibold text-white truncate">
-                            {brief.title}
+                            {brief.name}
                           </h3>
                           <span
                             className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(

@@ -1,9 +1,21 @@
 "use client";
 
-import React from "react";
-import { X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  AlertTriangle,
+  Loader2,
+  CheckCircle,
+  DollarSign,
+  Clock,
+  Users,
+} from "lucide-react";
 import { motion } from "framer-motion";
+import { useAccount } from "wagmi";
+import { toast } from "react-hot-toast";
 import { withNetworkGuard } from "../WithNetworkGuard";
+import { NetworkStatus } from "../NetworkStatus";
+import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 
 interface FormData {
   name: string;
@@ -25,6 +37,9 @@ interface CreateCampaignModalProps {
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
+// Transaction phases for better UX
+type TransactionPhase = "idle" | "approving" | "creating" | "success" | "error";
+
 function CreateCampaignModal({
   formData,
   setFormData,
@@ -34,16 +49,94 @@ function CreateCampaignModal({
   onClose,
   guardedAction,
 }: CreateCampaignModalProps) {
+  const { isConnected } = useAccount();
+  const { isCorrectChain, currentNetwork } = useEnsureNetwork();
+  const [transactionPhase, setTransactionPhase] =
+    useState<TransactionPhase>("idle");
+
+  // Monitor transaction states to update phase
+  useEffect(() => {
+    if (isCreatingBrief) {
+      // This could be either approval or creation phase
+      // We'll determine based on the current phase
+      if (transactionPhase === "idle") {
+        setTransactionPhase("approving");
+      } else if (transactionPhase === "approving") {
+        setTransactionPhase("creating");
+      }
+    } else {
+      if (transactionPhase === "creating") {
+        setTransactionPhase("success");
+        // Reset after a delay
+        setTimeout(() => setTransactionPhase("idle"), 2000);
+      }
+    }
+  }, [isCreatingBrief, transactionPhase]);
+
   const handleCreateCampaign = async () => {
     if (!guardedAction) {
-      await onCreateCampaign();
+      toast.error("Network guard not available. Please refresh and try again.");
       return;
     }
+
+    if (!isFormValid) {
+      toast.error("Please fill in all required fields correctly");
+      return;
+    }
+
+    setTransactionPhase("idle");
 
     await guardedAction(async () => {
       await onCreateCampaign();
     });
   };
+
+  const getTransactionMessage = () => {
+    switch (transactionPhase) {
+      case "approving":
+        return {
+          title: "Approving cUSD Spending",
+          description: "Please confirm the token approval in your wallet...",
+          icon: <DollarSign className="w-5 h-5 text-blue-400" />,
+          bgColor: "bg-blue-500/10 border-blue-500/20",
+          textColor: "text-blue-400",
+        };
+      case "creating":
+        return {
+          title: "Creating Campaign",
+          description: "Campaign approval confirmed. Creating your campaign...",
+          icon: <Clock className="w-5 h-5 text-emerald-400" />,
+          bgColor: "bg-emerald-500/10 border-emerald-500/20",
+          textColor: "text-emerald-400",
+        };
+      case "success":
+        return {
+          title: "Campaign Created Successfully!",
+          description: "Your campaign is now live and accepting applications.",
+          icon: <CheckCircle className="w-5 h-5 text-green-400" />,
+          bgColor: "bg-green-500/10 border-green-500/20",
+          textColor: "text-green-400",
+        };
+      case "error":
+        return {
+          title: "Transaction Failed",
+          description:
+            "There was an error creating your campaign. Please try again.",
+          icon: <AlertTriangle className="w-5 h-5 text-red-400" />,
+          bgColor: "bg-red-500/10 border-red-500/20",
+          textColor: "text-red-400",
+        };
+      default:
+        return null;
+    }
+  };
+
+  const isTransactionInProgress =
+    isCreatingBrief ||
+    transactionPhase === "approving" ||
+    transactionPhase === "creating";
+  const canSubmit =
+    isConnected && isCorrectChain && isFormValid && !isTransactionInProgress;
 
   return (
     <motion.div
@@ -69,7 +162,7 @@ function CreateCampaignModal({
             onClick={onClose}
             className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
             aria-label="Close modal"
-            disabled={isCreatingBrief}
+            disabled={isTransactionInProgress}
           >
             <X className="w-5 h-5" />
           </button>
@@ -77,7 +170,64 @@ function CreateCampaignModal({
 
         {/* Scrollable Form Content */}
         <div className="px-4 pb-4 max-h-[calc(90vh-180px)] sm:max-h-[calc(90vh-200px)] overflow-y-auto">
-          <div className="space-y-4">
+          {/* Network Status */}
+          {isConnected && (
+            <div className="mt-4">
+              <NetworkStatus className="bg-slate-900/30 border-slate-600/50" />
+            </div>
+          )}
+
+          {/* Connection Warning */}
+          {!isConnected && (
+            <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start">
+              <AlertTriangle className="text-amber-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
+              <div>
+                <p className="text-sm font-medium text-amber-400">
+                  Wallet Not Connected
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Connect your wallet to create campaigns
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Transaction Status */}
+          {transactionPhase !== "idle" && (
+            <div className="mt-4">
+              {(() => {
+                const txMessage = getTransactionMessage();
+                if (!txMessage) return null;
+
+                return (
+                  <div
+                    className={`p-3 rounded-xl border flex items-start ${txMessage.bgColor}`}
+                  >
+                    <div className="mr-3 mt-0.5 flex-shrink-0">
+                      {transactionPhase === "approving" ||
+                      transactionPhase === "creating" ? (
+                        <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+                      ) : (
+                        txMessage.icon
+                      )}
+                    </div>
+                    <div>
+                      <p
+                        className={`text-sm font-medium ${txMessage.textColor}`}
+                      >
+                        {txMessage.title}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {txMessage.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          <div className="space-y-4 mt-4">
             {/* Campaign Name */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">
@@ -93,7 +243,7 @@ function CreateCampaignModal({
                 placeholder="Enter campaign name"
                 required
                 aria-required="true"
-                disabled={isCreatingBrief}
+                disabled={isTransactionInProgress}
               />
             </div>
 
@@ -112,7 +262,7 @@ function CreateCampaignModal({
                 placeholder="Describe your campaign"
                 required
                 aria-required="true"
-                disabled={isCreatingBrief}
+                disabled={isTransactionInProgress}
               />
             </div>
 
@@ -131,7 +281,7 @@ function CreateCampaignModal({
                 placeholder="Specify campaign requirements (e.g., content type, posting guidelines)"
                 required
                 aria-required="true"
-                disabled={isCreatingBrief}
+                disabled={isTransactionInProgress}
               />
             </div>
 
@@ -142,20 +292,23 @@ function CreateCampaignModal({
                 <label className="block text-sm font-medium text-slate-300 mb-1">
                   Budget (cUSD)
                 </label>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={formData.budget}
-                  onChange={(e) =>
-                    setFormData({ ...formData, budget: e.target.value })
-                  }
-                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
-                  placeholder="Enter budget amount"
-                  required
-                  aria-required="true"
-                  disabled={isCreatingBrief}
-                />
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={formData.budget}
+                    onChange={(e) =>
+                      setFormData({ ...formData, budget: e.target.value })
+                    }
+                    className="w-full pl-10 pr-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
+                    placeholder="Enter budget amount"
+                    required
+                    aria-required="true"
+                    disabled={isTransactionInProgress}
+                  />
+                </div>
               </div>
 
               {/* Max Influencers */}
@@ -163,20 +316,26 @@ function CreateCampaignModal({
                 <label className="block text-sm font-medium text-slate-300 mb-1">
                   Max Influencers
                 </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={formData.maxInfluencers}
-                  onChange={(e) =>
-                    setFormData({ ...formData, maxInfluencers: e.target.value })
-                  }
-                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
-                  placeholder="Enter max influencers (1-10)"
-                  required
-                  aria-required="true"
-                  disabled={isCreatingBrief}
-                />
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.maxInfluencers}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        maxInfluencers: e.target.value,
+                      })
+                    }
+                    className="w-full pl-10 pr-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
+                    placeholder="Max influencers (1-10)"
+                    required
+                    aria-required="true"
+                    disabled={isTransactionInProgress}
+                  />
+                </div>
               </div>
 
               {/* Promotion Duration */}
@@ -193,7 +352,7 @@ function CreateCampaignModal({
                     })
                   }
                   className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                  disabled={isCreatingBrief}
+                  disabled={isTransactionInProgress}
                 >
                   <option value="86400">1 day</option>
                   <option value="172800">2 days</option>
@@ -217,7 +376,7 @@ function CreateCampaignModal({
                     setFormData({ ...formData, targetAudience: e.target.value })
                   }
                   className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                  disabled={isCreatingBrief}
+                  disabled={isTransactionInProgress}
                 >
                   <option value="0">General</option>
                   <option value="1">Fashion</option>
@@ -236,6 +395,33 @@ function CreateCampaignModal({
                 </select>
               </div>
             </div>
+
+            {/* Budget Breakdown Info */}
+            {formData.budget && Number(formData.budget) > 0 && (
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4">
+                <h4 className="text-sm font-medium text-slate-300 mb-2">
+                  Budget Breakdown
+                </h4>
+                <div className="space-y-1 text-xs text-slate-400">
+                  <div className="flex justify-between">
+                    <span>Total Budget:</span>
+                    <span className="text-white">{formData.budget} cUSD</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Platform Fee (0.5%):</span>
+                    <span>
+                      {(Number(formData.budget) * 0.005).toFixed(2)} cUSD
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-700/50 pt-1">
+                    <span>Influencer Payout:</span>
+                    <span className="text-emerald-400">
+                      {(Number(formData.budget) * 0.995).toFixed(2)} cUSD
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -245,38 +431,33 @@ function CreateCampaignModal({
             <button
               onClick={onClose}
               className="order-2 sm:order-1 px-4 py-2.5 bg-slate-700/50 text-slate-300 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 active:bg-slate-600 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              disabled={isCreatingBrief}
+              disabled={isTransactionInProgress}
             >
               Cancel
             </button>
             <button
               onClick={handleCreateCampaign}
-              disabled={!isFormValid || isCreatingBrief}
+              disabled={!canSubmit}
               className="order-1 sm:order-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 transition-all duration-200 shadow-sm shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              {isCreatingBrief ? (
+              {isTransactionInProgress ? (
                 <>
-                  <svg
-                    className="animate-spin h-4 w-4 text-white flex-shrink-0"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
-                    />
-                  </svg>
-                  <span>Creating...</span>
+                  <Loader2 className="animate-spin h-4 w-4 text-white flex-shrink-0" />
+                  <span>
+                    {transactionPhase === "approving"
+                      ? "Approving..."
+                      : "Creating..."}
+                  </span>
+                </>
+              ) : !isConnected ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>Connect Wallet</span>
+                </>
+              ) : !isCorrectChain ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>Switch to {currentNetwork.name}</span>
                 </>
               ) : (
                 <span>Create Campaign</span>
