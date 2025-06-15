@@ -435,11 +435,10 @@ export function isActionUrgent(brief: Brief): boolean {
     timingInfo.isUrgent ||
     statusInfo.warning !== undefined ||
     (timingInfo.phase === CampaignPhase.VERIFICATION &&
-      timingInfo.timeRemaining &&
+      timingInfo.timeRemaining !== undefined &&
       timingInfo.timeRemaining.days <= 1)
   );
 }
-
 /**
  * Gets priority level for campaign actions
  */
