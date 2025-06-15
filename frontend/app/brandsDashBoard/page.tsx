@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAccount } from "wagmi";
 import { Brief } from "@/types/index";
 import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
-import { ApplicationsModal } from "@/components/modals/ApplicationsModal";
+import ApplicationsModal from "@/components/modals/ApplicationsModal";
 import CreateCampaignModal from "@/components/modals/CreateCampaignModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,9 @@ import {
   Activity,
   Target,
   AlertTriangle,
+  Loader2,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -34,7 +37,6 @@ import {
   useUserProfile,
   useBriefApplications,
   useCreateAdBrief,
-  useSelectInfluencer,
   useCompleteCampaign,
   useGetBusinessBriefs,
 } from "../../hooks/adsBazaar";
@@ -78,12 +80,6 @@ const BrandDashboard = () => {
     isError: isCreateError,
     error: createError,
   } = useCreateAdBrief();
-
-  const {
-    isSuccess: isSelectSuccess,
-    isError: isSelectError,
-    error: selectError,
-  } = useSelectInfluencer();
 
   const {
     completeCampaign,
@@ -148,24 +144,11 @@ const BrandDashboard = () => {
   }, [isCreateSuccess, isCreateError, createError, router]);
 
   useEffect(() => {
-    if (isSelectSuccess) {
-      toast.success("Influencer selected successfully!");
-      refetchApplications();
-    }
-
-    if (isSelectError) {
-      toast.error(
-        `Failed to select influencer: ${
-          selectError?.message || "Unknown error"
-        }`
-      );
-    }
-  }, [isSelectSuccess, isSelectError, selectError, refetchApplications]);
-
-  useEffect(() => {
     if (isCompleteSuccess) {
       toast.success("Campaign completed and funds released successfully!");
       refetchApplications();
+      // Close submissions modal after successful completion
+      setShowSubmissionsModal(false);
     }
 
     if (isCompleteError) {
@@ -314,6 +297,30 @@ const BrandDashboard = () => {
           </div>
         )}
 
+        {/* Connection Status Indicator */}
+        <div className="mb-4 flex items-center justify-end">
+          <div className="flex items-center gap-2 text-xs">
+            {isConnected ? (
+              <>
+                <Wifi className="w-4 h-4 text-emerald-400" />
+                <span className="text-emerald-400">Connected</span>
+                {isCorrectChain ? (
+                  <span className="text-emerald-400">
+                    • {currentNetwork.name}
+                  </span>
+                ) : (
+                  <span className="text-amber-400">• Wrong Network</span>
+                )}
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4 text-red-400" />
+                <span className="text-red-400">Not Connected</span>
+              </>
+            )}
+          </div>
+        </div>
+
         {/* Header Section */}
         <motion.div
           className="mb-8"
@@ -362,8 +369,12 @@ const BrandDashboard = () => {
               <motion.button
                 onClick={handleCreateCampaignClick}
                 disabled={!isConnected || !isCorrectChain}
-                className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-4 py-2 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 shadow-md shadow-emerald-500/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                whileTap={{ scale: 0.95 }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 shadow-md ${
+                  !isConnected || !isCorrectChain
+                    ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                    : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/20"
+                }`}
+                whileTap={isConnected && isCorrectChain ? { scale: 0.95 } : {}}
               >
                 {!isConnected ? (
                   <>

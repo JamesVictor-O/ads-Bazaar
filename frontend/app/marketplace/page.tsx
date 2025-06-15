@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Target,
@@ -9,13 +9,19 @@ import {
   Award,
   Check,
   UserCheck,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
-import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication"; 
+import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication";
+// Import the enhanced ApplyModal (replace the original AdsApplicationModal.tsx with enhanced version)
 import ApplyModal from "@/components/modals/AdsApplicationModal";
+import { NetworkStatus } from "@/components/NetworkStatus";
 import { useAccount } from "wagmi";
+import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { formatDistanceToNow } from "date-fns";
 import { truncateAddress } from "@/utils/format";
+import { motion } from "framer-motion";
 
 const statusMap = {
   0: "Open",
@@ -65,7 +71,8 @@ interface Brief {
 
 export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("All Categories");
+  const [categoryFilter, setCategoryFilter] =
+    useState<string>("All Categories");
   const [budgetFilter, setBudgetFilter] = useState<string>("Budget: Any");
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
   const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
@@ -73,29 +80,56 @@ export default function Marketplace() {
   const [applicationStatus, setApplicationStatus] = useState<
     Record<string, "applied" | "assigned" | null>
   >({});
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // Fetch briefs, user profile, and influencer applications
   const { briefs, isLoading } = useGetAllBriefs();
   const { address, isConnected } = useAccount();
+  const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const { userProfile, isLoadingProfile } = useUserProfile();
-    const {
+  const {
     applications: influencerApplications = [],
     isLoading: isLoadingApplications,
+    error: applicationsError,
   } = useGetInfluencerApplications(address as `0x${string}`);
 
-  // Update application status based on fetched application
-
-   useEffect(() => {
+  // Function to refresh application status
+  const refreshApplicationStatus = useCallback(() => {
     if (!isLoadingApplications && influencerApplications) {
+      setIsRefreshing(true);
       const statusMap: Record<string, "applied" | "assigned" | null> = {};
       influencerApplications.forEach((app) => {
-        // @ts-expect-error:Brief ID should be typed but API currently accepts any string
+        // @ts-expect-error: Brief ID should be typed but API currently accepts any string
         statusMap[app.briefId] = app.isSelected ? "assigned" : "applied";
       });
       setApplicationStatus(statusMap);
+      setTimeout(() => setIsRefreshing(false), 500);
     }
   }, [influencerApplications, isLoadingApplications]);
 
+  // Update application status based on fetched applications
+  useEffect(() => {
+    refreshApplicationStatus();
+  }, [refreshApplicationStatus]);
+
+  // Auto-refresh applications periodically when modal is closed
+  useEffect(() => {
+    if (!showApplyModal) {
+      const interval = setInterval(() => {
+        refreshApplicationStatus();
+      }, 10000); // Refresh every 10 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [showApplyModal, refreshApplicationStatus]);
+
+  // Handle successful application submission
+  const handleApplicationSuccess = useCallback(() => {
+    // Force refresh after successful application
+    setTimeout(() => {
+      refreshApplicationStatus();
+    }, 2000);
+  }, [refreshApplicationStatus]);
 
   // Loading state for the entire page
   if (isLoading) {
@@ -131,7 +165,8 @@ export default function Marketplace() {
   // Determine button state for each brief
   const getButtonState = (brief: Brief) => {
     const status = applicationStatus[brief.id];
-    const deadlinePassed = new Date(brief.selectionDeadline * 1000) < new Date();
+    const deadlinePassed =
+      new Date(brief.selectionDeadline * 1000) < new Date();
     const isOpen = brief.status === 0;
 
     // Check if user has applied or been assigned
@@ -140,7 +175,7 @@ export default function Marketplace() {
         text: "Applied",
         disabled: true,
         onClick: () => {},
-        variant: "blue",
+        variant: "applied",
         icon: <Check className="w-4 h-4 mr-1" />,
       };
     }
@@ -149,7 +184,7 @@ export default function Marketplace() {
         text: "Assigned",
         disabled: true,
         onClick: () => {},
-        variant: "emerald",
+        variant: "assigned",
         icon: <UserCheck className="w-4 h-4 mr-1" />,
       };
     }
@@ -160,7 +195,17 @@ export default function Marketplace() {
         text: "Connect Wallet to Apply",
         disabled: true,
         onClick: () => {},
-        variant: "slate",
+        variant: "disabled",
+        icon: <AlertTriangle className="w-4 h-4 mr-1" />,
+      };
+    }
+    if (!isCorrectChain) {
+      return {
+        text: `Switch to ${currentNetwork.name}`,
+        disabled: true,
+        onClick: () => {},
+        variant: "network",
+        icon: <AlertTriangle className="w-4 h-4 mr-1" />,
       };
     }
     if (isLoadingProfile) {
@@ -168,7 +213,8 @@ export default function Marketplace() {
         text: "Loading...",
         disabled: true,
         onClick: () => {},
-        variant: "slate",
+        variant: "loading",
+        icon: <Loader2 className="w-4 h-4 mr-1 animate-spin" />,
       };
     }
     if (!userProfile?.isRegistered) {
@@ -176,7 +222,7 @@ export default function Marketplace() {
         text: "Register as Influencer",
         disabled: false,
         onClick: () => (window.location.href = "/"),
-        variant: "emerald",
+        variant: "register",
       };
     }
     if (userProfile.isBusiness) {
@@ -185,14 +231,14 @@ export default function Marketplace() {
           text: "Your Campaign",
           disabled: true,
           onClick: () => {},
-          variant: "slate",
+          variant: "own",
         };
       }
       return {
         text: "Use Influencer Account",
         disabled: true,
         onClick: () => {},
-        variant: "slate",
+        variant: "disabled",
       };
     }
 
@@ -202,7 +248,7 @@ export default function Marketplace() {
         text: deadlinePassed ? "Deadline Passed" : statusMap[brief.status],
         disabled: true,
         onClick: () => {},
-        variant: "slate",
+        variant: "closed",
       };
     }
 
@@ -213,8 +259,31 @@ export default function Marketplace() {
         setSelectedBrief(brief);
         setShowApplyModal(true);
       },
-      variant: "emerald",
+      variant: "apply",
     };
+  };
+
+  // Get button styling based on variant
+  const getButtonStyles = (variant: string, disabled: boolean) => {
+    const baseStyles =
+      "w-full py-3 px-4 rounded-xl text-sm font-medium flex items-center justify-center transition-all duration-200 shadow-md";
+
+    switch (variant) {
+      case "apply":
+        return `${baseStyles} bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25`;
+      case "applied":
+        return `${baseStyles} bg-blue-500/10 text-blue-400 border border-blue-500/20 cursor-not-allowed`;
+      case "assigned":
+        return `${baseStyles} bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-not-allowed`;
+      case "register":
+        return `${baseStyles} bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 shadow-purple-500/25`;
+      case "network":
+        return `${baseStyles} bg-amber-500/10 text-amber-400 border border-amber-500/20 cursor-not-allowed`;
+      case "loading":
+        return `${baseStyles} bg-slate-600/50 text-slate-400 cursor-not-allowed`;
+      default:
+        return `${baseStyles} bg-slate-500/10 text-slate-400 border border-slate-500/20 cursor-not-allowed`;
+    }
   };
 
   // Filter briefs based on search and filter criteria
@@ -259,12 +328,53 @@ export default function Marketplace() {
   return (
     <div className="flex flex-col min-h-screen bg-slate-900 pt-10 md:pt-28">
       <div className="p-6 lg:p-8">
+        {/* Network Status - Show when connected but wrong network */}
+        {isConnected && !isCorrectChain && (
+          <div className="mb-6">
+            <NetworkStatus className="bg-slate-800/60 border-amber-500/50" />
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white">Campaign Marketplace</h2>
-          <p className="text-sm text-slate-400 mt-2">
-            Discover campaigns that match your influencer profile
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-3xl font-bold text-white">
+                Campaign Marketplace
+              </h2>
+              <p className="text-sm text-slate-400 mt-2">
+                Discover campaigns that match your influencer profile
+                {isRefreshing && (
+                  <span className="ml-2 inline-flex items-center text-emerald-400">
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    Refreshing...
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {/* Quick Stats */}
+            {isConnected && userProfile?.isInfluencer && (
+              <div className="text-right text-sm text-slate-400">
+                <div>
+                  Applied:{" "}
+                  {
+                    Object.values(applicationStatus).filter(
+                      (s) => s === "applied"
+                    ).length
+                  }
+                </div>
+                <div>
+                  Assigned:{" "}
+                  {
+                    Object.values(applicationStatus).filter(
+                      (s) => s === "assigned"
+                    ).length
+                  }
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Search and Filter */}
@@ -321,23 +431,45 @@ export default function Marketplace() {
             const category = audienceMap[brief.targetAudience] || "Other";
             const status = statusMap[brief.status] || "Unknown";
             const isOpen = brief.status === 0;
-            const deadlinePassed = new Date(brief.selectionDeadline * 1000) < new Date();
+            const deadlinePassed =
+              new Date(brief.selectionDeadline * 1000) < new Date();
             const buttonState = getButtonState(brief);
             const applicationsCount = brief.applicationCount || 0;
+            const userApplicationStatus = applicationStatus[brief.id];
 
             return (
-              <div
+              <motion.div
                 key={brief.id}
                 className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -5 }}
               >
                 {/* Header with category and budget */}
                 <div className="p-5 border-b border-slate-700/50">
                   <div className="flex justify-between items-start">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(category)}`}
-                    >
-                      {category}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(
+                          category
+                        )}`}
+                      >
+                        {category}
+                      </span>
+                      {userApplicationStatus && (
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                            userApplicationStatus === "assigned"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          }`}
+                        >
+                          {userApplicationStatus === "assigned"
+                            ? "Assigned"
+                            : "Applied"}
+                        </span>
+                      )}
+                    </div>
                     <span className="inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {brief.budget.toLocaleString()} cUSD
                     </span>
@@ -434,23 +566,17 @@ export default function Marketplace() {
                   {/* Apply button */}
                   <button
                     onClick={buttonState.onClick}
-                    className={`w-full py-3 px-4 rounded-xl text-sm font-medium flex items-center justify-center transition-all duration-200 shadow-md ${
-                      buttonState.variant === "emerald" && !buttonState.disabled
-                        ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
-                        : buttonState.variant === "blue"
-                        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20 cursor-not-allowed"
-                        : buttonState.variant === "emerald" &&
-                          buttonState.disabled
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-not-allowed"
-                        : "bg-slate-500/10 text-slate-400 border border-slate-500/20 cursor-not-allowed"
-                    }`}
+                    className={getButtonStyles(
+                      buttonState.variant,
+                      buttonState.disabled
+                    )}
                     disabled={buttonState.disabled}
                   >
                     {buttonState.icon && buttonState.icon}
                     {buttonState.text}
                   </button>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
           {filteredBriefs.length === 0 && (
@@ -473,7 +599,15 @@ export default function Marketplace() {
       {userProfile?.isRegistered && userProfile.isInfluencer && (
         <ApplyModal
           showApplyModal={showApplyModal}
-          setShowApplyModal={setShowApplyModal}
+          setShowApplyModal={(show) => {
+            setShowApplyModal(show);
+            // Refresh application status when modal closes after successful application
+            if (!show) {
+              setTimeout(() => {
+                refreshApplicationStatus();
+              }, 1000);
+            }
+          }}
           selectedBrief={
             selectedBrief
               ? {
@@ -482,7 +616,8 @@ export default function Marketplace() {
                   description: selectedBrief.description,
                   business: selectedBrief.business,
                   budget: selectedBrief.budget,
-                  requirements: selectedBrief.requirements || "No specific requirements",
+                  requirements:
+                    selectedBrief.requirements || "No specific requirements",
                 }
               : null
           }
@@ -493,4 +628,3 @@ export default function Marketplace() {
     </div>
   );
 }
-

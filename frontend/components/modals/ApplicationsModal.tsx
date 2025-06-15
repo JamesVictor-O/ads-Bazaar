@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import { ApplicationsModalProps } from "@/types/index";
 import {
   Loader2,
@@ -11,28 +10,37 @@ import {
   XCircle,
   Award,
   X,
+  AlertTriangle,
+  Shield,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 import { truncateAddress } from "@/utils/format";
-import { useAccount } from "wagmi";
 import { Hex } from "viem";
 import {
   useCancelAdBrief,
   useSelectInfluencer,
   useCompleteCampaign,
 } from "@/hooks/adsBazaar";
+import { withNetworkGuard } from "@/components/WithNetworkGuard";
+import { motion } from "framer-motion";
 
-export const ApplicationsModal = ({
+interface EnhancedApplicationsModalProps extends ApplicationsModalProps {
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
+}
+
+const ApplicationsModal = ({
   selectedBrief,
   applications,
   isLoadingApplications,
   onClose,
-}: ApplicationsModalProps) => {
-  const {isConnected } = useAccount();
-
+  guardedAction,
+}: EnhancedApplicationsModalProps) => {
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
+  const [transactionPhase, setTransactionPhase] = useState<
+    "idle" | "selecting" | "canceling" | "completing"
+  >("idle");
 
   const {
     selectInfluencer,
@@ -41,7 +49,6 @@ export const ApplicationsModal = ({
     error: selectError,
   } = useSelectInfluencer();
 
-  // Hook for canceling a campaign
   const {
     cancelBrief,
     isPending: isCanceling,
@@ -49,26 +56,40 @@ export const ApplicationsModal = ({
     error: cancelError,
   } = useCancelAdBrief();
 
-
-  console.log("selectedBrief", selectedBrief);
-
-  // Hook for completing a campaign
   const {
-    completeCampaign, // Function to complete the campaign
-    isPending: isCompleting, // Loading state
-    isSuccess: isCompleted, // Success state
-    error: completeError, // Error state
+    completeCampaign,
+    isPending: isCompleting,
+    isSuccess: isCompleted,
+    error: completeError,
   } = useCompleteCampaign();
 
-  // Show success notification when an influencer is selected
+  // Track transaction phases for better UX
+  useEffect(() => {
+    if (isSelectingInfluencer && transactionPhase !== "selecting") {
+      setTransactionPhase("selecting");
+    } else if (isCanceling && transactionPhase !== "canceling") {
+      setTransactionPhase("canceling");
+    } else if (isCompleting && transactionPhase !== "completing") {
+      setTransactionPhase("completing");
+    } else if (
+      !isSelectingInfluencer &&
+      !isCanceling &&
+      !isCompleting &&
+      transactionPhase !== "idle"
+    ) {
+      setTransactionPhase("idle");
+    }
+  }, [isSelectingInfluencer, isCanceling, isCompleting, transactionPhase]);
+
+  // Handle success states
   useEffect(() => {
     if (isInfluencerSelected) {
       toast.success("Influencer assigned successfully!");
-      setPendingIndex(null); // Reset pending state
+      setPendingIndex(null);
+      setTransactionPhase("idle");
     }
   }, [isInfluencerSelected]);
 
-  // Close modal and show success notification when campaign is canceled
   useEffect(() => {
     if (isCanceled) {
       toast.success("Campaign canceled successfully!");
@@ -76,7 +97,6 @@ export const ApplicationsModal = ({
     }
   }, [isCanceled, onClose]);
 
-  // Close modal and show success notification when campaign is completed
   useEffect(() => {
     if (isCompleted) {
       toast.success("Campaign completed successfully!");
@@ -84,7 +104,7 @@ export const ApplicationsModal = ({
     }
   }, [isCompleted, onClose]);
 
-  // Handle errors for all transactions
+  // Handle errors
   useEffect(() => {
     const error = selectError || cancelError || completeError;
     if (!error) return;
@@ -107,12 +127,13 @@ export const ApplicationsModal = ({
     }
 
     toast.error(errorMessage, { duration: 5000 });
+    setPendingIndex(null);
+    setTransactionPhase("idle");
   }, [selectError, cancelError, completeError]);
 
-  // Function to assign an influencer to the campaign
   const handleAssignInfluencer = async (briefId: Hex, index: number) => {
-    if (!isConnected) {
-      toast.error("Please connect your wallet first");
+    if (!guardedAction) {
+      toast.error("Network configuration error. Please refresh and try again.");
       return;
     }
 
@@ -121,64 +142,37 @@ export const ApplicationsModal = ({
       return;
     }
 
-    const application = applications[index];
-    const influencerName = truncateAddress(application.influencer);
-
     setPendingIndex(index);
-    const toastId = toast.loading(`Assigning ${influencerName}...`);
 
-    try {
+    await guardedAction(async () => {
       await selectInfluencer(briefId, index);
-    } catch (error) {
-      console.error("Transaction error:", error);
-      const errorMessage =
-        error && typeof error === "object" && "message" in error
-          ? (error as { message?: string }).message
-          : "Unknown error";
-      toast.error(
-        `Failed to assign influencer: ${errorMessage || "Unknown error"}`,
-        {
-          id: toastId,
-        }
-      );
-    } finally {
-      setPendingIndex(null); // Reset loading state
-    }
+    });
   };
 
-  // Function to cancel the campaign
   const handleCancelCampaign = async () => {
-    if (!selectedBrief) return;
+    if (!selectedBrief || !guardedAction) {
+      toast.error("Network configuration error. Please refresh and try again.");
+      return;
+    }
 
-    const toastId = toast.loading("Canceling campaign...");
-
-    try {
-       // @ts-expect-error:Brief ID should be typed but API currently accepts any string
+    await guardedAction(async () => {
+      // @ts-expect-error: Brief ID should be typed but API currently accepts any string
       await cancelBrief(selectedBrief.briefId);
-      toast.success("Campaign canceled successfully!", { id: toastId });
-    } catch (error) {
-      console.error("Transaction error:", error);
-      toast.error("Failed to cancel campaign", { id: toastId });
-    }
+    });
   };
 
-  // Function to complete the campaign
   const handleCompleteCampaign = async () => {
-    if (!selectedBrief) return;
-
-    const toastId = toast.loading("Completing campaign...");
-
-    try {
-        // @ts-expect-error:Brief ID should be typed but API currently accepts any string 
-      await completeCampaign(selectedBrief.briefId);
-      toast.success("Campaign completed successfully!", { id: toastId });
-    } catch (error) {
-      console.error("Transaction error:", error);
-      toast.error("Failed to complete campaign", { id: toastId });
+    if (!selectedBrief || !guardedAction) {
+      toast.error("Network configuration error. Please refresh and try again.");
+      return;
     }
+
+    await guardedAction(async () => {
+      // @ts-expect-error: Brief ID should be typed but API currently accepts any string
+      await completeCampaign(selectedBrief.briefId);
+    });
   };
 
-  // Extract revert reason from blockchain error messages
   const extractRevertReason = (message: string): string | null => {
     const revertPatterns = [
       /reason="([^"]+)"/,
@@ -199,43 +193,51 @@ export const ApplicationsModal = ({
     return null;
   };
 
- 
   if (!selectedBrief) return null;
 
-  
   const maxInfluencers = Number(selectedBrief.maxInfluencers);
   const selectedCount = applications.filter((app) => app.isSelected).length;
   const spotsRemaining = maxInfluencers - selectedCount;
 
-  // Check if application deadline has passed
   const deadline = new Date(Number(selectedBrief.applicationDeadline) * 1000);
   const deadlinePassed = deadline < new Date();
 
-  // Check if there are any submissions
   const hasSubmissions = applications.some(
     (app) => app.isSelected && app.hasClaimed
   );
 
-  // Determine if cancel button should be shown
   const showCancelButton =
     deadlinePassed ||
     applications.length === 0 ||
     (selectedCount === 0 && applications.length > 0);
 
-  // Determine if complete button should be shown
-  const showCompleteButton =
-    selectedCount > 0 && hasSubmissions
+  const showCompleteButton = selectedCount > 0 && hasSubmissions;
+
+  const isTransactionInProgress =
+    transactionPhase !== "idle" ||
+    isSelectingInfluencer ||
+    isCanceling ||
+    isCompleting;
 
   return (
-    // Modal overlay with dark, translucent background
-    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300">
-      {/* Modal container with dark theme and emerald shadow */}
-      <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 w-full max-w-2xl mx-auto max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10">
-        {/* Header with campaign name and close button */}
+    <motion.div
+      className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 w-full max-w-2xl mx-auto max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">
-              Applications for {selectedBrief.title}
+              Applications for {selectedBrief.name}
             </h2>
             <div className="flex items-center text-sm text-slate-400 mt-2 gap-4">
               <span>
@@ -256,23 +258,41 @@ export const ApplicationsModal = ({
           <button
             onClick={onClose}
             className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
-            disabled={isSelectingInfluencer || isCanceling || isCompleting}
+            disabled={isTransactionInProgress}
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Applications list or loading/empty state */}
+        {/* Network Status */}
+        {/* Network protection is handled by withNetworkGuard HOC */}
+
+        {/* Transaction Status */}
+        {transactionPhase !== "idle" && (
+          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start">
+            <Loader2 className="animate-spin text-emerald-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
+            <div>
+              <p className="text-sm font-medium text-emerald-400">
+                Transaction in Progress
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                {transactionPhase === "selecting" && "Assigning influencer..."}
+                {transactionPhase === "canceling" && "Canceling campaign..."}
+                {transactionPhase === "completing" && "Completing campaign..."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Applications list */}
         <div className="overflow-y-auto flex-grow">
           {isLoadingApplications ? (
-            // Loading state
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
               <p className="text-slate-400">Loading applications...</p>
             </div>
           ) : applications && applications.length > 0 ? (
-            // List of applications
             <div className="space-y-4">
               {applications.map((application, index) => (
                 <div
@@ -284,12 +304,9 @@ export const ApplicationsModal = ({
                   } rounded-xl p-5 hover:bg-slate-900/80 transition-all duration-200 shadow-sm hover:shadow-md`}
                 >
                   <div className="flex flex-col gap-4">
-                    {/* Influencer info and action button */}
                     <div className="flex justify-between items-start">
                       <div className="flex items-center space-x-3">
-                        {/* Avatar */}
                         <div className="w-12 h-12 bg-slate-700/50 rounded-full overflow-hidden flex items-center justify-center">
-                        
                           {application.influencerProfile?.avatar ? (
                             <Image
                               src={application.influencerProfile.avatar}
@@ -332,33 +349,43 @@ export const ApplicationsModal = ({
                           </div>
                         ) : (
                           spotsRemaining > 0 && (
-                            <button
+                            <motion.button
                               onClick={() =>
                                 handleAssignInfluencer(selectedBrief.id, index)
                               }
                               disabled={
-                                isSelectingInfluencer ||
-                                pendingIndex === index ||
-                                isCanceling ||
-                                isCompleting
+                                isTransactionInProgress ||
+                                pendingIndex === index
                               }
-                              className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-500/25"
+                              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 ${
+                                isTransactionInProgress ||
+                                pendingIndex === index
+                                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                                  : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
+                              }`}
+                              whileTap={
+                                !(
+                                  isTransactionInProgress ||
+                                  pendingIndex === index
+                                )
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                             >
                               {pendingIndex === index ? (
-                                <div className="flex items-center space-x-2">
+                                <>
                                   <Loader2 className="animate-spin h-4 w-4" />
                                   <span>Processing</span>
-                                </div>
+                                </>
                               ) : (
                                 "Assign"
                               )}
-                            </button>
+                            </motion.button>
                           )
                         )}
                       </div>
                     </div>
 
-                    {/* Application message */}
                     <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
                       <p className="text-sm text-slate-300 whitespace-pre-wrap">
                         {application.message ||
@@ -366,7 +393,6 @@ export const ApplicationsModal = ({
                       </p>
                     </div>
 
-                    {/* Submission details for selected influencers */}
                     {application.isSelected && (
                       <div className="space-y-2 border-t border-slate-700/50 pt-3 mt-1">
                         <div className="flex justify-between text-xs text-slate-400">
@@ -407,7 +433,6 @@ export const ApplicationsModal = ({
               ))}
             </div>
           ) : (
-            // Empty state when no applications exist
             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
               <svg
                 className="w-16 h-16 mb-4 text-slate-600"
@@ -431,54 +456,66 @@ export const ApplicationsModal = ({
         {/* Action buttons */}
         <div className="mt-6 flex justify-end pt-4 border-t border-slate-700/50 gap-4">
           {showCancelButton && (
-            <button
+            <motion.button
               onClick={handleCancelCampaign}
-              disabled={isCanceling || isCompleting || isSelectingInfluencer}
-              className="mr-auto px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-xl hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md shadow-red-500/25"
+              disabled={isTransactionInProgress}
+              className={`mr-auto px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 ${
+                isTransactionInProgress
+                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                  : "text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/25"
+              }`}
+              whileTap={!isTransactionInProgress ? { scale: 0.95 } : {}}
             >
-              {isCanceling ? (
-                <div className="flex items-center space-x-2">
+              {transactionPhase === "canceling" ? (
+                <>
                   <Loader2 className="animate-spin h-4 w-4" />
                   <span>Canceling...</span>
-                </div>
+                </>
               ) : (
-                <div className="flex items-center space-x-2">
+                <>
                   <XCircle className="h-4 w-4" />
                   <span>Cancel Campaign</span>
-                </div>
+                </>
               )}
-            </button>
+            </motion.button>
           )}
 
           {showCompleteButton && (
-            <button
+            <motion.button
               onClick={handleCompleteCampaign}
-              disabled={isCompleting || isCanceling || isSelectingInfluencer}
-              className="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md shadow-emerald-500/25"
+              disabled={isTransactionInProgress}
+              className={`px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 ${
+                isTransactionInProgress
+                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                  : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
+              }`}
+              whileTap={!isTransactionInProgress ? { scale: 0.95 } : {}}
             >
-              {isCompleting ? (
-                <div className="flex items-center space-x-2">
+              {transactionPhase === "completing" ? (
+                <>
                   <Loader2 className="animate-spin h-4 w-4" />
                   <span>Completing...</span>
-                </div>
+                </>
               ) : (
-                <div className="flex items-center space-x-2">
+                <>
                   <Award className="h-4 w-4" />
                   <span>Complete Campaign</span>
-                </div>
+                </>
               )}
-            </button>
+            </motion.button>
           )}
 
           <button
             onClick={onClose}
-            disabled={isSelectingInfluencer || isCanceling || isCompleting}
+            disabled={isTransactionInProgress}
             className="px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Close
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
+
+export default withNetworkGuard(ApplicationsModal);
