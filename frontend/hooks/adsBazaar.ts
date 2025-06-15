@@ -41,7 +41,7 @@ export interface InfluencerApplication {
   isApproved: boolean;
 }
 
-interface FormattedBriefData {
+export interface FormattedBriefData {
   id: `0x${string}`;
   business: `0x${string}`;
   title: string;

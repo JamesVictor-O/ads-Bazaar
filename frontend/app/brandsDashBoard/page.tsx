@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useAccount } from "wagmi";
-import { Brief } from "@/types/index";
+import { FormattedBriefData } from "@/types/index";
 import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
 import ApplicationsModal from "@/components/modals/ApplicationsModal";
 import CreateCampaignModal from "@/components/modals/CreateCampaignModal";
@@ -30,10 +30,20 @@ import {
   XCircle,
   Trash2,
   Ban,
+  Timer,
+  TrendingUp,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isAfter, addHours } from "date-fns";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import {
+  truncateAddress,
+  getStatusColor,
+  isCampaignUrgent,
+  isCampaignNew,
+  getTimeRemaining,
+  formatCurrency,
+} from "@/utils/format";
 
 // Import custom hooks
 import {
@@ -53,7 +63,9 @@ const BrandDashboard = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
-  const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
+  const [selectedBrief, setSelectedBrief] = useState<FormattedBriefData | null>(
+    null
+  );
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(
@@ -119,21 +131,25 @@ const BrandDashboard = () => {
     return statusMap[statusCode] || "Unknown";
   };
 
-  const getStatusColor = (statusCode: number): string => {
-    switch (statusCode) {
-      case 0:
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case 1:
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      case 2:
-        return "bg-green-500/10 text-green-400 border-green-500/20";
-      case 3:
-        return "bg-red-500/10 text-red-400 border-red-500/20";
-      case 4:
-        return "bg-orange-500/10 text-orange-400 border-orange-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
-    }
+  // Enhanced campaign status logic
+  const getCampaignStatusInfo = (brief: FormattedBriefData) => {
+    const now = new Date();
+    const selectionDeadline = new Date(brief.selectionDeadline * 1000);
+    const creationDate = new Date(brief.creationTime * 1000);
+
+    return {
+      isNew: isCampaignNew(brief.creationTime),
+      isUrgent: isCampaignUrgent(brief.selectionDeadline) && brief.status === 0,
+      isActive: brief.status === 0,
+      isInProgress: brief.status === 1,
+      isCompleted: brief.status === 2,
+      isCancelled: brief.status === 3,
+      isExpired: brief.status === 4,
+      deadlinePassed: isAfter(now, selectionDeadline),
+      timeRemaining: getTimeRemaining(brief.selectionDeadline),
+      createdAt: creationDate,
+      selectionDeadlineDate: selectionDeadline,
+    };
   };
 
   useEffect(() => {
@@ -175,12 +191,10 @@ const BrandDashboard = () => {
     }
   }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications]);
 
-  // Handle cancel campaign success/error
   useEffect(() => {
     if (isCancelSuccess) {
       toast.success("Campaign cancelled successfully!");
       setShowCancelConfirm(null);
-      // Refresh the briefs list
       router.refresh();
     }
 
@@ -192,6 +206,7 @@ const BrandDashboard = () => {
     }
   }, [isCancelSuccess, isCancelError, cancelError, router]);
 
+  // Updated statistics calculations
   const activeBriefs = briefs
     ? briefs.filter((brief) => brief.status === 0 || brief.status === 1)
     : [];
@@ -208,7 +223,7 @@ const BrandDashboard = () => {
       )
     : 0;
 
-  // Filter briefs based on search and filter criteria
+  // Enhanced filtering logic
   const filteredBriefs = briefs.filter((brief) => {
     const matchesSearch = brief.name
       .toLowerCase()
@@ -286,10 +301,7 @@ const BrandDashboard = () => {
     }
   };
 
-  const canCancelCampaign = (brief: Brief): boolean => {
-    // Can cancel if:
-    // 1. Campaign is still open (status 0)
-    // 2. No influencers have been selected yet
+  const canCancelCampaign = (brief: FormattedBriefData): boolean => {
     return brief.status === 0 && brief.selectedInfluencersCount === 0;
   };
 
@@ -342,7 +354,7 @@ const BrandDashboard = () => {
       <Toaster position="top-right" />
 
       <div className="px-4 sm:px-6 md:px-8 pb-8">
-        {/* Network Status - Show when connected but wrong network */}
+        {/* Network Status */}
         {isConnected && !isCorrectChain && (
           <div className="mb-6">
             <NetworkStatus className="bg-slate-800/60 border-amber-500/50" />
@@ -467,8 +479,8 @@ const BrandDashboard = () => {
             {
               icon: DollarSign,
               color: "emerald-400",
-              value: totalBudget.toLocaleString(),
-              label: "Total Budget (cUSD)",
+              value: formatCurrency(totalBudget, "cUSD", 0),
+              label: "Total Budget",
             },
             {
               icon: Users,
@@ -536,159 +548,201 @@ const BrandDashboard = () => {
                 </p>
               </div>
             ) : (
-              filteredBriefs.map((brief, index) => (
-                <motion.div
-                  key={brief.id}
-                  className="p-4 sm:p-5 hover:bg-slate-800/30 transition-all duration-200"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                >
-                  <div className="flex flex-col gap-4">
-                    {/* Campaign Info */}
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg border border-slate-600/50 hover:border-emerald-500/30 transition-colors">
-                        <Target className="w-4 h-4 text-slate-300" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                          <h3 className="text-base sm:text-lg font-semibold text-white truncate">
-                            {brief.name}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(
-                                brief.status
-                              )}`}
-                            >
-                              {brief.status === 3 && (
-                                <Ban className="w-3 h-3 mr-1" />
-                              )}
-                              {getStatusString(brief.status)}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-slate-400 text-xs sm:text-sm mb-2 line-clamp-2">
-                          {brief.description}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span>
-                              {format(
-                                new Date(brief.selectionDeadline * 1000),
-                                "MMM d, yyyy"
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>
-                              {Math.max(
-                                0,
-                                Math.ceil(
-                                  (new Date(
-                                    brief.selectionDeadline * 1000
-                                  ).getTime() -
-                                    new Date().getTime()) /
-                                    (1000 * 60 * 60 * 24)
-                                )
-                              )}{" "}
-                              days left
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>
-                              {brief.selectedInfluencersCount}/
-                              {brief.maxInfluencers} influencers
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+              filteredBriefs.map((brief, index) => {
+                const campaignStatus = getCampaignStatusInfo(brief);
 
-                    {/* Budget & Actions */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="text-lg sm:text-xl font-bold text-white mb-1">
-                          {brief.budget.toLocaleString()} cUSD
+                return (
+                  <motion.div
+                    key={brief.id}
+                    className="p-4 sm:p-5 hover:bg-slate-800/30 transition-all duration-200"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                  >
+                    <div className="flex flex-col gap-4">
+                      {/* Campaign Info */}
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg border border-slate-600/50 hover:border-emerald-500/30 transition-colors">
+                          <Target className="w-4 h-4 text-slate-300" />
                         </div>
-                        <div className="text-xs text-slate-400">
-                          0 spent (0%)
-                        </div>
-                        <div className="w-20 h-1.5 bg-slate-700/50 rounded-full mt-1.5 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300"
-                            style={{ width: "0%" }}
-                          />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                            <h3 className="text-base sm:text-lg font-semibold text-white truncate">
+                              {brief.name}
+                            </h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Status badge */}
+                              <span
+                                className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(
+                                  brief.status
+                                )}`}
+                              >
+                                {brief.status === 3 && (
+                                  <Ban className="w-3 h-3 mr-1 inline" />
+                                )}
+                                {getStatusString(brief.status)}
+                              </span>
+
+                              {/* New badge */}
+                              {campaignStatus.isNew && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                  <TrendingUp className="w-3 h-3 mr-1 inline" />
+                                  New
+                                </span>
+                              )}
+
+                              {/* Urgent badge */}
+                              {campaignStatus.isUrgent && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
+                                  <Timer className="w-3 h-3 mr-1 inline" />
+                                  Urgent
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-slate-400 text-xs sm:text-sm mb-2 line-clamp-2">
+                            {brief.description}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>
+                                Created{" "}
+                                {format(
+                                  campaignStatus.createdAt,
+                                  "MMM d, yyyy"
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {campaignStatus.deadlinePassed ? (
+                                <span className="text-red-400">
+                                  Selection closed
+                                </span>
+                              ) : campaignStatus.timeRemaining.days > 0 ? (
+                                <span>
+                                  {campaignStatus.timeRemaining.days} day
+                                  {campaignStatus.timeRemaining.days !== 1
+                                    ? "s"
+                                    : ""}{" "}
+                                  left
+                                </span>
+                              ) : (
+                                <span className="text-orange-400">
+                                  {campaignStatus.timeRemaining.hours} hour
+                                  {campaignStatus.timeRemaining.hours !== 1
+                                    ? "s"
+                                    : ""}{" "}
+                                  left
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5" />
+                              <span>
+                                {brief.selectedInfluencersCount}/
+                                {brief.maxInfluencers} influencers
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <motion.button
-                          onClick={() => {
-                            setSelectedBrief(brief);
-                            setShowApplicationsModal(true);
-                          }}
-                          disabled={brief.status === 3}
-                          className={`relative px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
-                            brief.status === 3
-                              ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
-                              : "bg-slate-700/50 hover:bg-slate-700 text-white border-slate-600/50 hover:border-slate-500"
-                          }`}
-                          whileTap={brief.status !== 3 ? { scale: 0.95 } : {}}
-                        >
-                          Applications
-                          {applications.length > 0 && brief.status !== 3 && (
-                            <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
-                              {applications.length}
-                            </span>
-                          )}
-                        </motion.button>
-                        <motion.button
-                          onClick={() => {
-                            setSelectedBrief(brief);
-                            setShowSubmissionsModal(true);
-                          }}
-                          disabled={brief.status === 3}
-                          className={`px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
-                            brief.status === 3
-                              ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
-                              : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/50"
-                          }`}
-                          whileTap={brief.status !== 3 ? { scale: 0.95 } : {}}
-                        >
-                          Submissions
-                        </motion.button>
 
-                        {/* Cancel Campaign Button - Only show when cancellation is possible */}
-                        {canCancelCampaign(brief) && (
+                      {/* Budget & Actions */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="text-lg sm:text-xl font-bold text-white mb-1">
+                            {formatCurrency(brief.budget)}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            {brief.selectedInfluencersCount > 0
+                              ? `${formatCurrency(
+                                  brief.budget / brief.maxInfluencers
+                                )} per influencer`
+                              : `${formatCurrency(
+                                  brief.budget / brief.maxInfluencers
+                                )} per spot`}
+                          </div>
+                          <div className="w-20 h-1.5 bg-slate-700/50 rounded-full mt-1.5 overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300"
+                              style={{
+                                width: `${
+                                  (brief.selectedInfluencersCount /
+                                    brief.maxInfluencers) *
+                                  100
+                                }%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
                           <motion.button
-                            onClick={() => setShowCancelConfirm(brief.id)}
-                            disabled={isCancelingBrief}
-                            className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg border border-red-500/30 hover:border-red-500/50 transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                            whileTap={{ scale: 0.95 }}
-                            title="Cancel Campaign"
+                            onClick={() => {
+                              setSelectedBrief(brief);
+                              setShowApplicationsModal(true);
+                            }}
+                            disabled={brief.status === 3}
+                            className={`relative px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
+                              brief.status === 3
+                                ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
+                                : "bg-slate-700/50 hover:bg-slate-700 text-white border-slate-600/50 hover:border-slate-500"
+                            }`}
+                            whileTap={brief.status !== 3 ? { scale: 0.95 } : {}}
                           >
-                            {isCancelingBrief ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3 h-3" />
+                            Applications
+                            {applications.length > 0 && brief.status !== 3 && (
+                              <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
+                                {applications.length}
+                              </span>
                             )}
                           </motion.button>
-                        )}
+                          <motion.button
+                            onClick={() => {
+                              setSelectedBrief(brief);
+                              setShowSubmissionsModal(true);
+                            }}
+                            disabled={brief.status === 3}
+                            className={`px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
+                              brief.status === 3
+                                ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
+                                : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/50"
+                            }`}
+                            whileTap={brief.status !== 3 ? { scale: 0.95 } : {}}
+                          >
+                            Submissions
+                          </motion.button>
 
-                        <motion.button
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <MoreVertical className="w-3.5 h-3.5" />
-                        </motion.button>
+                          {/* Cancel Campaign Button */}
+                          {canCancelCampaign(brief) && (
+                            <motion.button
+                              onClick={() => setShowCancelConfirm(brief.id)}
+                              disabled={isCancelingBrief}
+                              className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg border border-red-500/30 hover:border-red-500/50 transition-all text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                              whileTap={{ scale: 0.95 }}
+                              title="Cancel Campaign"
+                            >
+                              {isCancelingBrief ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3 h-3" />
+                              )}
+                            </motion.button>
+                          )}
+
+                          <motion.button
+                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </motion.button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                );
+              })
             )}
           </div>
         </motion.div>
