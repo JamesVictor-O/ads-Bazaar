@@ -126,7 +126,7 @@ export default function InfluencerDashboard() {
   const { pendingPayments, isLoadingPayments, refetchPayments } =
     usePendingPayments(address);
 
-  console.log("appliedBriefs", appliedBriefs);
+ 
 
   const {
     submitProof,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   useReadContract,
+  useReadContracts,
   useWriteContract,
   useWaitForTransactionReceipt,
   useAccount,
@@ -131,6 +132,60 @@ function useHandleTransaction() {
     error,
   };
 }
+
+// flaging submission as selected
+export const useFlagSubmission = () => {
+  const [isFlagging, setIsFlagging] = useState(false);
+  const [flagError, setFlagError] = useState<Error | null>(null);
+  const [flagSuccess, setFlagSuccess] = useState(false);
+  const [transactionHash, setTransactionHash] = useState<Hex | undefined>(undefined);
+
+  const { writeContract, data: hash, error, isPending } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: transactionHash,
+  });
+
+  const flagSubmission = async (adBriefId: Hex, influencer: Hex, reason: string) => {
+    try {
+      setIsFlagging(true);
+      setFlagError(null);
+      setFlagSuccess(false);
+      setTransactionHash(undefined);
+
+      writeContract({
+        address: CONTRACT_ADDRESS as Hex,
+        abi: ABI.abi,
+        functionName: "flagSubmission",
+        args: [adBriefId, influencer],
+      });
+
+      setTransactionHash(hash);
+    } catch (err) {
+      setFlagError(err instanceof Error ? err : new Error("Failed to flag submission"));
+      setIsFlagging(false);
+    }
+  };
+
+  // Monitor transaction confirmation
+  useEffect(() => {
+    if (hash && isConfirmed) {
+      setFlagSuccess(true);
+      setIsFlagging(false);
+    } else if (hash && error) {
+      setFlagError(error);
+      setIsFlagging(false);
+    }
+  }, [hash, isConfirmed, error]);
+
+  return {
+    flagSubmission,
+    isFlagging: isFlagging || isPending || isConfirming,
+    flagSuccess,
+    flagError,
+    transactionHash,
+  };
+};
 
 export function useGetAllId() {
   const { data, isLoading, isError, error, refetch, isSuccess } =
@@ -277,6 +332,42 @@ export function useGetAllBriefs() {
     error: idError || error,
   };
 }
+
+export const usePlatformStats = () => {
+  const contracts = [
+    {
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: ABI.abi as Abi,
+      functionName: "getTotalInfluencers",
+    },
+    {
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: ABI.abi as Abi,
+      functionName: "getTotalBusinesses",
+    },
+  ];
+
+  const { data, isLoading, error, refetch } = useReadContracts({
+    contracts,
+    query: {
+      enabled: true,
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+      gcTime: 10 * 60 * 1000, // Garbage collect after 10 minutes
+    },
+  });
+
+  const stats = {
+    totalInfluencers: data?.[0]?.status === "success" ? Number(data[0].result) : 0,
+    totalBusinesses: data?.[1]?.status === "success" ? Number(data[1].result) : 0,
+  };
+
+  return {
+    stats,
+    isLoadingStats: isLoading,
+    errorStats: error,
+    refetchStats: refetch,
+  };
+};
 
 export function useGetBusinessBriefIds(businessAddress: `0x${string}`) {
   const { data, isLoading, isError, error, refetch } = useReadContract({

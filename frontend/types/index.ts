@@ -75,6 +75,7 @@ export interface Application {
     name?: string;
     avatar?: string;
   };
+  isFlagged: boolean;
 }
 
 export enum TargetAudience {
