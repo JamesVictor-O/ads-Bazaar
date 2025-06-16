@@ -11,7 +11,9 @@ import {
   UserCheck,
   AlertTriangle,
   Loader2,
-
+  Wifi,
+  WifiOff,
+  XCircle,
   CheckCircle,
   Timer,
   TrendingUp,
@@ -137,7 +139,11 @@ export default function Marketplace() {
     }
   }, [showApplyModal, refreshApplicationStatus]);
 
-
+  const handleApplicationSuccess = useCallback(() => {
+    setTimeout(() => {
+      refreshApplicationStatus();
+    }, 2000);
+  }, [refreshApplicationStatus]);
 
   // Enhanced campaign status logic
   const getCampaignStatus = (campaign: Campaign) => {
@@ -286,7 +292,7 @@ export default function Marketplace() {
       return {
         text: campaignStatus.deadlinePassed
           ? "Deadline Passed"
-          : statusMap[campaign.status as keyof typeof statusMap],
+          : statusMap[campaign.status],
         disabled: true,
         onClick: () => {},
         variant: "closed",
@@ -305,7 +311,7 @@ export default function Marketplace() {
   };
 
   // Enhanced button styling
-  const getButtonStyles = (variant: string) => {
+  const getButtonStyles = (variant: string, disabled: boolean) => {
     const baseStyles =
       "w-full py-3 px-4 rounded-xl text-sm font-medium flex items-center justify-center transition-all duration-200 shadow-md";
 
@@ -338,7 +344,8 @@ export default function Marketplace() {
       campaign.requirements.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       categoryFilter === "All Categories" ||
-      audienceMap[campaign.targetAudience as keyof typeof audienceMap] === categoryFilter;
+      audienceMap[campaign.targetAudience as keyof typeof audienceMap] ===
+        categoryFilter;
     const matchesBudget =
       budgetFilter === "Budget: Any" ||
       (budgetFilter === "Under 500 cUSD" && budget < 500) ||
@@ -481,8 +488,12 @@ export default function Marketplace() {
         {/* Enhanced Campaign Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCampaigns.map((campaign) => {
-            const category = audienceMap[campaign.targetAudience as keyof typeof audienceMap] || "Other";
-            const status = statusMap[campaign.status as keyof typeof statusMap] || "Unknown";
+            const category =
+              audienceMap[
+                campaign.targetAudience as keyof typeof audienceMap
+              ] || "Other";
+            const status =
+              statusMap[campaign.status as keyof typeof statusMap] || "Unknown";
             const buttonState = getButtonState(campaign);
             const campaignStatus = getCampaignStatus(campaign);
             const userApplicationStatus = applicationStatus[campaign.id];
@@ -675,7 +686,8 @@ export default function Marketplace() {
                   <button
                     onClick={buttonState.onClick}
                     className={getButtonStyles(
-                      buttonState.variant
+                      buttonState.variant,
+                      buttonState.disabled
                     )}
                     disabled={buttonState.disabled}
                   >

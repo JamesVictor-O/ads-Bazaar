@@ -56,6 +56,7 @@ export const SubmissionsModal = ({
               className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 flex-shrink-0"
               disabled={isCompletingCampaign}
               aria-label="Close modal"
+
             >
               <X className="w-5 h-5" />
             </button>
@@ -152,6 +153,7 @@ export const SubmissionsModal = ({
                               rel="noopener noreferrer"
                               className="text-emerald-400 hover:text-emerald-300 transition-colors duration-200 font-medium"
                             >
+
                               View Campaign Post
                             </a>
                           </div>
@@ -225,8 +227,10 @@ export const SubmissionsModal = ({
               disabled={isCompletingCampaign}
               className="px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
+
               Close
             </button>
+
           </div>
         </div>
       </div>

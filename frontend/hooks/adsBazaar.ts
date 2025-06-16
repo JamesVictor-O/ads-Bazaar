@@ -186,7 +186,6 @@ export const useFlagSubmission = () => {
     transactionHash,
   };
 };
-
 export function useGetAllId() {
   const { data, isLoading, isError, error, refetch, isSuccess } =
     useReadContract({

@@ -1,3 +1,19 @@
+import {
+  CampaignStatus,
+  CampaignPhase,
+  TargetAudience,
+  ProofStatus,
+  PaymentStatus,
+  AUDIENCE_LABELS,
+  STATUS_LABELS,
+  PHASE_LABELS,
+  USER_STATUS_LABELS,
+  UserStatus,
+} from "@/types";
+
+/**
+ * Truncates an Ethereum address for display
+ */
 export function truncateAddress(
   address?: string,
   startLength: number = 6,
@@ -9,6 +25,9 @@ export function truncateAddress(
   return `${address.slice(0, startLength)}...${address.slice(-endLength)}`;
 }
 
+/**
+ * Formats currency values with proper localization
+ */
 export function formatCurrency(
   amount: number,
   currency: string = "cUSD",
@@ -20,6 +39,9 @@ export function formatCurrency(
   })} ${currency}`;
 }
 
+/**
+ * Formats duration in seconds to human-readable string
+ */
 export function formatDuration(seconds: number): string {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
@@ -34,6 +56,9 @@ export function formatDuration(seconds: number): string {
   }
 }
 
+/**
+ * Calculates time remaining from a deadline
+ */
 export function getTimeRemaining(deadline: number) {
   const now = Date.now() / 1000; // Current time in seconds
   const timeLeft = deadline - now;
@@ -64,6 +89,33 @@ export function getTimeRemaining(deadline: number) {
   };
 }
 
+/**
+ * Formats time remaining in a concise, human-readable way
+ */
+export function formatTimeRemaining(timeRemaining: {
+  days: number;
+  hours: number;
+  minutes: number;
+  totalSeconds: number;
+}): string {
+  if (timeRemaining.totalSeconds <= 0) {
+    return "Expired";
+  }
+
+  if (timeRemaining.days > 0) {
+    return `${timeRemaining.days}d ${timeRemaining.hours}h`;
+  } else if (timeRemaining.hours > 0) {
+    return `${timeRemaining.hours}h ${timeRemaining.minutes}m`;
+  } else if (timeRemaining.minutes > 0) {
+    return `${timeRemaining.minutes}m`;
+  } else {
+    return "< 1m";
+  }
+}
+
+/**
+ * Formats Unix timestamp to human-readable date
+ */
 export function formatTimestamp(
   timestamp: number,
   includeTime: boolean = false
@@ -77,15 +129,16 @@ export function formatTimestamp(
   return date.toLocaleDateString();
 }
 
+/**
+ * Calculates percentage of spots filled
+ */
 export function calculateSpotsFilled(selected: number, max: number): number {
   if (max === 0) return 0;
   return Math.round((selected / max) * 100);
 }
 
 /**
- * Determines if a campaign is urgent (deadline within 24 hours)
- * @param deadline - Deadline timestamp in seconds
- * @returns Boolean indicating if campaign is urgent
+ * Determines if a campaign deadline is urgent (within 24 hours)
  */
 export function isCampaignUrgent(deadline: number): boolean {
   const now = Date.now() / 1000;
@@ -97,8 +150,6 @@ export function isCampaignUrgent(deadline: number): boolean {
 
 /**
  * Determines if a campaign is new (created within last 24 hours)
- * @param creationTime - Creation timestamp in seconds
- * @returns Boolean indicating if campaign is new
  */
 export function isCampaignNew(creationTime: number): boolean {
   const now = Date.now() / 1000;
@@ -109,10 +160,7 @@ export function isCampaignNew(creationTime: number): boolean {
 }
 
 /**
- * Formats a large number with appropriate suffixes (K, M, B)
- * @param num - The number to format
- * @param decimals - Number of decimal places (default: 1)
- * @returns Formatted number string
+ * Formats large numbers with appropriate suffixes (K, M, B)
  */
 export function formatNumber(num: number, decimals: number = 1): string {
   if (num < 1000) return num.toString();
@@ -125,21 +173,19 @@ export function formatNumber(num: number, decimals: number = 1): string {
 }
 
 /**
- * Gets the appropriate color class for a campaign status
- * @param status - Campaign status number
- * @returns Tailwind CSS color classes
+ * Gets appropriate color classes for campaign status
  */
-export function getStatusColor(status: number): string {
+export function getStatusColor(status: CampaignStatus): string {
   switch (status) {
-    case 0: // OPEN
+    case CampaignStatus.OPEN:
       return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-    case 1: // ASSIGNED/IN_PROGRESS
+    case CampaignStatus.ASSIGNED:
       return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-    case 2: // COMPLETED
+    case CampaignStatus.COMPLETED:
       return "bg-green-500/10 text-green-400 border-green-500/20";
-    case 3: // CANCELLED
+    case CampaignStatus.CANCELLED:
       return "bg-red-500/10 text-red-400 border-red-500/20";
-    case 4: // EXPIRED
+    case CampaignStatus.EXPIRED:
       return "bg-orange-500/10 text-orange-400 border-orange-500/20";
     default:
       return "bg-slate-500/10 text-slate-400 border-slate-500/20";
@@ -147,9 +193,33 @@ export function getStatusColor(status: number): string {
 }
 
 /**
- * Gets the appropriate color class for a target audience category
- * @param category - Category name
- * @returns Tailwind CSS color classes
+ * Gets appropriate color classes for campaign phase
+ */
+export function getPhaseColor(phase: CampaignPhase): string {
+  switch (phase) {
+    case CampaignPhase.SELECTION:
+      return "bg-purple-500/10 text-purple-400 border-purple-500/20";
+    case CampaignPhase.PREPARATION:
+      return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+    case CampaignPhase.PROMOTION:
+      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    case CampaignPhase.PROOF_SUBMISSION:
+      return "bg-orange-500/10 text-orange-400 border-orange-500/20";
+    case CampaignPhase.VERIFICATION:
+      return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+    case CampaignPhase.COMPLETED:
+      return "bg-green-500/10 text-green-400 border-green-500/20";
+    case CampaignPhase.EXPIRED:
+      return "bg-red-500/10 text-red-400 border-red-500/20";
+    case CampaignPhase.CANCELLED:
+      return "bg-red-500/10 text-red-400 border-red-500/20";
+    default:
+      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+  }
+}
+
+/**
+ * Gets appropriate color classes for target audience category
  */
 export function getCategoryColor(category: string): string {
   switch (category.toLowerCase()) {
@@ -183,19 +253,88 @@ export function getCategoryColor(category: string): string {
 }
 
 /**
+ * Gets appropriate color classes for proof status
+ */
+export function getProofStatusColor(status: ProofStatus): string {
+  switch (status) {
+    case ProofStatus.NOT_REQUIRED:
+      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    case ProofStatus.PENDING:
+      return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+    case ProofStatus.SUBMITTED:
+      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    case ProofStatus.APPROVED:
+      return "bg-green-500/10 text-green-400 border-green-500/20";
+    case ProofStatus.REJECTED:
+      return "bg-red-500/10 text-red-400 border-red-500/20";
+    default:
+      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+  }
+}
+
+/**
+ * Gets appropriate color classes for payment status
+ */
+export function getPaymentStatusColor(status: PaymentStatus): string {
+  switch (status) {
+    case PaymentStatus.NOT_EARNED:
+      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    case PaymentStatus.PENDING_APPROVAL:
+      return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+    case PaymentStatus.READY_TO_CLAIM:
+      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    case PaymentStatus.CLAIMED:
+      return "bg-green-500/10 text-green-400 border-green-500/20";
+    default:
+      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+  }
+}
+
+/**
+ * Gets appropriate color classes for user status
+ */
+export function getUserStatusColor(status: UserStatus): string {
+  switch (status) {
+    case UserStatus.NEW_COMER:
+      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    case UserStatus.RISING:
+      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    case UserStatus.POPULAR:
+      return "bg-purple-500/10 text-purple-400 border-purple-500/20";
+    case UserStatus.ELITE:
+      return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    case UserStatus.SUPERSTAR:
+      return "bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-yellow-500/20";
+    default:
+      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+  }
+}
+
+/**
+ * Gets priority level styling
+ */
+export function getPriorityColor(priority: "high" | "medium" | "low"): string {
+  switch (priority) {
+    case "high":
+      return "bg-red-500/10 text-red-400 border-red-500/20";
+    case "medium":
+      return "bg-orange-500/10 text-orange-400 border-orange-500/20";
+    case "low":
+      return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+    default:
+      return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+  }
+}
+
+/**
  * Validates an Ethereum address
- * @param address - Address to validate
- * @returns Boolean indicating if address is valid
  */
 export function isValidEthereumAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
 /**
- * Safely parses a JSON string
- * @param jsonString - JSON string to parse
- * @param fallback - Fallback value if parsing fails
- * @returns Parsed object or fallback
+ * Safely parses a JSON string with fallback
  */
 export function safeJsonParse<T>(jsonString: string, fallback: T): T {
   try {
@@ -203,4 +342,154 @@ export function safeJsonParse<T>(jsonString: string, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+/**
+ * Converts campaign status number to human-readable label
+ */
+export function getStatusLabel(status: CampaignStatus): string {
+  return STATUS_LABELS[status] || "Unknown";
+}
+
+/**
+ * Converts target audience number to human-readable label
+ */
+export function getAudienceLabel(audience: TargetAudience): string {
+  return AUDIENCE_LABELS[audience] || "Other";
+}
+
+/**
+ * Converts campaign phase to human-readable label
+ */
+export function getPhaseLabel(phase: CampaignPhase): string {
+  return PHASE_LABELS[phase] || "Unknown";
+}
+
+/**
+ * Converts user status to human-readable label
+ */
+export function getUserStatusLabel(status: UserStatus): string {
+  return USER_STATUS_LABELS[status] || "Unknown";
+}
+
+/**
+ * Converts proof status to human-readable label
+ */
+export function getProofStatusLabel(status: ProofStatus): string {
+  return status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+/**
+ * Converts payment status to human-readable label
+ */
+export function getPaymentStatusLabel(status: PaymentStatus): string {
+  return status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+/**
+ * Formats a relative time (e.g., "2 days ago", "in 3 hours")
+ */
+export function formatRelativeTime(timestamp: number): string {
+  const now = Date.now() / 1000;
+  const diff = timestamp - now;
+  const absDiff = Math.abs(diff);
+
+  const intervals = [
+    { label: "year", seconds: 31536000 },
+    { label: "month", seconds: 2592000 },
+    { label: "week", seconds: 604800 },
+    { label: "day", seconds: 86400 },
+    { label: "hour", seconds: 3600 },
+    { label: "minute", seconds: 60 },
+  ];
+
+  for (const interval of intervals) {
+    const count = Math.floor(absDiff / interval.seconds);
+    if (count > 0) {
+      const suffix = count === 1 ? "" : "s";
+      if (diff > 0) {
+        return `in ${count} ${interval.label}${suffix}`;
+      } else {
+        return `${count} ${interval.label}${suffix} ago`;
+      }
+    }
+  }
+
+  return diff > 0 ? "in a moment" : "just now";
+}
+
+/**
+ * Calculates completion percentage for campaigns
+ */
+export function calculateCompletionPercentage(
+  selectedInfluencers: number,
+  maxInfluencers: number
+): number {
+  if (maxInfluencers === 0) return 0;
+  return Math.min(
+    Math.round((selectedInfluencers / maxInfluencers) * 100),
+    100
+  );
+}
+
+/**
+ * Formats bytes to human-readable size
+ */
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return "0 Bytes";
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+}
+
+/**
+ * Generates a deterministic color from a string (useful for avatars, categories)
+ */
+export function stringToColor(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const hue = hash % 360;
+  return `hsl(${hue}, 70%, 50%)`;
+}
+
+/**
+ * Debounce function for search inputs
+ */
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
+/**
+ * Clamps a number between min and max values
+ */
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * Formats percentage with proper display
+ */
+export function formatPercentage(value: number, decimals: number = 1): string {
+  return `${value.toFixed(decimals)}%`;
 }

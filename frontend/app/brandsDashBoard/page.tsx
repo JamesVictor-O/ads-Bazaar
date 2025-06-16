@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useAccount } from "wagmi";
-import { FormattedBriefData } from "@/types/index";
+import { Brief } from "@/types";
 import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
 import ApplicationsModal from "@/components/modals/ApplicationsModal";
 import CreateCampaignModal from "@/components/modals/CreateCampaignModal";
@@ -32,18 +32,31 @@ import {
   Ban,
   Timer,
   TrendingUp,
+  Zap,
+  Star,
+  Eye,
+  Settings,
+  ArrowRight,
+  Bell,
+  AlertCircle,
+  PlayCircle,
+  PauseCircle,
+  Flag,
 } from "lucide-react";
 import { format, isAfter, addHours } from "date-fns";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { truncateAddress, formatCurrency } from "@/utils/format";
 import {
 
   getStatusColor,
-  isCampaignUrgent,
-  isCampaignNew,
-  getTimeRemaining,
-  formatCurrency,
-} from "@/utils/format";
+  getPhaseColor,
+  formatTimeRemaining,
+  isActionUrgent,
+  getActionPriority,
+  getPhaseLabel,
+} from "@/utils/campaignUtils";
+import { CampaignStatus, CampaignPhase, PHASE_LABELS } from "@/types";
 
 // Import custom hooks
 import {
@@ -66,14 +79,13 @@ const BrandDashboard = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
-  const [selectedBrief, setSelectedBrief] = useState<FormattedBriefData | null>(
-    null
-  );
+  const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(
     null
   );
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -125,41 +137,44 @@ const BrandDashboard = () => {
     error: cancelError,
   } = useCancelAdBrief();
 
-  interface StatusMap {
-    [key: number]: string;
-  }
+  // Computed dashboard data
+  const dashboardData = useMemo(() => {
+    if (!briefs) return null;
 
-  const getStatusString = (statusCode: number): string => {
-    const statusMap: StatusMap = {
-      0: "Active",
-      1: "In Progress",
-      2: "Completed",
-      3: "Cancelled",
-      4: "Expired",
-    };
-    return statusMap[statusCode] || "Unknown";
-  };
+    const activeBriefs = briefs.filter(
+      (brief) =>
+        brief.status === CampaignStatus.OPEN ||
+        brief.status === CampaignStatus.ASSIGNED
+    );
+    const completedBriefs = briefs.filter(
+      (brief) => brief.status === CampaignStatus.COMPLETED
+    );
+    const totalBudget = briefs.reduce((sum, brief) => sum + brief.budget, 0);
+    const totalInfluencers = briefs.reduce(
+      (sum, brief) => sum + brief.selectedInfluencersCount,
+      0
+    );
 
-  // Enhanced campaign status logic
-  const getCampaignStatusInfo = (brief: FormattedBriefData) => {
-    const now = new Date();
-    const selectionDeadline = new Date(brief.selectionDeadline * 1000);
-    const creationDate = new Date(brief.creationTime * 1000);
+    // Get urgent actions
+    const urgentActions = briefs
+      .filter((brief) => isActionUrgent(brief))
+      .map((brief) => ({
+        campaignId: brief.id,
+        campaignName: brief.name,
+        action: brief.statusInfo.nextAction || "Action needed",
+        priority: getActionPriority(brief),
+        dueDate: brief.timingInfo.currentDeadline,
+        warning: brief.statusInfo.warning,
+      }));
 
     return {
-      isNew: isCampaignNew(brief.creationTime),
-      isUrgent: isCampaignUrgent(brief.selectionDeadline) && brief.status === 0,
-      isActive: brief.status === 0,
-      isInProgress: brief.status === 1,
-      isCompleted: brief.status === 2,
-      isCancelled: brief.status === 3,
-      isExpired: brief.status === 4,
-      deadlinePassed: isAfter(now, selectionDeadline),
-      timeRemaining: getTimeRemaining(brief.selectionDeadline),
-      createdAt: creationDate,
-      selectionDeadlineDate: selectionDeadline,
+      activeBriefs,
+      completedBriefs,
+      totalBudget,
+      totalInfluencers,
+      urgentActions,
     };
-  };
+  }, [briefs]);
 
   useEffect(() => {
     if (isCreateSuccess) {
@@ -215,6 +230,7 @@ const BrandDashboard = () => {
     }
   }, [isCancelSuccess, isCancelError, cancelError, router]);
 
+
   // Handle errors from application counts fetch
   useEffect(() => {
     if (errorApplications) {
@@ -244,12 +260,20 @@ const BrandDashboard = () => {
     const matchesSearch = brief.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
+
     const matchesFilter =
       selectedFilter === "all" ||
       (selectedFilter === "active" &&
-        (brief.status === 0 || brief.status === 1)) ||
-      (selectedFilter === "completed" && brief.status === 2);
-    return matchesSearch && matchesFilter;
+        (brief.status === CampaignStatus.OPEN ||
+          brief.status === CampaignStatus.ASSIGNED)) ||
+      (selectedFilter === "completed" &&
+        brief.status === CampaignStatus.COMPLETED) ||
+      (selectedFilter === "urgent" && isActionUrgent(brief));
+
+    const matchesPriority =
+      priorityFilter === "all" || getActionPriority(brief) === priorityFilter;
+
+    return matchesSearch && matchesFilter && matchesPriority;
   });
 
   const isFormValid = () => {
@@ -317,8 +341,11 @@ const BrandDashboard = () => {
     }
   };
 
-  const canCancelCampaign = (brief: FormattedBriefData): boolean => {
-    return brief.status === 0 && brief.selectedInfluencersCount === 0;
+  const canCancelCampaign = (brief: Brief): boolean => {
+    return (
+      brief.status === CampaignStatus.OPEN &&
+      brief.selectedInfluencersCount === 0
+    );
   };
 
   const handleCreateCampaignClick = () => {
@@ -431,18 +458,35 @@ const BrandDashboard = () => {
                 />
               </div>
 
-              {/* Filter */}
-              <div className="relative">
-                <select
-                  value={selectedFilter}
-                  onChange={(e) => setSelectedFilter(e.target.value)}
-                  className="appearance-none bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 cursor-pointer backdrop-blur-sm min-w-[120px]"
-                >
-                  <option value="all">All Campaigns</option>
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                </select>
-                <Filter className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+              {/* Filters */}
+              <div className="flex gap-2">
+                <div className="relative">
+                  <select
+                    value={selectedFilter}
+                    onChange={(e) => setSelectedFilter(e.target.value)}
+                    className="appearance-none bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 cursor-pointer backdrop-blur-sm min-w-[120px]"
+                  >
+                    <option value="all">All Campaigns</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="urgent">Needs Attention</option>
+                  </select>
+                  <Filter className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+                </div>
+
+                <div className="relative">
+                  <select
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    className="appearance-none bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 cursor-pointer backdrop-blur-sm min-w-[100px]"
+                  >
+                    <option value="all">All Priority</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                  <Flag className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+                </div>
               </div>
 
               {/* Create Campaign Button */}
@@ -477,32 +521,89 @@ const BrandDashboard = () => {
           </div>
         </motion.div>
 
+        {/* Urgent Actions Alert */}
+        {dashboardData?.urgentActions.length > 0 && (
+          <motion.div
+            className="mb-6 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl p-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
+                <Bell className="w-5 h-5 text-orange-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Urgent Actions Required
+                </h3>
+                <div className="space-y-2">
+                  {dashboardData.urgentActions
+                    .slice(0, 3)
+                    .map((action, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 bg-slate-800/50 rounded-lg"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {action.campaignName}
+                          </p>
+                          <p className="text-xs text-orange-400">
+                            {action.action}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            action.priority === "high"
+                              ? "bg-red-500/20 text-red-400"
+                              : action.priority === "medium"
+                              ? "bg-orange-500/20 text-orange-400"
+                              : "bg-yellow-500/20 text-yellow-400"
+                          }`}
+                        >
+                          {action.priority}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
           {[
             {
               icon: Activity,
               color: "blue-400",
-              value: activeBriefs.length,
+              value: dashboardData?.activeBriefs.length || 0,
               label: "Active Campaigns",
+              subtext: `${
+                dashboardData?.urgentActions.length || 0
+              } need attention`,
             },
             {
               icon: CheckCircle,
               color: "green-400",
-              value: completedBriefs.length,
+              value: dashboardData?.completedBriefs.length || 0,
               label: "Completed Campaigns",
+              subtext: "Successfully finished",
             },
             {
               icon: DollarSign,
               color: "emerald-400",
-              value: formatCurrency(totalBudget, "cUSD", 0),
+              value: formatCurrency(dashboardData?.totalBudget || 0, "cUSD", 0),
               label: "Total Budget",
+              subtext: "Across all campaigns",
             },
             {
               icon: Users,
               color: "orange-400",
-              value: totalInfluencers,
+              value: dashboardData?.totalInfluencers || 0,
               label: "Active Influencers",
+              subtext: "Currently working",
             },
           ].map((stat, index) => (
             <motion.div
@@ -522,6 +623,7 @@ const BrandDashboard = () => {
               <div className="space-y-0.5">
                 <p className="text-xl font-bold text-white">{stat.value}</p>
                 <p className="text-slate-400 text-sm">{stat.label}</p>
+                <p className="text-slate-500 text-xs">{stat.subtext}</p>
               </div>
             </motion.div>
           ))}
@@ -565,9 +667,13 @@ const BrandDashboard = () => {
               </div>
             ) : (
               filteredBriefs.map((brief, index) => {
+
                 const campaignStatus = getCampaignStatusInfo(brief);
                 // Get application count for this specific brief
                 const applicationCount = applicationCounts[brief.id] || 0;
+
+                const isUrgent = isActionUrgent(brief);
+                const priority = getActionPriority(brief);
 
                 return (
                   <motion.div
@@ -578,7 +684,7 @@ const BrandDashboard = () => {
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                   >
                     <div className="flex flex-col gap-4">
-                      {/* Campaign Info */}
+                      {/* Campaign Header */}
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-gradient-to-br from-slate-700 to-slate-800 rounded-lg border border-slate-600/50 hover:border-emerald-500/30 transition-colors">
                           <Target className="w-4 h-4 text-slate-300" />
@@ -595,25 +701,42 @@ const BrandDashboard = () => {
                                   brief.status
                                 )}`}
                               >
-                                {brief.status === 3 && (
+                                {brief.status === CampaignStatus.CANCELLED && (
                                   <Ban className="w-3 h-3 mr-1 inline" />
                                 )}
-                                {getStatusString(brief.status)}
+                                {brief.statusInfo.statusLabel}
                               </span>
 
-                              {/* New badge */}
-                              {campaignStatus.isNew && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                  <TrendingUp className="w-3 h-3 mr-1 inline" />
-                                  New
+                              {/* Phase badge */}
+                              <span
+                                className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getPhaseColor(
+                                  brief.timingInfo.phase
+                                )}`}
+                              >
+                                {getPhaseLabel(brief.timingInfo.phase)}
+                              </span>
+
+                              {/* Priority badge */}
+                              {isUrgent && (
+                                <span
+                                  className={`px-2 py-0.5 text-xs font-medium rounded-full animate-pulse ${
+                                    priority === "high"
+                                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                      : priority === "medium"
+                                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                                      : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                                  }`}
+                                >
+                                  <Zap className="w-3 h-3 mr-1 inline" />
+                                  {priority.toUpperCase()}
                                 </span>
                               )}
 
-                              {/* Urgent badge */}
-                              {campaignStatus.isUrgent && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
-                                  <Timer className="w-3 h-3 mr-1 inline" />
-                                  Urgent
+                              {/* New badge */}
+                              {brief.timingInfo.isNew && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                  <TrendingUp className="w-3 h-3 mr-1 inline" />
+                                  New
                                 </span>
                               )}
                             </div>
@@ -627,35 +750,29 @@ const BrandDashboard = () => {
                               <span>
                                 Created{" "}
                                 {format(
-                                  campaignStatus.createdAt,
+                                  new Date(brief.creationTime * 1000),
                                   "MMM d, yyyy"
                                 )}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5" />
-                              {campaignStatus.deadlinePassed ? (
-                                <span className="text-red-400">
-                                  Selection closed
-                                </span>
-                              ) : campaignStatus.timeRemaining.days > 0 ? (
-                                <span>
-                                  {campaignStatus.timeRemaining.days} day
-                                  {campaignStatus.timeRemaining.days !== 1
-                                    ? "s"
-                                    : ""}{" "}
-                                  left
-                                </span>
-                              ) : (
-                                <span className="text-orange-400">
-                                  {campaignStatus.timeRemaining.hours} hour
-                                  {campaignStatus.timeRemaining.hours !== 1
-                                    ? "s"
-                                    : ""}{" "}
-                                  left
-                                </span>
+                            {brief.timingInfo.currentDeadline &&
+                              brief.timingInfo.timeRemaining && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span
+                                    className={
+                                      brief.timingInfo.isUrgent
+                                        ? "text-orange-400"
+                                        : ""
+                                    }
+                                  >
+                                    {formatTimeRemaining(
+                                      brief.timingInfo.timeRemaining
+                                    )}{" "}
+                                    left
+                                  </span>
+                                </div>
                               )}
-                            </div>
                             <div className="flex items-center gap-1">
                               <Users className="w-3.5 h-3.5" />
                               <span>
@@ -667,6 +784,36 @@ const BrandDashboard = () => {
                         </div>
                       </div>
 
+                      {/* Next Action Alert */}
+                      {brief.statusInfo.nextAction && (
+                        <div
+                          className={`p-3 rounded-lg border ${
+                            isUrgent
+                              ? "bg-orange-500/10 border-orange-500/20"
+                              : "bg-slate-900/50 border-slate-700/50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                isUrgent ? "bg-orange-400" : "bg-emerald-400"
+                              }`}
+                            ></div>
+                            <span className="text-sm text-slate-300">
+                              {brief.statusInfo.nextAction}
+                            </span>
+                          </div>
+                          {brief.statusInfo.warning && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <AlertTriangle className="w-3 h-3 text-orange-400" />
+                              <span className="text-xs text-orange-400">
+                                {brief.statusInfo.warning}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Budget & Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
@@ -676,21 +823,17 @@ const BrandDashboard = () => {
                           <div className="text-xs text-slate-400">
                             {brief.selectedInfluencersCount > 0
                               ? `${formatCurrency(
-                                  brief.budget / brief.maxInfluencers
+                                  brief.progressInfo.budgetPerSpot
                                 )} per influencer`
                               : `${formatCurrency(
-                                  brief.budget / brief.maxInfluencers
+                                  brief.progressInfo.budgetPerSpot
                                 )} per spot`}
                           </div>
                           <div className="w-20 h-1.5 bg-slate-700/50 rounded-full mt-1.5 overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300"
                               style={{
-                                width: `${
-                                  (brief.selectedInfluencersCount /
-                                    brief.maxInfluencers) *
-                                  100
-                                }%`,
+                                width: `${brief.progressInfo.spotsFilledPercentage}%`,
                               }}
                             />
                           </div>
@@ -701,15 +844,20 @@ const BrandDashboard = () => {
                               setSelectedBrief(brief);
                               setShowApplicationsModal(true);
                             }}
-                            disabled={brief.status === 3}
+                            disabled={brief.status === CampaignStatus.CANCELLED}
                             className={`relative px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
-                              brief.status === 3
+                              brief.status === CampaignStatus.CANCELLED
                                 ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
                                 : "bg-slate-700/50 hover:bg-slate-700 text-white border-slate-600/50 hover:border-slate-500"
                             }`}
-                            whileTap={brief.status !== 3 ? { scale: 0.95 } : {}}
+                            whileTap={
+                              brief.status !== CampaignStatus.CANCELLED
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                           >
                             Applications
+
                             {isLoadingAllApplications && brief.status !== 3 ? (
                               <span className="absolute -top-1.5 -right-1.5 bg-emerald-500/50 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -725,13 +873,17 @@ const BrandDashboard = () => {
                               setSelectedBrief(brief);
                               setShowSubmissionsModal(true);
                             }}
-                            disabled={brief.status === 3}
+                            disabled={brief.status === CampaignStatus.CANCELLED}
                             className={`px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
-                              brief.status === 3
+                              brief.status === CampaignStatus.CANCELLED
                                 ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
                                 : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/50"
                             }`}
-                            whileTap={brief.status !== 3 ? { scale: 0.95 } : {}}
+                            whileTap={
+                              brief.status !== CampaignStatus.CANCELLED
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                           >
                             Submissions
                           </motion.button>
