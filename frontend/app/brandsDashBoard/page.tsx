@@ -48,6 +48,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { truncateAddress, formatCurrency } from "@/utils/format";
 import {
+
   getStatusColor,
   getPhaseColor,
   formatTimeRemaining,
@@ -65,7 +66,10 @@ import {
   useCompleteCampaign,
   useGetBusinessBriefs,
   useCancelAdBrief,
+  
 } from "../../hooks/adsBazaar";
+
+import { useAllBriefApplicationCounts } from "../../hooks/useAllBriefApplicationCounts";
 
 const BrandDashboard = () => {
   const router = useRouter();
@@ -100,6 +104,12 @@ const BrandDashboard = () => {
     () => (address ? fetchedBriefs : []),
     [address, fetchedBriefs]
   );
+
+
+  // Fetch application counts for all briefs
+  const { applicationCounts, isLoadingApplications: isLoadingAllApplications, errorApplications } =
+    useAllBriefApplicationCounts(briefs);
+  // Keep useBriefApplications for the ApplicationsModal
   const { applications, isLoadingApplications, refetchApplications } =
     useBriefApplications(selectedBrief?.id || "0x0");
 
@@ -219,6 +229,31 @@ const BrandDashboard = () => {
       setShowCancelConfirm(null);
     }
   }, [isCancelSuccess, isCancelError, cancelError, router]);
+
+
+  // Handle errors from application counts fetch
+  useEffect(() => {
+    if (errorApplications) {
+      toast.error("Failed to load application counts");
+    }
+  }, [errorApplications]);
+
+  // Updated statistics calculations
+  const activeBriefs = briefs
+    ? briefs.filter((brief) => brief.status === 0 || brief.status === 1)
+    : [];
+  const completedBriefs = briefs
+    ? briefs.filter((brief) => brief.status === 2)
+    : [];
+  const totalBudget = briefs
+    ? briefs.reduce((sum, brief) => sum + Number(brief.budget), 0)
+    : 0;
+  const totalInfluencers = briefs
+    ? briefs.reduce(
+        (sum, brief) => sum + Number(brief.selectedInfluencersCount),
+        0
+      )
+    : 0;
 
   // Enhanced filtering logic
   const filteredBriefs = briefs.filter((brief) => {
@@ -632,6 +667,11 @@ const BrandDashboard = () => {
               </div>
             ) : (
               filteredBriefs.map((brief, index) => {
+
+                const campaignStatus = getCampaignStatusInfo(brief);
+                // Get application count for this specific brief
+                const applicationCount = applicationCounts[brief.id] || 0;
+
                 const isUrgent = isActionUrgent(brief);
                 const priority = getActionPriority(brief);
 
@@ -817,12 +857,16 @@ const BrandDashboard = () => {
                             }
                           >
                             Applications
-                            {applications.length > 0 &&
-                              brief.status !== CampaignStatus.CANCELLED && (
-                                <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
-                                  {applications.length}
-                                </span>
-                              )}
+
+                            {isLoadingAllApplications && brief.status !== 3 ? (
+                              <span className="absolute -top-1.5 -right-1.5 bg-emerald-500/50 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              </span>
+                            ) : applicationCount > 0 && brief.status !== 3 ? (
+                              <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-sm">
+                                {applicationCount}
+                              </span>
+                            ) : null}
                           </motion.button>
                           <motion.button
                             onClick={() => {

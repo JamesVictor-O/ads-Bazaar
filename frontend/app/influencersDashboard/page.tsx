@@ -15,18 +15,13 @@ import {
   ExternalLink,
   AlertCircle,
   Shield,
-  Clock3,
-  CheckSquare,
+ 
   Sparkles,
   User,
   Timer,
   Star,
-  Award,
   Zap,
-  Target,
-  ArrowRight,
-  PlayCircle,
-  PauseCircle,
+ 
   Upload,
   Bell,
 } from "lucide-react";
@@ -50,9 +45,6 @@ import {
   Brief,
   Application,
   CampaignStatus,
-  CampaignPhase,
-  ProofStatus,
-  PaymentStatus,
 } from "@/types";
 import {
   computeApplicationInfo,

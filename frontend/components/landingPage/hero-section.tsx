@@ -5,16 +5,16 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle,
-  DollarSign,
   Shield,
   Star,
   Users,
   Zap,
+  Briefcase,
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useRouter } from "next/navigation";
-import { useUserProfile } from "../../hooks/adsBazaar";
+import { useUserProfile, usePlatformStats } from "../../hooks/adsBazaar"; // Add usePlatformStats
 
 interface HeroSectionProps {
   setIsModalOpen: (isOpen: boolean) => void;
@@ -24,13 +24,16 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   const [animationPhase, setAnimationPhase] = useState(0);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { isConnected: wagmiConnected} = useAccount();
+  const { isConnected: wagmiConnected } = useAccount();
   const { userProfile, isLoadingProfile } = useUserProfile();
+  const { stats, isLoadingStats} = usePlatformStats(); // Fetch platform stats
   const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+ 
 
   const handleGetStartedClick = async () => {
     try {
@@ -38,35 +41,31 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
       await new Promise((resolve) => setTimeout(resolve, 100));
       setIsModalOpen(true);
     } catch (error) {
-      console.error('Error opening modal:', error);
+      console.error("Error opening modal:", error);
     } finally {
       setIsButtonPressed(false);
     }
   };
 
-
-
   const getDashboardUrl = useCallback(() => {
-  if (!userProfile || isLoadingProfile) return "#";
-  if (!userProfile.isRegistered) return "/";
-  if (userProfile.isBusiness) return "/brandsDashBoard";
-  if (userProfile.isInfluencer) return "/influencersDashboard";
-  return "/";
-}, [userProfile, isLoadingProfile]);
-
+    if (!userProfile || isLoadingProfile) return "#";
+    if (!userProfile.isRegistered) return "/";
+    if (userProfile.isBusiness) return "/brandsDashBoard";
+    if (userProfile.isInfluencer) return "/influencersDashboard";
+    return "/";
+  }, [userProfile, isLoadingProfile]);
 
   const handleDashboardClick = useCallback(async () => {
-  if (isLoadingProfile) return;
-  try {
-    const url = getDashboardUrl();
-    if (url !== "#" && url !== "/") {
-      router.push(url);
+    if (isLoadingProfile) return;
+    try {
+      const url = getDashboardUrl();
+      if (url !== "#" && url !== "/") {
+        router.push(url);
+      }
+    } catch (error) {
+      console.error("Error navigating to dashboard:", error);
     }
-  } catch (error) {
-    console.error('Error navigating to dashboard:', error);
-  }
-}, [getDashboardUrl, isLoadingProfile]);
-
+  }, [getDashboardUrl, isLoadingProfile]);
 
   // Animation cycle for floating elements
   useEffect(() => {
@@ -107,7 +106,12 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
       return (
         <div className="w-full max-w-sm mx-auto lg:mx-0">
           <ConnectButton.Custom>
-            {({ account, openAccountModal, openConnectModal, mounted: walletMounted }) => {
+            {({
+              account,
+              openAccountModal,
+              openConnectModal,
+              mounted: walletMounted,
+            }) => {
               const connected = walletMounted && account;
               return (
                 <motion.button
@@ -190,15 +194,33 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
     <section className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 md:bg-gradient-to-br md:from-slate-900 md:via-slate-800 md:to-emerald-900 px-4 sm:px-6 lg:px-16 py-20 sm:py-12 lg:py-16 overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 md:hidden">
-        <div className={`absolute top-10 left-4 w-20 h-20 bg-emerald-400/20 rounded-full blur-xl transition-all duration-3000 ${
-          animationPhase === 0 ? "animate-bounce" : animationPhase === 1 ? "animate-pulse" : "animate-ping"
-        }`}></div>
-        <div className={`absolute top-32 right-8 w-16 h-16 bg-indigo-400/20 rounded-full blur-xl transition-all duration-3000 ${
-          animationPhase === 1 ? "animate-bounce" : animationPhase === 2 ? "animate-pulse" : "animate-ping"
-        }`}></div>
-        <div className={`absolute bottom-32 left-8 w-24 h-24 bg-purple-400/20 rounded-full blur-xl transition-all duration-3000 ${
-          animationPhase === 2 ? "animate-bounce" : animationPhase === 0 ? "animate-pulse" : "animate-ping"
-        }`}></div>
+        <div
+          className={`absolute top-10 left-4 w-20 h-20 bg-emerald-400/20 rounded-full blur-xl transition-all duration-3000 ${
+            animationPhase === 0
+              ? "animate-bounce"
+              : animationPhase === 1
+              ? "animate-pulse"
+              : "animate-ping"
+          }`}
+        ></div>
+        <div
+          className={`absolute top-32 right-8 w-16 h-16 bg-indigo-400/20 rounded-full blur-xl transition-all duration-3000 ${
+            animationPhase === 1
+              ? "animate-bounce"
+              : animationPhase === 2
+              ? "animate-pulse"
+              : "animate-ping"
+          }`}
+        ></div>
+        <div
+          className={`absolute bottom-32 left-8 w-24 h-24 bg-purple-400/20 rounded-full blur-xl transition-all duration-3000 ${
+            animationPhase === 2
+              ? "animate-bounce"
+              : animationPhase === 0
+              ? "animate-pulse"
+              : "animate-ping"
+          }`}
+        ></div>
         <div className="absolute top-20 left-1/4 w-2 h-2 bg-emerald-400 rounded-full animate-pulse opacity-60"></div>
         <div className="absolute top-40 right-1/3 w-1 h-1 bg-white rounded-full animate-ping opacity-40"></div>
         <div className="absolute bottom-40 left-1/3 w-3 h-3 bg-indigo-400 rounded-full animate-bounce opacity-50"></div>
@@ -221,18 +243,21 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             >
               <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
               <span className="text-emerald-400 text-sm font-medium">
-                Web3 Influencer  Economy
+                Web3 Influencer Economy
               </span>
             </motion.div>
-            
+
             <motion.h1
               className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight"
               variants={itemVariants}
             >
-              <span className="md:hidden ">
+              <span className="md:hidden">
                 Connect{" "}
-                <span className="text-emerald-400 animate-pulse">Brands</span> with{" "}
-                <span className="text-emerald-400 animate-pulse">Creators / Influencers</span>
+                <span className="text-emerald-400 animate-pulse">Brands</span>{" "}
+                with{" "}
+                <span className="text-emerald-400 animate-pulse">
+                  Creators / Influencers
+                </span>
                 <br />
                 <span className="text-xl block mt-2 bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
                   Guaranteed Growth & Earnings
@@ -240,7 +265,8 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               </span>
               <span className="hidden md:block">
                 Connecting{" "}
-                <span className="text-emerald-400">Brands, Businesses</span> with{" "}
+                <span className="text-emerald-400">Brands, Businesses</span>{" "}
+                with{" "}
                 <span className="text-emerald-400">
                   Influencers, Content Creators
                 </span>
@@ -250,16 +276,19 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                 </span>
               </span>
             </motion.h1>
-            
+
             <motion.p
               className="mt-4 sm:mt-6 text-base md:text-lg lg:text-xl xl:text-2xl text-slate-300 leading-relaxed max-w-sm md:max-w-none mx-auto lg:mx-0"
               variants={itemVariants}
             >
               <span className="md:hidden">
-                Verified creators / Influencers, secure crypto payments, transparent campaigns with real results.
+                Verified creators / Influencers, secure crypto payments,
+                transparent campaigns with real results.
               </span>
               <span className="hidden md:block">
-                The trusted marketplace where verified creators help brands increase visibility and sales, with transparent campaigns, secure payments, and performance tracking.
+                The trusted marketplace where verified creators help brands
+                increase visibility and sales, with transparent campaigns,
+                secure payments, and performance tracking.
               </span>
             </motion.p>
           </div>
@@ -275,25 +304,20 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             variants={containerVariants}
           >
             <motion.div
-              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center"
+              className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-lg p-3 text-center"
               variants={itemVariants}
             >
-              <Shield className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-emerald-400 md:border md:rounded-full md:p-1" />
-              <div className="text-xs md:text-sm text-slate-300">
-                Self Protocol Verified
+              <Users className="w-5 h-5 mx-auto mb-2 text-purple-400" />
+              <div className="text-lg font-bold text-white">
+                {isLoadingStats ? (
+                  <div className="w-5 h-5 mx-auto border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  stats.totalInfluencers
+                )}
               </div>
+              <div className="text-xs text-slate-400">Influencers</div>
             </motion.div>
-            
-            <motion.div
-              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center"
-              variants={itemVariants}
-            >
-              <DollarSign className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-indigo-400 md:border md:rounded-full md:p-1" />
-              <div className="text-xs md:text-sm text-slate-300">
-                Celo Blockchain
-              </div>
-            </motion.div>
-            
+
             <motion.div
               className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center"
               variants={itemVariants}
@@ -302,6 +326,21 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               <div className="text-xs md:text-sm text-slate-300">
                 Farcaster MiniApp
               </div>
+            </motion.div>
+
+            <motion.div
+              className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-lg p-3 text-center"
+              variants={itemVariants}
+            >
+              <Briefcase className="w-5 h-5 mx-auto mb-2 text-orange-400" />
+              <div className="text-lg font-bold text-white">
+                {isLoadingStats ? (
+                  <div className="w-5 h-5 mx-auto border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  stats.totalBusinesses
+                )}
+              </div>
+              <div className="text-xs text-slate-400">Businesses</div>
             </motion.div>
           </motion.div>
 
