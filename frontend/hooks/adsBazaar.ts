@@ -741,7 +741,10 @@ export function useCompleteCampaign() {
   const { address } = useAccount();
 
   const completeCampaign = async (briefId: Bytes32) => {
-    if (!address) return;
+    if (!address) {
+      toast.error("Please connect your wallet");
+      return;
+    }
 
     try {
       await tx.writeContract({
@@ -752,6 +755,17 @@ export function useCompleteCampaign() {
       });
     } catch (error) {
       console.error("Error completing campaign:", error);
+      // Enhanced error handling
+      if (error instanceof Error) {
+        if (error.message.includes("User rejected")) {
+          toast.error("Transaction was cancelled");
+        } else if (error.message.includes("insufficient funds")) {
+          toast.error("Insufficient funds for gas fees");
+        } else {
+          toast.error("Failed to complete campaign. Please try again.");
+        }
+      }
+      throw error;
     }
   };
 
