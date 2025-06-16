@@ -15,6 +15,8 @@ import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useRouter } from "next/navigation";
 import { useUserProfile } from "../../hooks/adsBazaar";
+import { usePlatformStats } from "../../hooks/usePlatformStats";
+import { formatNumber } from "@/utils/format";
 
 interface HeroSectionProps {
   setIsModalOpen: (isOpen: boolean) => void;
@@ -31,6 +33,8 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const { stats, isLoading: isLoadingStats } = usePlatformStats();
 
   const handleGetStartedClick = async () => {
     try {
@@ -424,6 +428,87 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           </div>
         </div>
       </motion.div>
+      {/* Platform Statistics */}
+      <motion.div
+        className="mt-16 md:mt-24"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <div className="text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+            Join Our Growing Community
+          </h2>
+          <p className="text-slate-400">
+            Trusted by businesses and creators worldwide
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+          {[
+            {
+              value: isLoadingStats ? "..." : formatNumber(stats.totalUsers),
+              label: "Total Users",
+              icon: "👥",
+              color: "from-blue-400 to-blue-600",
+            },
+            {
+              value: isLoadingStats
+                ? "..."
+                : formatNumber(stats.totalBusinesses),
+              label: "Businesses",
+              icon: "🏢",
+              color: "from-emerald-400 to-emerald-600",
+            },
+            {
+              value: isLoadingStats
+                ? "..."
+                : formatNumber(stats.totalInfluencers),
+              label: "Creators",
+              icon: "⭐",
+              color: "from-purple-400 to-purple-600",
+            },
+            {
+              value: isLoadingStats
+                ? "..."
+                : `$${formatNumber(stats.totalEscrowAmount)}`,
+              label: "Active Escrow",
+              icon: "💰",
+              color: "from-amber-400 to-amber-600",
+            },
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              className="text-center p-4 md:p-6 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-slate-800/60 transition-all duration-300"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 * index }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <div className="text-2xl md:text-3xl mb-2">{stat.icon}</div>
+              <div
+                className={`text-2xl md:text-3xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-1`}
+              >
+                {stat.value}
+              </div>
+              <div className="text-sm md:text-base text-slate-400">
+                {stat.label}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Live indicator */}
+        <div className="flex justify-center mt-6">
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-full">
+            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+            <span className="text-xs text-slate-400">
+              Live on Celo Blockchain
+            </span>
+          </div>
+        </div>
+      </motion.div>
+      {/* END OF PLATFORM STATISTICS */}
     </section>
   );
 }

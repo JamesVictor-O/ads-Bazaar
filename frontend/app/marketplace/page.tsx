@@ -23,6 +23,7 @@ import {
   Eye,
   Zap,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication";
@@ -47,6 +48,7 @@ import {
   isActionUrgent,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
+import toast from "react-hot-toast";
 
 const statusMap = {
   0: "Open",
@@ -69,6 +71,8 @@ export default function Marketplace() {
     Record<string, "applied" | "assigned" | null>
   >({});
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+  const [refreshCount, setRefreshCount] = useState(0);
 
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
@@ -98,18 +102,51 @@ export default function Marketplace() {
   const refreshApplicationStatus = useCallback(() => {
     if (!isLoadingApplications && influencerApplications) {
       setIsRefreshing(true);
+      setRefreshCount((prev) => prev + 1);
+      setLastRefreshTime(new Date());
+
       const statusMap: Record<string, "applied" | "assigned" | null> = {};
       influencerApplications.forEach((app) => {
         statusMap[app.briefId] = app.isSelected ? "assigned" : "applied";
       });
       setApplicationStatus(statusMap);
-      setTimeout(() => setIsRefreshing(false), 500);
+
+      // Simulate network delay for better UX
+      setTimeout(() => {
+        setIsRefreshing(false);
+        toast.success("Application status updated", { duration: 2000 });
+      }, 1000);
     }
   }, [influencerApplications, isLoadingApplications]);
 
   useEffect(() => {
     refreshApplicationStatus();
   }, [refreshApplicationStatus]);
+
+  // Auto-refresh every 30 seconds when connected
+  useEffect(() => {
+    if (!isConnected || !userProfile?.isInfluencer) return;
+
+    const interval = setInterval(() => {
+      if (!isRefreshing) {
+        refreshApplicationStatus();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [
+    isConnected,
+    userProfile?.isInfluencer,
+    isRefreshing,
+    refreshApplicationStatus,
+  ]);
+
+  // Refresh when wallet connects
+  useEffect(() => {
+    if (isConnected && userProfile?.isInfluencer) {
+      refreshApplicationStatus();
+    }
+  }, [isConnected, userProfile?.isInfluencer]);
 
   const handleApplicationSuccess = useCallback(() => {
     setTimeout(() => {

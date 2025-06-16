@@ -42,7 +42,10 @@ import {
   PlayCircle,
   PauseCircle,
   Flag,
+  Building2,
+  Crown,
 } from "lucide-react";
+import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { format, isAfter, addHours } from "date-fns";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -402,12 +405,33 @@ const BrandDashboard = () => {
         >
           <div className="flex flex-col gap-4 sm:gap-6">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-                Brand Dashboard
-              </h1>
-              <p className="text-base sm:text-lg text-slate-400">
-                Manage your campaigns and track performance
-              </p>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl sm:text-4xl font-bold text-white">
+                  Brand Dashboard
+                </h1>
+                {/* Business Status Badge */}
+                {userProfile?.status !== undefined && (
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getUserStatusColor(
+                      userProfile.status
+                    )}`}
+                  >
+                    <Crown className="w-4 h-4 mr-1" />
+                    {getUserStatusLabel(userProfile.status)}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-4">
+                <p className="text-base sm:text-lg text-slate-400">
+                  Manage your campaigns and track performance
+                </p>
+                {userProfile?.totalEscrowed !== undefined && (
+                  <span className="text-sm text-slate-500">
+                    Total invested:{" "}
+                    {formatCurrency(userProfile.totalEscrowed, "cUSD", 0)}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">

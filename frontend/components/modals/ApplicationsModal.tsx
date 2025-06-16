@@ -24,6 +24,7 @@ import { motion } from "framer-motion";
 
 interface EnhancedApplicationsModalProps extends ApplicationsModalProps {
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
+  showOnlySelected?: boolean; // Add this prop to control filtering
 }
 
 const ApplicationsModal = ({
@@ -32,11 +33,17 @@ const ApplicationsModal = ({
   isLoadingApplications,
   onClose,
   guardedAction,
+  showOnlySelected = false, // Default to false to show all applications
 }: EnhancedApplicationsModalProps) => {
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "selecting" | "completing"
   >("idle");
+
+  // Filter applications based on showOnlySelected prop
+  const filteredApplications = showOnlySelected
+    ? applications.filter((app) => app.isSelected)
+    : applications;
 
   const {
     selectInfluencer,
@@ -116,7 +123,7 @@ const ApplicationsModal = ({
       return;
     }
 
-    if (applications[index].isSelected) {
+    if (filteredApplications[index].isSelected) {
       toast.error("Influencer already selected");
       return;
     }
@@ -196,11 +203,16 @@ const ApplicationsModal = ({
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">
-              Applications for {selectedBrief.name}
+              {showOnlySelected ? "Selected Applications" : "All Applications"}{" "}
+              for {selectedBrief.name}
             </h2>
             <div className="flex items-center text-sm text-slate-400 mt-2 gap-4">
               <span>
-                {spotsRemaining > 0
+                {showOnlySelected
+                  ? `${selectedCount} selected influencer${
+                      selectedCount !== 1 ? "s" : ""
+                    }`
+                  : spotsRemaining > 0
                   ? `${spotsRemaining} spot${
                       spotsRemaining !== 1 ? "s" : ""
                     } remaining out of ${maxInfluencers}`
@@ -250,9 +262,9 @@ const ApplicationsModal = ({
               <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
               <p className="text-slate-400">Loading applications...</p>
             </div>
-          ) : applications && applications.length > 0 ? (
+          ) : filteredApplications && filteredApplications.length > 0 ? (
             <div className="space-y-4">
-              {applications.map((application, index) => (
+              {filteredApplications.map((application, index) => (
                 <div
                   key={index}
                   className={`bg-slate-900/50 border ${
@@ -306,6 +318,7 @@ const ApplicationsModal = ({
                             <span>Selected</span>
                           </div>
                         ) : (
+                          !showOnlySelected &&
                           spotsRemaining > 0 && (
                             <motion.button
                               onClick={() =>
@@ -405,11 +418,47 @@ const ApplicationsModal = ({
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <p className="font-medium">No applications yet</p>
-              <p className="text-sm mt-1">Check back later for updates</p>
+              <p className="font-medium">
+                {showOnlySelected
+                  ? "No selected applications"
+                  : "No applications yet"}
+              </p>
+              <p className="text-sm mt-1">
+                {showOnlySelected
+                  ? "You haven't selected any influencers yet"
+                  : "Check back later for updates"}
+              </p>
             </div>
           )}
         </div>
+
+        {/* Footer with complete button (only when showing selected applications) */}
+        {showOnlySelected && showCompleteButton && (
+          <div className="border-t border-slate-700/50 pt-4 mt-4">
+            <motion.button
+              onClick={handleCompleteCampaign}
+              disabled={isTransactionInProgress}
+              className={`w-full px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center justify-center gap-2 ${
+                isTransactionInProgress
+                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                  : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
+              }`}
+              whileTap={!isTransactionInProgress ? { scale: 0.95 } : {}}
+            >
+              {isCompleting ? (
+                <>
+                  <Loader2 className="animate-spin h-4 w-4" />
+                  <span>Processing</span>
+                </>
+              ) : (
+                <>
+                  <Award className="w-4 h-4" />
+                  <span>Complete Campaign</span>
+                </>
+              )}
+            </motion.button>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );

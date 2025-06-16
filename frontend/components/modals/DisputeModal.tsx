@@ -1,26 +1,42 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, X, Loader2 } from "lucide-react";
+import { AlertTriangle, X, Loader2, CheckCircle } from "lucide-react";
 import { Hex } from "viem";
-import { useFlagSubmission } from "@/hooks/adsBazaar";
+import { useFlagSubmission } from "@/hooks/useDisputeResolution";
 import { toast } from "react-hot-toast";
+import { withNetworkGuard } from "@/components/WithNetworkGuard";
 
 interface DisputeModalProps {
   briefId: Hex;
   influencer: Hex;
   onClose: () => void;
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
-export const DisputeModal = ({ briefId, influencer, onClose }: DisputeModalProps) => {
+function DisputeModal({
+  briefId,
+  influencer,
+  onClose,
+  guardedAction,
+}: DisputeModalProps) {
   const [reason, setReason] = useState("");
-  const { flagSubmission, isFlagging, flagSuccess, flagError } = useFlagSubmission();
+  const { flagSubmission, isFlagging, flagSuccess, flagError } =
+    useFlagSubmission();
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
       toast.error("Please provide a reason for the dispute");
       return;
     }
-    await flagSubmission(briefId, influencer, reason);
+
+    if (!guardedAction) {
+      toast.error("Network guard not available. Please refresh and try again.");
+      return;
+    }
+
+    await guardedAction(async () => {
+      await flagSubmission(briefId, influencer, reason);
+    });
   };
 
   useEffect(() => {
@@ -29,7 +45,9 @@ export const DisputeModal = ({ briefId, influencer, onClose }: DisputeModalProps
       onClose();
     }
     if (flagError) {
-      toast.error(`Failed to raise dispute: ${flagError.message || "Unknown error"}`);
+      toast.error(
+        `Failed to raise dispute: ${flagError.message || "Unknown error"}`
+      );
     }
   }, [flagSuccess, flagError, onClose]);
 
@@ -52,7 +70,9 @@ export const DisputeModal = ({ briefId, influencer, onClose }: DisputeModalProps
           </div>
           <div>
             <h3 className="text-lg font-bold text-white">Raise Dispute</h3>
-            <p className="text-sm text-slate-400">Provide details for flagging this submission</p>
+            <p className="text-sm text-slate-400">
+              Provide details for flagging this submission
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -63,46 +83,95 @@ export const DisputeModal = ({ briefId, influencer, onClose }: DisputeModalProps
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Transaction Status */}
+        {(isFlagging || flagSuccess) && (
+          <div
+            className={`mb-4 p-3 rounded-xl border flex items-start ${
+              flagSuccess
+                ? "bg-green-500/10 border-green-500/20"
+                : "bg-blue-500/10 border-blue-500/20"
+            }`}
+          >
+            <div className="mr-3 mt-0.5 flex-shrink-0">
+              {isFlagging ? (
+                <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+              ) : (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              )}
+            </div>
+            <div>
+              <p
+                className={`text-sm font-medium ${
+                  flagSuccess ? "text-green-400" : "text-blue-400"
+                }`}
+              >
+                {isFlagging ? "Raising Dispute" : "Dispute Raised Successfully"}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                {isFlagging
+                  ? "Please confirm the transaction in your wallet..."
+                  : "The submission has been flagged for review."}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6">
-          <label htmlFor="reason" className="block text-sm font-medium text-slate-300 mb-2">
-            Reason for Dispute
+          <label
+            htmlFor="reason"
+            className="block text-sm font-medium text-slate-300 mb-2"
+          >
+            Reason for Dispute <span className="text-red-400">*</span>
           </label>
           <textarea
             id="reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="w-full h-24 p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500/50 transition-all"
-            placeholder="Describe why you are flagging this submission (e.g., content does not meet requirements)"
-            disabled={isFlagging}
+            className="w-full h-24 p-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500/50 transition-all resize-none"
+            placeholder="Describe why you are flagging this submission (e.g., content does not meet requirements, inappropriate content, etc.)"
+            disabled={isFlagging || flagSuccess}
+            maxLength={500}
           />
+          <div className="flex justify-between mt-1">
+            <p className="text-xs text-slate-500">
+              Be specific about what requirements were not met
+            </p>
+            <p className="text-xs text-slate-500">{reason.length}/500</p>
+          </div>
         </div>
+
         <div className="flex gap-3">
           <button
             onClick={onClose}
             disabled={isFlagging}
             className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 transition-all disabled:opacity-50"
           >
-            Cancel
+            {flagSuccess ? "Close" : "Cancel"}
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isFlagging}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-xl hover:from-red-600 hover:to-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isFlagging ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Flagging...
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="w-4 h-4" />
-                Raise Dispute
-              </>
-            )}
-          </button>
+          {!flagSuccess && (
+            <button
+              onClick={handleSubmit}
+              disabled={isFlagging || !reason.trim()}
+              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-xl hover:from-red-600 hover:to-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isFlagging ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Flagging...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-4 h-4" />
+                  Raise Dispute
+                </>
+              )}
+            </button>
+          )}
         </div>
       </motion.div>
     </motion.div>
   );
-};
+}
+
+export default withNetworkGuard(DisputeModal);
