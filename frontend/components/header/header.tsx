@@ -15,19 +15,19 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  
+
   const { address, isConnected } = useAccount();
   const { data: celoBalance } = useBalance({
     address: address,
   });
-  
+
   const { data: cUSDBalanceData } = useBalance({
     address: address,
     token: cUSDContractConfig.address,
   });
-  
+
   const { userProfile, isLoadingProfile } = useUserProfile();
-  
+
   const shouldShowDashboard =
     userProfile?.isRegistered &&
     (userProfile.isBusiness || userProfile.isInfluencer);
@@ -74,9 +74,13 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
         <Link href={"/"}>
           <div className="flex items-center space-x-2 sm:space-x-3">
             <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg">
-              <span className="font-bold text-white text-sm sm:text-lg">AB</span>
+              <span className="font-bold text-white text-sm sm:text-lg">
+                AB
+              </span>
             </div>
-            <h1 className="text-lg sm:text-xl font-bold text-white">Ads-Bazaar</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-white">
+              Ads-Bazaar
+            </h1>
           </div>
         </Link>
 
@@ -139,7 +143,10 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                           onClick={copyAddress}
                           className="p-1.5 hover:bg-slate-700 rounded transition-colors"
                         >
-                          <Copy size={14} className="text-slate-400 hover:text-slate-200" />
+                          <Copy
+                            size={14}
+                            className="text-slate-400 hover:text-slate-200"
+                          />
                         </button>
                       </div>
 
@@ -147,14 +154,18 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                       <div className="bg-slate-900/50 rounded-lg p-3 mb-4">
                         <div className="flex items-center space-x-2 mb-2">
                           <Wallet size={16} className="text-emerald-400" />
-                          <span className="text-slate-300 font-medium text-sm">Wallet Balance</span>
+                          <span className="text-slate-300 font-medium text-sm">
+                            Wallet Balance
+                          </span>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div className="text-center p-2 bg-slate-800 rounded">
                             <div className="text-slate-400 text-xs">CELO</div>
                             <div className="text-slate-200 font-medium">
                               {celoBalance?.formatted
-                                ? `${parseFloat(celoBalance.formatted).toFixed(2)}`
+                                ? `${parseFloat(celoBalance.formatted).toFixed(
+                                    2
+                                  )}`
                                 : "0.00"}
                             </div>
                           </div>
@@ -162,7 +173,9 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                             <div className="text-slate-400 text-xs">cUSD</div>
                             <div className="text-slate-200 font-medium">
                               {cUSDBalanceData?.formatted
-                                ? `${parseFloat(cUSDBalanceData.formatted).toFixed(2)}`
+                                ? `${parseFloat(
+                                    cUSDBalanceData.formatted
+                                  ).toFixed(2)}`
                                 : "0.00"}
                             </div>
                           </div>
@@ -221,7 +234,10 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                           onClick={copyAddress}
                           className="p-1.5 hover:bg-slate-700 rounded transition-colors"
                         >
-                          <Copy size={14} className="text-slate-400 hover:text-slate-200" />
+                          <Copy
+                            size={14}
+                            className="text-slate-400 hover:text-slate-200"
+                          />
                         </button>
                       </div>
 
@@ -229,14 +245,18 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                       <div className="bg-slate-900/50 rounded-lg p-3 mb-3">
                         <div className="flex items-center space-x-2 mb-2">
                           <Wallet size={14} className="text-emerald-400" />
-                          <span className="text-slate-300 font-medium text-sm">Balance</span>
+                          <span className="text-slate-300 font-medium text-sm">
+                            Balance
+                          </span>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-slate-400 text-xs">CELO</span>
                             <span className="text-slate-200 font-medium text-sm">
                               {celoBalance?.formatted
-                                ? `${parseFloat(celoBalance.formatted).toFixed(2)}`
+                                ? `${parseFloat(celoBalance.formatted).toFixed(
+                                    2
+                                  )}`
                                 : "0.00"}
                             </span>
                           </div>
@@ -244,7 +264,9 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                             <span className="text-slate-400 text-xs">cUSD</span>
                             <span className="text-slate-200 font-medium text-sm">
                               {cUSDBalanceData?.formatted
-                                ? `${parseFloat(cUSDBalanceData.formatted).toFixed(2)}`
+                                ? `${parseFloat(
+                                    cUSDBalanceData.formatted
+                                  ).toFixed(2)}`
                                 : "0.00"}
                             </span>
                           </div>

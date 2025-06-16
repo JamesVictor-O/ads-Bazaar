@@ -1,23 +1,6 @@
 import { Hex } from "viem";
 
-export interface Application {
-  influencer: `0x${string}`;
-  message: string;
-  timestamp: number;
-  isSelected: boolean;
-  hasClaimed: boolean;
-  proofLink: string;
-  isApproved: boolean;
-  disputeStatus?: number;
-  disputeReason?: string;
-  resolvedBy?: `0x${string}`;
-  influencerProfile?: {
-    name?: string;
-    avatar?: string;
-  };
-  isFlagged: boolean;
-}
-
+// Enums that match the smart contract
 export enum CampaignStatus {
   OPEN = 0,
   ASSIGNED = 1,
@@ -159,7 +142,21 @@ export interface CampaignProgressInfo {
 }
 
 // Application data structure
+export interface Application {
+  influencer: `0x${string}`;
+  message: string;
+  timestamp: number;
+  isSelected: boolean;
+  hasClaimed: boolean;
+  proofLink: string;
+  isApproved: boolean;
+  disputeStatus: DisputeStatus;
+  disputeReason: string;
+  resolvedBy: `0x${string}`;
 
+  // Enhanced info
+  applicationInfo: ApplicationInfo;
+}
 
 export interface ApplicationInfo {
   canSubmitProof: boolean;

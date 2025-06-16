@@ -5,16 +5,16 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle,
+  DollarSign,
   Shield,
   Star,
   Users,
   Zap,
-  Briefcase,
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useRouter } from "next/navigation";
-import { useUserProfile, usePlatformStats } from "../../hooks/adsBazaar"; // Add usePlatformStats
+import { useUserProfile } from "../../hooks/adsBazaar";
 
 interface HeroSectionProps {
   setIsModalOpen: (isOpen: boolean) => void;
@@ -26,14 +26,11 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { isConnected: wagmiConnected } = useAccount();
   const { userProfile, isLoadingProfile } = useUserProfile();
-  const { stats, isLoadingStats} = usePlatformStats(); // Fetch platform stats
   const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
- 
 
   const handleGetStartedClick = async () => {
     try {
@@ -251,7 +248,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight"
               variants={itemVariants}
             >
-              <span className="md:hidden">
+              <span className="md:hidden ">
                 Connect{" "}
                 <span className="text-emerald-400 animate-pulse">Brands</span>{" "}
                 with{" "}
@@ -304,18 +301,23 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             variants={containerVariants}
           >
             <motion.div
-              className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-lg p-3 text-center"
+              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center"
               variants={itemVariants}
             >
-              <Users className="w-5 h-5 mx-auto mb-2 text-purple-400" />
-              <div className="text-lg font-bold text-white">
-                {isLoadingStats ? (
-                  <div className="w-5 h-5 mx-auto border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  stats.totalInfluencers
-                )}
+              <Shield className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-emerald-400 md:border md:rounded-full md:p-1" />
+              <div className="text-xs md:text-sm text-slate-300">
+                Self Protocol Verified
               </div>
-              <div className="text-xs text-slate-400">Influencers</div>
+            </motion.div>
+
+            <motion.div
+              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center"
+              variants={itemVariants}
+            >
+              <DollarSign className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-indigo-400 md:border md:rounded-full md:p-1" />
+              <div className="text-xs md:text-sm text-slate-300">
+                Celo Blockchain
+              </div>
             </motion.div>
 
             <motion.div
@@ -326,21 +328,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               <div className="text-xs md:text-sm text-slate-300">
                 Farcaster MiniApp
               </div>
-            </motion.div>
-
-            <motion.div
-              className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-lg p-3 text-center"
-              variants={itemVariants}
-            >
-              <Briefcase className="w-5 h-5 mx-auto mb-2 text-orange-400" />
-              <div className="text-lg font-bold text-white">
-                {isLoadingStats ? (
-                  <div className="w-5 h-5 mx-auto border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  stats.totalBusinesses
-                )}
-              </div>
-              <div className="text-xs text-slate-400">Businesses</div>
             </motion.div>
           </motion.div>
 
