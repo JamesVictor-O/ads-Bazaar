@@ -17,6 +17,12 @@ import {
   CheckCircle,
   Timer,
   TrendingUp,
+  Star,
+  DollarSign,
+  ArrowRight,
+  Eye,
+  Zap,
+  AlertCircle,
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication";
@@ -24,15 +30,23 @@ import ApplyModal from "@/components/modals/AdsApplicationModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { useAccount } from "wagmi";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
-import {
-  formatDistanceToNow,
-  format,
-  isAfter,
-  isBefore,
-  addDays,
-} from "date-fns";
+import { format } from "date-fns";
 import { truncateAddress } from "@/utils/format";
 import { motion } from "framer-motion";
+import {
+  Brief,
+  CampaignStatus,
+  TargetAudience,
+  CampaignPhase,
+  AUDIENCE_LABELS,
+} from "@/types";
+import {
+  getStatusColor,
+  getPhaseColor,
+  formatTimeRemaining,
+  isActionUrgent,
+  getPhaseLabel,
+} from "@/utils/campaignUtils";
 
 const statusMap = {
   0: "Open",
@@ -42,53 +56,14 @@ const statusMap = {
   4: "Expired",
 };
 
-const audienceMap = {
-  0: "General",
-  1: "Fashion",
-  2: "Tech",
-  3: "Gaming",
-  4: "Fitness",
-  5: "Beauty",
-  6: "Food",
-  7: "Travel",
-  8: "Business",
-  9: "Education",
-  10: "Entertainment",
-  11: "Sports",
-  12: "Lifestyle",
-  13: "Other",
-};
-
-interface Campaign {
-  id: `0x${string}`;
-  business: `0x${string}`;
-  title: string;
-  description: string;
-  requirements: string;
-  budget: number;
-  status: number;
-  promotionDuration: number;
-  promotionStartTime: number;
-  promotionEndTime: number;
-  proofSubmissionDeadline: number;
-  verificationDeadline: number;
-  maxInfluencers: number;
-  selectedInfluencersCount: number;
-  targetAudience: number;
-  creationTime: number;
-  selectionDeadline: number;
-  applicationCount: number;
-}
-
 export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [categoryFilter, setCategoryFilter] =
     useState<string>("All Categories");
   const [budgetFilter, setBudgetFilter] = useState<string>("Budget: Any");
+  const [statusFilter, setStatusFilter] = useState<string>("Active Only");
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
-    null
-  );
+  const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
   const [applicationMessage, setApplicationMessage] = useState<string>("");
   const [applicationStatus, setApplicationStatus] = useState<
     Record<string, "applied" | "assigned" | null>
@@ -99,13 +74,19 @@ export default function Marketplace() {
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const { userProfile, isLoadingProfile } = useUserProfile();
 
-  // Fetch all campaigns and filter out cancelled/expired ones
+  // Fetch all campaigns
   const { briefs: allBriefs, isLoading } = useGetAllBriefs();
 
-  // Filter out cancelled (3) and expired (4) campaigns
-  const activeBriefs = allBriefs.filter(
-    (brief) => brief.status !== 3 && brief.status !== 4
-  );
+  // Filter campaigns based on status filter
+  const activeBriefs = allBriefs.filter((brief) => {
+    if (statusFilter === "Active Only") {
+      return (
+        brief.status === CampaignStatus.OPEN ||
+        brief.status === CampaignStatus.ASSIGNED
+      );
+    }
+    return true; // Show all if "All Campaigns" is selected
+  });
 
   const {
     applications: influencerApplications = [],
@@ -130,57 +111,11 @@ export default function Marketplace() {
     refreshApplicationStatus();
   }, [refreshApplicationStatus]);
 
-  useEffect(() => {
-    if (!showApplyModal) {
-      const interval = setInterval(() => {
-        refreshApplicationStatus();
-      }, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [showApplyModal, refreshApplicationStatus]);
-
   const handleApplicationSuccess = useCallback(() => {
     setTimeout(() => {
       refreshApplicationStatus();
     }, 2000);
   }, [refreshApplicationStatus]);
-
-  // Enhanced campaign status logic
-  const getCampaignStatus = (campaign: Campaign) => {
-    const now = new Date();
-    const selectionDeadline = new Date(campaign.selectionDeadline * 1000);
-    const creationDate = new Date(campaign.creationTime * 1000);
-
-    // Check if campaign is new (created within last 24 hours)
-    const isNew =
-      isAfter(now, creationDate) && isBefore(now, addDays(creationDate, 1));
-
-    // Check if deadline is approaching (within 24 hours)
-    const isUrgent =
-      isAfter(now, addDays(selectionDeadline, -1)) &&
-      isBefore(now, selectionDeadline);
-
-    return {
-      isNew,
-      isUrgent,
-      isActive: campaign.status === 0,
-      isInProgress: campaign.status === 1,
-      isCompleted: campaign.status === 2,
-      deadlinePassed: isAfter(now, selectionDeadline),
-      daysRemaining: Math.max(
-        0,
-        Math.ceil(
-          (selectionDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-        )
-      ),
-      hoursRemaining: Math.max(
-        0,
-        Math.ceil(
-          (selectionDeadline.getTime() - now.getTime()) / (1000 * 60 * 60)
-        )
-      ),
-    };
-  };
 
   if (isLoading) {
     return (
@@ -213,9 +148,9 @@ export default function Marketplace() {
   }
 
   // Enhanced button state logic
-  const getButtonState = (campaign: Campaign) => {
+  const getButtonState = (campaign: Brief) => {
     const status = applicationStatus[campaign.id];
-    const campaignStatus = getCampaignStatus(campaign);
+    const { statusInfo, timingInfo } = campaign;
 
     if (status === "applied") {
       return {
@@ -238,7 +173,7 @@ export default function Marketplace() {
 
     if (!isConnected) {
       return {
-        text: "Connect Wallet to Apply",
+        text: "Connect Wallet",
         disabled: true,
         onClick: () => {},
         variant: "disabled",
@@ -281,16 +216,16 @@ export default function Marketplace() {
         };
       }
       return {
-        text: "Use Influencer Account",
+        text: "Business Account",
         disabled: true,
         onClick: () => {},
         variant: "disabled",
       };
     }
 
-    if (!campaignStatus.isActive || campaignStatus.deadlinePassed) {
+    if (!statusInfo.canApply) {
       return {
-        text: campaignStatus.deadlinePassed
+        text: timingInfo.hasExpired
           ? "Deadline Passed"
           : statusMap[campaign.status],
         disabled: true,
@@ -300,13 +235,13 @@ export default function Marketplace() {
     }
 
     return {
-      text: campaignStatus.isUrgent ? "Apply Now - Urgent!" : "Apply Now",
+      text: timingInfo.isUrgent ? "Apply Now - Urgent!" : "Apply Now",
       disabled: false,
       onClick: () => {
         setSelectedCampaign(campaign);
         setShowApplyModal(true);
       },
-      variant: campaignStatus.isUrgent ? "urgent" : "apply",
+      variant: timingInfo.isUrgent ? "urgent" : "apply",
     };
   };
 
@@ -339,12 +274,12 @@ export default function Marketplace() {
   const filteredCampaigns = activeBriefs.filter((campaign) => {
     const budget = campaign.budget;
     const matchesSearch =
-      campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaign.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaign.requirements.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       categoryFilter === "All Categories" ||
-      audienceMap[campaign.targetAudience] === categoryFilter;
+      AUDIENCE_LABELS[campaign.targetAudience] === categoryFilter;
     const matchesBudget =
       budgetFilter === "Budget: Any" ||
       (budgetFilter === "Under 500 cUSD" && budget < 500) ||
@@ -417,21 +352,27 @@ export default function Marketplace() {
             {/* Quick Stats */}
             {isConnected && userProfile?.isInfluencer && (
               <div className="text-right text-sm text-slate-400">
-                <div>
-                  Applied:{" "}
-                  {
-                    Object.values(applicationStatus).filter(
-                      (s) => s === "applied"
-                    ).length
-                  }
-                </div>
-                <div>
-                  Assigned:{" "}
-                  {
-                    Object.values(applicationStatus).filter(
-                      (s) => s === "assigned"
-                    ).length
-                  }
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-emerald-400">
+                      {
+                        Object.values(applicationStatus).filter(
+                          (s) => s === "applied"
+                        ).length
+                      }
+                    </div>
+                    <div className="text-xs">Applied</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-400">
+                      {
+                        Object.values(applicationStatus).filter(
+                          (s) => s === "assigned"
+                        ).length
+                      }
+                    </div>
+                    <div className="text-xs">Assigned</div>
+                  </div>
                 </div>
               </div>
             )}
@@ -463,7 +404,7 @@ export default function Marketplace() {
                 className="w-full lg:w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
               >
                 <option>All Categories</option>
-                {Object.entries(audienceMap).map(([value, label]) => (
+                {Object.entries(AUDIENCE_LABELS).map(([value, label]) => (
                   <option key={value} value={label}>
                     {label}
                   </option>
@@ -480,6 +421,14 @@ export default function Marketplace() {
                 <option>1000-2000 cUSD</option>
                 <option>2000+ cUSD</option>
               </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full lg:w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
+              >
+                <option>Active Only</option>
+                <option>All Campaigns</option>
+              </select>
             </div>
           </div>
         </div>
@@ -487,10 +436,9 @@ export default function Marketplace() {
         {/* Enhanced Campaign Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCampaigns.map((campaign) => {
-            const category = audienceMap[campaign.targetAudience] || "Other";
-            const status = statusMap[campaign.status] || "Unknown";
+            const category =
+              AUDIENCE_LABELS[campaign.targetAudience] || "Other";
             const buttonState = getButtonState(campaign);
-            const campaignStatus = getCampaignStatus(campaign);
             const userApplicationStatus = applicationStatus[campaign.id];
 
             return (
@@ -501,7 +449,7 @@ export default function Marketplace() {
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -5 }}
               >
-                {/* Enhanced Header */}
+                {/* Enhanced Header with Status Indicators */}
                 <div className="p-5 border-b border-slate-700/50">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -513,8 +461,17 @@ export default function Marketplace() {
                         {category}
                       </span>
 
+                      {/* Phase indicator */}
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPhaseColor(
+                          campaign.timingInfo.phase
+                        )}`}
+                      >
+                        {getPhaseLabel(campaign.timingInfo.phase)}
+                      </span>
+
                       {/* New badge */}
-                      {campaignStatus.isNew && (
+                      {campaign.timingInfo.isNew && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                           <TrendingUp className="w-3 h-3 mr-1" />
                           New
@@ -522,7 +479,7 @@ export default function Marketplace() {
                       )}
 
                       {/* Urgent badge */}
-                      {campaignStatus.isUrgent && campaignStatus.isActive && (
+                      {campaign.timingInfo.isUrgent && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
                           <Timer className="w-3 h-3 mr-1" />
                           Urgent
@@ -538,33 +495,56 @@ export default function Marketplace() {
                               : "bg-blue-500/10 text-blue-400 border-blue-500/20"
                           }`}
                         >
-                          {userApplicationStatus === "assigned"
-                            ? "Assigned"
-                            : "Applied"}
+                          {userApplicationStatus === "assigned" ? (
+                            <>
+                              <Star className="w-3 h-3 mr-1" />
+                              Assigned
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3 h-3 mr-1" />
+                              Applied
+                            </>
+                          )}
                         </span>
                       )}
                     </div>
 
                     <span className="inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {campaign.budget.toLocaleString()} cUSD
+                      <DollarSign className="w-4 h-4 mr-1" />
+                      {campaign.budget.toLocaleString()}
                     </span>
                   </div>
 
                   <h3 className="text-lg font-semibold text-white mt-3 line-clamp-2">
-                    {campaign.title}
+                    {campaign.name}
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
                     by {truncateAddress(campaign.business)}
                   </p>
 
-                  {/* Creation date */}
-                  <p className="text-xs text-slate-500 mt-1">
-                    Created{" "}
-                    {format(
-                      new Date(campaign.creationTime * 1000),
-                      "MMM d, yyyy"
-                    )}
-                  </p>
+                  {/* Creation date and timing info */}
+                  <div className="flex items-center justify-between mt-2 text-xs text-slate-500">
+                    <span>
+                      Created{" "}
+                      {format(new Date(campaign.creationTime * 1000), "MMM d")}
+                    </span>
+                    {campaign.timingInfo.currentDeadline &&
+                      campaign.timingInfo.timeRemaining && (
+                        <span
+                          className={
+                            campaign.timingInfo.isUrgent
+                              ? "text-orange-400"
+                              : ""
+                          }
+                        >
+                          {formatTimeRemaining(
+                            campaign.timingInfo.timeRemaining
+                          )}{" "}
+                          left
+                        </span>
+                      )}
+                  </div>
                 </div>
 
                 {/* Campaign details */}
@@ -572,62 +552,26 @@ export default function Marketplace() {
                   <p className="text-sm text-slate-300 mb-4 line-clamp-3">
                     {campaign.description}
                   </p>
-                  <p className="text-sm text-slate-400 mb-4 line-clamp-3">
-                    <strong>Requirements:</strong> {campaign.requirements}
-                  </p>
 
-                  {/* Enhanced status and deadline */}
-                  <div className="flex items-center justify-between mb-4">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        campaignStatus.isActive &&
-                        !campaignStatus.deadlinePassed
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : campaignStatus.isInProgress
-                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                          : campaignStatus.isCompleted
-                          ? "bg-green-500/10 text-green-400 border-green-500/20"
-                          : "bg-slate-500/10 text-slate-400 border-slate-500/20"
-                      } border`}
-                    >
-                      {campaignStatus.isActive &&
-                      !campaignStatus.deadlinePassed ? (
-                        <>
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Open
-                        </>
-                      ) : (
-                        status
-                      )}
-                    </span>
-
-                    <div className="flex items-center text-xs text-slate-400">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {campaignStatus.deadlinePassed ? (
-                        <span className="text-red-400">
-                          Closed{" "}
-                          {formatDistanceToNow(
-                            new Date(campaign.selectionDeadline * 1000),
-                            { addSuffix: true }
-                          )}
+                  {/* Status and next action */}
+                  {campaign.statusInfo.nextAction && (
+                    <div className="mb-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                        <span className="text-sm text-slate-300">
+                          {campaign.statusInfo.nextAction}
                         </span>
-                      ) : campaignStatus.daysRemaining > 0 ? (
-                        <span
-                          className={
-                            campaignStatus.isUrgent ? "text-orange-400" : ""
-                          }
-                        >
-                          {campaignStatus.daysRemaining} day
-                          {campaignStatus.daysRemaining !== 1 ? "s" : ""} left
-                        </span>
-                      ) : (
-                        <span className="text-orange-400">
-                          {campaignStatus.hoursRemaining} hour
-                          {campaignStatus.hoursRemaining !== 1 ? "s" : ""} left
-                        </span>
+                      </div>
+                      {campaign.statusInfo.warning && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <AlertTriangle className="w-3 h-3 text-orange-400" />
+                          <span className="text-xs text-orange-400">
+                            {campaign.statusInfo.warning}
+                          </span>
+                        </div>
                       )}
                     </div>
-                  </div>
+                  )}
 
                   {/* Enhanced stats grid */}
                   <div className="grid grid-cols-2 gap-3 text-xs mb-4">
@@ -639,12 +583,14 @@ export default function Marketplace() {
                       <div className="font-semibold text-white">
                         {campaign.selectedInfluencersCount}/
                         {campaign.maxInfluencers}
-                        <span className="text-slate-400 ml-1">
-                          (
-                          {campaign.maxInfluencers -
-                            campaign.selectedInfluencersCount}{" "}
-                          left)
-                        </span>
+                      </div>
+                      <div className="w-full bg-slate-700/50 rounded-full h-1.5 mt-1">
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-1.5 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${campaign.progressInfo.spotsFilledPercentage}%`,
+                          }}
+                        />
                       </div>
                     </div>
                     <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
@@ -671,8 +617,7 @@ export default function Marketplace() {
                         <span>Pay/Spot</span>
                       </div>
                       <div className="font-semibold text-white">
-                        {(campaign.budget / campaign.maxInfluencers).toFixed(0)}{" "}
-                        cUSD
+                        {campaign.progressInfo.budgetPerSpot.toFixed(0)} cUSD
                       </div>
                     </div>
                   </div>
@@ -688,6 +633,9 @@ export default function Marketplace() {
                   >
                     {buttonState.icon && buttonState.icon}
                     {buttonState.text}
+                    {!buttonState.disabled && !buttonState.icon && (
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    )}
                   </button>
                 </div>
               </motion.div>
@@ -700,7 +648,7 @@ export default function Marketplace() {
                 <Search className="w-8 h-8 text-slate-400" />
               </div>
               <h3 className="text-lg font-medium text-white">
-                No active campaigns found
+                No campaigns found
               </h3>
               <p className="text-sm text-slate-400 mt-2">
                 Try adjusting your search or filter criteria
@@ -726,7 +674,7 @@ export default function Marketplace() {
             selectedCampaign
               ? {
                   id: selectedCampaign.id,
-                  title: selectedCampaign.title,
+                  title: selectedCampaign.name,
                   description: selectedCampaign.description,
                   business: selectedCampaign.business,
                   budget: selectedCampaign.budget,

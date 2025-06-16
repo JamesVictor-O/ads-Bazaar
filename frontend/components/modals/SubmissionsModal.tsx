@@ -39,7 +39,7 @@ export const SubmissionsModal = ({
               Submissions for
             </h2>
             <p className="text-lg sm:text-xl font-semibold text-emerald-400 mt-1 truncate">
-              {selectedBrief.title}
+              {selectedBrief.name}
             </p>
           </div>
           <button
@@ -134,7 +134,10 @@ export const SubmissionsModal = ({
                       <div className="flex flex-col space-y-3">
                         {/* Proof link */}
                         <div className="flex items-center">
-                          <Globe size={16} className="mr-2 text-slate-400 flex-shrink-0" />
+                          <Globe
+                            size={16}
+                            className="mr-2 text-slate-400 flex-shrink-0"
+                          />
                           <a
                             href={submission.proofLink}
                             target="_blank"
@@ -149,8 +152,13 @@ export const SubmissionsModal = ({
                         <div className="text-xs text-slate-400 bg-slate-800/50 sm:bg-transparent rounded-lg sm:rounded-none p-2 sm:p-0">
                           <span className="font-medium">Submitted: </span>
                           <span className="block sm:inline mt-1 sm:mt-0">
-                            {new Date(submission.timestamp * 1000).toLocaleDateString()} at{" "}
-                            {new Date(submission.timestamp * 1000).toLocaleTimeString()}
+                            {new Date(
+                              submission.timestamp * 1000
+                            ).toLocaleDateString()}{" "}
+                            at{" "}
+                            {new Date(
+                              submission.timestamp * 1000
+                            ).toLocaleTimeString()}
                           </span>
                         </div>
 
@@ -162,7 +170,7 @@ export const SubmissionsModal = ({
                               disabled={isCompletingCampaign}
                               className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md shadow-emerald-500/25 flex items-center justify-center"
                             >
-                              <CheckCircle size= "16" className="mr-1" />
+                              <CheckCircle size="16" className="mr-1" />
                               Release Funds
                             </button>
                           </div>
@@ -171,7 +179,10 @@ export const SubmissionsModal = ({
                     ) : (
                       // Awaiting submission message
                       <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 text-amber-400 flex items-start">
-                        <Clock size={16} className="mr-2 flex-shrink-0 mt-0.5" />
+                        <Clock
+                          size={16}
+                          className="mr-2 flex-shrink-0 mt-0.5"
+                        />
                         <p className="text-sm leading-relaxed">
                           Awaiting submission from influencer
                         </p>
@@ -200,7 +211,8 @@ export const SubmissionsModal = ({
             </svg>
             <p className="font-medium text-base">No submissions yet</p>
             <p className="mt-2 text-sm leading-relaxed">
-              Selected influencers will appear here once they submit their proof of work.
+              Selected influencers will appear here once they submit their proof
+              of work.
             </p>
           </div>
         )}
