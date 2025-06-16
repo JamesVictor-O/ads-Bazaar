@@ -702,20 +702,19 @@ export default function InfluencerDashboard() {
                                   briefData.brief.status
                                 )}`}
                               >
-                                {/* {briefData.brief.statusInfo.statusLabel} */}
+                                {briefData.brief.statusInfo.statusLabel}
                               </span>
 
                               {/* Phase badge */}
-                              {/* <span
-                                className={`px-2 py-0.5 text-xs font-medium rounded-full border ${
-                                  getPhaseColor()
+                              <span
+                                className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getPhaseColor(
                                   briefData.brief.timingInfo.phase
-                                }`}
-                              > */}
-                              {/* {getPhaseLabel(
+                                )}`}
+                              >
+                                {getPhaseLabel(
                                   briefData.brief.timingInfo.phase
-                                )} */}
-                              {/* </span> */}
+                                )}
+                              </span>
 
                               {/* Application status */}
                               {briefData.application.isSelected && (
@@ -743,17 +742,17 @@ export default function InfluencerDashboard() {
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               <span>
-                                {/* {format(
+                                {format(
                                   new Date(briefData.brief.creationTime * 1000),
                                   "MMM d"
-                                )} */}
+                                )}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-3 h-3" />
-                              {/* <span>{budget.toFixed(2)} cUSD</span> */}
+                              <span>{budget.toFixed(2)} cUSD</span>
                             </div>
-                            {/* {briefData.brief.timingInfo.timeRemaining && (
+                            {briefData.brief.timingInfo.timeRemaining && (
                               <div className="flex items-center gap-1">
                                 <Timer className="w-3 h-3" />
                                 <span
@@ -769,7 +768,7 @@ export default function InfluencerDashboard() {
                                   left
                                 </span>
                               </div>
-                            )} */}
+                            )}
                           </div>
                         </div>
                       </div>
