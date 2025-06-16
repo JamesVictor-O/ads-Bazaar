@@ -63,6 +63,7 @@ import {
   formatTimeRemaining,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
+import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 
 // Define precise interfaces
 interface ApplicationWithBrief {
@@ -425,18 +426,36 @@ export default function InfluencerDashboard() {
                 )}
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl md:text-3xl font-bold text-white flex items-center gap-1.5">
-                  Hi,{" "}
-                  <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
-                    {username || displayName || "Influencer"}
-                  </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-lg sm:text-xl md:text-3xl font-bold text-white flex items-center gap-1.5">
+                    Hi,{" "}
+                    <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
+                      {username || displayName || "Influencer"}
+                    </span>
+                  </h1>
                   {isVerified && (
-                    <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      <Shield className="w-2 h-2 mr-0.5" /> Verified
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <Shield className="w-3 h-3 mr-1" /> Verified
                     </span>
                   )}
-                </h1>
-                <p className="text-xs sm:text-sm md:text-xl text-slate-400 mt-0.5">
+                </div>
+                {/* Enhanced Status Badge */}
+                {userProfile?.status !== undefined && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getUserStatusColor(
+                        userProfile.status
+                      )}`}
+                    >
+                      <Award className="w-4 h-4 mr-1" />
+                      {getUserStatusLabel(userProfile.status)}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {userProfile.completedCampaigns} campaigns completed
+                    </span>
+                  </div>
+                )}
+                <p className="text-xs sm:text-sm md:text-xl text-slate-400">
                   {stats.urgentActions > 0
                     ? `${stats.urgentActions} action${
                         stats.urgentActions !== 1 ? "s" : ""
