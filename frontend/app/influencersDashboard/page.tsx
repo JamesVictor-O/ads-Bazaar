@@ -831,6 +831,17 @@ export default function InfluencerDashboard() {
                           animate={{ height: "auto", opacity: 1 }}
                           transition={{ duration: 0.2 }}
                         >
+                          {/* Campaign Requirements Section */}
+                          <div className="mb-3 p-3 bg-slate-900/30 rounded-lg border border-slate-700/50">
+                            <h4 className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                              <CheckSquare className="w-4 h-4 text-blue-400" />
+                              Campaign Requirements
+                            </h4>
+                            <p className="text-sm text-slate-200 leading-relaxed">
+                              {briefData.brief.requirements ||
+                                "No specific requirements listed"}
+                            </p>
+                          </div>
                           {briefData.application.isSelected && (
                             <div className="flex flex-col gap-2 mb-2">
                               <div className="flex items-center gap-1.5">
