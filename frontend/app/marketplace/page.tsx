@@ -29,7 +29,7 @@ import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { format } from "date-fns";
 import { truncateAddress } from "@/utils/format";
@@ -40,6 +40,8 @@ import {
   TargetAudience,
   CampaignPhase,
   AUDIENCE_LABELS,
+  InfluencerApplication,
+  DisputeStatus,
 } from "@/types";
 import {
   getStatusColor,
@@ -49,6 +51,10 @@ import {
   getPhaseLabel,
 } from "@/utils/campaignUtils";
 import toast from "react-hot-toast";
+import { Address } from "viem";
+import { CONTRACT_ADDRESS } from "@/lib/contracts";
+import ABI from "@/lib/AdsBazaar.json";
+import { ApplicationStatus } from "@/types";
 
 const statusMap = {
   0: "Open",
@@ -78,6 +84,16 @@ export default function Marketplace() {
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const { userProfile, isLoadingProfile } = useUserProfile();
 
+  const publicClient = usePublicClient();
+
+  // State to track all applications for the current user
+  const [applications, setApplications] = useState<{
+    [briefId: string]: InfluencerApplication;
+  }>({});
+  const [applicationStatuses, setApplicationStatuses] = useState<
+    ApplicationStatus[]
+  >([]);
+
   // Fetch all campaigns
   const { briefs: allBriefs, isLoading } = useGetAllBriefs();
 
@@ -98,26 +114,194 @@ export default function Marketplace() {
     error: applicationsError,
   } = useGetInfluencerApplications(address as `0x${string}`);
 
-  // Function to refresh application status
-  const refreshApplicationStatus = useCallback(() => {
-    if (!isLoadingApplications && influencerApplications) {
-      setIsRefreshing(true);
-      setRefreshCount((prev) => prev + 1);
-      setLastRefreshTime(new Date());
+  const computeApplicationStatus = (
+    application: InfluencerApplication,
+    briefData: any[]
+  ) => {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const promotionEndTime = Number(briefData[9]); // from contract
+    const proofSubmissionDeadline = Number(briefData[10]);
 
-      const statusMap: Record<string, "applied" | "assigned" | null> = {};
-      influencerApplications.forEach((app) => {
-        statusMap[app.briefId] = app.isSelected ? "assigned" : "applied";
-      });
-      setApplicationStatus(statusMap);
+    let status: ApplicationStatus["status"] = "applied";
+    let nextAction = "";
+    let canSubmitProof = false;
+    let canClaim = false;
 
-      // Simulate network delay for better UX
-      setTimeout(() => {
-        setIsRefreshing(false);
-        toast.success("Application status updated", { duration: 2000 });
-      }, 1000);
+    if (application.hasClaimed) {
+      status = "paid";
+      nextAction = "Payment received";
+    } else if (application.isApproved) {
+      status = "approved";
+      nextAction = "Ready to claim payment";
+      canClaim = true;
+    } else if (application.proofLink) {
+      status = "proof_submitted";
+      nextAction = "Awaiting approval";
+    } else if (application.isSelected) {
+      status = "selected";
+      if (
+        currentTime >= promotionEndTime &&
+        currentTime <= proofSubmissionDeadline
+      ) {
+        nextAction = "Submit proof of work";
+        canSubmitProof = true;
+      } else if (currentTime < promotionEndTime) {
+        nextAction = "Campaign in progress";
+      } else {
+        nextAction = "Proof submission deadline passed";
+      }
+    } else {
+      status = "applied";
+      nextAction = "Awaiting selection";
     }
-  }, [influencerApplications, isLoadingApplications]);
+
+    return { status, nextAction, canSubmitProof, canClaim };
+  };
+
+  // Function to refresh application status
+  const refreshApplicationStatus = useCallback(
+    async (influencerAddress?: string) => {
+      const targetAddress = influencerAddress || address;
+
+      if (!publicClient || !targetAddress) {
+        console.warn("Cannot refresh: missing client or address");
+        return;
+      }
+
+      setIsRefreshing(true);
+
+      try {
+        console.log(`Refreshing application status for ${targetAddress}...`);
+
+        // Step 1: Get all brief IDs this influencer has applied to
+        const appliedBriefIds = (await publicClient.readContract({
+          address: CONTRACT_ADDRESS,
+          abi: ABI.abi,
+          functionName: "getInfluencerApplications",
+          args: [targetAddress as Address],
+        })) as string[];
+
+        if (!appliedBriefIds || appliedBriefIds.length === 0) {
+          console.log("No applications found for this influencer");
+          setApplications({});
+          setApplicationStatuses([]);
+          return;
+        }
+
+        console.log(`Found ${appliedBriefIds.length} applied campaigns`);
+
+        // Step 2: Fetch current application data for each brief
+        const updatedApplications: {
+          [briefId: string]: InfluencerApplication;
+        } = {};
+        const statusesData: ApplicationStatus[] = [];
+
+        for (const briefId of appliedBriefIds) {
+          try {
+            // Get brief details for campaign name
+            const briefData = (await publicClient.readContract({
+              address: CONTRACT_ADDRESS,
+              abi: ABI.abi,
+              functionName: "briefs",
+              args: [briefId],
+            })) as any[];
+
+            // Get application details
+            const applicationData = (await publicClient.readContract({
+              address: CONTRACT_ADDRESS,
+              abi: ABI.abi,
+              functionName: "getBriefApplications",
+              args: [briefId],
+            })) as {
+              influencers: string[];
+              messages: string[];
+              timestamps: bigint[];
+              isSelected: boolean[];
+              hasClaimed: boolean[];
+              proofLinks: string[];
+              isApproved: boolean[];
+            };
+
+            if (applicationData?.influencers) {
+              // Find this influencer's application
+              const influencerIndex = applicationData.influencers.findIndex(
+                (addr: string) =>
+                  addr.toLowerCase() === targetAddress.toLowerCase()
+              );
+
+              if (influencerIndex !== -1) {
+                // Step 3: Build application object with briefId
+                const applicationWithBrief: InfluencerApplication = {
+                  influencer: applicationData.influencers[
+                    influencerIndex
+                  ] as `0x${string}`,
+                  message: applicationData.messages[influencerIndex],
+                  timestamp: Number(
+                    applicationData.timestamps[influencerIndex]
+                  ),
+                  isSelected: applicationData.isSelected[influencerIndex],
+                  hasClaimed: applicationData.hasClaimed[influencerIndex],
+                  proofLink: applicationData.proofLinks[influencerIndex],
+                  isApproved: applicationData.isApproved[influencerIndex],
+                  briefId: briefId, // This is why we need briefId!
+
+                  // Add required properties from Application interface
+                  disputeStatus: DisputeStatus.NONE,
+                  disputeReason: "",
+                  resolvedBy:
+                    "0x0000000000000000000000000000000000000000" as `0x${string}`,
+                  applicationInfo: {
+                    canSubmitProof: false,
+                    canClaim: false,
+                    proofStatus: "not_required" as any,
+                    paymentStatus: "not_earned" as any,
+                  },
+                };
+
+                updatedApplications[briefId] = applicationWithBrief;
+
+                // Step 4: Compute status for UI display
+                const status = computeApplicationStatus(
+                  applicationWithBrief,
+                  briefData
+                );
+                statusesData.push({
+                  briefId,
+                  campaignName: briefData[2] as string, // name from brief
+                  applicationData: applicationWithBrief,
+                  ...status,
+                });
+
+                console.log(
+                  `Updated application for campaign ${briefData[2]}: ${status.status}`
+                );
+              }
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching application for brief ${briefId}:`,
+              error
+            );
+          }
+        }
+
+        // Step 5: Update state with fresh data
+        setApplications(updatedApplications);
+        setApplicationStatuses(statusesData);
+
+        console.log(
+          `Refresh complete: ${
+            Object.keys(updatedApplications).length
+          } applications updated`
+        );
+      } catch (error) {
+        console.error("Error refreshing application status:", error);
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [publicClient, address]
+  );
 
   useEffect(() => {
     refreshApplicationStatus();

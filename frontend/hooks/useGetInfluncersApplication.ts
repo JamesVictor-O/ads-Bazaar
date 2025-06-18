@@ -14,6 +14,7 @@ export interface InfluencerApplication {
   hasClaimed: boolean;
   proofLink: string;
   isApproved: boolean;
+  briefId?: string;
 }
 
 export interface BriefApplications {

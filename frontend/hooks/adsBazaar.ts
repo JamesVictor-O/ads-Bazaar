@@ -15,6 +15,7 @@ import {
   CampaignStatus,
   TargetAudience,
   DisputeStatus,
+  UserStatus,
 } from "../types";
 import {
   computeCampaignStatusInfo,
@@ -376,15 +377,24 @@ export function useUserProfile(userAddress?: Address) {
     },
   });
 
+  const userProfile = useMemo(() => {
+    if (!data) return null;
+
+    return {
+      isRegistered: (data as [boolean, boolean, boolean, string])[0],
+      isBusiness: (data as [boolean, boolean, boolean, string])[1],
+      isInfluencer: (data as [boolean, boolean, boolean, string])[2],
+      profileData: (data as [boolean, boolean, boolean, string])[3],
+
+      // Add default values for dashboard compatibility
+      status: 0, // UserStatus.NEW_COMER
+      completedCampaigns: 0,
+      totalEscrowed: 0,
+    };
+  }, [data]);
+
   return {
-    userProfile: data
-      ? {
-          isRegistered: (data as [boolean, boolean, boolean, string])[0],
-          isBusiness: (data as [boolean, boolean, boolean, string])[1],
-          isInfluencer: (data as [boolean, boolean, boolean, string])[2],
-          profileData: (data as [boolean, boolean, boolean, string])[3],
-        }
-      : null,
+    userProfile,
     isLoadingProfile: isLoading,
     profileError: error,
     refetchProfile: refetch,
