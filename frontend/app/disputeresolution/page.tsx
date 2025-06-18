@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import DisputeResolutionModal from "@/components/modals/DisputeResolutionModal";
 import { motion } from "framer-motion";
 import {
@@ -12,11 +12,24 @@ import {
   ExternalLink,
   TrendingUp,
   Eye,
+  Shield,
+  Ban,
+  Loader2,
 } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 import { format } from "date-fns";
+import { useAccount, useReadContracts } from "wagmi";
+import {
+  useIsDisputeResolver,
+  useResolveDispute,
+} from "@/hooks/useDisputeResolution";
+import { useGetAllBriefs } from "@/hooks/adsBazaar";
+import { CONTRACT_ADDRESS } from "@/lib/contracts";
+import ABI from "@/lib/AdsBazaar.json";
+import { Brief, Application, DisputeStatus } from "@/types";
+import { truncateAddress } from "@/utils/format";
 
-interface Dispute {
+interface DisputeData {
   id: string;
   briefId: string;
   influencer: string;
@@ -30,6 +43,7 @@ interface Dispute {
   priority: "HIGH" | "MEDIUM" | "LOW";
   category: string;
   amount: number;
+  disputeTimestamp: number;
 }
 
 interface Stats {
@@ -39,89 +53,167 @@ interface Stats {
   avgResolutionTime: string;
 }
 
+const DISPUTE_RESOLUTION_DEADLINE = 2 * 24 * 60 * 60; // 2 days in seconds
+
 const DisputeResolverDashboard: React.FC = () => {
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
-  const [filteredDisputes, setFilteredDisputes] = useState<Dispute[]>([]);
+  const [disputes, setDisputes] = useState<DisputeData[]>([]);
+  const [filteredDisputes, setFilteredDisputes] = useState<DisputeData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
+  const [selectedDispute, setSelectedDispute] = useState<DisputeData | null>(
+    null
+  );
   const [stats, setStats] = useState<Stats>({
     totalDisputes: 0,
     pendingDisputes: 0,
     resolvedToday: 0,
     avgResolutionTime: "0h",
   });
+  const [isLoadingDisputes, setIsLoadingDisputes] = useState(true);
 
-  // Mock data - replace with actual blockchain data
+  const { address } = useAccount();
+  const { isDisputeResolver, isLoadingResolver } =
+    useIsDisputeResolver(address);
+  const { briefs, isLoading: isLoadingBriefs } = useGetAllBriefs();
+  const { resolveDispute, isResolving, resolveSuccess, resolveError } =
+    useResolveDispute();
+
+  // Fetch all disputes from blockchain
   useEffect(() => {
-    const mockDisputes: Dispute[] = [
-      {
-        id: "1",
-        briefId: "0x1234...abcd",
-        influencer: "0x5678...efgh",
-        business: "0x9abc...def0",
-        campaignTitle: "Summer Fashion Collection Campaign",
-        flaggedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-        reason:
-          "Content does not match campaign requirements. Posted content appears to be generic and not specifically about our summer collection.",
-        proofLink: "https://instagram.com/post/12345",
-        status: "FLAGGED",
-        priority: "HIGH",
-        category: "Content Quality",
-        amount: 1500,
-      },
-      {
-        id: "2",
-        briefId: "0x2345...bcde",
-        influencer: "0x6789...fghi",
-        business: "0xabcd...ef01",
-        campaignTitle: "Tech Product Review",
-        flaggedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-        deadline: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
-        reason: "Late submission and content quality issues",
-        proofLink: "https://youtube.com/watch/67890",
-        status: "FLAGGED",
-        priority: "MEDIUM",
-        category: "Timeline",
-        amount: 800,
-      },
-      {
-        id: "3",
-        briefId: "0x3456...cdef",
-        influencer: "0x789a...ghij",
-        business: "0xbcde...f012",
-        campaignTitle: "Food Delivery App Promotion",
-        flaggedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-        deadline: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
-        reason: "Plagiarized content from another influencer",
-        proofLink: "https://tiktok.com/@user/video/123",
-        status: "RESOLVED_VALID",
-        priority: "HIGH",
-        category: "Plagiarism",
-        amount: 2000,
-      },
-    ];
+    const fetchDisputes = async () => {
+      if (!briefs || briefs.length === 0) return;
 
-    setDisputes(mockDisputes);
-    setFilteredDisputes(mockDisputes);
+      setIsLoadingDisputes(true);
+      const disputeData: DisputeData[] = [];
 
-    // Calculate stats
-    const pending = mockDisputes.filter((d) => d.status === "FLAGGED").length;
-    const resolvedToday = mockDisputes.filter(
-      (d) =>
-        d.status !== "FLAGGED" &&
-        new Date(d.flaggedDate).toDateString() === new Date().toDateString()
-    ).length;
+      try {
+        for (const brief of briefs) {
+          // Get applications for each brief
+          const response = await fetch(`/api/brief-applications/${brief.id}`);
+          if (!response.ok) continue;
 
-    setStats({
-      totalDisputes: mockDisputes.length,
-      pendingDisputes: pending,
-      resolvedToday: resolvedToday,
-      avgResolutionTime: "4.2h",
-    });
-  }, []);
+          const applicationsData = await response.json();
+          if (!applicationsData.applications) continue;
+
+          // Check each selected application for disputes
+          for (const application of applicationsData.applications) {
+            if (!application.isSelected || !application.proofLink) continue;
+
+            try {
+              // Get dispute details for this application
+              const disputeResponse = await fetch(
+                `/api/dispute-details/${brief.id}/${application.influencer}`
+              );
+
+              if (!disputeResponse.ok) continue;
+
+              const disputeDetails = await disputeResponse.json();
+
+              if (
+                disputeDetails.disputeStatus === DisputeStatus.FLAGGED ||
+                disputeDetails.disputeStatus === DisputeStatus.RESOLVED_VALID ||
+                disputeDetails.disputeStatus === DisputeStatus.RESOLVED_INVALID
+              ) {
+                const dispute: DisputeData = {
+                  id: `${brief.id}-${application.influencer}`,
+                  briefId: brief.id,
+                  influencer: application.influencer,
+                  business: brief.business,
+                  campaignTitle: brief.name,
+                  flaggedDate: new Date(application.timestamp * 1000),
+                  deadline: new Date(
+                    (application.timestamp + DISPUTE_RESOLUTION_DEADLINE) * 1000
+                  ),
+                  reason:
+                    disputeDetails.disputeReason ||
+                    "Dispute reason not provided",
+                  proofLink: application.proofLink,
+                  status:
+                    disputeDetails.disputeStatus === DisputeStatus.FLAGGED
+                      ? "FLAGGED"
+                      : disputeDetails.disputeStatus ===
+                        DisputeStatus.RESOLVED_VALID
+                      ? "RESOLVED_VALID"
+                      : "RESOLVED_INVALID",
+                  priority: determinePriority(
+                    brief.budget,
+                    application.timestamp
+                  ),
+                  category: determineCategory(
+                    disputeDetails.disputeReason || ""
+                  ),
+                  amount: brief.budget / brief.maxInfluencers,
+                  disputeTimestamp: application.timestamp,
+                };
+
+                disputeData.push(dispute);
+              }
+            } catch (err) {
+              console.error(
+                `Error fetching dispute for ${brief.id}-${application.influencer}:`,
+                err
+              );
+            }
+          }
+        }
+
+        setDisputes(disputeData);
+
+        // Calculate stats
+        const pending = disputeData.filter(
+          (d) => d.status === "FLAGGED"
+        ).length;
+        const resolvedToday = disputeData.filter(
+          (d) =>
+            d.status !== "FLAGGED" &&
+            new Date(d.flaggedDate).toDateString() === new Date().toDateString()
+        ).length;
+
+        setStats({
+          totalDisputes: disputeData.length,
+          pendingDisputes: pending,
+          resolvedToday: resolvedToday,
+          avgResolutionTime: "4.2h", // This would need to be calculated from historical data
+        });
+      } catch (err) {
+        console.error("Error fetching disputes:", err);
+        toast.error("Failed to load disputes");
+      } finally {
+        setIsLoadingDisputes(false);
+      }
+    };
+
+    if (!isLoadingBriefs) {
+      fetchDisputes();
+    }
+  }, [briefs, isLoadingBriefs]);
+
+  // Helper functions
+  const determinePriority = (
+    budget: number,
+    timestamp: number
+  ): "HIGH" | "MEDIUM" | "LOW" => {
+    const now = Date.now() / 1000;
+    const timeSinceFlag = now - timestamp;
+    const daysSinceFlag = timeSinceFlag / (24 * 60 * 60);
+
+    if (budget > 1000 || daysSinceFlag > 1.5) return "HIGH";
+    if (budget > 500 || daysSinceFlag > 1) return "MEDIUM";
+    return "LOW";
+  };
+
+  const determineCategory = (reason: string): string => {
+    const reasonLower = reason.toLowerCase();
+    if (reasonLower.includes("quality") || reasonLower.includes("content"))
+      return "Content Quality";
+    if (reasonLower.includes("late") || reasonLower.includes("time"))
+      return "Timeline";
+    if (reasonLower.includes("copy") || reasonLower.includes("plagiar"))
+      return "Plagiarism";
+    if (reasonLower.includes("requirement")) return "Requirements";
+    return "Other";
+  };
 
   // Filter disputes based on search and filters
   useEffect(() => {
@@ -151,25 +243,55 @@ const DisputeResolverDashboard: React.FC = () => {
     setFilteredDisputes(filtered);
   }, [disputes, searchTerm, statusFilter, priorityFilter]);
 
+  // Handle dispute resolution
   const handleResolveDispute = async (disputeId: string, isValid: boolean) => {
-    console.log(
-      `Resolving dispute ${disputeId} as ${isValid ? "valid" : "invalid"}`
-    );
+    const dispute = disputes.find((d) => d.id === disputeId);
+    if (!dispute) {
+      toast.error("Dispute not found");
+      return;
+    }
 
-    // Simulate blockchain interaction
-    setDisputes((prev) =>
-      prev.map((dispute) =>
-        dispute.id === disputeId
-          ? {
-              ...dispute,
-              status: isValid ? "RESOLVED_VALID" : "RESOLVED_INVALID",
-            }
-          : dispute
-      )
-    );
-    toast.success(`Dispute resolved as ${isValid ? "valid" : "invalid"}`);
-    setSelectedDispute(null);
+    try {
+      await resolveDispute(
+        dispute.briefId as `0x${string}`,
+        dispute.influencer as `0x${string}`,
+        isValid
+      );
+
+      // Update local state
+      setDisputes((prev) =>
+        prev.map((d) =>
+          d.id === disputeId
+            ? {
+                ...d,
+                status: isValid ? "RESOLVED_VALID" : "RESOLVED_INVALID",
+              }
+            : d
+        )
+      );
+
+      toast.success(`Dispute resolved as ${isValid ? "valid" : "invalid"}`);
+      setSelectedDispute(null);
+    } catch (error) {
+      console.error("Error resolving dispute:", error);
+      toast.error("Failed to resolve dispute");
+    }
   };
+
+  // Handle resolve success
+  useEffect(() => {
+    if (resolveSuccess) {
+      // Refresh disputes data
+      window.location.reload();
+    }
+  }, [resolveSuccess]);
+
+  // Handle resolve error
+  useEffect(() => {
+    if (resolveError) {
+      toast.error(`Failed to resolve dispute: ${resolveError.message}`);
+    }
+  }, [resolveError]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -209,6 +331,17 @@ const DisputeResolverDashboard: React.FC = () => {
     return "Expired";
   };
 
+  // Show access control message for non-resolvers
+  if (isLoadingResolver) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 sm:pt-24 md:pt-40 pb-20">
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 sm:pt-24 md:pt-40 pb-20">
       <Toaster position="top-right" />
@@ -228,16 +361,46 @@ const DisputeResolverDashboard: React.FC = () => {
             <div>
               <h1 className="text-lg sm:text-xl md:text-3xl font-bold text-white flex items-center gap-1.5">
                 AdsBazaar Dispute Resolution
-                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  Resolver
-                </span>
+                {isDisputeResolver && (
+                  <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <Shield className="w-3 h-3 mr-1" />
+                    Authorized Resolver
+                  </span>
+                )}
               </h1>
               <p className="text-xs sm:text-sm md:text-xl text-slate-400 mt-0.5">
-                Manage and resolve campaign disputes
+                {isDisputeResolver
+                  ? "Manage and resolve campaign disputes"
+                  : "View public dispute resolution activity (read-only)"}
               </p>
             </div>
           </div>
         </motion.div>
+
+        {/* Access Control Notice for Non-Resolvers */}
+        {!isDisputeResolver && (
+          <motion.div
+            className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                <Eye className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Public Transparency View
+                </h3>
+                <p className="text-sm text-blue-400">
+                  You can view all dispute resolution activity for transparency.
+                  Only authorized dispute resolvers can take action on disputes.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -348,14 +511,27 @@ const DisputeResolverDashboard: React.FC = () => {
               </span>
             </div>
           </div>
-          {filteredDisputes.length === 0 ? (
+
+          {isLoadingDisputes ? (
+            <div className="p-6 text-center">
+              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mx-auto mb-2" />
+              <h3 className="text-base font-semibold text-white mb-1">
+                Loading Disputes
+              </h3>
+              <p className="text-slate-400 text-xs">
+                Fetching dispute data from blockchain...
+              </p>
+            </div>
+          ) : filteredDisputes.length === 0 ? (
             <div className="p-6 text-center">
               <Scale className="w-8 h-8 text-slate-600 mx-auto mb-2" />
               <h3 className="text-base font-semibold text-white mb-1">
                 No Disputes
               </h3>
               <p className="text-slate-400 text-xs">
-                No disputes match the current filters.
+                {disputes.length === 0
+                  ? "No disputes have been raised on the platform."
+                  : "No disputes match the current filters."}
               </p>
             </div>
           ) : (
@@ -395,7 +571,7 @@ const DisputeResolverDashboard: React.FC = () => {
                             {dispute.campaignTitle}
                           </div>
                           <div className="text-xs text-slate-400">
-                            {dispute.briefId}
+                            {truncateAddress(dispute.briefId)}
                           </div>
                         </div>
                       </td>
@@ -418,7 +594,7 @@ const DisputeResolverDashboard: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-white">
-                        ${dispute.amount}
+                        ${dispute.amount.toFixed(0)}
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-white">
                         {getTimeRemaining(dispute.deadline)}
@@ -430,7 +606,7 @@ const DisputeResolverDashboard: React.FC = () => {
                           whileTap={{ scale: 0.95 }}
                         >
                           <Eye className="w-3 h-3" />
-                          Review
+                          {isDisputeResolver ? "Review" : "View"}
                         </motion.button>
                       </td>
                     </motion.tr>
@@ -449,11 +625,12 @@ const DisputeResolverDashboard: React.FC = () => {
             onClose={() => setSelectedDispute(null)}
             getStatusColor={getStatusColor}
             getPriorityColor={getPriorityColor}
+            canResolve={isDisputeResolver}
+            isResolving={isResolving}
           />
         )}
       </div>
     </div>
   );
 };
-
 export default DisputeResolverDashboard;

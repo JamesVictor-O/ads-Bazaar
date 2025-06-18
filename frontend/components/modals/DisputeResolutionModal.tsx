@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState} from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   XCircle,
   CheckCircle,
   ExternalLink,
   Loader2,
+  Shield,
+  Eye,
+  Ban,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
@@ -33,6 +37,8 @@ interface DisputeResolutionModalProps {
   onClose: () => void;
   getStatusColor: (status: string) => string;
   getPriorityColor: (priority: string) => string;
+  canResolve?: boolean; // New prop for access control
+  isResolving?: boolean; // New prop for loading state
 }
 
 // Transaction phases for better UX
@@ -44,11 +50,19 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
   onClose,
   getStatusColor,
   getPriorityColor,
+  canResolve = false,
+  isResolving = false,
 }) => {
-  const [transactionPhase, setTransactionPhase] = useState<TransactionPhase>("idle");
+  const [transactionPhase, setTransactionPhase] =
+    useState<TransactionPhase>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const handleResolve = async (isValid: boolean) => {
+    if (!canResolve) {
+      toast.error("You are not authorized to resolve disputes");
+      return;
+    }
+
     setTransactionPhase("resolving");
     setErrorMessage("");
 
@@ -62,7 +76,8 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
       }, 2000);
     } catch (error) {
       setTransactionPhase("error");
-      const message = error instanceof Error ? error.message : "Failed to resolve dispute";
+      const message =
+        error instanceof Error ? error.message : "Failed to resolve dispute";
       setErrorMessage(message);
       toast.error(message);
     }
@@ -89,7 +104,9 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
       case "error":
         return {
           title: "Resolution Failed",
-          description: errorMessage || "There was an error resolving the dispute. Please try again.",
+          description:
+            errorMessage ||
+            "There was an error resolving the dispute. Please try again.",
           icon: <XCircle className="w-5 h-5 text-red-400" />,
           bgColor: "bg-red-500/10 border-red-500/20",
           textColor: "text-red-400",
@@ -99,8 +116,10 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
     }
   };
 
-  const isTransactionInProgress = transactionPhase === "resolving";
-  const canResolve = dispute.status === "FLAGGED" && !isTransactionInProgress;
+  const isTransactionInProgress =
+    transactionPhase === "resolving" || isResolving;
+  const canActuallyResolve =
+    dispute.status === "FLAGGED" && canResolve && !isTransactionInProgress;
 
   return (
     <motion.div
@@ -119,9 +138,25 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-700/50 sticky top-0 bg-slate-800/95 z-10">
-          <h2 className="text-lg sm:text-xl font-bold text-white">
-            Dispute Resolution
-          </h2>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+              {canResolve ? (
+                <Shield className="w-5 h-5 text-emerald-400" />
+              ) : (
+                <Eye className="w-5 h-5 text-blue-400" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-white">
+                Dispute Resolution
+              </h2>
+              <p className="text-sm text-slate-400">
+                {canResolve
+                  ? "Review and resolve this dispute"
+                  : "View dispute details (read-only)"}
+              </p>
+            </div>
+          </div>
           <motion.button
             onClick={onClose}
             className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
@@ -132,6 +167,24 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
             <XCircle className="w-5 h-5" />
           </motion.button>
         </div>
+
+        {/* Access Control Notice */}
+        {!canResolve && (
+          <div className="px-4 pt-4">
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-start">
+              <Eye className="text-blue-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
+              <div>
+                <p className="text-sm font-medium text-blue-400 mb-1">
+                  Read-Only View
+                </p>
+                <p className="text-xs text-slate-400">
+                  You can view dispute details for transparency. Only authorized
+                  dispute resolvers can take action.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Scrollable Content */}
         <div className="px-4 pb-4 max-h-[calc(90vh-180px)] sm:max-h-[calc(90vh-200px)] overflow-y-auto">
@@ -150,7 +203,9 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
                       {txMessage.icon}
                     </div>
                     <div>
-                      <p className={`text-sm font-medium ${txMessage.textColor}`}>
+                      <p
+                        className={`text-sm font-medium ${txMessage.textColor}`}
+                      >
                         {txMessage.title}
                       </p>
                       <p className="text-xs text-slate-400 mt-1">
@@ -176,25 +231,33 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
                 <h4 className="text-sm font-medium text-slate-300 mb-1">
                   Brief ID
                 </h4>
-                <p className="text-sm text-white font-mono">{dispute.briefId}</p>
+                <p className="text-sm text-white font-mono break-all">
+                  {dispute.briefId}
+                </p>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-slate-300 mb-1">
                   Influencer
                 </h4>
-                <p className="text-sm text-white font-mono">{dispute.influencer}</p>
+                <p className="text-sm text-white font-mono break-all">
+                  {dispute.influencer}
+                </p>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-slate-300 mb-1">
                   Business
                 </h4>
-                <p className="text-sm text-white font-mono">{dispute.business}</p>
+                <p className="text-sm text-white font-mono break-all">
+                  {dispute.business}
+                </p>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-slate-300 mb-1">
-                  Amount
+                  Amount at Stake
                 </h4>
-                <p className="text-sm text-white">${dispute.amount}</p>
+                <p className="text-sm text-white">
+                  ${dispute.amount.toFixed(0)} cUSD
+                </p>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-slate-300 mb-1">
@@ -207,7 +270,7 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
                   Flagged Date
                 </h4>
                 <p className="text-sm text-white">
-                  {format(dispute.flaggedDate, "MMM d, yyyy")}
+                  {format(dispute.flaggedDate, "MMM d, yyyy 'at' HH:mm")}
                 </p>
               </div>
               <div>
@@ -215,7 +278,7 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
                   Resolution Deadline
                 </h4>
                 <p className="text-sm text-white">
-                  {format(dispute.deadline, "MMM d, yyyy")}
+                  {format(dispute.deadline, "MMM d, yyyy 'at' HH:mm")}
                 </p>
               </div>
             </div>
@@ -227,69 +290,132 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
                   Dispute Reason
                 </h4>
                 <div className="mt-2 p-3 bg-slate-700/50 rounded-md border border-slate-600/50">
-                  <p className="text-sm text-white">{dispute.reason}</p>
+                  <p className="text-sm text-white leading-relaxed">
+                    {dispute.reason}
+                  </p>
                 </div>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-slate-300 mb-1">
-                  Proof Link
+                  Submitted Content
                 </h4>
                 <a
                   href={dispute.proofLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center text-emerald-400 hover:text-emerald-300 text-sm"
+                  className="flex items-center text-emerald-400 hover:text-emerald-300 text-sm transition-colors duration-200"
                 >
-                  <ExternalLink className="h-4 w-4 mr-1" />
+                  <ExternalLink className="h-4 w-4 mr-1 flex-shrink-0" />
                   View Submitted Content
                 </a>
               </div>
               <div className="flex flex-wrap gap-2">
                 <span
-                  className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full ${getStatusColor(dispute.status)}`}
+                  className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full ${getStatusColor(
+                    dispute.status
+                  )}`}
                 >
                   {dispute.status.replace("_", " ")}
                 </span>
                 <span
-                  className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full ${getPriorityColor(dispute.priority)}`}
+                  className={`inline-flex px-2 py-1 text-[10px] font-semibold rounded-full ${getPriorityColor(
+                    dispute.priority
+                  )}`}
                 >
                   {dispute.priority} Priority
                 </span>
               </div>
             </div>
           </div>
+
+          {/* Resolution Guidelines for Resolvers */}
+          {canResolve && dispute.status === "FLAGGED" && (
+            <div className="mt-6 p-4 bg-slate-900/50 rounded-xl border border-slate-700/50">
+              <h4 className="text-sm font-medium text-slate-300 mb-2">
+                Resolution Guidelines
+              </h4>
+              <ul className="text-sm text-slate-400 space-y-1">
+                <li>
+                  • Review the submitted content against campaign requirements
+                </li>
+                <li>• Consider if the business's concerns are valid</li>
+                <li>• Check content quality, relevance, and compliance</li>
+                <li>• Make a fair decision based on objective criteria</li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Fixed Action Buttons */}
         {dispute.status === "FLAGGED" && (
           <div className="border-t border-slate-700/50 bg-slate-800/95 p-4 sticky bottom-0">
-            <div className="flex flex-col sm:flex-row justify-end gap-3">
-              <motion.button
+            {canResolve ? (
+              <div className="flex flex-col sm:flex-row justify-end gap-3">
+                <motion.button
+                  onClick={onClose}
+                  className="order-2 sm:order-1 px-4 py-2.5 bg-slate-700/50 text-slate-300 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 active:bg-slate-600 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  disabled={isTransactionInProgress}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={() => handleResolve(false)}
+                  className="order-1 sm:order-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium hover:from-red-600 hover:to-red-700 active:from-red-700 active:to-red-800 transition-all duration-200 shadow-sm shadow-red-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  disabled={!canActuallyResolve}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  Mark as Invalid
+                </motion.button>
+                <motion.button
+                  onClick={() => handleResolve(true)}
+                  className="order-1 sm:order-3 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 transition-all duration-200 shadow-sm shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  disabled={!canActuallyResolve}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                  Mark as Valid
+                </motion.button>
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <button
+                  onClick={onClose}
+                  className="px-6 py-2.5 bg-slate-700/50 text-slate-300 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 font-medium text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Already Resolved Display */}
+        {dispute.status !== "FLAGGED" && (
+          <div className="border-t border-slate-700/50 bg-slate-800/95 p-4 sticky bottom-0">
+            <div className="flex items-center justify-between">
+              <div
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${getStatusColor(
+                  dispute.status
+                )}`}
+              >
+                {dispute.status === "RESOLVED_VALID" ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : (
+                  <XCircle className="w-4 h-4" />
+                )}
+                <span className="text-sm font-medium">
+                  Dispute Resolved:{" "}
+                  {dispute.status.replace("RESOLVED_", "").toLowerCase()}
+                </span>
+              </div>
+              <button
                 onClick={onClose}
-                className="order-2 sm:order-1 px-4 py-2.5 bg-slate-700/50 text-slate-300 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 active:bg-slate-600 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                disabled={isTransactionInProgress}
-                whileTap={{ scale: 0.95 }}
+                className="px-6 py-2.5 bg-slate-700/50 text-slate-300 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 font-medium text-sm"
               >
-                Cancel
-              </motion.button>
-              <motion.button
-                onClick={() => handleResolve(false)}
-                className="order-1 sm:order-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium hover:from-red-600 hover:to-red-700 active:from-red-700 active:to-red-800 transition-all duration-200 shadow-sm shadow-red-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                disabled={!canResolve}
-                whileTap={{ scale: 0.95 }}
-              >
-                <XCircle className="h-4 w-4 flex-shrink-0" />
-                Reject Dispute
-              </motion.button>
-              <motion.button
-                onClick={() => handleResolve(true)}
-                className="order-1 sm:order-3 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 transition-all duration-200 shadow-sm shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                disabled={!canResolve}
-                whileTap={{ scale: 0.95 }}
-              >
-                <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                Approve Dispute
-              </motion.button>
+                Close
+              </button>
             </div>
           </div>
         )}

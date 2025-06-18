@@ -44,6 +44,7 @@ import {
   Flag,
   Building2,
   Crown,
+  CheckSquare,
 } from "lucide-react";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { format, isAfter, addHours } from "date-fns";
@@ -766,6 +767,17 @@ const BrandDashboard = () => {
                             </div>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Add Requirements Section */}
+                      <div className="mb-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                        <h4 className="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wide flex items-center gap-1">
+                          <CheckSquare className="w-3 h-3" />
+                          Requirements
+                        </h4>
+                        <p className="text-sm text-slate-300 line-clamp-2">
+                          {brief.requirements || "No specific requirements"}
+                        </p>
                       </div>
 
                       {/* Next Action Alert */}

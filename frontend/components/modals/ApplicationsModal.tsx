@@ -12,6 +12,11 @@ import {
   X,
   AlertTriangle,
   Shield,
+  CheckCircle,
+  Upload,
+  Eye,
+  FileText,
+  Clock,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
@@ -24,7 +29,7 @@ import { motion } from "framer-motion";
 
 interface EnhancedApplicationsModalProps extends ApplicationsModalProps {
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
-  showOnlySelected?: boolean; // Add this prop to control filtering
+  showOnlySelected?: boolean;
 }
 
 const ApplicationsModal = ({
@@ -33,7 +38,7 @@ const ApplicationsModal = ({
   isLoadingApplications,
   onClose,
   guardedAction,
-  showOnlySelected = false, // Default to false to show all applications
+  showOnlySelected = false,
 }: EnhancedApplicationsModalProps) => {
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [transactionPhase, setTransactionPhase] = useState<
@@ -142,7 +147,6 @@ const ApplicationsModal = ({
     }
 
     await guardedAction(async () => {
-      // @ts-expect-error: Brief ID should be typed but API currently accepts any string
       await completeCampaign(selectedBrief.briefId);
     });
   };
@@ -165,6 +169,22 @@ const ApplicationsModal = ({
       }
     }
     return null;
+  };
+
+  // Get proof submission status with clear YES/NO
+  const getProofSubmissionStatus = (application: any) => {
+    if (application.proofLink && application.proofLink.trim() !== "") {
+      return {
+        status: "YES",
+        className: "text-emerald-400 font-semibold",
+        icon: <CheckCircle className="w-4 h-4 text-emerald-400" />,
+      };
+    }
+    return {
+      status: "NO",
+      className: "text-slate-500 font-medium",
+      icon: <XCircle className="w-4 h-4 text-slate-500" />,
+    };
   };
 
   if (!selectedBrief) return null;
@@ -193,7 +213,7 @@ const ApplicationsModal = ({
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 w-full max-w-2xl mx-auto max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10"
+        className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 w-full max-w-4xl mx-auto max-h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
@@ -236,9 +256,6 @@ const ApplicationsModal = ({
           </button>
         </div>
 
-        {/* Network Status */}
-        {/* Network protection is handled by withNetworkGuard HOC */}
-
         {/* Transaction Status */}
         {transactionPhase !== "idle" && (
           <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start">
@@ -264,144 +281,231 @@ const ApplicationsModal = ({
             </div>
           ) : filteredApplications && filteredApplications.length > 0 ? (
             <div className="space-y-4">
-              {filteredApplications.map((application, index) => (
-                <div
-                  key={index}
-                  className={`bg-slate-900/50 border ${
-                    application.isSelected
-                      ? "border-emerald-500/20"
-                      : "border-slate-700/50"
-                  } rounded-xl p-5 hover:bg-slate-900/80 transition-all duration-200 shadow-sm hover:shadow-md`}
-                >
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-slate-700/50 rounded-full overflow-hidden flex items-center justify-center">
-                          {application.influencerProfile?.avatar ? (
-                            <Image
-                              src={application.influencerProfile.avatar}
-                              alt="Profile"
-                              width={48}
-                              height={48}
-                              className="object-cover"
-                            />
-                          ) : (
-                            <span className="text-sm font-medium text-slate-400">
-                              {application.influencer.slice(2, 4).toUpperCase()}
-                            </span>
-                          )}
+              {filteredApplications.map((application, index) => {
+                const proofStatus = getProofSubmissionStatus(application);
+
+                return (
+                  <div
+                    key={index}
+                    className={`bg-slate-900/50 border ${
+                      application.isSelected
+                        ? "border-emerald-500/20"
+                        : "border-slate-700/50"
+                    } rounded-xl p-5 hover:bg-slate-900/80 transition-all duration-200 shadow-sm hover:shadow-md`}
+                  >
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-slate-700/50 rounded-full overflow-hidden flex items-center justify-center">
+                            {application.influencerProfile?.avatar ? (
+                              <Image
+                                src={application.influencerProfile.avatar}
+                                alt="Profile"
+                                width={48}
+                                height={48}
+                                className="object-cover"
+                              />
+                            ) : (
+                              <span className="text-sm font-medium text-slate-400">
+                                {application.influencer
+                                  .slice(2, 4)
+                                  .toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <a
+                              href={`/influencer/${application.influencer}`}
+                              className="text-sm font-medium text-emerald-400 hover:text-emerald-300 inline-flex items-center transition-colors duration-200"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {application.influencerProfile?.name ||
+                                truncateAddress(application.influencer)}
+                              <ExternalLink className="w-4 h-4 ml-1" />
+                            </a>
+                            <p className="text-xs text-slate-400 mt-1">
+                              Applied{" "}
+                              {formatDistanceToNow(
+                                new Date(application.timestamp * 1000),
+                                { addSuffix: true }
+                              )}
+                            </p>
+                          </div>
                         </div>
                         <div>
-                          <a
-                            href={`/influencer/${application.influencer}`}
-                            className="text-sm font-medium text-emerald-400 hover:text-emerald-300 inline-flex items-center transition-colors duration-200"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {application.influencerProfile?.name ||
-                              truncateAddress(application.influencer)}
-                            <ExternalLink className="w-4 h-4 ml-1" />
-                          </a>
-                          <p className="text-xs text-slate-400 mt-1">
-                            Applied{" "}
-                            {formatDistanceToNow(
-                              new Date(application.timestamp * 1000),
-                              { addSuffix: true }
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div>
-                        {application.isSelected ? (
-                          <div className="flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-medium border border-emerald-500/20">
-                            <Check className="w-4 h-4" />
-                            <span>Selected</span>
-                          </div>
-                        ) : (
-                          !showOnlySelected &&
-                          spotsRemaining > 0 && (
-                            <motion.button
-                              onClick={() =>
-                                handleAssignInfluencer(selectedBrief.id, index)
-                              }
-                              disabled={
-                                isTransactionInProgress ||
-                                pendingIndex === index
-                              }
-                              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 ${
-                                isTransactionInProgress ||
-                                pendingIndex === index
-                                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
-                                  : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
-                              }`}
-                              whileTap={
-                                !(
+                          {application.isSelected ? (
+                            <div className="flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-medium border border-emerald-500/20">
+                              <Check className="w-4 h-4" />
+                              <span>Selected</span>
+                            </div>
+                          ) : (
+                            !showOnlySelected &&
+                            spotsRemaining > 0 && (
+                              <motion.button
+                                onClick={() =>
+                                  handleAssignInfluencer(
+                                    selectedBrief.id,
+                                    index
+                                  )
+                                }
+                                disabled={
                                   isTransactionInProgress ||
                                   pendingIndex === index
-                                )
-                                  ? { scale: 0.95 }
-                                  : {}
-                              }
-                            >
-                              {pendingIndex === index ? (
-                                <>
-                                  <Loader2 className="animate-spin h-4 w-4" />
-                                  <span>Processing</span>
-                                </>
-                              ) : (
-                                "Assign"
-                              )}
-                            </motion.button>
-                          )
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                      <p className="text-sm text-slate-300 whitespace-pre-wrap">
-                        {application.message ||
-                          "No application message provided"}
-                      </p>
-                    </div>
-
-                    {application.isSelected && (
-                      <div className="space-y-2 border-t border-slate-700/50 pt-3 mt-1">
-                        <div className="flex justify-between text-xs text-slate-400">
-                          <span>Proof submitted:</span>
-                          <span>{application.hasClaimed ? "Yes" : "No"}</span>
-                        </div>
-                        {application.hasClaimed && (
-                          <>
-                            <div className="flex justify-between text-xs text-slate-400">
-                              <span>Proof approved:</span>
-                              <span
-                                className={
-                                  application.isApproved
-                                    ? "text-emerald-400"
-                                    : "text-amber-400"
+                                }
+                                className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 ${
+                                  isTransactionInProgress ||
+                                  pendingIndex === index
+                                    ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                                    : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
+                                }`}
+                                whileTap={
+                                  !(
+                                    isTransactionInProgress ||
+                                    pendingIndex === index
+                                  )
+                                    ? { scale: 0.95 }
+                                    : {}
                                 }
                               >
-                                {application.isApproved ? "Yes" : "Pending"}
-                              </span>
-                            </div>
-                            {application.proofLink && (
-                              <a
-                                href={application.proofLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-emerald-400 hover:text-emerald-300 inline-flex items-center transition-colors duration-200"
-                              >
-                                View submission proof
-                                <ExternalLink className="w-4 h-4 ml-1" />
-                              </a>
-                            )}
-                          </>
-                        )}
+                                {pendingIndex === index ? (
+                                  <>
+                                    <Loader2 className="animate-spin h-4 w-4" />
+                                    <span>Processing</span>
+                                  </>
+                                ) : (
+                                  "Assign"
+                                )}
+                              </motion.button>
+                            )
+                          )}
+                        </div>
                       </div>
-                    )}
+
+                      <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                        <p className="text-sm text-slate-300 whitespace-pre-wrap">
+                          {application.message ||
+                            "No application message provided"}
+                        </p>
+                      </div>
+
+                      {/* Enhanced status section - Fix for issue 3 */}
+                      {application.isSelected && (
+                        <div className="space-y-3 border-t border-slate-700/50 pt-4">
+                          {/* Status Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                              <div className="flex items-center gap-2 mb-1">
+                                <FileText className="w-4 h-4 text-slate-400" />
+                                <p className="text-xs text-slate-400 font-medium">
+                                  PROOF SUBMITTED
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {proofStatus.icon}
+                                <p
+                                  className={`text-sm ${proofStatus.className}`}
+                                >
+                                  {proofStatus.status}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                              <div className="flex items-center gap-2 mb-1">
+                                <CheckCircle className="w-4 h-4 text-slate-400" />
+                                <p className="text-xs text-slate-400 font-medium">
+                                  PROOF APPROVED
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {application.isApproved ? (
+                                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-slate-500" />
+                                )}
+                                <p
+                                  className={`text-sm font-medium ${
+                                    application.isApproved
+                                      ? "text-emerald-400"
+                                      : "text-slate-500"
+                                  }`}
+                                >
+                                  {application.isApproved ? "YES" : "NO"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Award className="w-4 h-4 text-slate-400" />
+                                <p className="text-xs text-slate-400 font-medium">
+                                  PAYMENT CLAIMED
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {application.hasClaimed ? (
+                                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                ) : (
+                                  <Clock className="w-4 h-4 text-slate-500" />
+                                )}
+                                <p
+                                  className={`text-sm font-medium ${
+                                    application.hasClaimed
+                                      ? "text-emerald-400"
+                                      : "text-slate-500"
+                                  }`}
+                                >
+                                  {application.hasClaimed ? "YES" : "PENDING"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                              <div className="flex items-center gap-2 mb-1">
+                                <AlertTriangle className="w-4 h-4 text-slate-400" />
+                                <p className="text-xs text-slate-400 font-medium">
+                                  STATUS
+                                </p>
+                              </div>
+                              <p className="text-sm font-medium text-blue-400">
+                                {application.isApproved
+                                  ? "Completed"
+                                  : application.proofLink
+                                  ? "Under Review"
+                                  : "Awaiting Proof"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Proof Link Display */}
+                          {application.proofLink && (
+                            <div className="p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Upload className="w-4 h-4 text-emerald-400" />
+                                  <span className="text-sm text-emerald-400 font-medium">
+                                    Proof Submitted
+                                  </span>
+                                </div>
+                                <a
+                                  href={application.proofLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-sm transition-colors"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  View Content
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
