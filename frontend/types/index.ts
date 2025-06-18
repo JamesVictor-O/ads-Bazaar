@@ -159,6 +159,20 @@ export interface Application {
   applicationInfo: ApplicationInfo;
 }
 
+export interface ApplicationStatus {
+  briefId: string;
+  campaignName: string;
+  applicationData: Application;
+  status: "applied" | "selected" | "proof_submitted" | "approved" | "paid";
+  nextAction?: string;
+  canSubmitProof?: boolean;
+  canClaim?: boolean;
+}
+
+export interface InfluencerApplication extends Application {
+  briefId: string;
+}
+
 export interface ApplicationInfo {
   canSubmitProof: boolean;
   canClaim: boolean;

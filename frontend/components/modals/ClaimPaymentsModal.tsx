@@ -27,12 +27,14 @@ import { formatEther } from "viem";
 interface ClaimPaymentsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
 
 function ClaimPaymentsModal({
   isOpen,
   onClose,
+  onSuccess,
   guardedAction,
 }: ClaimPaymentsModalProps) {
   const { address, isConnected } = useAccount();
@@ -72,13 +74,17 @@ function ClaimPaymentsModal({
       toast.success("Payments claimed successfully!");
       refetchPayments();
 
+      if (onSuccess) {
+        onSuccess();
+      }
+
       // Auto-close after success
       setTimeout(() => {
         onClose();
         setTransactionPhase("idle");
       }, 2000);
     }
-  }, [isClaimSuccess, onClose, refetchPayments]);
+  }, [isClaimSuccess, onClose, refetchPayments, onSuccess]);
 
   // Handle errors
   useEffect(() => {

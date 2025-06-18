@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import SubmitPostModal from "@/components/modals/SubmitPostModal";
 import ClaimPaymentsModal from "@/components/modals/ClaimPaymentsModal";
 import { Transaction } from "@/types";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase,
   DollarSign,
@@ -31,6 +31,9 @@ import {
   Bell,
   Edit3,
   Eye,
+  ChevronDown,
+  ChevronRight,
+  Crown,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@farcaster/auth-kit";
@@ -377,8 +380,10 @@ export default function InfluencerDashboard() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-emerald-500 mx-auto mb-2"></div>
-          <p className="text-slate-400 text-xs">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-t-2 border-b-2 border-emerald-500 mx-auto mb-3 md:mb-4"></div>
+          <p className="text-slate-400 text-sm md:text-base">
+            Loading dashboard...
+          </p>
         </motion.div>
       </div>
     );
@@ -388,24 +393,24 @@ export default function InfluencerDashboard() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <motion.div
-          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg p-6 max-w-[90vw] sm:max-w-sm text-center"
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl md:rounded-2xl p-6 md:p-8 max-w-sm w-full text-center"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mx-auto mb-3">
-            <Briefcase className="w-5 h-5 text-white" />
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+            <Briefcase className="w-6 h-6 md:w-8 md:h-8 text-white" />
           </div>
-          <h2 className="text-lg sm:text-xl font-bold text-white mb-2">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-3 md:mb-4">
             Influencer Account Required
           </h2>
-          <p className="text-slate-400 text-xs sm:text-sm mb-4 leading-relaxed">
+          <p className="text-slate-400 leading-relaxed mb-6 md:mb-8 text-sm md:text-base">
             Register as an influencer to access the dashboard and apply for
             campaigns.
           </p>
           <Link href="/">
             <motion.button
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-2 px-3 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md shadow-emerald-500/20"
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-2.5 px-4 md:py-3 md:px-6 rounded-lg md:rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/20 text-sm md:text-base"
               whileTap={{ scale: 0.95 }}
             >
               Register
@@ -420,19 +425,21 @@ export default function InfluencerDashboard() {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <motion.div
-          className="text-center p-6 max-w-[90vw] sm:max-w-sm"
+          className="text-center p-6 md:p-8 max-w-sm w-full"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.2 }}
         >
-          <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
-          <h2 className="text-lg font-bold text-white mb-1">
+          <AlertCircle className="h-10 w-10 md:h-12 md:w-12 text-red-400 mx-auto mb-3 md:mb-4" />
+          <h2 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3">
             Error Loading Dashboard
           </h2>
-          <p className="text-slate-400 text-xs mb-3">{error}</p>
+          <p className="text-slate-400 mb-4 md:mb-6 text-sm md:text-base">
+            {error}
+          </p>
           <motion.button
             onClick={refetch}
-            className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-xs"
+            className="px-4 py-2.5 md:px-6 md:py-3 bg-emerald-600 text-white rounded-lg md:rounded-xl hover:bg-emerald-700 transition-all text-sm md:text-base"
             whileTap={{ scale: 0.95 }}
           >
             Retry
@@ -446,60 +453,88 @@ export default function InfluencerDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 sm:pt-24 md:pt-40 pb-20">
       <Toaster position="top-right" />
 
-      <div className="px-4 sm:px-6 md:px-8 pb-8">
-        {/* Header Section */}
+      <div className="px-4 md:px-6 lg:px-8 pb-8 max-w-7xl mx-auto">
+        {/* Enhanced Header Section with Prominent Verification Status */}
         <motion.div
-          className="mb-6"
+          className="mb-6 md:mb-10"
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center overflow-hidden">
+          <div className="flex flex-col gap-4 md:gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 md:gap-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center overflow-hidden relative">
                 {pfpUrl ? (
                   <Image
                     src={pfpUrl}
                     alt="Profile"
-                    width={50}
-                    height={50}
+                    width={64}
+                    height={64}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <User className="w-7 h-7 text-white" />
+                  <User className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                )}
+                {/* Verification Badge Overlay on Avatar */}
+                {isVerified && (
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 md:w-8 md:h-8 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                    <Shield className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                  </div>
                 )}
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-lg sm:text-xl md:text-3xl font-bold text-white flex items-center gap-1.5">
+              <div className="flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-3 mb-2 md:mb-2">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white flex items-center gap-2 md:gap-3">
                     Hi,{" "}
                     <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
                       {username || displayName || "Influencer"}
                     </span>
                   </h1>
-                  {isVerified && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      <Shield className="w-3 h-3 mr-1" /> Verified
-                    </span>
+
+                  {/* Enhanced Verification Status Badge */}
+                  {isVerified ? (
+                    <motion.span
+                      className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-semibold bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-500/20"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}
+                    >
+                      <Shield className="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+                      <span className="hidden sm:inline">Verified Creator</span>
+                      <span className="sm:hidden">Verified</span>
+                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full ml-2 animate-pulse"></div>
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}
+                    >
+                      <AlertCircle className="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+                      <span className="hidden sm:inline">Unverified</span>
+                      <span className="sm:hidden">Unverified</span>
+                    </motion.span>
                   )}
                 </div>
+
                 {/* Enhanced Status Badge */}
                 {userProfile?.status !== undefined && (
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-3 mb-2 md:mb-3">
                     <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getUserStatusColor(
+                      className={`inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full font-medium border text-sm md:text-base ${getUserStatusColor(
                         userProfile.status
                       )}`}
                     >
-                      <Award className="w-4 h-4 mr-1" />
+                      <Award className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
                       {getUserStatusLabel(userProfile.status)}
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-slate-400 text-xs md:text-sm">
                       {userProfile.completedCampaigns} campaigns completed
                     </span>
                   </div>
                 )}
-                <p className="text-xs sm:text-sm md:text-xl text-slate-400">
+                <p className="text-lg md:text-xl text-slate-400">
                   {stats.urgentActions > 0
                     ? `${stats.urgentActions} action${
                         stats.urgentActions !== 1 ? "s" : ""
@@ -508,21 +543,97 @@ export default function InfluencerDashboard() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/selfVerification">
-                <motion.button
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs md:text-sm font-medium text-white bg-emerald-600/80 hover:bg-emerald-700 rounded-lg transition-all shadow-sm"
-                  whileTap={{ scale: 0.95 }}
+
+            {/* Enhanced Verification Alert for Unverified Users */}
+            {!isVerified && (
+              <motion.div
+                className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl md:rounded-2xl p-4 md:p-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <div className="flex items-start gap-3 md:gap-4">
+                  <div className="p-2 md:p-3 bg-amber-500/20 rounded-lg md:rounded-xl border border-amber-500/30">
+                    <Shield className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg md:text-xl font-semibold text-white mb-2">
+                      🚀 Boost Your Profile with Verification
+                    </h3>
+                    <p className="text-amber-300 mb-4 text-sm md:text-base leading-relaxed">
+                      Get verified to increase your credibility, unlock premium
+                      campaigns, and earn up to 30% more! Verified creators get
+                      priority access to exclusive opportunities.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+                      <Link href="/selfVerification">
+                        <motion.button
+                          className="flex items-center gap-2 px-4 py-2.5 md:px-6 md:py-3 font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg md:rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/20 text-sm md:text-base"
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Shield className="w-4 h-4 md:w-5 md:h-5" />
+                          <span className="hidden sm:inline">
+                            Get Verified Now
+                          </span>
+                          <span className="sm:hidden">Verify Now</span>
+                          <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                        </motion.button>
+                      </Link>
+                      <button
+                        className="text-amber-400 text-sm md:text-base font-medium hover:text-amber-300 transition-colors"
+                        onClick={() => {
+                          /* Add learn more functionality */
+                        }}
+                      >
+                        Learn more about verification benefits
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Action Buttons Row */}
+            <div className="flex flex-wrap gap-2 md:gap-3">
+              {isVerified ? (
+                <motion.div
+                  className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-emerald-600/10 text-emerald-400 rounded-lg md:rounded-xl border border-emerald-500/20 text-sm md:text-base"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
                 >
-                  Verify With Self Protocol <ExternalLink className="w-3 h-3" />
-                </motion.button>
-              </Link>
+                  <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />
+                  <span className="hidden sm:inline font-medium">
+                    Verification Complete
+                  </span>
+                  <span className="sm:hidden font-medium">Verified ✓</span>
+                </motion.div>
+              ) : (
+                <Link href="/selfVerification">
+                  <motion.button
+                    className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-lg md:rounded-xl transition-all shadow-md shadow-emerald-500/20 text-sm md:text-base"
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.3 }}
+                  >
+                    <Shield className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Verify Account</span>
+                    <span className="sm:hidden">Verify</span>
+                    <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
+                  </motion.button>
+                </Link>
+              )}
+
               <Link href={`/influencer/${address}`}>
                 <motion.button
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs md:text-sm font-medium text-slate-300 bg-slate-800/50 hover:bg-slate-800 rounded-lg border border-slate-700/50 transition-all shadow-sm"
+                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 font-medium text-slate-300 bg-slate-800/50 hover:bg-slate-800 rounded-lg md:rounded-xl border border-slate-700/50 transition-all shadow-sm text-sm md:text-base"
                   whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 }}
                 >
-                  Profile <ExternalLink className="w-3 h-3" />
+                  Profile <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
                 </motion.button>
               </Link>
             </div>
@@ -532,20 +643,20 @@ export default function InfluencerDashboard() {
         {/* Urgent Actions Alert */}
         {stats.urgentActions > 0 && (
           <motion.div
-            className="mb-6 bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/20 rounded-xl p-4"
+            className="mb-6 md:mb-8 bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/20 rounded-xl md:rounded-2xl p-4 md:p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
-                <Bell className="w-5 h-5 text-orange-400" />
+            <div className="flex items-start gap-3 md:gap-4">
+              <div className="p-2 md:p-3 bg-orange-500/20 rounded-lg md:rounded-xl border border-orange-500/30">
+                <Bell className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white mb-2">
+                <h3 className="text-lg md:text-xl font-semibold text-white mb-2 md:mb-3">
                   Action Required
                 </h3>
-                <p className="text-sm text-orange-400">
+                <p className="text-orange-400 mb-3 md:mb-4 text-sm md:text-base">
                   You have {stats.urgentActions} campaign
                   {stats.urgentActions !== 1 ? "s" : ""} that need
                   {stats.urgentActions === 1 ? "s" : ""} your attention
@@ -553,18 +664,19 @@ export default function InfluencerDashboard() {
               </div>
               <motion.button
                 onClick={() => setFilter("urgent")}
-                className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg text-sm font-medium transition-all"
+                className="px-3 py-2 md:px-4 md:py-2.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base"
                 whileTap={{ scale: 0.95 }}
               >
-                View All
+                <span className="hidden sm:inline">View All</span>
+                <span className="sm:hidden">View</span>
               </motion.button>
             </div>
           </motion.div>
         )}
 
         {/* Filter Tabs */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-wrap gap-2 md:gap-3">
             {[
               {
                 key: "all",
@@ -590,16 +702,25 @@ export default function InfluencerDashboard() {
               <motion.button
                 key={tab.key}
                 onClick={() => setFilter(tab.key as any)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base ${
                   filter === tab.key
                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                     : "bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-800"
                 }`}
                 whileTap={{ scale: 0.95 }}
               >
-                {tab.label}
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">
+                  {tab.key === "all"
+                    ? "All"
+                    : tab.key === "active"
+                    ? "Active"
+                    : tab.key === "completed"
+                    ? "Done"
+                    : "Action"}
+                </span>
                 {tab.count > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-slate-600/50 rounded-full text-xs">
+                  <span className="ml-1.5 md:ml-3 px-1.5 py-0.5 md:px-2 md:py-1 bg-slate-600/50 rounded-full text-xs">
                     {tab.count}
                   </span>
                 )}
@@ -608,8 +729,8 @@ export default function InfluencerDashboard() {
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        {/* Enhanced Stats Grid with Verification Status */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
           {[
             {
               icon: Briefcase,
@@ -640,91 +761,193 @@ export default function InfluencerDashboard() {
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
-              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-lg p-2.5 transition-all duration-200 shadow-sm relative"
+              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-3 md:p-6 transition-all duration-200 shadow-sm relative"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: 0.05 * index }}
             >
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-2 md:mb-4">
                 <div
-                  className={`p-1 bg-${stat.color}/10 rounded-md border border-${stat.color}/20`}
+                  className={`p-2 md:p-3 bg-${stat.color}/10 rounded-lg md:rounded-xl border border-${stat.color}/20`}
                 >
-                  <stat.icon className={`w-3.5 h-3.5 text-${stat.color}`} />
+                  <stat.icon
+                    className={`w-4 h-4 md:w-6 md:h-6 text-${stat.color}`}
+                  />
                 </div>
                 {stat.hasClaimable && !stat.isLoading && (
                   <motion.button
                     onClick={handleOpenClaimModal}
-                    className="p-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30"
+                    className="p-1.5 md:p-2 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     title="Claim rewards"
                   >
-                    <DollarSign className="w-3 h-3 text-amber-400" />
+                    <DollarSign className="w-3 h-3 md:w-4 md:h-4 text-amber-400" />
                   </motion.button>
                 )}
               </div>
-              <p className="text-base font-bold text-white">
+              <p className="text-lg md:text-2xl font-bold text-white mb-0.5 md:mb-1">
                 {stat.isLoading ? (
                   <span className="animate-pulse">...</span>
                 ) : (
                   stat.value
                 )}
               </p>
-              <p className="text-[10px] text-slate-400">{stat.label}</p>
+              <p className="text-slate-400 text-xs md:text-base">
+                {stat.label}
+              </p>
 
               {stat.hasClaimable && !stat.isLoading && (
                 <motion.button
                   onClick={handleOpenClaimModal}
-                  className="w-full mt-2 py-1 text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-md flex items-center justify-center gap-1"
+                  className="w-full mt-2 md:mt-4 py-1.5 md:py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg md:rounded-xl flex items-center justify-center gap-1.5 md:gap-2 font-medium text-sm md:text-base"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <DollarSign className="w-3 h-3" />
-                  Claim All
+                  <DollarSign className="w-3 h-3 md:w-4 md:h-4" />
+                  <span className="hidden sm:inline">Claim All</span>
+                  <span className="sm:hidden">Claim</span>
                 </motion.button>
               )}
             </motion.div>
           ))}
+
+          {/* Verification Status Card */}
+          <motion.div
+            className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-3 md:p-6 transition-all duration-200 shadow-sm relative col-span-2 lg:col-span-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, delay: 0.3 }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div
+                  className={`p-2 md:p-3 rounded-lg md:rounded-xl border ${
+                    isVerified
+                      ? "bg-emerald-500/10 border-emerald-500/20"
+                      : "bg-amber-500/10 border-amber-500/20"
+                  }`}
+                >
+                  <Shield
+                    className={`w-4 h-4 md:w-6 md:h-6 ${
+                      isVerified ? "text-emerald-400" : "text-amber-400"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <p
+                    className={`text-lg md:text-xl font-bold mb-0.5 ${
+                      isVerified ? "text-emerald-400" : "text-amber-400"
+                    }`}
+                  >
+                    {isVerified
+                      ? "✓ Verified Creator"
+                      : "⏳ Verification Pending"}
+                  </p>
+                  <p className="text-slate-400 text-xs md:text-sm">
+                    {isVerified
+                      ? "You have access to premium campaigns and higher rates"
+                      : "Complete verification to unlock premium opportunities"}
+                  </p>
+                </div>
+              </div>
+
+              {!isVerified && (
+                <Link href="/selfVerification">
+                  <motion.button
+                    className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base"
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span className="hidden sm:inline">Verify Now</span>
+                    <span className="sm:hidden">Verify</span>
+                    <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                  </motion.button>
+                </Link>
+              )}
+            </div>
+
+            {/* Verification Benefits Bar */}
+            <div className="mt-3 md:mt-4 flex flex-wrap gap-2 md:gap-3 text-xs md:text-sm">
+              <span
+                className={`px-2 py-1 rounded-full ${
+                  isVerified
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-slate-700/50 text-slate-500"
+                }`}
+              >
+                {isVerified ? "✓" : "○"} Premium Campaigns
+              </span>
+              <span
+                className={`px-2 py-1 rounded-full ${
+                  isVerified
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-slate-700/50 text-slate-500"
+                }`}
+              >
+                {isVerified ? "✓" : "○"} 30% Higher Rates
+              </span>
+              <span
+                className={`px-2 py-1 rounded-full ${
+                  isVerified
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-slate-700/50 text-slate-500"
+                }`}
+              >
+                {isVerified ? "✓" : "○"} Priority Support
+              </span>
+              <span
+                className={`px-2 py-1 rounded-full ${
+                  isVerified
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-slate-700/50 text-slate-500"
+                }`}
+              >
+                {isVerified ? "✓" : "○"} Exclusive Access
+              </span>
+            </div>
+          </motion.div>
         </div>
 
         {/* Enhanced Campaigns List with Resubmission Support */}
         <motion.div
-          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg overflow-hidden mb-6"
+          className="space-y-4 md:space-y-6"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="p-3 sm:p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5">
-                <Briefcase className="w-5 h-5 md:text-xl text-emerald-400" />{" "}
-                Campaigns
-              </h2>
-              <span className="text-xs text-slate-400">
-                {filteredCampaigns.length} of {appliedBriefs?.length || 0}
-              </span>
-            </div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2 md:gap-3">
+              <Briefcase className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />{" "}
+              Campaigns
+            </h2>
+            <span className="text-slate-400 text-sm md:text-base">
+              {filteredCampaigns.length} of {appliedBriefs?.length || 0}
+            </span>
           </div>
 
           {isLoading && appliedBriefs === undefined ? (
-            <div className="p-6 text-center">
-              <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-500 mb-2"></div>
-              <p className="text-slate-400 text-xs">Loading...</p>
+            <div className="flex items-center justify-center py-12 md:py-20">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-emerald-500 mb-3 md:mb-4"></div>
+                <p className="text-slate-400 text-sm md:text-base">
+                  Loading...
+                </p>
+              </div>
             </div>
           ) : !filteredCampaigns || filteredCampaigns.length === 0 ? (
-            <div className="p-6 text-center">
-              <Briefcase className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <h3 className="text-base font-semibold text-white mb-1">
+            <div className="text-center py-12 md:py-20">
+              <Briefcase className="w-12 h-12 md:w-16 md:h-16 text-slate-600 mx-auto mb-4 md:mb-6" />
+              <h3 className="text-lg md:text-2xl font-semibold text-white mb-2 md:mb-3">
                 {filter === "all" ? "No Campaigns" : `No ${filter} campaigns`}
               </h3>
-              <p className="text-slate-400 text-xs mb-3">
+              <p className="text-slate-400 max-w-md mx-auto leading-relaxed text-sm md:text-base">
                 {filter === "all"
                   ? "Apply to campaigns to get started."
                   : "Try changing the filter or apply to more campaigns."}
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/50">
+            <div className="space-y-4 md:space-y-6">
               {filteredCampaigns.map((briefData, index) => {
                 const appInfo = computeApplicationInfo(
                   briefData.application,
@@ -732,92 +955,136 @@ export default function InfluencerDashboard() {
                 );
                 const isExpanded = expandedBriefId === briefData.briefId;
                 const budget = briefData.brief.budget;
+                const hasProof = !!briefData.application.proofLink;
+                const canSubmitProof =
+                  briefData.application.isSelected &&
+                  !briefData.application.isApproved;
+                const canClaim =
+                  briefData.application.isApproved &&
+                  !briefData.application.hasClaimed;
 
                 return (
                   <motion.div
                     key={briefData.briefId}
-                    className="p-3 sm:p-4 transition-all duration-200"
-                    initial={{ opacity: 0, y: 10 }}
+                    className="bg-white/5 backdrop-blur-sm border border-slate-700/50 rounded-xl md:rounded-2xl overflow-hidden hover:bg-white/10 transition-all duration-300 hover:border-slate-600/50"
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    whileHover={{ y: -2 }}
                   >
-                    <div
-                      className="flex flex-col gap-2 cursor-pointer"
-                      onClick={() =>
-                        setExpandedBriefId(
-                          isExpanded ? null : briefData.briefId
-                        )
-                      }
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="p-1.5 bg-gradient-to-br from-slate-700 to-slate-800 rounded-md border border-slate-600/50">
-                          <Briefcase className="w-3.5 h-3.5 text-slate-300" />
+                    {/* Header */}
+                    <div className="p-4 md:p-8">
+                      <div className="flex items-start gap-3 md:gap-6 mb-4 md:mb-6">
+                        <div className="p-2 md:p-4 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-lg md:rounded-2xl border border-blue-500/30">
+                          <Briefcase className="w-5 h-5 md:w-8 md:h-8 text-blue-400" />
                         </div>
+
                         <div className="flex-1 min-w-0">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 mb-1">
-                            <h3 className="text-sm md:text-lg font-semibold text-white truncate">
-                              {briefData.brief.name}
-                            </h3>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {/* Status badge */}
+                          <div className="flex items-start justify-between gap-2 md:gap-6 mb-3 md:mb-4">
+                            <div>
+                              <h3 className="text-lg md:text-2xl font-bold text-white leading-tight mb-1 md:mb-2">
+                                {briefData.brief.name}
+                              </h3>
+                              <p className="text-slate-400 font-medium text-sm md:text-base">
+                                by {briefData.brief.business}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-1 md:gap-3 flex-shrink-0 flex-wrap">
+                              {briefData.application.isSelected && (
+                                <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                  <Star className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
+                                  <span className="hidden sm:inline">
+                                    Selected
+                                  </span>
+                                  <span className="sm:hidden">✓</span>
+                                </span>
+                              )}
+
+                              {/* Premium Campaign Badge for High-Value Campaigns */}
+                              {budget >= 1000 && (
+                                <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30">
+                                  <Crown className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
+                                  <span className="hidden sm:inline">
+                                    Premium
+                                  </span>
+                                  <span className="sm:hidden">👑</span>
+                                </span>
+                              )}
+
+                              {/* Verification Required Badge */}
+                              {budget >= 1500 && !isVerified && (
+                                <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                  <Shield className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
+                                  <span className="hidden sm:inline">
+                                    Verification Required
+                                  </span>
+                                  <span className="sm:hidden">🔒</span>
+                                </span>
+                              )}
+
                               <span
-                                className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(
+                                className={`px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full border ${getStatusColor(
                                   briefData.brief.status
                                 )}`}
                               >
-                                {briefData.brief.statusInfo.statusLabel}
-                              </span>
-
-                              {/* Phase badge */}
-                              <span
-                                className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getPhaseColor(
-                                  briefData.brief.timingInfo.phase
-                                )}`}
-                              >
-                                {getPhaseLabel(
-                                  briefData.brief.timingInfo.phase
-                                )}
-                              </span>
-
-                              {/* Application status */}
-                              {briefData.application.isSelected && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                  <Star className="w-3 h-3 mr-1 inline" />
-                                  Selected
+                                <span className="hidden sm:inline">
+                                  {briefData.brief.statusInfo.statusLabel}
                                 </span>
-                              )}
+                                <span className="sm:hidden">
+                                  {briefData.brief.statusInfo.statusLabel.slice(
+                                    0,
+                                    6
+                                  )}
+                                </span>
+                              </span>
 
                               {/* Urgent indicator */}
                               {(appInfo.canSubmitProof ||
                                 appInfo.canClaim ||
                                 appInfo.warning) && (
-                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
-                                  <Zap className="w-3 h-3 mr-1 inline" />
-                                  Action
+                                <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
+                                  <Zap className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
+                                  <span className="hidden sm:inline">
+                                    Action
+                                  </span>
+                                  <span className="sm:hidden">!</span>
                                 </span>
                               )}
                             </div>
                           </div>
-                          <p className="text-slate-400 text-xs md:text-lg mb-1.5 line-clamp-1">
+
+                          <p className="text-slate-300 text-sm md:text-lg leading-relaxed mb-4 md:mb-6 line-clamp-2">
                             {briefData.brief.description}
                           </p>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              <span>
-                                {format(
-                                  new Date(briefData.brief.creationTime * 1000),
-                                  "MMM d"
-                                )}
+
+                          {/* Metrics Row */}
+                          <div className="flex items-center gap-3 md:gap-8 text-slate-400 text-xs md:text-sm">
+                            <div className="flex items-center gap-1 md:gap-2">
+                              <Calendar className="w-3 h-3 md:w-5 md:h-5" />
+                              <span className="hidden sm:inline">
+                                {new Date(
+                                  briefData.brief.creationTime * 1000
+                                ).toLocaleDateString()}
+                              </span>
+                              <span className="sm:hidden">
+                                {new Date(
+                                  briefData.brief.creationTime * 1000
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="w-3 h-3" />
-                              <span>{budget.toFixed(2)} cUSD</span>
+
+                            <div className="flex items-center gap-1 md:gap-2">
+                              <DollarSign className="w-3 h-3 md:w-5 md:h-5" />
+                              <span>{budget.toFixed(0)} cUSD</span>
                             </div>
+
                             {briefData.brief.timingInfo.timeRemaining && (
-                              <div className="flex items-center gap-1">
-                                <Timer className="w-3 h-3" />
+                              <div className="flex items-center gap-1 md:gap-2">
+                                <Timer className="w-3 h-3 md:w-5 md:h-5" />
                                 <span
                                   className={
                                     briefData.brief.timingInfo.isUrgent
@@ -828,7 +1095,7 @@ export default function InfluencerDashboard() {
                                   {formatTimeRemaining(
                                     briefData.brief.timingInfo.timeRemaining
                                   )}{" "}
-                                  left
+                                  <span className="hidden sm:inline">left</span>
                                 </span>
                               </div>
                             )}
@@ -836,159 +1103,273 @@ export default function InfluencerDashboard() {
                         </div>
                       </div>
 
-                      {/* Next Action Banner */}
-                      {appInfo.nextAction && (
-                        <div
-                          className={`p-2 rounded-lg border ${
-                            appInfo.warning
-                              ? "bg-orange-500/10 border-orange-500/20"
-                              : "bg-slate-900/50 border-slate-700/50"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
+                      {/* Verification Gate for Premium Campaigns */}
+                      {budget >= 1500 && !isVerified && (
+                        <div className="p-3 md:p-6 rounded-xl md:rounded-2xl border bg-gradient-to-r from-purple-500/5 to-pink-500/5 border-purple-500/20 mb-4 md:mb-6">
+                          <div className="flex items-center gap-3 md:gap-4">
+                            <Crown className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
+                            <div>
+                              <p className="text-purple-300 font-medium text-sm md:text-lg">
+                                🔒 Premium Campaign - Verification Required
+                              </p>
+                              <p className="text-purple-400/70 text-xs md:text-sm">
+                                This high-value campaign requires verified
+                                creators. Complete verification to unlock
+                                access.
+                              </p>
+                            </div>
+                            <Link href="/selfVerification">
+                              <motion.button
+                                className="flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg md:rounded-xl font-medium transition-all text-xs md:text-sm"
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <Shield className="w-3 h-3 md:w-4 md:h-4" />
+                                <span className="hidden sm:inline">
+                                  Verify Now
+                                </span>
+                                <span className="sm:hidden">Verify</span>
+                              </motion.button>
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Needed Alert */}
+                      {(canSubmitProof || canClaim) && (
+                        <div className="p-3 md:p-6 rounded-xl md:rounded-2xl border bg-orange-500/5 border-orange-500/20 mb-4 md:mb-6">
+                          <div className="flex items-center gap-3 md:gap-4">
+                            <Zap className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
+                            <div>
+                              <p className="text-orange-300 font-medium text-sm md:text-lg">
+                                {canSubmitProof
+                                  ? "Ready to submit your content"
+                                  : "Payment ready to claim"}
+                              </p>
+                              <p className="text-orange-400/70 text-xs md:text-sm">
+                                {canSubmitProof
+                                  ? "Upload your promotional content for review"
+                                  : "Claim your earnings now"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Proof Status */}
+                      {briefData.application.isSelected && (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-6 mb-4 md:mb-6">
+                          <div className="flex items-center gap-2 md:gap-3">
                             <div
-                              className={`w-2 h-2 rounded-full ${
-                                appInfo.warning
-                                  ? "bg-orange-400"
-                                  : "bg-emerald-400"
+                              className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
+                                briefData.application.isApproved
+                                  ? "bg-emerald-400"
+                                  : hasProof
+                                  ? "bg-amber-400"
+                                  : "bg-slate-500"
                               }`}
                             ></div>
-                            <span className="text-sm text-slate-300">
-                              {appInfo.nextAction}
+                            <span className="text-slate-300 font-medium text-sm md:text-base">
+                              {briefData.application.isApproved
+                                ? "Content Approved"
+                                : hasProof
+                                ? "Under Review"
+                                : "Awaiting Content"}
                             </span>
                           </div>
-                          {appInfo.warning && (
-                            <div className="flex items-center gap-2 mt-1">
-                              <AlertCircle className="w-3 h-3 text-orange-400" />
-                              <span className="text-xs text-orange-400">
-                                {appInfo.warning}
+
+                          {briefData.application.hasClaimed && (
+                            <div className="flex items-center gap-2 md:gap-3">
+                              <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+                              <span className="text-emerald-400 font-medium text-sm md:text-base">
+                                Payment Claimed
                               </span>
                             </div>
                           )}
                         </div>
                       )}
+                    </div>
 
-                      {isExpanded && (
+                    {/* Expandable Requirements */}
+                    <div className="border-t border-slate-700/30">
+                      <motion.button
+                        onClick={() =>
+                          setExpandedBriefId(
+                            isExpanded ? null : briefData.briefId
+                          )
+                        }
+                        className="w-full p-3 md:p-6 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                        whileTap={{ scale: 0.995 }}
+                      >
+                        <div className="flex items-center gap-2 md:gap-4">
+                          <CheckSquare className="w-4 h-4 md:w-6 md:h-6 text-slate-400" />
+                          <span className="text-slate-300 font-medium text-sm md:text-lg">
+                            Requirements & Actions
+                          </span>
+                        </div>
                         <motion.div
-                          className="mt-2 pl-8"
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
+                          animate={{ rotate: isExpanded ? 180 : 0 }}
                           transition={{ duration: 0.2 }}
                         >
-                          {/* Campaign Requirements Section */}
-                          <div className="mb-3 p-3 bg-slate-900/30 rounded-lg border border-slate-700/50">
-                            <h4 className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
-                              <CheckSquare className="w-4 h-4 text-blue-400" />
-                              Campaign Requirements
-                            </h4>
-                            <p className="text-sm text-slate-200 leading-relaxed">
-                              {briefData.brief.requirements ||
-                                "No specific requirements listed"}
-                            </p>
-                          </div>
-                          {briefData.application.isSelected && (
-                            <div className="flex flex-col gap-2 mb-2">
-                              <div className="flex items-center gap-1.5">
-                                <span
-                                  className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getProofStatusColor(
-                                    appInfo.proofStatus
-                                  )}`}
-                                >
-                                  {appInfo.proofStatus
-                                    .replace("_", " ")
-                                    .toUpperCase()}
-                                </span>
-                                <span
-                                  className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getPaymentStatusColor(
-                                    appInfo.paymentStatus
-                                  )}`}
-                                >
-                                  {appInfo.paymentStatus
-                                    .replace("_", " ")
-                                    .toUpperCase()}
-                                </span>
+                          <ChevronDown className="w-4 h-4 md:w-6 md:h-6 text-slate-400" />
+                        </motion.div>
+                      </motion.button>
+
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-4 md:px-8 md:pb-8">
+                              <div className="bg-slate-800/30 p-3 md:p-6 rounded-xl md:rounded-2xl border border-slate-700/50 mb-4 md:mb-6">
+                                <h4 className="text-slate-300 font-semibold mb-2 md:mb-3 text-sm md:text-lg">
+                                  Campaign Requirements:
+                                </h4>
+                                <p className="text-slate-200 leading-relaxed text-sm md:text-base">
+                                  {briefData.brief.requirements}
+                                </p>
                               </div>
 
-                              <div className="flex gap-2">
-                                {/* Enhanced proof submission handling with resubmission support */}
-                                {briefData.application.proofLink ? (
-                                  <div className="flex gap-2">
-                                    <a
-                                      href={briefData.application.proofLink}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                      onClick={(e) => e.stopPropagation()}
+                              {/* Verification Benefits Notice */}
+                              {budget >= 1000 && (
+                                <div
+                                  className={`p-3 md:p-4 rounded-xl border mb-4 md:mb-6 ${
+                                    isVerified
+                                      ? "bg-emerald-500/10 border-emerald-500/20"
+                                      : "bg-amber-500/10 border-amber-500/20"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                                    {isVerified ? (
+                                      <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
+                                    ) : (
+                                      <Shield className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
+                                    )}
+                                    <span
+                                      className={`font-semibold text-sm md:text-base ${
+                                        isVerified
+                                          ? "text-emerald-400"
+                                          : "text-amber-400"
+                                      }`}
                                     >
-                                      <Eye className="w-3 h-3" />
-                                      View Proof
-                                    </a>
-
-                                    {/* Allow resubmission if not approved yet and submission period is still active */}
-                                    {!briefData.application.isApproved &&
-                                      appInfo.canSubmitProof && (
-                                        <motion.button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleSubmitProofClick(
-                                              briefData,
-                                              true
-                                            );
-                                          }}
-                                          className="flex items-center gap-1 px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-md border border-blue-500/30 text-xs"
-                                          disabled={isSubmittingProof}
-                                          whileTap={{ scale: 0.95 }}
-                                        >
-                                          {isSubmittingProof ? (
-                                            "Updating..."
-                                          ) : (
-                                            <>
-                                              <Edit3 className="w-3 h-3" />
-                                              Update Proof
-                                            </>
-                                          )}
-                                        </motion.button>
-                                      )}
+                                      {isVerified
+                                        ? "✓ Verified Creator Benefits"
+                                        : "🔒 Verification Benefits Available"}
+                                    </span>
                                   </div>
-                                ) : appInfo.canSubmitProof ? (
-                                  <motion.button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleSubmitProofClick(briefData, false);
-                                    }}
-                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                    disabled={isSubmittingProof}
-                                    whileTap={{ scale: 0.95 }}
+                                  <div className="flex flex-wrap gap-2 text-xs md:text-sm">
+                                    <span
+                                      className={`px-2 py-1 rounded-full ${
+                                        isVerified
+                                          ? "bg-emerald-500/20 text-emerald-300"
+                                          : "bg-amber-500/20 text-amber-300"
+                                      }`}
+                                    >
+                                      {isVerified ? "✓" : "+"} Priority
+                                      Selection
+                                    </span>
+                                    <span
+                                      className={`px-2 py-1 rounded-full ${
+                                        isVerified
+                                          ? "bg-emerald-500/20 text-emerald-300"
+                                          : "bg-amber-500/20 text-amber-300"
+                                      }`}
+                                    >
+                                      {isVerified ? "✓" : "+"} Faster Payments
+                                    </span>
+                                    <span
+                                      className={`px-2 py-1 rounded-full ${
+                                        isVerified
+                                          ? "bg-emerald-500/20 text-emerald-300"
+                                          : "bg-amber-500/20 text-amber-300"
+                                      }`}
+                                    >
+                                      {isVerified ? "✓" : "+"} Premium Support
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Action Buttons */}
+                              <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
+                                {hasProof && (
+                                  <motion.a
+                                    href={briefData.application.proofLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg md:rounded-xl border border-blue-500/30 transition-all font-medium text-sm md:text-base"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                   >
-                                    {isSubmittingProof ? (
-                                      "Submitting..."
+                                    <Eye className="w-4 h-4 md:w-5 md:h-5" />
+                                    <span className="hidden sm:inline">
+                                      View Submission
+                                    </span>
+                                    <span className="sm:hidden">View</span>
+                                    <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
+                                  </motion.a>
+                                )}
+
+                                {canSubmitProof && (
+                                  <motion.button
+                                    onClick={() =>
+                                      handleSubmitProofClick(
+                                        briefData,
+                                        hasProof
+                                      )
+                                    }
+                                    className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg md:rounded-xl border border-emerald-500/30 transition-all font-medium text-sm md:text-base"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    disabled={isSubmittingProof}
+                                  >
+                                    {hasProof ? (
+                                      <>
+                                        <Edit3 className="w-4 h-4 md:w-5 md:h-5" />
+                                        <span className="hidden sm:inline">
+                                          Update Content
+                                        </span>
+                                        <span className="sm:hidden">
+                                          Update
+                                        </span>
+                                      </>
                                     ) : (
                                       <>
-                                        <Upload className="w-3 h-3" />
-                                        Submit Proof
+                                        <Upload className="w-4 h-4 md:w-5 md:h-5" />
+                                        <span className="hidden sm:inline">
+                                          Submit Content
+                                        </span>
+                                        <span className="sm:hidden">
+                                          Submit
+                                        </span>
                                       </>
                                     )}
                                   </motion.button>
-                                ) : null}
+                                )}
 
-                                {appInfo.canClaim && (
+                                {canClaim && (
                                   <motion.button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenClaimModal();
-                                    }}
-                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                    whileTap={{ scale: 0.95 }}
+                                    onClick={handleOpenClaimModal}
+                                    className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg md:rounded-xl transition-all font-medium shadow-lg shadow-emerald-500/20 text-sm md:text-base"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                   >
-                                    <CheckCircle className="w-3 h-3" />
-                                    Claim Payment
+                                    <DollarSign className="w-4 h-4 md:w-5 md:h-5" />
+                                    <span className="hidden sm:inline">
+                                      Claim {budget.toFixed(0)} cUSD
+                                    </span>
+                                    <span className="sm:hidden">Claim</span>
+                                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                                   </motion.button>
                                 )}
                               </div>
                             </div>
-                          )}
-                        </motion.div>
-                      )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </motion.div>
                 );
@@ -999,30 +1380,30 @@ export default function InfluencerDashboard() {
 
         {/* Transaction History */}
         <motion.div
-          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg overflow-hidden"
+          className="mt-6 md:mt-10 bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl md:rounded-2xl overflow-hidden"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="p-3 sm:p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
+          <div className="p-4 md:p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
             <div className="flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+              <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2 md:gap-3">
+                <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
                 Transactions
               </h2>
-              <span className="text-xs text-slate-400">
+              <span className="text-slate-400 text-sm md:text-base">
                 {transactionHistory.length}
               </span>
             </div>
           </div>
 
           {transactionHistory.length === 0 ? (
-            <div className="p-6 text-center">
-              <DollarSign className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <h3 className="text-base font-semibold text-white mb-1">
+            <div className="p-8 md:p-12 text-center">
+              <DollarSign className="w-12 h-12 md:w-16 md:h-16 text-slate-600 mx-auto mb-4 md:mb-6" />
+              <h3 className="text-lg md:text-xl font-semibold text-white mb-2 md:mb-3">
                 No Transactions
               </h3>
-              <p className="text-slate-400 text-xs">
+              <p className="text-slate-400 text-sm md:text-base">
                 Earnings will appear here.
               </p>
             </div>
@@ -1031,20 +1412,20 @@ export default function InfluencerDashboard() {
               {transactionHistory.map((tx, index) => (
                 <motion.div
                   key={tx.id}
-                  className="p-2.5 sm:p-3 transition-all duration-200"
+                  className="p-4 md:p-6 transition-all duration-200"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 bg-emerald-900/20 rounded-md border border-emerald-800/30">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="p-2 md:p-3 bg-emerald-900/20 rounded-lg md:rounded-xl border border-emerald-800/30">
+                      <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">
+                      <p className="font-semibold text-white mb-0.5 md:mb-1 text-sm md:text-base">
                         +{tx.amount.toFixed(2)} cUSD
                       </p>
-                      <p className="text-[10px] text-slate-400 truncate">
+                      <p className="text-slate-400 truncate text-xs md:text-sm">
                         From {tx.from}
                       </p>
                     </div>
@@ -1054,7 +1435,7 @@ export default function InfluencerDashboard() {
                       rel="noopener noreferrer"
                       className="text-slate-400 hover:text-emerald-400 transition-colors"
                     >
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-4 h-4 md:w-5 md:h-5" />
                     </a>
                   </div>
                 </motion.div>
@@ -1065,18 +1446,19 @@ export default function InfluencerDashboard() {
 
         {/* Sticky Browse Button */}
         <motion.div
-          className="fixed bottom-9 right-9"
+          className="fixed bottom-6 right-6 md:bottom-12 md:right-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, delay: 0.3 }}
         >
           <Link href="/marketplace">
             <motion.button
-              className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-3.5 py-2 rounded-full shadow-lg shadow-emerald-500/20"
+              className="flex items-center gap-2 md:gap-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold px-4 py-3 md:px-6 md:py-4 rounded-full shadow-xl shadow-emerald-500/20 text-sm md:text-base"
               whileTap={{ scale: 0.95 }}
             >
-              <Sparkles className="w-4 h-4" />
-              Browse
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="hidden sm:inline">Browse Campaigns</span>
+              <span className="sm:hidden">Browse</span>
             </motion.button>
           </Link>
         </motion.div>
