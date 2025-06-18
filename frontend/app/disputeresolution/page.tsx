@@ -632,5 +632,5 @@ const DisputeResolverDashboard: React.FC = () => {
       </div>
     </div>
   );
-
+};
 export default DisputeResolverDashboard;

@@ -897,3 +897,183 @@ export function useClaimPayments() {
     ...tx,
   };
 }
+
+export function useGetDisputeTimestamp(
+  briefId: `0x${string}`,
+  influencer: `0x${string}`
+) {
+  const { data, error, isLoading, refetch } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "disputeTimestamp",
+    args: [briefId, influencer],
+    query: {
+      enabled: !!briefId && !!influencer,
+    },
+  });
+
+  return {
+    disputeTimestamp: data ? Number(data) : 0,
+    isLoadingTimestamp: isLoading,
+    timestampError: error,
+    refetchTimestamp: refetch,
+  };
+}
+
+// Enhanced campaign status computation for fund release logic
+export function canReleaseFundsBasedOnContract(brief: Brief): {
+  canRelease: boolean;
+  reason?: string;
+  timeRemaining?: number;
+} {
+  const currentTime = Math.floor(Date.now() / 1000);
+
+  // From smart contract: require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
+  if (brief.status !== CampaignStatus.ASSIGNED) {
+    return {
+      canRelease: false,
+      reason: "Campaign must be in assigned status",
+    };
+  }
+
+  // From smart contract: require(block.timestamp >= brief.proofSubmissionDeadline, "Proof submission period still active");
+  if (currentTime < brief.proofSubmissionDeadline) {
+    return {
+      canRelease: false,
+      reason: "Proof submission period still active",
+      timeRemaining: brief.proofSubmissionDeadline - currentTime,
+    };
+  }
+
+  return { canRelease: true };
+}
+
+// Helper function to determine if dispute can be raised
+export function canRaiseDisputeBasedOnContract(
+  application: Application,
+  brief: Brief
+): {
+  canRaise: boolean;
+  reason?: string;
+} {
+  const currentTime = Math.floor(Date.now() / 1000);
+
+  // Must be selected influencer
+  if (!application.isSelected) {
+    return {
+      canRaise: false,
+      reason: "Influencer not selected for this campaign",
+    };
+  }
+
+  // Must have submitted proof
+  if (!application.proofLink || application.proofLink.trim() === "") {
+    return {
+      canRaise: false,
+      reason: "No proof submitted yet",
+    };
+  }
+
+  // Cannot dispute if already flagged or resolved
+  if (application.disputeStatus !== DisputeStatus.NONE) {
+    return {
+      canRaise: false,
+      reason: "Dispute already raised or resolved",
+    };
+  }
+
+  // Cannot dispute if already approved
+  if (application.isApproved) {
+    return {
+      canRaise: false,
+      reason: "Submission already approved",
+    };
+  }
+
+  // Must be in assigned status (campaign active)
+  if (brief.status !== CampaignStatus.ASSIGNED) {
+    return {
+      canRaise: false,
+      reason: "Campaign not in active status",
+    };
+  }
+
+  return { canRaise: true };
+}
+
+// Enhanced error handling for smart contract interactions
+export function parseSmartContractError(error: any): string {
+  if (!error) return "Unknown error occurred";
+
+  if (typeof error === "string") return error;
+
+  if (error.message) {
+    // Common smart contract error patterns
+    const message = error.message.toLowerCase();
+
+    if (message.includes("user rejected")) {
+      return "Transaction was rejected by user";
+    }
+
+    if (message.includes("insufficient funds")) {
+      return "Insufficient funds for gas fees";
+    }
+
+    if (message.includes("already applied")) {
+      return "You have already applied to this campaign";
+    }
+
+    if (message.includes("not registered")) {
+      return "You must register as an influencer first";
+    }
+
+    if (message.includes("max influencers already selected")) {
+      return "All influencer spots are filled";
+    }
+
+    if (message.includes("brief not in open status")) {
+      return "Campaign is no longer accepting applications";
+    }
+
+    if (message.includes("application period has ended")) {
+      return "Application deadline has passed";
+    }
+
+    if (message.includes("proof submission period has ended")) {
+      return "Proof submission deadline has passed";
+    }
+
+    if (message.includes("verification deadline not yet passed")) {
+      return "Cannot complete campaign yet - verification period still active";
+    }
+
+    if (message.includes("already flagged")) {
+      return "This submission has already been disputed";
+    }
+
+    if (message.includes("not authorized dispute resolver")) {
+      return "You are not authorized to resolve disputes";
+    }
+
+    if (message.includes("dispute resolution deadline passed")) {
+      return "Dispute resolution deadline has expired";
+    }
+
+    // Try to extract revert reason
+    const revertReasonMatch = message.match(
+      /reverted with reason string '([^']+)'/
+    );
+    if (revertReasonMatch) {
+      return revertReasonMatch[1];
+    }
+
+    const executionRevertedMatch = message.match(/execution reverted: (.+)/);
+    if (executionRevertedMatch) {
+      return executionRevertedMatch[1];
+    }
+
+    return error.message;
+  }
+
+  return "Transaction failed - please try again";
+}

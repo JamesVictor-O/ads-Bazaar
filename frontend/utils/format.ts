@@ -60,7 +60,7 @@ export function formatDuration(seconds: number): string {
  * Calculates time remaining from a deadline
  */
 export function getTimeRemaining(deadline: number) {
-  const now = Date.now() / 1000; // Current time in seconds
+  const now = Math.floor(Date.now() / 1000); // Current time in seconds
   const timeLeft = deadline - now;
 
   if (timeLeft <= 0) {
@@ -102,7 +102,9 @@ export function formatTimeRemaining(timeRemaining: {
     return "Expired";
   }
 
-  if (timeRemaining.days > 0) {
+  if (timeRemaining.days > 7) {
+    return `${timeRemaining.days} days`;
+  } else if (timeRemaining.days > 0) {
     return `${timeRemaining.days}d ${timeRemaining.hours}h`;
   } else if (timeRemaining.hours > 0) {
     return `${timeRemaining.hours}h ${timeRemaining.minutes}m`;

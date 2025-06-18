@@ -1,4 +1,5 @@
 import { Hex } from "viem";
+import { CheckSquare } from "lucide-react";
 
 // Enums that match the smart contract
 export enum CampaignStatus {
@@ -69,21 +70,21 @@ export interface Brief {
   name: string;
   description: string;
   requirements: string;
-  budget: number; // Converted from bigint to number
+  budget: number;
   status: CampaignStatus;
-  promotionDuration: number; // In seconds
-  promotionStartTime: number; // Unix timestamp
-  promotionEndTime: number; // Unix timestamp
-  proofSubmissionDeadline: number; // Unix timestamp
-  verificationDeadline: number; // Unix timestamp
+  promotionDuration: number;
+  promotionStartTime: number;
+  promotionEndTime: number;
+  proofSubmissionDeadline: number;
+  verificationDeadline: number;
   maxInfluencers: number;
   selectedInfluencersCount: number;
   targetAudience: TargetAudience;
-  creationTime: number; // Unix timestamp
-  selectionDeadline: number; // Unix timestamp
+  creationTime: number;
+  selectionDeadline: number;
   applicationCount: number;
 
-  // Computed properties for better UX
+  // Computed properties
   statusInfo: CampaignStatusInfo;
   timingInfo: CampaignTimingInfo;
   progressInfo: CampaignProgressInfo;
@@ -314,4 +315,14 @@ export const USER_STATUS_LABELS = {
   [UserStatus.POPULAR]: "Popular",
   [UserStatus.ELITE]: "Elite",
   [UserStatus.SUPERSTAR]: "Superstar",
+} as const;
+
+// Smart contract timing constants for reference
+export const SMART_CONTRACT_CONSTANTS = {
+  CAMPAIGN_PREPARATION_PERIOD: 1 * 24 * 60 * 60, // 1 day
+  PROOF_SUBMISSION_GRACE_PERIOD: 2 * 24 * 60 * 60, // 2 days
+  VERIFICATION_PERIOD: 3 * 24 * 60 * 60, // 3 days
+  SELECTION_DEADLINE_PERIOD: 5 * 24 * 60 * 60, // 5 days
+  SELECTION_GRACE_PERIOD: 1 * 60 * 60, // 1 hour
+  DISPUTE_RESOLUTION_DEADLINE: 2 * 24 * 60 * 60, // 2 days
 } as const;
