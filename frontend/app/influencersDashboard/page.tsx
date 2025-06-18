@@ -29,6 +29,8 @@ import {
   PauseCircle,
   Upload,
   Bell,
+  Edit3,
+  Eye,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@farcaster/auth-kit";
@@ -109,6 +111,10 @@ export default function InfluencerDashboard() {
     "all" | "active" | "completed" | "urgent"
   >("all");
 
+  // Enhanced state for tracking resubmissions
+  const [isResubmission, setIsResubmission] = useState(false);
+  const [existingProofLink, setExistingProofLink] = useState("");
+
   const [txStatus, setTxStatus] = useState<{
     stage: TxStage;
     message: string;
@@ -151,20 +157,26 @@ export default function InfluencerDashboard() {
     ) {
       setTxStatus({
         stage: "mining",
-        message: "Submitting post...",
+        message: isResubmission ? "Updating proof..." : "Submitting post...",
         hash: txStatus.hash,
       });
     }
-  }, [isSubmittingProof, txStatus.stage, txStatus.hash]);
+  }, [isSubmittingProof, txStatus.stage, txStatus.hash, isResubmission]);
 
   useEffect(() => {
     if (isSubmittingSuccess && txStatus.stage !== "success") {
       setTxStatus({
         stage: "success",
-        message: "Post submitted successfully!",
+        message: isResubmission
+          ? "Proof updated successfully!"
+          : "Post submitted successfully!",
         hash: txStatus.hash,
       });
-      toast.success("Post submitted successfully!");
+      toast.success(
+        isResubmission
+          ? "Proof updated successfully!"
+          : "Post submitted successfully!"
+      );
       refetch();
       setTimeout(() => {
         setShowSubmitModal(false);
@@ -172,9 +184,17 @@ export default function InfluencerDashboard() {
         setTxStatus({ stage: "idle", message: "", hash: undefined });
         setSelectedCampaign(null);
         setSelectedTask(null);
+        setIsResubmission(false);
+        setExistingProofLink("");
       }, 1500);
     }
-  }, [isSubmittingSuccess, txStatus.stage, txStatus.hash, refetch]);
+  }, [
+    isSubmittingSuccess,
+    txStatus.stage,
+    txStatus.hash,
+    refetch,
+    isResubmission,
+  ]);
 
   useEffect(() => {
     if (isSubmittingError && txStatus.stage !== "error") {
@@ -267,9 +287,33 @@ export default function InfluencerDashboard() {
     setSelectedTask(null);
     setPostLink("");
     setTxStatus({ stage: "idle", message: "", hash: undefined });
+    setIsResubmission(false);
+    setExistingProofLink("");
   };
 
-  // Enhanced campaign filtering
+  // Enhanced submit proof handler with resubmission support
+  const handleSubmitProofClick = (
+    briefData: ApplicationWithBrief,
+    isUpdate: boolean = false
+  ) => {
+    setSelectedCampaign(briefData);
+    setSelectedTask({
+      name: briefData.brief.description,
+    });
+
+    if (isUpdate && briefData.application.proofLink) {
+      setIsResubmission(true);
+      setExistingProofLink(briefData.application.proofLink);
+      setPostLink(""); // Start with empty so user can enter new link
+    } else {
+      setIsResubmission(false);
+      setExistingProofLink("");
+      setPostLink("");
+    }
+
+    setShowSubmitModal(true);
+  };
+
   const getFilteredCampaigns = () => {
     if (!appliedBriefs) return [];
 
@@ -643,7 +687,7 @@ export default function InfluencerDashboard() {
           ))}
         </div>
 
-        {/* Campaigns List */}
+        {/* Enhanced Campaigns List with Resubmission Support */}
         <motion.div
           className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg overflow-hidden mb-6"
           initial={{ opacity: 0, y: 10 }}
@@ -864,27 +908,53 @@ export default function InfluencerDashboard() {
                                     .toUpperCase()}
                                 </span>
                               </div>
+
                               <div className="flex gap-2">
+                                {/* Enhanced proof submission handling with resubmission support */}
                                 {briefData.application.proofLink ? (
-                                  <a
-                                    href={briefData.application.proofLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <LinkIcon className="w-3 h-3" />
-                                    View Proof
-                                  </a>
+                                  <div className="flex gap-2">
+                                    <a
+                                      href={briefData.application.proofLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      View Proof
+                                    </a>
+
+                                    {/* Allow resubmission if not approved yet and submission period is still active */}
+                                    {!briefData.application.isApproved &&
+                                      appInfo.canSubmitProof && (
+                                        <motion.button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSubmitProofClick(
+                                              briefData,
+                                              true
+                                            );
+                                          }}
+                                          className="flex items-center gap-1 px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-md border border-blue-500/30 text-xs"
+                                          disabled={isSubmittingProof}
+                                          whileTap={{ scale: 0.95 }}
+                                        >
+                                          {isSubmittingProof ? (
+                                            "Updating..."
+                                          ) : (
+                                            <>
+                                              <Edit3 className="w-3 h-3" />
+                                              Update Proof
+                                            </>
+                                          )}
+                                        </motion.button>
+                                      )}
+                                  </div>
                                 ) : appInfo.canSubmitProof ? (
                                   <motion.button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setSelectedCampaign(briefData);
-                                      setSelectedTask({
-                                        name: briefData.brief.description,
-                                      });
-                                      setShowSubmitModal(true);
+                                      handleSubmitProofClick(briefData, false);
                                     }}
                                     className="flex items-center gap-1 px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-md border border-emerald-500/30 text-xs"
                                     disabled={isSubmittingProof}
@@ -1012,7 +1082,7 @@ export default function InfluencerDashboard() {
         </motion.div>
       </div>
 
-      {/* Modals */}
+      {/* Enhanced Modals with Resubmission Support */}
       {showSubmitModal && selectedCampaign && selectedTask && (
         <SubmitPostModal
           selectedCampaign={{
@@ -1027,6 +1097,8 @@ export default function InfluencerDashboard() {
           onClose={handleCloseModal}
           transactionStatus={txStatus}
           isSubmitting={isSubmittingProof}
+          existingProofLink={existingProofLink}
+          isResubmission={isResubmission}
         />
       )}
 
@@ -1034,6 +1106,7 @@ export default function InfluencerDashboard() {
         <ClaimPaymentsModal
           isOpen={showClaimModal}
           onClose={() => setShowClaimModal(false)}
+          onSuccess={handleClaimSuccess}
         />
       )}
     </div>
