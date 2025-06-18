@@ -14,6 +14,11 @@ import {
   Flag,
   Timer,
   CalendarClock,
+  ExternalLink,
+  Scale,
+  Play,
+  Pause,
+  Clock3,
 } from "lucide-react";
 import { Brief, Application, DisputeStatus } from "@/types/index";
 import { Hex } from "viem";
@@ -25,6 +30,7 @@ import {
   formatTimeRemaining,
   getTimeRemaining,
 } from "@/utils/format";
+import Link from "next/link";
 
 interface SubmissionsModalProps {
   selectedBrief: Brief | null;
@@ -54,15 +60,51 @@ export const SubmissionsModal = ({
 
   // Calculate timing information for button state
   const currentTime = Math.floor(Date.now() / 1000);
-  const proofSubmissionTimeRemaining = useMemo(() => {
-    if (!selectedBrief.proofSubmissionDeadline) return null;
-    return getTimeRemaining(selectedBrief.proofSubmissionDeadline);
-  }, [selectedBrief.proofSubmissionDeadline]);
 
-  const verificationTimeRemaining = useMemo(() => {
+  // Enhanced timing calculations - Fix for issue #5
+  const proofSubmissionTimeInfo = useMemo(() => {
+    if (!selectedBrief.proofSubmissionDeadline) return null;
+
+    const hasStarted = currentTime >= selectedBrief.promotionEndTime;
+    const timeRemaining = getTimeRemaining(
+      selectedBrief.proofSubmissionDeadline
+    );
+
+    return {
+      hasStarted,
+      timeRemaining,
+      label: hasStarted
+        ? timeRemaining.isExpired
+          ? "Ended"
+          : `Ends in ${formatTimeRemaining(timeRemaining)}`
+        : "Not Started",
+    };
+  }, [
+    selectedBrief.proofSubmissionDeadline,
+    selectedBrief.promotionEndTime,
+    currentTime,
+  ]);
+
+  const verificationTimeInfo = useMemo(() => {
     if (!selectedBrief.verificationDeadline) return null;
-    return getTimeRemaining(selectedBrief.verificationDeadline);
-  }, [selectedBrief.verificationDeadline]);
+
+    const hasStarted = currentTime >= selectedBrief.proofSubmissionDeadline;
+    const timeRemaining = getTimeRemaining(selectedBrief.verificationDeadline);
+
+    return {
+      hasStarted,
+      timeRemaining,
+      label: hasStarted
+        ? timeRemaining.isExpired
+          ? "Ended"
+          : `Auto-approval in ${formatTimeRemaining(timeRemaining)}`
+        : "Not Started",
+    };
+  }, [
+    selectedBrief.verificationDeadline,
+    selectedBrief.proofSubmissionDeadline,
+    currentTime,
+  ]);
 
   // Check if we can release funds based on smart contract logic
   const canReleaseFunds = useMemo(() => {
@@ -126,13 +168,14 @@ export const SubmissionsModal = ({
     };
   };
 
-  // Fix issue 2: Check if dispute can be raised (not already flagged/resolved)
+  // Enhanced dispute logic - Fix for issue #3
   const canRaiseDispute = (submission: Application) => {
     return (
       submission.proofLink &&
       !submission.isApproved &&
       submission.disputeStatus === DisputeStatus.NONE && // Can't dispute if already flagged
-      !isCompletingCampaign
+      !isCompletingCampaign &&
+      canReleaseFunds // Can only dispute during fund release period
     );
   };
 
@@ -146,24 +189,28 @@ export const SubmissionsModal = ({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
       >
-        {/* Modal container */}
+        {/* Modal container - Fix for issue #2: Better mobile scrolling */}
         <motion.div
-          className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl w-full max-w-3xl mx-auto max-h-[90vh] overflow-hidden shadow-2xl shadow-emerald-500/10"
+          className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl w-full max-w-4xl mx-auto shadow-2xl shadow-emerald-500/10 flex flex-col"
+          style={{
+            maxHeight: "90vh", // Explicit max height
+            height: "90vh", // Fixed height for better mobile handling
+          }}
           initial={{ scale: 0.95, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.95, y: 20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
+          {/* Header - Fixed */}
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900 rounded-t-2xl flex-shrink-0">
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-white mb-1">
+              <h2 className="text-lg sm:text-xl font-bold text-white mb-1">
                 Campaign Submissions
               </h2>
-              <p className="text-emerald-400 font-medium truncate">
+              <p className="text-emerald-400 font-medium truncate text-sm sm:text-base">
                 {selectedBrief.name}
               </p>
-              <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-slate-400">
                 <span>
                   {selectedApplications.length} selected influencer
                   {selectedApplications.length !== 1 ? "s" : ""}
@@ -180,56 +227,91 @@ export const SubmissionsModal = ({
                 </span>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 flex-shrink-0"
-              disabled={isCompletingCampaign}
-              aria-label="Close modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
+
+            {/* Dispute Resolution Link - Fix for issue #4 */}
+            <div className="flex items-center gap-2 ml-4">
+              <Link href="/disputeresolution">
+                <motion.button
+                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg border border-blue-500/20 transition-all text-xs sm:text-sm font-medium"
+                  whileTap={{ scale: 0.95 }}
+                  title="View Dispute Resolution Dashboard"
+                >
+                  <Scale className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Disputes</span>
+                </motion.button>
+              </Link>
+
+              <button
+                onClick={onClose}
+                className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 flex-shrink-0"
+                disabled={isCompletingCampaign}
+                aria-label="Close modal"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Timing Information Section - Fix issue 4 */}
-          <div className="p-4 bg-slate-900/30 border-b border-slate-700/50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Timing Information Section - Fix for issue #5 */}
+          <div className="p-3 sm:p-4 bg-slate-900/30 border-b border-slate-700/50 flex-shrink-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Timer className="w-4 h-4 text-blue-400" />
+                  {proofSubmissionTimeInfo?.hasStarted ? (
+                    proofSubmissionTimeInfo.timeRemaining.isExpired ? (
+                      <Pause className="w-4 h-4 text-slate-500" />
+                    ) : (
+                      <Timer className="w-4 h-4 text-blue-400" />
+                    )
+                  ) : (
+                    <Clock3 className="w-4 h-4 text-slate-500" />
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-300">
                     Proof Submission Period
                   </p>
-                  {proofSubmissionTimeRemaining &&
-                  !proofSubmissionTimeRemaining.isExpired ? (
-                    <p className="text-xs text-amber-400">
-                      Ends in{" "}
-                      {formatTimeRemaining(proofSubmissionTimeRemaining)}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-slate-500">Ended</p>
-                  )}
+                  <p
+                    className={`text-xs ${
+                      proofSubmissionTimeInfo?.hasStarted
+                        ? proofSubmissionTimeInfo.timeRemaining.isExpired
+                          ? "text-slate-500"
+                          : "text-amber-400"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    {proofSubmissionTimeInfo?.label || "Not Started"}
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-purple-500/10 rounded-lg">
-                  <CalendarClock className="w-4 h-4 text-purple-400" />
+                  {verificationTimeInfo?.hasStarted ? (
+                    verificationTimeInfo.timeRemaining.isExpired ? (
+                      <Pause className="w-4 h-4 text-slate-500" />
+                    ) : (
+                      <CalendarClock className="w-4 h-4 text-purple-400" />
+                    )
+                  ) : (
+                    <Clock3 className="w-4 h-4 text-slate-500" />
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-300">
                     Verification Period
                   </p>
-                  {verificationTimeRemaining &&
-                  !verificationTimeRemaining.isExpired ? (
-                    <p className="text-xs text-purple-400">
-                      Auto-approval in{" "}
-                      {formatTimeRemaining(verificationTimeRemaining)}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-slate-500">Ended</p>
-                  )}
+                  <p
+                    className={`text-xs ${
+                      verificationTimeInfo?.hasStarted
+                        ? verificationTimeInfo.timeRemaining.isExpired
+                          ? "text-slate-500"
+                          : "text-purple-400"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    {verificationTimeInfo?.label || "Not Started"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -247,10 +329,10 @@ export const SubmissionsModal = ({
             )}
           </div>
 
-          {/* Submissions list */}
-          <div className="overflow-y-auto max-h-[calc(90vh-350px)]">
+          {/* Submissions list - Scrollable area - Fix for issue #2 */}
+          <div className="flex-1 overflow-y-auto min-h-0">
             {isLoadingApplications ? (
-              <div className="flex flex-col items-center justify-center py-12">
+              <div className="flex flex-col items-center justify-center py-12 h-full">
                 <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-4" />
                 <p className="text-slate-400">Loading submissions...</p>
               </div>
@@ -262,7 +344,7 @@ export const SubmissionsModal = ({
                   return (
                     <motion.div
                       key={`${submission.influencer}-${index}`}
-                      className="p-6 hover:bg-slate-800/30 transition-all duration-200"
+                      className="p-4 sm:p-6 hover:bg-slate-800/30 transition-all duration-200"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: index * 0.1 }}
@@ -271,29 +353,29 @@ export const SubmissionsModal = ({
                         {/* Influencer info and status */}
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-medium text-xs sm:text-sm">
                               {index + 1}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-base font-medium text-white mb-1">
+                              <p className="text-sm sm:text-base font-medium text-white mb-1">
                                 Influencer #{index + 1}
                               </p>
-                              <p className="text-sm text-slate-400 font-mono">
+                              <p className="text-xs sm:text-sm text-slate-400 font-mono">
                                 {truncateAddress(submission.influencer)}
                               </p>
                             </div>
                           </div>
                           <span
-                            className={`px-3 py-1.5 text-xs font-medium rounded-full flex items-center flex-shrink-0 ${status.className}`}
+                            className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs font-medium rounded-full flex items-center flex-shrink-0 ${status.className}`}
                           >
                             {status.icon}
                             {status.label}
                           </span>
                         </div>
 
-                        {/* Fix issue 3: Show proof submission status clearly */}
-                        <div className="ml-13">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        {/* Enhanced status grid */}
+                        <div className="ml-8 sm:ml-13">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
                             <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
                               <p className="text-xs text-slate-400 mb-1">
                                 Proof Submitted
@@ -396,7 +478,7 @@ export const SubmissionsModal = ({
                                   </div>
                                 )}
 
-                              {/* Action buttons - Fix issue 2: Disable dispute if already flagged */}
+                              {/* Action buttons - Enhanced dispute logic */}
                               {canReleaseFunds && (
                                 <div className="flex gap-2">
                                   {canRaiseDispute(submission) && (
@@ -407,18 +489,18 @@ export const SubmissionsModal = ({
                                         )
                                       }
                                       disabled={isCompletingCampaign}
-                                      className="px-4 py-2.5 text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
+                                      className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
                                       whileTap={{ scale: 0.95 }}
                                     >
-                                      <Flag className="w-4 h-4" />
+                                      <Flag className="w-3 h-3 sm:w-4 sm:h-4" />
                                       Raise Dispute
                                     </motion.button>
                                   )}
 
                                   {submission.disputeStatus ===
                                     DisputeStatus.FLAGGED && (
-                                    <div className="px-4 py-2.5 text-sm font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
-                                      <Flag className="w-4 h-4" />
+                                    <div className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2">
+                                      <Flag className="w-3 h-3 sm:w-4 sm:h-4" />
                                       Dispute Pending
                                     </div>
                                   )}
@@ -448,7 +530,7 @@ export const SubmissionsModal = ({
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400 h-full">
                 <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mb-4">
                   <Globe className="w-8 h-8 text-slate-500" />
                 </div>
@@ -464,11 +546,11 @@ export const SubmissionsModal = ({
             )}
           </div>
 
-          {/* Footer - Fix issue 5: Single button for all fund releases */}
+          {/* Footer - Fixed */}
           {selectedApplications.length > 0 && (
-            <div className="border-t border-slate-700/50 p-6 bg-slate-800/50">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-slate-400">
+            <div className="border-t border-slate-700/50 p-4 sm:p-6 bg-slate-800/50 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="text-xs sm:text-sm text-slate-400">
                   {canReleaseFunds ? (
                     <span>
                       Review all submissions and release funds for approved work
@@ -480,11 +562,11 @@ export const SubmissionsModal = ({
                     </span>
                   )}
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full sm:w-auto">
                   <button
                     onClick={onClose}
                     disabled={isCompletingCampaign}
-                    className="px-6 py-2.5 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-300 bg-slate-700/50 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Close
                   </button>
@@ -493,7 +575,7 @@ export const SubmissionsModal = ({
                   <motion.button
                     onClick={() => onReleaseFunds(selectedBrief.id)}
                     disabled={!canReleaseFunds || isCompletingCampaign}
-                    className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                    className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
                       !canReleaseFunds || isCompletingCampaign
                         ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
                         : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-md shadow-emerald-500/25"
@@ -506,18 +588,27 @@ export const SubmissionsModal = ({
                   >
                     {isCompletingCampaign ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing All Payments...
+                        <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                        <span className="hidden sm:inline">
+                          Processing All Payments...
+                        </span>
+                        <span className="sm:hidden">Processing...</span>
                       </>
                     ) : !canReleaseFunds ? (
                       <>
-                        <Timer className="w-4 h-4" />
-                        Awaiting Submission Period End
+                        <Timer className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">
+                          Awaiting Submission Period End
+                        </span>
+                        <span className="sm:hidden">Waiting...</span>
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-4 h-4" />
-                        Approve & Release All Funds
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">
+                          Approve & Release All Funds
+                        </span>
+                        <span className="sm:hidden">Release Funds</span>
                       </>
                     )}
                   </motion.button>

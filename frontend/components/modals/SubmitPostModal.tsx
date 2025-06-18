@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import {
   Loader2,
   CheckCircle,
@@ -9,6 +9,8 @@ import {
   Send,
   Sparkles,
   AlertTriangle,
+  Edit3,
+  Eye,
 } from "lucide-react";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { NetworkStatus } from "@/components/NetworkStatus";
@@ -37,6 +39,8 @@ interface SubmitPostModalProps {
   transactionStatus?: TransactionStatus;
   isSubmitting?: boolean;
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
+  existingProofLink?: string;
+  isResubmission?: boolean;
 }
 
 function SubmitPostModal({
@@ -49,9 +53,19 @@ function SubmitPostModal({
   transactionStatus = { stage: "idle", message: "" },
   isSubmitting = false,
   guardedAction,
+  existingProofLink = "",
+  isResubmission = false,
 }: SubmitPostModalProps) {
   const { isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
+  const [showExistingProof, setShowExistingProof] = useState(false);
+
+  // Auto-populate with existing proof link if it's a resubmission
+  useEffect(() => {
+    if (isResubmission && existingProofLink && !postLink) {
+      setPostLink(existingProofLink);
+    }
+  }, [isResubmission, existingProofLink, postLink, setPostLink]);
 
   if (!selectedCampaign || !selectedTask) return null;
 
@@ -77,13 +91,13 @@ function SubmitPostModal({
       case "confirming":
         return "Confirm in Wallet";
       case "mining":
-        return "Processing...";
+        return isResubmission ? "Updating..." : "Processing...";
       case "success":
-        return "Submitted!";
+        return isResubmission ? "Updated!" : "Submitted!";
       case "error":
         return "Try Again";
       default:
-        return "Submit Post";
+        return isResubmission ? "Update Proof" : "Submit Post";
     }
   };
 
@@ -105,13 +119,12 @@ function SubmitPostModal({
 
   const handleSubmit = async () => {
     if (!guardedAction) {
-      // Fallback to direct submission if guardedAction is not available
       await onSubmit();
       return;
     }
 
     if (!postLink.trim()) {
-      return; // Let the existing validation handle this
+      return;
     }
 
     await guardedAction(async () => {
@@ -128,14 +141,14 @@ function SubmitPostModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-slate-800 sm:bg-slate-800/90 sm:backdrop-blur-xl border-0 sm:border sm:border-slate-700/50 rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-emerald-500/10 w-full sm:w-full sm:max-w-lg mx-auto transform transition-all duration-300 ease-out max-h-[90vh] sm:max-h-none overflow-hidden">
+      <div className="bg-slate-800 sm:bg-slate-800/90 sm:backdrop-blur-xl border-0 sm:border sm:border-slate-700/50 rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-emerald-500/10 w-full sm:w-full sm:max-w-lg mx-auto transform transition-all duration-300 ease-out max-h-[95vh] sm:max-h-none overflow-hidden flex flex-col">
         {/* Mobile drag indicator */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-8 h-1 bg-slate-600 rounded-full"></div>
         </div>
 
         {/* Header */}
-        <div className="relative px-4 sm:px-8 pt-4 sm:pt-8 pb-4 sm:pb-6">
+        <div className="relative px-4 sm:px-8 pt-4 sm:pt-8 pb-4 sm:pb-6 flex-shrink-0">
           <button
             onClick={onClose}
             className="absolute right-4 sm:right-6 top-4 sm:top-6 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-full p-2"
@@ -146,21 +159,42 @@ function SubmitPostModal({
 
           <div className="flex items-start sm:items-center gap-3 mb-2 pr-12 sm:pr-0">
             <div className="p-2 sm:p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20 flex-shrink-0 mt-1 sm:mt-0">
-              <Send className="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400" />
+              {isResubmission ? (
+                <Edit3 className="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400" />
+              ) : (
+                <Send className="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400" />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="text-lg sm:text-xl font-semibold text-white leading-tight">
-                Submit Your Post
+                {isResubmission ? "Update Your Proof" : "Submit Your Post"}
               </h2>
               <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                Share your content link to complete the task
+                {isResubmission
+                  ? "Update your content link to replace the existing proof"
+                  : "Share your content link to complete the task"}
               </p>
             </div>
           </div>
+
+          {/* Show resubmission warning */}
+          {isResubmission && (
+            <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start">
+              <AlertTriangle className="text-amber-400 mr-3 mt-0.5 flex-shrink-0 w-4 h-4" />
+              <div>
+                <p className="text-sm font-medium text-amber-400">
+                  Updating Existing Proof
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  This will replace your previously submitted proof link
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Scrollable Content */}
-        <div className="px-4 sm:px-8 pb-4 sm:pb-8 space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(90vh-160px)] sm:max-h-none">
+        <div className="px-4 sm:px-8 space-y-4 sm:space-y-6 overflow-y-auto flex-1 pb-4">
           {/* Network Status */}
           {isConnected && (
             <div>
@@ -180,6 +214,43 @@ function SubmitPostModal({
                   Connect your wallet to submit proof
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Existing Proof Section - Show if this is a resubmission */}
+          {isResubmission && existingProofLink && (
+            <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 sm:p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-blue-400" />
+                  Current Proof
+                </h4>
+                <button
+                  onClick={() => setShowExistingProof(!showExistingProof)}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  {showExistingProof ? "Hide" : "View"}
+                </button>
+              </div>
+
+              {showExistingProof && (
+                <div className="space-y-2">
+                  <div className="p-2 bg-slate-800/50 rounded-lg border border-slate-600/50">
+                    <a
+                      href={existingProofLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-emerald-400 hover:text-emerald-300 break-all flex items-start gap-2"
+                    >
+                      <ExternalLink className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      {existingProofLink}
+                    </a>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    This is your currently submitted proof link
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -218,7 +289,8 @@ function SubmitPostModal({
           {/* Post Link Input */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-3">
-              Post Link <span className="text-red-400">*</span>
+              {isResubmission ? "New Post Link" : "Post Link"}{" "}
+              <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <Link className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 sm:h-5 w-4 sm:w-5 text-slate-400 pointer-events-none" />
@@ -234,7 +306,9 @@ function SubmitPostModal({
               />
             </div>
             <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-              Paste the direct link to your social media post
+              {isResubmission
+                ? "Enter the new link to replace your existing proof"
+                : "Paste the direct link to your social media post"}
             </p>
           </div>
 
@@ -265,7 +339,7 @@ function SubmitPostModal({
         </div>
 
         {/* Fixed Action Buttons */}
-        <div className="border-t border-slate-700/50 bg-slate-800/90 backdrop-blur-sm p-4 sm:p-6 sm:pt-4 sm:border-t-0 sm:bg-transparent sm:backdrop-blur-none">
+        <div className="border-t border-slate-700/50 bg-slate-800/90 backdrop-blur-sm p-4 sm:p-6 sm:pt-4 flex-shrink-0">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-3">
             <button
               onClick={onClose}
@@ -311,7 +385,11 @@ function SubmitPostModal({
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4 flex-shrink-0" />
+                  {isResubmission ? (
+                    <Edit3 className="h-4 w-4 flex-shrink-0" />
+                  ) : (
+                    <Send className="h-4 w-4 flex-shrink-0" />
+                  )}
                   <span className="truncate">{getButtonText()}</span>
                 </>
               )}
