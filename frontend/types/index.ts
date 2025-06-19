@@ -32,6 +32,7 @@ export enum DisputeStatus {
   FLAGGED = 1,
   RESOLVED_VALID = 2,
   RESOLVED_INVALID = 3,
+  EXPIRED = 4,
 }
 
 export enum UserStatus {

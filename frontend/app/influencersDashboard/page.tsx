@@ -68,6 +68,7 @@ import {
   formatTimeRemaining,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
+import { useTriggerAutoApproval } from "@/hooks/adsBazaar";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 
 // Define precise interfaces
@@ -139,6 +140,28 @@ export default function InfluencerDashboard() {
 
   const { pendingPayments, isLoadingPayments, refetchPayments } =
     usePendingPayments(address);
+
+  const {
+    triggerAutoApproval,
+    isPending: isAutoApproving,
+    isSuccess: isAutoApprovalSuccess,
+    error: autoApprovalError,
+  } = useTriggerAutoApproval();
+
+  const handleAutoApproval = async (briefId: string) => {
+    try {
+      await triggerAutoApproval(briefId as `0x${string}`);
+    } catch (error) {
+      console.error("Error triggering auto-approval:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isAutoApprovalSuccess) {
+      toast.success("Auto-approval triggered! Payments are being processed.");
+      refetch(); // Refresh dashboard data
+    }
+  }, [isAutoApprovalSuccess, refetch]);
 
   const {
     submitProof,
@@ -670,6 +693,83 @@ export default function InfluencerDashboard() {
                 <span className="hidden sm:inline">View All</span>
                 <span className="sm:hidden">View</span>
               </motion.button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Auto-Approval Opportunities */}
+        {assignedBriefs?.filter((briefData) => {
+          const currentTime = Math.floor(Date.now() / 1000);
+          return (
+            briefData.brief.status === CampaignStatus.ASSIGNED &&
+            currentTime > briefData.brief.verificationDeadline &&
+            briefData.application.isSelected
+          );
+        }).length > 0 && (
+          <motion.div
+            className="mb-6 md:mb-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl md:rounded-2xl p-4 md:p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-start gap-3 md:gap-4">
+              <div className="p-2 md:p-3 bg-blue-500/20 rounded-lg md:rounded-xl border border-blue-500/30">
+                <Zap className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg md:text-xl font-semibold text-white mb-2 md:mb-3">
+                  🤖 Auto-Approval Available
+                </h3>
+                <p className="text-blue-300 mb-4 text-sm md:text-base leading-relaxed">
+                  Some campaigns have passed their verification deadline. You
+                  can trigger auto-approval to finalize payments automatically -
+                  no need to wait for the business!
+                </p>
+                <div className="space-y-2 md:space-y-3">
+                  {assignedBriefs
+                    ?.filter((briefData) => {
+                      const currentTime = Math.floor(Date.now() / 1000);
+                      return (
+                        briefData.brief.status === CampaignStatus.ASSIGNED &&
+                        currentTime > briefData.brief.verificationDeadline &&
+                        briefData.application.isSelected
+                      );
+                    })
+                    .slice(0, 3)
+                    .map((briefData, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 md:p-4 bg-slate-800/50 rounded-lg md:rounded-xl border border-slate-700/50"
+                      >
+                        <div>
+                          <p className="font-medium text-white mb-1 text-sm md:text-base">
+                            {briefData.brief.name}
+                          </p>
+                          <p className="text-xs md:text-sm text-blue-400">
+                            Auto-approval available since{" "}
+                            {format(
+                              new Date(
+                                briefData.brief.verificationDeadline * 1000
+                              ),
+                              "MMM d, HH:mm"
+                            )}
+                          </p>
+                        </div>
+                        <motion.button
+                          onClick={() => handleAutoApproval(briefData.brief.id)}
+                          className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg md:rounded-xl font-medium transition-all text-xs md:text-sm"
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Zap className="w-3 h-3 md:w-4 md:h-4" />
+                          <span className="hidden sm:inline">
+                            Trigger Auto-Approval
+                          </span>
+                          <span className="sm:hidden">Auto-Approve</span>
+                        </motion.button>
+                      </div>
+                    ))}
+                </div>
+              </div>
             </div>
           </motion.div>
         )}

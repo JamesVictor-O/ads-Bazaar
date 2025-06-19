@@ -1087,3 +1087,113 @@ export function parseSmartContractError(error: any): string {
 
   return "Transaction failed - please try again";
 }
+
+export function useHasPendingDisputes(briefId: `0x${string}`) {
+  const { data, error, isLoading, refetch } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "hasPendingDisputes",
+    args: [briefId],
+    query: {
+      enabled: !!briefId,
+    },
+  });
+
+  return {
+    hasPendingDisputes: data as boolean | undefined,
+    isLoadingPendingCheck: isLoading,
+    pendingCheckError: error,
+    refetchPendingCheck: refetch,
+  };
+}
+
+// Hook to get pending dispute count
+export function usePendingDisputeCount(briefId: `0x${string}`) {
+  const { data, error, isLoading, refetch } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "getPendingDisputeCount",
+    args: [briefId],
+    query: {
+      enabled: !!briefId,
+    },
+  });
+
+  return {
+    pendingDisputeCount: data ? Number(data) : 0,
+    isLoadingCount: isLoading,
+    countError: error,
+    refetchCount: refetch,
+  };
+}
+
+// Hook to expire a dispute
+export function useExpireDispute() {
+  const tx = useHandleTransaction();
+  const { address } = useAccount();
+
+  const expireDispute = async (
+    briefId: `0x${string}`,
+    influencer: `0x${string}`
+  ) => {
+    if (!address) return;
+
+    try {
+      await tx.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: "expireDispute",
+        args: [briefId, influencer],
+      });
+    } catch (error) {
+      console.error("Error expiring dispute:", error);
+    }
+  };
+
+  return {
+    expireDispute,
+    ...tx,
+  };
+}
+
+export function useTriggerAutoApproval() {
+  const tx = useHandleTransaction();
+  const { address } = useAccount();
+
+  const triggerAutoApproval = async (briefId: `0x${string}`) => {
+    if (!address) {
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    try {
+      await tx.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: "triggerAutoApproval",
+        args: [briefId],
+      });
+    } catch (error) {
+      console.error("Error triggering auto-approval:", error);
+      if (error instanceof Error) {
+        if (error.message.includes("Verification deadline not yet passed")) {
+          toast.error(
+            "Auto-approval not yet available - verification period still active"
+          );
+        } else if (error.message.includes("Brief not in assigned status")) {
+          toast.error(
+            "Campaign is not in the correct status for auto-approval"
+          );
+        } else {
+          toast.error("Failed to trigger auto-approval. Please try again.");
+        }
+      }
+      throw error;
+    }
+  };
+
+  return {
+    triggerAutoApproval,
+    ...tx,
+  };
+}

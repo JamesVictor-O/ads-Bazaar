@@ -1,11 +1,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Menu, X, Copy, ChevronDown, User, Wallet } from "lucide-react";
+import { Menu, X, Copy, ChevronDown, User, Wallet, Zap } from "lucide-react";
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance } from "wagmi";
 import { cUSDContractConfig } from "../../lib/contracts";
 import { useUserProfile } from "../../hooks/adsBazaar";
+import { motion } from "framer-motion";
 
 interface HeaderProps {
   setActiveTab?: (tab: string) => void;
@@ -107,6 +108,28 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
           >
             Marketplace
           </Link>
+          {isConnected && (
+            <Link href="/auto-approval">
+              <motion.button
+                className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                whileTap={{ scale: 0.95 }}
+              >
+                <Zap className="w-4 h-4" />
+                Auto-Approval
+              </motion.button>
+            </Link>
+          )}
+          {isConnected && (
+            <Link href="/disputeresolution">
+              <motion.button
+                className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                whileTap={{ scale: 0.95 }}
+              >
+                <Zap className="w-4 h-4" />
+                Disputes
+              </motion.button>
+            </Link>
+          )}
         </nav>
 
         {/* Right Side Actions */}
@@ -367,6 +390,28 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
             >
               Marketplace
             </Link>
+            {isConnected && (
+              <Link href="/auto-approval">
+                <motion.button
+                  className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Zap className="w-4 h-4" />
+                  Auto-Approval
+                </motion.button>
+              </Link>
+            )}
+            {isConnected && (
+              <Link href="/disputeresolution">
+                <motion.button
+                  className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Zap className="w-4 h-4" />
+                  Disputes
+                </motion.button>
+              </Link>
+            )}
           </nav>
         </div>
       )}

@@ -22,6 +22,16 @@ class NeynarService {
     this.client = new NeynarAPIClient(config);
   }
 
+  async getUserByFid(fid: number): Promise<FarcasterProfile | null> {
+    try {
+      const response = await this.client.fetchUserByFid(fid);
+      return this.formatUserProfile(response.result.user);
+    } catch (error) {
+      console.error("Error fetching user by FID:", error);
+      return null;
+    }
+  }
+
   // Server-side method for API route
   async getUserByVerifiedAddressServer(
     address: string
@@ -33,6 +43,16 @@ class NeynarService {
       console.error("Error fetching user by verified address:", error);
       return null;
     }
+  }
+
+  async storeFidMapping(address: string, fid: number): Promise<void> {
+    // Store in your database or local storage
+    localStorage.setItem(`fid_${address}`, fid.toString());
+  }
+
+  async getFidByAddress(address: string): Promise<number | null> {
+    const stored = localStorage.getItem(`fid_${address}`);
+    return stored ? parseInt(stored) : null;
   }
 
   // Client-side method

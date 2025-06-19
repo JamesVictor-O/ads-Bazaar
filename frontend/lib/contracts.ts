@@ -10,7 +10,7 @@ const CONTRACT_ADDRESSES = {
   // Celo Alfajores Testnet
   44787: {
     CUSD: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1", // Alfajores cUSD
-    ADS_BAZAAR: "0x3df55Df1de82388F92D2B381ea511d247600825f", // deployed contract
+    ADS_BAZAAR: "0x4bA728E6613359EE82918491b5133CfB630FB024", // deployed contract
   },
 };
 

@@ -495,3 +495,18 @@ export function clamp(value: number, min: number, max: number): number {
 export function formatPercentage(value: number, decimals: number = 1): string {
   return `${value.toFixed(decimals)}%`;
 }
+
+export function getDisputeStatusColor(status: string): string {
+  switch (status) {
+    case "FLAGGED":
+      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    case "RESOLVED_VALID":
+      return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+    case "RESOLVED_INVALID":
+      return "bg-red-500/20 text-red-400 border-red-500/30";
+    case "EXPIRED":
+      return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+    default:
+      return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+  }
+}
