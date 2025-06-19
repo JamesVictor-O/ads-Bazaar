@@ -92,7 +92,8 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
         NONE,           // No dispute raised
         FLAGGED,        // Business has flagged the submission
         RESOLVED_VALID, // Dispute resolved - submission is valid
-        RESOLVED_INVALID // Dispute resolved - submission is invalid
+        RESOLVED_INVALID, // Dispute resolved - submission is invalid
+        EXPIRED         // Dispute expired without resolution
     }
 
     struct AdBrief {
@@ -204,6 +205,8 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
     event ProofNotSubmitted(bytes32 indexed briefId, address indexed influencer);
     event BudgetRefunded(bytes32 indexed briefId, address indexed business, uint256 amount);
     event CampaignCompleted(bytes32 indexed briefId, uint256 totalRefunded);
+    event DisputeExpired(bytes32 indexed briefId, address indexed influencer, bool defaultedToInvalid);
+    event CampaignCompletionBlocked(bytes32 indexed briefId, uint256 pendingDisputeCount);  
     
     // Self protocol related events
     event VerificationConfigUpdated(address indexed updater);
@@ -324,7 +327,7 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
             )
         );
         
-        // FIXED: Calculate selection deadline
+        // Calculate selection deadline
         uint256 selectionDeadline = block.timestamp + SELECTION_DEADLINE_PERIOD;
         
         // Create brief
@@ -442,6 +445,13 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
         require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
         require(block.timestamp >= brief.proofSubmissionDeadline, "Proof submission period still active");
         
+        
+        uint256 pendingCount = getPendingDisputeCount(_briefId);
+        if (pendingCount > 0) {
+            emit CampaignCompletionBlocked(_briefId, pendingCount);
+            revert("Cannot complete campaign with pending disputes");
+        }
+        
         // Mark as completed
         brief.status = CampaignStatus.COMPLETED;
         
@@ -547,6 +557,8 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
         require(brief.status == CampaignStatus.ASSIGNED, "Brief not in assigned status");
         require(block.timestamp > brief.verificationDeadline, "Verification deadline not yet passed");
         
+        _finalizeExpiredDisputes(_briefId);
+        
         // Mark brief as completed
         brief.status = CampaignStatus.COMPLETED;
         
@@ -567,9 +579,10 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
         for (uint256 i = 0; i < applications[_briefId].length; i++) {
             InfluencerApplication storage application = applications[_briefId][i];
             if (application.isSelected) {
-                // Only count if proof was submitted and is not resolved as invalid
+                // Only count if proof was submitted and is not resolved as invalid or expired
                 if (bytes(application.proofLink).length > 0 && 
-                    application.disputeStatus != DisputeStatus.RESOLVED_INVALID) {
+                    application.disputeStatus != DisputeStatus.RESOLVED_INVALID &&
+                    application.disputeStatus != DisputeStatus.EXPIRED) {
                     influencersWithValidProof++;
                 }
             }
@@ -595,9 +608,10 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
             InfluencerApplication storage application = applications[_briefId][i];
             
             if (application.isSelected) {
-                // Only approve and pay if proof was submitted and is not resolved as invalid
-                if (bytes(application.proofLink).length > 0 && 
-                    application.disputeStatus != DisputeStatus.RESOLVED_INVALID) {
+                    // Only approve and pay if proof was submitted and is not resolved as invalid or expired
+                    if (bytes(application.proofLink).length > 0 && 
+                    application.disputeStatus != DisputeStatus.RESOLVED_INVALID &&
+                    application.disputeStatus != DisputeStatus.EXPIRED) {
                     
                     application.isApproved = true;
                     
@@ -959,6 +973,67 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
             }
         }
         revert("Influencer not found or not selected");
+    }
+
+    
+    function hasPendingDisputes(bytes32 _briefId) public view returns (bool) {
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            InfluencerApplication storage app = applications[_briefId][i];
+            if (app.isSelected && app.disputeStatus == DisputeStatus.FLAGGED) {
+                uint256 disputeTime = disputeTimestamp[_briefId][app.influencer];
+                // Check if still within resolution period
+                if (block.timestamp <= disputeTime + DISPUTE_RESOLUTION_DEADLINE) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    function getPendingDisputeCount(bytes32 _briefId) public view returns (uint256) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            InfluencerApplication storage app = applications[_briefId][i];
+            if (app.isSelected && app.disputeStatus == DisputeStatus.FLAGGED) {
+                uint256 disputeTime = disputeTimestamp[_briefId][app.influencer];
+                if (block.timestamp <= disputeTime + DISPUTE_RESOLUTION_DEADLINE) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    function _finalizeExpiredDisputes(bytes32 _briefId) internal {
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            InfluencerApplication storage app = applications[_briefId][i];
+            if (app.isSelected && app.disputeStatus == DisputeStatus.FLAGGED) {
+                uint256 disputeTime = disputeTimestamp[_briefId][app.influencer];
+                if (block.timestamp > disputeTime + DISPUTE_RESOLUTION_DEADLINE) {
+                    // Option 1 Policy: Default expired disputes to INVALID for safety
+                    app.disputeStatus = DisputeStatus.EXPIRED;
+                    emit DisputeExpired(_briefId, app.influencer, false);
+                }
+            }
+        }
+    }
+
+    function expireDispute(bytes32 _briefId, address _influencer) external briefExists(_briefId) {
+        require(disputeTimestamp[_briefId][_influencer] > 0, "No dispute exists");
+        require(block.timestamp > disputeTimestamp[_briefId][_influencer] + DISPUTE_RESOLUTION_DEADLINE, 
+            "Dispute not yet expired");
+        
+        // Find and update the application
+        for (uint256 i = 0; i < applications[_briefId].length; i++) {
+            InfluencerApplication storage app = applications[_briefId][i];
+            if (app.influencer == _influencer && app.isSelected && 
+                app.disputeStatus == DisputeStatus.FLAGGED) {
+                
+                app.disputeStatus = DisputeStatus.EXPIRED;
+                emit DisputeExpired(_briefId, _influencer, false);
+                break;
+            }
+        }
     }
 
 }

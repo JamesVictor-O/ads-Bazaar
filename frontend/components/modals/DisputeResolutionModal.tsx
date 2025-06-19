@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   XCircle,
@@ -56,6 +56,11 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
   const [transactionPhase, setTransactionPhase] =
     useState<TransactionPhase>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
+
+  const isExpired = useMemo(() => {
+    const currentTime = new Date();
+    return dispute.status === "FLAGGED" && currentTime > dispute.deadline;
+  }, [dispute]);
 
   const handleResolve = async (isValid: boolean) => {
     if (!canResolve) {
@@ -119,7 +124,10 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
   const isTransactionInProgress =
     transactionPhase === "resolving" || isResolving;
   const canActuallyResolve =
-    dispute.status === "FLAGGED" && canResolve && !isTransactionInProgress;
+    dispute.status === "FLAGGED" &&
+    canResolve &&
+    !isTransactionInProgress &&
+    !isExpired;
 
   return (
     <motion.div
@@ -180,6 +188,25 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
                 <p className="text-xs text-slate-400">
                   You can view dispute details for transparency. Only authorized
                   dispute resolvers can take action.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Expiration Notice */}
+        {isExpired && (
+          <div className="px-4 pt-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start">
+              <XCircle className="text-red-400 mr-3 mt-1 flex-shrink-0 w-5 h-5" />
+              <div>
+                <p className="text-sm font-medium text-red-400 mb-1">
+                  ⏰ Dispute Resolution Period Expired
+                </p>
+                <p className="text-xs text-red-300">
+                  This dispute was not resolved within the 2-day deadline. It
+                  will be automatically marked as invalid during campaign
+                  completion to protect the business.
                 </p>
               </div>
             </div>
@@ -329,7 +356,7 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
           </div>
 
           {/* Resolution Guidelines for Resolvers */}
-          {canResolve && dispute.status === "FLAGGED" && (
+          {canResolve && dispute.status === "FLAGGED" && !isExpired && (
             <div className="mt-6 p-4 bg-slate-900/50 rounded-xl border border-slate-700/50">
               <h4 className="text-sm font-medium text-slate-300 mb-2">
                 Resolution Guidelines
@@ -349,7 +376,7 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
         {/* Fixed Action Buttons */}
         {dispute.status === "FLAGGED" && (
           <div className="border-t border-slate-700/50 bg-slate-800/95 p-4 sticky bottom-0">
-            {canResolve ? (
+            {canResolve && !isExpired ? (
               <div className="flex flex-col sm:flex-row justify-end gap-3">
                 <motion.button
                   onClick={onClose}
@@ -384,39 +411,10 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
                   onClick={onClose}
                   className="px-6 py-2.5 bg-slate-700/50 text-slate-300 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 font-medium text-sm"
                 >
-                  Close
+                  {isExpired ? "Close (Expired)" : "Close"}
                 </button>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Already Resolved Display */}
-        {dispute.status !== "FLAGGED" && (
-          <div className="border-t border-slate-700/50 bg-slate-800/95 p-4 sticky bottom-0">
-            <div className="flex items-center justify-between">
-              <div
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${getStatusColor(
-                  dispute.status
-                )}`}
-              >
-                {dispute.status === "RESOLVED_VALID" ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  <XCircle className="w-4 h-4" />
-                )}
-                <span className="text-sm font-medium">
-                  Dispute Resolved:{" "}
-                  {dispute.status.replace("RESOLVED_", "").toLowerCase()}
-                </span>
-              </div>
-              <button
-                onClick={onClose}
-                className="px-6 py-2.5 bg-slate-700/50 text-slate-300 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 font-medium text-sm"
-              >
-                Close
-              </button>
-            </div>
           </div>
         )}
       </motion.div>

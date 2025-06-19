@@ -4,6 +4,10 @@ import { celo } from "viem/chains";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import ABI from "@/lib/AdsBazaar.json";
 
+import { getCurrentNetworkConfig } from "@/lib/networks";
+
+const currentNetwork = getCurrentNetworkConfig();
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { briefId: string; influencer: string } }
@@ -13,8 +17,8 @@ export async function GET(
     const influencer = params.influencer as `0x${string}`;
 
     const publicClient = createPublicClient({
-      chain: celo,
-      transport: http(),
+      chain: currentNetwork.chain,
+      transport: http(currentNetwork.rpcUrl),
     });
 
     // Get dispute details for this application

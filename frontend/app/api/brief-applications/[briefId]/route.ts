@@ -4,9 +4,13 @@ import { celo } from "viem/chains";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import ABI from "@/lib/AdsBazaar.json";
 
+import { getCurrentNetworkConfig } from "@/lib/networks";
+
+const currentNetwork = getCurrentNetworkConfig();
+
 const publicClient = createPublicClient({
-  chain: celo,
-  transport: http(),
+  chain: currentNetwork.chain,
+  transport: http(currentNetwork.rpcUrl),
 });
 
 export async function GET(

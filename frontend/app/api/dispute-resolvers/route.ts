@@ -4,11 +4,14 @@ import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import ABI from "@/lib/AdsBazaar.json";
 
 import { createPublicClient, http } from "viem";
-import { sepolia } from "viem/chains";
+
+import { getCurrentNetworkConfig } from "@/lib/networks";
+
+const currentNetwork = getCurrentNetworkConfig();
 
 const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http(),
+  chain: currentNetwork.chain,
+  transport: http(currentNetwork.rpcUrl),
 });
 
 export async function GET() {

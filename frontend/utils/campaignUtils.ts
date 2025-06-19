@@ -10,6 +10,7 @@ import {
   ProofStatus,
   PaymentStatus,
   PHASE_LABELS,
+  DisputeStatus,
 } from "@/types";
 
 /**
@@ -453,4 +454,46 @@ export function getActionPriority(brief: Brief): "high" | "medium" | "low" {
   }
 
   return "low";
+}
+
+export function hasPendingDisputes(
+  applications: Application[],
+  currentTime: number = Date.now() / 1000
+): {
+  hasPending: boolean;
+  pendingCount: number;
+  canAutoApprove: boolean;
+} {
+  const DISPUTE_RESOLUTION_DEADLINE = 2 * 24 * 60 * 60; // 2 days
+
+  const pendingDisputes = applications.filter(
+    (app) =>
+      app.isSelected &&
+      app.disputeStatus === DisputeStatus.FLAGGED &&
+      currentTime <= app.timestamp + DISPUTE_RESOLUTION_DEADLINE
+  );
+
+  return {
+    hasPending: pendingDisputes.length > 0,
+    pendingCount: pendingDisputes.length,
+    canAutoApprove:
+      currentTime >
+      Math.max(...applications.map((a) => a.timestamp)) +
+        DISPUTE_RESOLUTION_DEADLINE,
+  };
+}
+
+/**
+ * Determines if a dispute has expired
+ */
+export function isDisputeExpired(
+  application: Application,
+  currentTime: number = Date.now() / 1000
+): boolean {
+  const DISPUTE_RESOLUTION_DEADLINE = 2 * 24 * 60 * 60; // 2 days
+
+  return (
+    application.disputeStatus === DisputeStatus.FLAGGED &&
+    currentTime > application.timestamp + DISPUTE_RESOLUTION_DEADLINE
+  );
 }
