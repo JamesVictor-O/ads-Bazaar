@@ -244,56 +244,87 @@ export function computeApplicationInfo(
 
   let proofStatus: ProofStatus;
   let paymentStatus: PaymentStatus;
-  let canSubmitProof = false;
+  let canSubmitProof = false; // Default to false
   let canClaim = false;
   let nextAction: string | undefined;
   let warning: string | undefined;
 
-  // Determine proof status
+  // Early return if not selected
   if (!application.isSelected) {
-    proofStatus = ProofStatus.NOT_REQUIRED;
-  } else if (!application.proofLink) {
+    return {
+      canSubmitProof: false,
+      canClaim: false,
+      proofStatus: ProofStatus.NOT_REQUIRED,
+      paymentStatus: PaymentStatus.NOT_EARNED,
+      nextAction: "Not selected for this campaign",
+    };
+  }
+
+  // Determine proof status and submission capability
+  if (!application.proofLink) {
     proofStatus = ProofStatus.PENDING;
     
-    // Enhanced logic to check campaign timing for proof submission
+    // EXPLICIT timing checks for proof submission
+    console.log('Checking submission timing:', {
+      currentPhase: briefTiming.phase,
+      currentTime,
+      promotionStartTime: brief.promotionStartTime,
+      promotionEndTime: brief.promotionEndTime,
+      proofSubmissionDeadline: brief.proofSubmissionDeadline,
+    });
+
     if (briefTiming.phase === CampaignPhase.PREPARATION) {
-      // In preparation phase - can't submit yet
-      nextAction = `Campaign starts ${formatTimeRemaining(
-        getTimeRemaining(brief.promotionStartTime)
-      )}`;
+      // In preparation phase - CANNOT submit yet
+      canSubmitProof = false;
+      const timeUntilStart = brief.promotionStartTime - currentTime;
+      const timeRemaining = getTimeRemaining(brief.promotionStartTime);
+      nextAction = `Campaign starts in ${formatTimeRemaining(timeRemaining)}`;
+      
     } else if (briefTiming.phase === CampaignPhase.PROMOTION) {
-      // During promotion phase - can submit proof
+      // During promotion phase - CAN submit proof
       canSubmitProof = true;
       nextAction = "Submit proof of your promotional work";
       if (briefTiming.isUrgent) {
         warning = "Campaign ends soon!";
       }
+      
     } else if (briefTiming.phase === CampaignPhase.PROOF_SUBMISSION) {
-      // After campaign ends but within submission grace period
+      // After campaign ends but within submission grace period - CAN submit
       canSubmitProof = true;
       nextAction = "Submit proof of work";
       if (briefTiming.isUrgent) {
         warning = "Proof submission deadline approaching!";
       }
+      
     } else if (
       briefTiming.phase === CampaignPhase.VERIFICATION ||
       briefTiming.phase === CampaignPhase.COMPLETED
     ) {
       // Too late to submit
+      canSubmitProof = false;
       nextAction = "Proof submission period ended";
       warning = "You missed the submission deadline";
+      
     } else {
-      // Default case
+      // Default case - cannot submit
+      canSubmitProof = false;
       nextAction = "Awaiting campaign start";
     }
-  } else if (application.disputeStatus === DisputeStatus.RESOLVED_INVALID || application.disputeStatus === DisputeStatus.EXPIRED) {
+    
+  } else if (application.disputeStatus === DisputeStatus.RESOLVED_INVALID || 
+            application.disputeStatus === DisputeStatus.EXPIRED) {
     proofStatus = ProofStatus.REJECTED;
+    canSubmitProof = false;
     nextAction = "Submission was rejected";
+    
   } else if (application.isApproved) {
     proofStatus = ProofStatus.APPROVED;
+    canSubmitProof = false;
     nextAction = "Proof approved";
+    
   } else {
     proofStatus = ProofStatus.SUBMITTED;
+    canSubmitProof = false;
     nextAction = "Awaiting proof review";
   }
 

@@ -67,6 +67,7 @@ import {
   getPaymentStatusColor,
   formatTimeRemaining,
   getPhaseLabel,
+  getTimeRemaining
 } from "@/utils/campaignUtils";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 
@@ -949,19 +950,14 @@ export default function InfluencerDashboard() {
           ) : (
             <div className="space-y-4 md:space-y-6">
               {filteredCampaigns.map((briefData, index) => {
-                const appInfo = computeApplicationInfo(
-                  briefData.application,
-                  briefData.brief
-                );
+                const appInfo = computeApplicationInfo(briefData.application, briefData.brief);
                 const isExpanded = expandedBriefId === briefData.briefId;
                 const budget = briefData.brief.budget;
                 const hasProof = !!briefData.application.proofLink;
-                const canSubmitProof =
-                  briefData.application.isSelected &&
-                  !briefData.application.isApproved;
-                const canClaim =
-                  briefData.application.isApproved &&
-                  !briefData.application.hasClaimed;
+                
+                // Use the computed application info instead of simple checks
+                const canSubmitProof = appInfo.canSubmitProof;
+                const canClaim = appInfo.canClaim;
 
                 return (
                   <motion.div
@@ -994,60 +990,22 @@ export default function InfluencerDashboard() {
                               {briefData.application.isSelected && (
                                 <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                                   <Star className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">
-                                    Selected
-                                  </span>
+                                  <span className="hidden sm:inline">Selected</span>
                                   <span className="sm:hidden">✓</span>
                                 </span>
                               )}
 
-                              {/* Premium Campaign Badge for High-Value Campaigns */}
-                              {budget >= 1000 && (
-                                <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30">
-                                  <Crown className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">
-                                    Premium
-                                  </span>
-                                  <span className="sm:hidden">👑</span>
-                                </span>
-                              )}
-
-                              {/* Verification Required Badge */}
-                              {budget >= 1500 && !isVerified && (
-                                <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                  <Shield className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">
-                                    Verification Required
-                                  </span>
-                                  <span className="sm:hidden">🔒</span>
-                                </span>
-                              )}
-
-                              <span
-                                className={`px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full border ${getStatusColor(
-                                  briefData.brief.status
-                                )}`}
-                              >
-                                <span className="hidden sm:inline">
-                                  {briefData.brief.statusInfo.statusLabel}
-                                </span>
-                                <span className="sm:hidden">
-                                  {briefData.brief.statusInfo.statusLabel.slice(
-                                    0,
-                                    6
-                                  )}
-                                </span>
+                              {/* Campaign phase indicator */}
+                              <span className={`px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full border ${getPhaseColor(briefData.brief.timingInfo.phase)}`}>
+                                <span className="hidden sm:inline">{getPhaseLabel(briefData.brief.timingInfo.phase)}</span>
+                                <span className="sm:hidden">{briefData.brief.timingInfo.phase}</span>
                               </span>
 
                               {/* Urgent indicator */}
-                              {(appInfo.canSubmitProof ||
-                                appInfo.canClaim ||
-                                appInfo.warning) && (
+                              {(appInfo.canSubmitProof || appInfo.canClaim || appInfo.warning) && (
                                 <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
                                   <Zap className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">
-                                    Action
-                                  </span>
+                                  <span className="hidden sm:inline">Action</span>
                                   <span className="sm:hidden">!</span>
                                 </span>
                               )}
@@ -1063,14 +1021,10 @@ export default function InfluencerDashboard() {
                             <div className="flex items-center gap-1 md:gap-2">
                               <Calendar className="w-3 h-3 md:w-5 md:h-5" />
                               <span className="hidden sm:inline">
-                                {new Date(
-                                  briefData.brief.creationTime * 1000
-                                ).toLocaleDateString()}
+                                {new Date(briefData.brief.creationTime * 1000).toLocaleDateString()}
                               </span>
                               <span className="sm:hidden">
-                                {new Date(
-                                  briefData.brief.creationTime * 1000
-                                ).toLocaleDateString("en-US", {
+                                {new Date(briefData.brief.creationTime * 1000).toLocaleDateString("en-US", {
                                   month: "short",
                                   day: "numeric",
                                 })}
@@ -1085,16 +1039,8 @@ export default function InfluencerDashboard() {
                             {briefData.brief.timingInfo.timeRemaining && (
                               <div className="flex items-center gap-1 md:gap-2">
                                 <Timer className="w-3 h-3 md:w-5 md:h-5" />
-                                <span
-                                  className={
-                                    briefData.brief.timingInfo.isUrgent
-                                      ? "text-orange-400"
-                                      : ""
-                                  }
-                                >
-                                  {formatTimeRemaining(
-                                    briefData.brief.timingInfo.timeRemaining
-                                  )}{" "}
+                                <span className={briefData.brief.timingInfo.isUrgent ? "text-orange-400" : ""}>
+                                  {formatTimeRemaining(briefData.brief.timingInfo.timeRemaining)}{" "}
                                   <span className="hidden sm:inline">left</span>
                                 </span>
                               </div>
@@ -1103,39 +1049,8 @@ export default function InfluencerDashboard() {
                         </div>
                       </div>
 
-                      {/* Verification Gate for Premium Campaigns */}
-                      {budget >= 1500 && !isVerified && (
-                        <div className="p-3 md:p-6 rounded-xl md:rounded-2xl border bg-gradient-to-r from-purple-500/5 to-pink-500/5 border-purple-500/20 mb-4 md:mb-6">
-                          <div className="flex items-center gap-3 md:gap-4">
-                            <Crown className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
-                            <div>
-                              <p className="text-purple-300 font-medium text-sm md:text-lg">
-                                🔒 Premium Campaign - Verification Required
-                              </p>
-                              <p className="text-purple-400/70 text-xs md:text-sm">
-                                This high-value campaign requires verified
-                                creators. Complete verification to unlock
-                                access.
-                              </p>
-                            </div>
-                            <Link href="/selfVerification">
-                              <motion.button
-                                className="flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg md:rounded-xl font-medium transition-all text-xs md:text-sm"
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <Shield className="w-3 h-3 md:w-4 md:h-4" />
-                                <span className="hidden sm:inline">
-                                  Verify Now
-                                </span>
-                                <span className="sm:hidden">Verify</span>
-                              </motion.button>
-                            </Link>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Action Needed Alert */}
-                      {(canSubmitProof || canClaim) && (
+                      {/* Action Needed Alert - Use appInfo for proper messaging */}
+                      {(canSubmitProof || canClaim || appInfo.warning) && (
                         <div className="p-3 md:p-6 rounded-xl md:rounded-2xl border bg-orange-500/5 border-orange-500/20 mb-4 md:mb-6">
                           <div className="flex items-center gap-3 md:gap-4">
                             <Zap className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
@@ -1143,12 +1058,14 @@ export default function InfluencerDashboard() {
                               <p className="text-orange-300 font-medium text-sm md:text-lg">
                                 {canSubmitProof
                                   ? "Ready to submit your content"
-                                  : "Payment ready to claim"}
+                                  : canClaim
+                                  ? "Payment ready to claim"
+                                  : appInfo.nextAction}
                               </p>
                               <p className="text-orange-400/70 text-xs md:text-sm">
-                                {canSubmitProof
-                                  ? "Upload your promotional content for review"
-                                  : "Claim your earnings now"}
+                                {appInfo.warning || 
+                                (canSubmitProof ? "Upload your promotional content for review" : 
+                                  canClaim ? "Claim your earnings now" : "")}
                               </p>
                             </div>
                           </div>
@@ -1159,21 +1076,19 @@ export default function InfluencerDashboard() {
                       {briefData.application.isSelected && (
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-6 mb-4 md:mb-6">
                           <div className="flex items-center gap-2 md:gap-3">
-                            <div
-                              className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
-                                briefData.application.isApproved
-                                  ? "bg-emerald-400"
-                                  : hasProof
-                                  ? "bg-amber-400"
-                                  : "bg-slate-500"
-                              }`}
-                            ></div>
+                            <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
+                              briefData.application.isApproved
+                                ? "bg-emerald-400"
+                                : hasProof
+                                ? "bg-amber-400"
+                                : "bg-slate-500"
+                            }`}></div>
                             <span className="text-slate-300 font-medium text-sm md:text-base">
                               {briefData.application.isApproved
                                 ? "Content Approved"
                                 : hasProof
                                 ? "Under Review"
-                                : "Awaiting Content"}
+                                : appInfo.nextAction || "Awaiting Content"}
                             </span>
                           </div>
 
@@ -1192,11 +1107,7 @@ export default function InfluencerDashboard() {
                     {/* Expandable Requirements */}
                     <div className="border-t border-slate-700/30">
                       <motion.button
-                        onClick={() =>
-                          setExpandedBriefId(
-                            isExpanded ? null : briefData.briefId
-                          )
-                        }
+                        onClick={() => setExpandedBriefId(isExpanded ? null : briefData.briefId)}
                         className="w-full p-3 md:p-6 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
                         whileTap={{ scale: 0.995 }}
                       >
@@ -1233,62 +1144,36 @@ export default function InfluencerDashboard() {
                                 </p>
                               </div>
 
-                              {/* Verification Benefits Notice */}
-                              {budget >= 1000 && (
-                                <div
-                                  className={`p-3 md:p-4 rounded-xl border mb-4 md:mb-6 ${
-                                    isVerified
-                                      ? "bg-emerald-500/10 border-emerald-500/20"
-                                      : "bg-amber-500/10 border-amber-500/20"
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                                    {isVerified ? (
-                                      <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
-                                    ) : (
-                                      <Shield className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
-                                    )}
-                                    <span
-                                      className={`font-semibold text-sm md:text-base ${
-                                        isVerified
-                                          ? "text-emerald-400"
-                                          : "text-amber-400"
-                                      }`}
-                                    >
-                                      {isVerified
-                                        ? "✓ Verified Creator Benefits"
-                                        : "🔒 Verification Benefits Available"}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-wrap gap-2 text-xs md:text-sm">
-                                    <span
-                                      className={`px-2 py-1 rounded-full ${
-                                        isVerified
-                                          ? "bg-emerald-500/20 text-emerald-300"
-                                          : "bg-amber-500/20 text-amber-300"
-                                      }`}
-                                    >
-                                      {isVerified ? "✓" : "+"} Priority
-                                      Selection
-                                    </span>
-                                    <span
-                                      className={`px-2 py-1 rounded-full ${
-                                        isVerified
-                                          ? "bg-emerald-500/20 text-emerald-300"
-                                          : "bg-amber-500/20 text-amber-300"
-                                      }`}
-                                    >
-                                      {isVerified ? "✓" : "+"} Faster Payments
-                                    </span>
-                                    <span
-                                      className={`px-2 py-1 rounded-full ${
-                                        isVerified
-                                          ? "bg-emerald-500/20 text-emerald-300"
-                                          : "bg-amber-500/20 text-amber-300"
-                                      }`}
-                                    >
-                                      {isVerified ? "✓" : "+"} Premium Support
-                                    </span>
+                              {/* Campaign Timeline for Selected Influencers */}
+                              {briefData.application.isSelected && (
+                                <div className="bg-slate-800/30 p-3 md:p-4 rounded-xl border border-slate-700/50 mb-4 md:mb-6">
+                                  <h4 className="text-slate-300 font-semibold mb-2 md:mb-3 text-sm md:text-base">
+                                    📅 Campaign Timeline:
+                                  </h4>
+                                  <div className="space-y-2 text-xs md:text-sm">
+                                    <div className="flex justify-between">
+                                      <span className="text-slate-400">Campaign Start:</span>
+                                      <span className="text-slate-200">
+                                        {format(new Date(briefData.brief.promotionStartTime * 1000), "MMM d, yyyy HH:mm")}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-slate-400">Campaign End:</span>
+                                      <span className="text-slate-200">
+                                        {format(new Date(briefData.brief.promotionEndTime * 1000), "MMM d, yyyy HH:mm")}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-slate-400">Proof Deadline:</span>
+                                      <span className="text-slate-200">
+                                        {format(new Date(briefData.brief.proofSubmissionDeadline * 1000), "MMM d, yyyy HH:mm")}
+                                      </span>
+                                    </div>
+                                    <div className="mt-3 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                                      <p className="text-blue-400 text-xs md:text-sm">
+                                        ⏰ {appInfo.nextAction}
+                                      </p>
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -1305,22 +1190,16 @@ export default function InfluencerDashboard() {
                                     whileTap={{ scale: 0.98 }}
                                   >
                                     <Eye className="w-4 h-4 md:w-5 md:h-5" />
-                                    <span className="hidden sm:inline">
-                                      View Submission
-                                    </span>
+                                    <span className="hidden sm:inline">View Submission</span>
                                     <span className="sm:hidden">View</span>
                                     <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
                                   </motion.a>
                                 )}
 
+                                {/* Submit/Update button - now properly controlled by timing */}
                                 {canSubmitProof && (
                                   <motion.button
-                                    onClick={() =>
-                                      handleSubmitProofClick(
-                                        briefData,
-                                        hasProof
-                                      )
-                                    }
+                                    onClick={() => handleSubmitProofClick(briefData, hasProof)}
                                     className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg md:rounded-xl border border-emerald-500/30 transition-all font-medium text-sm md:text-base"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
@@ -1329,25 +1208,27 @@ export default function InfluencerDashboard() {
                                     {hasProof ? (
                                       <>
                                         <Edit3 className="w-4 h-4 md:w-5 md:h-5" />
-                                        <span className="hidden sm:inline">
-                                          Update Content
-                                        </span>
-                                        <span className="sm:hidden">
-                                          Update
-                                        </span>
+                                        <span className="hidden sm:inline">Update Content</span>
+                                        <span className="sm:hidden">Update</span>
                                       </>
                                     ) : (
                                       <>
                                         <Upload className="w-4 h-4 md:w-5 md:h-5" />
-                                        <span className="hidden sm:inline">
-                                          Submit Content
-                                        </span>
-                                        <span className="sm:hidden">
-                                          Submit
-                                        </span>
+                                        <span className="hidden sm:inline">Submit Content</span>
+                                        <span className="sm:hidden">Submit</span>
                                       </>
                                     )}
                                   </motion.button>
+                                )}
+
+                                {/* Timing message when can't submit yet */}
+                                {briefData.application.isSelected && !canSubmitProof && !briefData.application.isApproved && (
+                                  <div className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-amber-600/10 text-amber-400 rounded-lg md:rounded-xl border border-amber-500/20 text-sm md:text-base">
+                                    <Timer className="w-4 h-4 md:w-5 md:h-5" />
+                                    <span className="text-xs md:text-sm">
+                                      {appInfo.nextAction || "Campaign not ready for submissions yet"}
+                                    </span>
+                                  </div>
                                 )}
 
                                 {canClaim && (
@@ -1373,7 +1254,7 @@ export default function InfluencerDashboard() {
                     </div>
                   </motion.div>
                 );
-              })}
+            })}
             </div>
           )}
         </motion.div>
