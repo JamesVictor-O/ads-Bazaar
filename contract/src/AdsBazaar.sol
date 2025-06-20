@@ -840,13 +840,13 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
         uint256 completed = users[_influencer].completedCampaigns;
         UserStatus newStatus;
         
-        if (completed >= 20) {
+        if (completed >= 500) {
             newStatus = UserStatus.SUPERSTAR;
-        } else if (completed >= 10) {
+        } else if (completed >= 100) {
             newStatus = UserStatus.ELITE;
-        } else if (completed >= 5) {
+        } else if (completed >= 50) {
             newStatus = UserStatus.POPULAR;
-        } else if (completed >= 2) {
+        } else if (completed >= 20) {
             newStatus = UserStatus.RISING;
         } else {
             newStatus = UserStatus.NEW_COMER;
@@ -862,13 +862,13 @@ contract AdsBazaar is SelfVerificationRoot, ReentrancyGuard {
         uint256 totalEscrowed = users[_business].totalEscrowed;
         UserStatus newStatus;
         
-        if (totalEscrowed >= 10000 ether) { 
+        if (totalEscrowed >= 1000 ether) { 
             newStatus = UserStatus.SUPERSTAR;
-        } else if (totalEscrowed >= 5000 ether) {
-            newStatus = UserStatus.ELITE;
-        } else if (totalEscrowed >= 1000 ether) {
-            newStatus = UserStatus.POPULAR;
         } else if (totalEscrowed >= 500 ether) {
+            newStatus = UserStatus.ELITE;
+        } else if (totalEscrowed >= 200 ether) {
+            newStatus = UserStatus.POPULAR;
+        } else if (totalEscrowed >= 50 ether) {
             newStatus = UserStatus.RISING;
         } else {
             newStatus = UserStatus.NEW_COMER;
