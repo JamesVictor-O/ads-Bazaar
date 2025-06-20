@@ -94,6 +94,10 @@ export default function Marketplace() {
     ApplicationStatus[]
   >([]);
 
+  const [userApplications, setUserApplications] = useState<{
+    [briefId: string]: "applied" | "assigned" | null;
+  }>({});
+
   // Fetch all campaigns
   const { briefs: allBriefs, isLoading } = useGetAllBriefs();
 
@@ -183,7 +187,7 @@ export default function Marketplace() {
 
         if (!appliedBriefIds || appliedBriefIds.length === 0) {
           console.log("No applications found for this influencer");
-          setApplications({});
+          setUserApplications({});
           setApplicationStatuses([]);
           return;
         }
@@ -192,20 +196,12 @@ export default function Marketplace() {
 
         // Step 2: Fetch current application data for each brief
         const updatedApplications: {
-          [briefId: string]: InfluencerApplication;
+          [briefId: string]: "applied" | "assigned";
         } = {};
         const statusesData: ApplicationStatus[] = [];
 
         for (const briefId of appliedBriefIds) {
           try {
-            // Get brief details for campaign name
-            const briefData = (await publicClient.readContract({
-              address: CONTRACT_ADDRESS,
-              abi: ABI.abi,
-              functionName: "briefs",
-              args: [briefId],
-            })) as any[];
-
             // Get application details
             const applicationData = (await publicClient.readContract({
               address: CONTRACT_ADDRESS,
@@ -230,50 +226,11 @@ export default function Marketplace() {
               );
 
               if (influencerIndex !== -1) {
-                // Step 3: Build application object with briefId
-                const applicationWithBrief: InfluencerApplication = {
-                  influencer: applicationData.influencers[
-                    influencerIndex
-                  ] as `0x${string}`,
-                  message: applicationData.messages[influencerIndex],
-                  timestamp: Number(
-                    applicationData.timestamps[influencerIndex]
-                  ),
-                  isSelected: applicationData.isSelected[influencerIndex],
-                  hasClaimed: applicationData.hasClaimed[influencerIndex],
-                  proofLink: applicationData.proofLinks[influencerIndex],
-                  isApproved: applicationData.isApproved[influencerIndex],
-                  briefId: briefId, // This is why we need briefId!
-
-                  // Add required properties from Application interface
-                  disputeStatus: DisputeStatus.NONE,
-                  disputeReason: "",
-                  resolvedBy:
-                    "0x0000000000000000000000000000000000000000" as `0x${string}`,
-                  applicationInfo: {
-                    canSubmitProof: false,
-                    canClaim: false,
-                    proofStatus: "not_required" as any,
-                    paymentStatus: "not_earned" as any,
-                  },
-                };
-
-                updatedApplications[briefId] = applicationWithBrief;
-
-                // Step 4: Compute status for UI display
-                const status = computeApplicationStatus(
-                  applicationWithBrief,
-                  briefData
-                );
-                statusesData.push({
-                  briefId,
-                  campaignName: briefData[2] as string, // name from brief
-                  applicationData: applicationWithBrief,
-                  ...status,
-                });
+                const isSelected = applicationData.isSelected[influencerIndex];
+                updatedApplications[briefId] = isSelected ? "assigned" : "applied";
 
                 console.log(
-                  `Updated application for campaign ${briefData[2]}: ${status.status}`
+                  `Updated application for campaign ${briefId}: ${updatedApplications[briefId]}`
                 );
               }
             }
@@ -285,9 +242,8 @@ export default function Marketplace() {
           }
         }
 
-        // Step 5: Update state with fresh data
-        setApplications(updatedApplications);
-        setApplicationStatuses(statusesData);
+        // Step 3: Update state with fresh data
+        setUserApplications(updatedApplications);
 
         console.log(
           `Refresh complete: ${
@@ -332,10 +288,12 @@ export default function Marketplace() {
     }
   }, [isConnected, userProfile?.isInfluencer]);
 
+
   const handleApplicationSuccess = useCallback(() => {
+    // Immediately refresh the application status after successful application
     setTimeout(() => {
       refreshApplicationStatus();
-    }, 2000);
+    }, 1000); // Small delay to allow blockchain state to update
   }, [refreshApplicationStatus]);
 
   if (isLoading) {
@@ -370,7 +328,7 @@ export default function Marketplace() {
 
   // Enhanced button state logic
   const getButtonState = (campaign: Brief) => {
-    const status = applicationStatus[campaign.id];
+    const status = userApplications[campaign.id]; 
     const { statusInfo, timingInfo } = campaign;
 
     if (status === "applied") {
@@ -572,31 +530,31 @@ export default function Marketplace() {
 
             {/* Quick Stats */}
             {isConnected && userProfile?.isInfluencer && (
-              <div className="text-right text-sm text-slate-400">
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-emerald-400">
-                      {
-                        Object.values(applicationStatus).filter(
-                          (s) => s === "applied"
-                        ).length
-                      }
-                    </div>
-                    <div className="text-xs">Applied</div>
+            <div className="text-right text-sm text-slate-400">
+              <div className="flex items-center gap-4">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-emerald-400">
+                    {
+                      Object.values(userApplications).filter(
+                        (s) => s === "applied"
+                      ).length
+                    }
                   </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-blue-400">
-                      {
-                        Object.values(applicationStatus).filter(
-                          (s) => s === "assigned"
-                        ).length
-                      }
-                    </div>
-                    <div className="text-xs">Assigned</div>
+                  <div className="text-xs">Applied</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-400">
+                    {
+                      Object.values(userApplications).filter(
+                        (s) => s === "assigned"
+                      ).length
+                    }
                   </div>
+                  <div className="text-xs">Assigned</div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
           </div>
         </div>
 
