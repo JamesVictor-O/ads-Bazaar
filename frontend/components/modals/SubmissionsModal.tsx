@@ -1,4 +1,3 @@
-// Enhanced SubmissionsModal.tsx with fixes for issues 2, 3, 4, and 5
 
 "use client";
 
@@ -282,56 +281,55 @@ export const SubmissionsModal = ({
 
           {/* Pending Disputes Warning */}
           {disputeAnalysis.hasPending && (
-            <div className="p-3 sm:p-4 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-400 mt-1 flex-shrink-0" />
-                <div className="flex-1">
-                  <h3 className="text-amber-400 font-medium mb-2">
-                    ⏳ Pending Disputes Block Manual Completion
-                  </h3>
-                  <p className="text-amber-300 text-sm mb-3">
-                    {disputeAnalysis.pendingCount} dispute(s) must be resolved
-                    before you can complete this campaign manually.
-                    {canAutoApprove && " However, auto-approval is available."}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Link href="/disputeresolution">
-                      <button className="text-amber-400 hover:text-amber-300 text-sm font-medium px-3 py-1 bg-amber-500/20 rounded">
-                        View Disputes →
-                      </button>
-                    </Link>
-                    {canAutoApprove && (
-                      <button
-                        onClick={() => onReleaseFunds(selectedBrief.id)}
-                        className="text-emerald-400 hover:text-emerald-300 text-sm font-medium px-3 py-1 bg-emerald-500/20 rounded"
-                        disabled={isCompletingCampaign}
-                      >
-                        ⚡ Trigger Auto-Approval
-                      </button>
-                    )}
-                  </div>
+          <div className="p-3 sm:p-4 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 mt-1 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-amber-400 font-medium mb-2">
+                  ⏳ Pending Disputes Block Campaign Completion
+                </h3>
+                <p className="text-amber-300 text-sm mb-3">
+                  {disputeAnalysis.pendingCount} dispute(s) must be resolved
+                  before you can complete this campaign.
+                  {canAutoApprove && " However, you can force completion after the verification period."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/disputeresolution">
+                    <button className="text-amber-400 hover:text-amber-300 text-sm font-medium px-3 py-1 bg-amber-500/20 rounded">
+                      View Disputes →
+                    </button>
+                  </Link>
+                  {canAutoApprove && (
+                    <button
+                      onClick={() => onReleaseFunds(selectedBrief.id)}
+                      className="text-emerald-400 hover:text-emerald-300 text-sm font-medium px-3 py-1 bg-emerald-500/20 rounded"
+                      disabled={isCompletingCampaign}
+                    >
+                      ⚡ Force Complete Campaign
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {/* Auto-approval Notice */}
           {canAutoApprove && !disputeAnalysis.hasPending && (
-            <div className="p-3 sm:p-4 bg-blue-500/10 border-b border-blue-500/20 flex-shrink-0">
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-blue-400 mt-1 flex-shrink-0" />
-                <div>
-                  <h4 className="text-blue-400 font-medium mb-2">
-                    🤖 Auto-Approval Available
-                  </h4>
-                  <p className="text-blue-300 text-sm">
-                    The verification deadline has passed. Auto-approval will
-                    finalize all payments and handle expired disputes
-                    automatically.
-                  </p>
-                </div>
+          <div className="p-3 sm:p-4 bg-blue-500/10 border-b border-blue-500/20 flex-shrink-0">
+            <div className="flex items-start gap-3">
+              <Clock className="w-5 h-5 text-blue-400 mt-1 flex-shrink-0" />
+              <div>
+                <h4 className="text-blue-400 font-medium mb-2">
+                  🕒 Verification Period Complete
+                </h4>
+                <p className="text-blue-300 text-sm">
+                  The verification deadline has passed. You can now complete the campaign 
+                  which will finalize all payments and handle any remaining disputes.
+                </p>
               </div>
             </div>
+          </div>
           )}
 
           {/* Timing Information Section - Fix for issue #5 */}
@@ -636,17 +634,15 @@ export const SubmissionsModal = ({
                   {canReleaseFunds.canRelease || canAutoApprove ? (
                     <span>
                       {canAutoApprove
-                        ? "🤖 Auto-approval will process all valid submissions and expire unresolved disputes"
-                        : "✅ Review all submissions and release funds for approved work"}
+                        ? "🕒 Verification period complete - you can now finalize all payments"
+                        : "✅ Review all submissions and complete the campaign"}
                     </span>
                   ) : (
                     <span>
                       ⏳ {canReleaseFunds.reason}
                       {canReleaseFunds.timeRemaining &&
                         ` (${formatTimeRemaining(
-                          getTimeRemaining(
-                            selectedBrief.proofSubmissionDeadline
-                          )
+                          getTimeRemaining(selectedBrief.proofSubmissionDeadline)
                         )} remaining)`}
                     </span>
                   )}
@@ -690,9 +686,9 @@ export const SubmissionsModal = ({
                       <>
                         <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="hidden sm:inline">
-                          🤖 Auto-Approve & Release Funds
+                          🕒 Complete & Release Funds
                         </span>
-                        <span className="sm:hidden">🤖 Auto-Approve</span>
+                        <span className="sm:hidden">🕒 Complete</span>
                       </>
                     ) : canReleaseFunds.canRelease ? (
                       <>

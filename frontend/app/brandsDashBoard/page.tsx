@@ -136,42 +136,41 @@ const BrandDashboard = () => {
 
   // Computed dashboard data
   const dashboardData = useMemo(() => {
-    if (!briefs) return null;
+  if (!briefs) return null;
 
-    const activeBriefs = briefs.filter(
-      (brief) =>
-        brief.status === CampaignStatus.OPEN ||
-        brief.status === CampaignStatus.ASSIGNED
-    );
-    const completedBriefs = briefs.filter(
-      (brief) => brief.status === CampaignStatus.COMPLETED
-    );
-    const totalBudget = briefs.reduce((sum, brief) => sum + brief.budget, 0);
-    const totalInfluencers = briefs.reduce(
-      (sum, brief) => sum + brief.selectedInfluencersCount,
-      0
-    );
+  const activeBriefs = briefs.filter(
+    (brief) =>
+      brief.status === CampaignStatus.OPEN ||
+      brief.status === CampaignStatus.ASSIGNED
+  );
+  const completedBriefs = briefs.filter(
+    (brief) => brief.status === CampaignStatus.COMPLETED
+  );
+  const totalBudget = briefs.reduce((sum, brief) => sum + brief.budget, 0);
+  const totalInfluencers = briefs.reduce(
+    (sum, brief) => sum + brief.selectedInfluencersCount,
+    0
+  );
 
-    // Get urgent actions
-    const urgentActions = briefs
-      .filter((brief) => isActionUrgent(brief))
-      .map((brief) => ({
-        campaignId: brief.id,
-        campaignName: brief.name,
-        action: brief.statusInfo.nextAction || "Action needed",
-        priority: getActionPriority(brief),
-        dueDate: brief.timingInfo.currentDeadline,
-        warning: brief.statusInfo.warning,
-      }));
+  const urgentActions = briefs
+    .filter((brief) => isActionUrgent(brief))
+    .map((brief) => ({
+      campaignId: brief.id,
+      campaignName: brief.name,
+      action: brief.statusInfo.nextAction || "Action needed",
+      priority: getActionPriority(brief),
+      dueDate: brief.timingInfo.currentDeadline,
+      warning: brief.statusInfo.warning,
+    }));
 
-    return {
-      activeBriefs,
-      completedBriefs,
-      totalBudget,
-      totalInfluencers,
-      urgentActions: urgentActions || [],
-    };
-  }, [briefs]);
+  return {
+    activeBriefs,
+    completedBriefs,
+    totalBudget,
+    totalInfluencers,
+    urgentActions: urgentActions || [],
+  };
+}, [briefs]);
 
   useEffect(() => {
     if (isCreateSuccess) {
@@ -812,33 +811,30 @@ const BrandDashboard = () => {
 
                       {/* Next Action Alert */}
                       {brief.statusInfo.nextAction && (
-                        <div
-                          className={`p-3 md:p-6 rounded-xl md:rounded-2xl border mb-4 md:mb-6 ${
-                            isUrgent
-                              ? "bg-orange-500/5 border-orange-500/20"
-                              : "bg-blue-500/5 border-blue-500/20"
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 md:gap-4">
-                            <div
-                              className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
-                                isUrgent ? "bg-orange-400" : "bg-blue-400"
-                              }`}
-                            ></div>
-                            <span className="text-slate-200 font-medium text-sm md:text-lg">
-                              {brief.statusInfo.nextAction}
+                      <div className={`p-3 md:p-6 rounded-xl md:rounded-2xl border mb-4 md:mb-6 ${
+                        isUrgent
+                          ? "bg-orange-500/5 border-orange-500/20"
+                          : "bg-blue-500/5 border-blue-500/20"
+                      }`}>
+                        <div className="flex items-center gap-2 md:gap-4">
+                          <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
+                            isUrgent ? "bg-orange-400" : "bg-blue-400"
+                          }`}></div>
+                          <span className="text-slate-200 font-medium text-sm md:text-lg">
+                            {brief.statusInfo.nextAction}
+                          </span>
+                        </div>
+                        {brief.statusInfo.warning && (
+                          <div className="flex items-center gap-2 md:gap-3 mt-2 md:mt-3">
+                            <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
+                            <span className="text-orange-400 text-sm md:text-base">
+                      
+                              {brief.statusInfo.warning.replace(/auto.?approval/gi, 'campaign completion')}
                             </span>
                           </div>
-                          {brief.statusInfo.warning && (
-                            <div className="flex items-center gap-2 md:gap-3 mt-2 md:mt-3">
-                              <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
-                              <span className="text-orange-400 text-sm md:text-base">
-                                {brief.statusInfo.warning}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        )}
+                      </div>
+                    )}
 
                       {/* Budget & Progress */}
                       <div className="flex items-center justify-between pt-4 md:pt-6 border-t border-slate-700/30">

@@ -65,8 +65,13 @@ export function computeCampaignStatusInfo(
           warning = "Proof submission deadline approaching!";
         }
       } else if (timingInfo.phase === CampaignPhase.VERIFICATION) {
-        nextAction = "Review and release funds";
-        warning = "Auto-approval will trigger soon";
+        nextAction = "Review submissions and complete campaign";
+        // Remove auto-approval warning and replace with business-focused message
+        if (timingInfo.isUrgent) {
+          warning = "Campaign ready for completion";
+        } else {
+          warning = "Review period - check all submissions";
+        }
       }
       break;
 
