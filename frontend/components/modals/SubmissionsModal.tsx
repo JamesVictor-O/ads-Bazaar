@@ -314,23 +314,7 @@ export const SubmissionsModal = ({
           </div>
         )}
 
-          {/* Auto-approval Notice */}
-          {canAutoApprove && !disputeAnalysis.hasPending && (
-          <div className="p-3 sm:p-4 bg-blue-500/10 border-b border-blue-500/20 flex-shrink-0">
-            <div className="flex items-start gap-3">
-              <Clock className="w-5 h-5 text-blue-400 mt-1 flex-shrink-0" />
-              <div>
-                <h4 className="text-blue-400 font-medium mb-2">
-                  🕒 Verification Period Complete
-                </h4>
-                <p className="text-blue-300 text-sm">
-                  The verification deadline has passed. You can now complete the campaign 
-                  which will finalize all payments and handle any remaining disputes.
-                </p>
-              </div>
-            </div>
-          </div>
-          )}
+        
 
           {/* Timing Information Section - Fix for issue #5 */}
           <div className="p-3 sm:p-4 bg-slate-900/30 border-b border-slate-700/50 flex-shrink-0">
