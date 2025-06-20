@@ -249,21 +249,44 @@ export function computeApplicationInfo(
     proofStatus = ProofStatus.NOT_REQUIRED;
   } else if (!application.proofLink) {
     proofStatus = ProofStatus.PENDING;
-    if (briefTiming.phase === CampaignPhase.PROMOTION) {
+    
+    // Enhanced logic to check campaign timing for proof submission
+    if (briefTiming.phase === CampaignPhase.PREPARATION) {
+      // In preparation phase - can't submit yet
+      nextAction = `Campaign starts ${formatTimeRemaining(
+        getTimeRemaining(brief.promotionStartTime)
+      )}`;
+    } else if (briefTiming.phase === CampaignPhase.PROMOTION) {
+      // During promotion phase - can submit proof
       canSubmitProof = true;
-      nextAction = "Submit proof when campaign is active";
+      nextAction = "Submit proof of your promotional work";
+      if (briefTiming.isUrgent) {
+        warning = "Campaign ends soon!";
+      }
     } else if (briefTiming.phase === CampaignPhase.PROOF_SUBMISSION) {
+      // After campaign ends but within submission grace period
       canSubmitProof = true;
       nextAction = "Submit proof of work";
       if (briefTiming.isUrgent) {
         warning = "Proof submission deadline approaching!";
       }
+    } else if (
+      briefTiming.phase === CampaignPhase.VERIFICATION ||
+      briefTiming.phase === CampaignPhase.COMPLETED
+    ) {
+      // Too late to submit
+      nextAction = "Proof submission period ended";
+      warning = "You missed the submission deadline";
+    } else {
+      // Default case
+      nextAction = "Awaiting campaign start";
     }
-  } else if (application.disputeStatus === 3) {
-    // RESOLVED_INVALID
+  } else if (application.disputeStatus === DisputeStatus.RESOLVED_INVALID || application.disputeStatus === DisputeStatus.EXPIRED) {
     proofStatus = ProofStatus.REJECTED;
+    nextAction = "Submission was rejected";
   } else if (application.isApproved) {
     proofStatus = ProofStatus.APPROVED;
+    nextAction = "Proof approved";
   } else {
     proofStatus = ProofStatus.SUBMITTED;
     nextAction = "Awaiting proof review";
@@ -496,4 +519,34 @@ export function isDisputeExpired(
     application.disputeStatus === DisputeStatus.FLAGGED &&
     currentTime > application.timestamp + DISPUTE_RESOLUTION_DEADLINE
   );
+}
+
+export function getTimeRemaining(deadline: number) {
+  const now = Math.floor(Date.now() / 1000);
+  const timeLeft = deadline - now;
+
+  if (timeLeft <= 0) {
+    return {
+      isExpired: true,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      totalSeconds: 0,
+    };
+  }
+
+  const days = Math.floor(timeLeft / 86400);
+  const hours = Math.floor((timeLeft % 86400) / 3600);
+  const minutes = Math.floor((timeLeft % 3600) / 60);
+  const seconds = Math.floor(timeLeft % 60);
+
+  return {
+    isExpired: false,
+    days,
+    hours,
+    minutes,
+    seconds,
+    totalSeconds: timeLeft,
+  };
 }
