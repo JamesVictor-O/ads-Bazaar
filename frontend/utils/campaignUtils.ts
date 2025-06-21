@@ -244,54 +244,67 @@ export function computeApplicationInfo(
 
   let proofStatus: ProofStatus;
   let paymentStatus: PaymentStatus;
-  let canSubmitProof = false; // Default to false
+  let canSubmitProof = false;
   let canClaim = false;
   let nextAction: string | undefined;
   let warning: string | undefined;
 
-  // Early return if not selected
+  // FIXED: Check if influencer was not selected when campaign is assigned 
   if (!application.isSelected) {
-    return {
-      canSubmitProof: false,
-      canClaim: false,
-      proofStatus: ProofStatus.NOT_REQUIRED,
-      paymentStatus: PaymentStatus.NOT_EARNED,
-      nextAction: "Not selected for this campaign",
-    };
+    if (brief.status === CampaignStatus.ASSIGNED || 
+        brief.status === CampaignStatus.COMPLETED) {
+      // Campaign has moved to assigned status, meaning all spots are filled
+      return {
+        canSubmitProof: false,
+        canClaim: false,
+        proofStatus: ProofStatus.NOT_REQUIRED,
+        paymentStatus: PaymentStatus.NOT_EARNED,
+        nextAction: "Not selected - all spots filled",
+        warning: "You were not selected for this campaign",
+      };
+    } else if (brief.status === CampaignStatus.CANCELLED || 
+               brief.status === CampaignStatus.EXPIRED) {
+      return {
+        canSubmitProof: false,
+        canClaim: false,
+        proofStatus: ProofStatus.NOT_REQUIRED,
+        paymentStatus: PaymentStatus.NOT_EARNED,
+        nextAction: brief.status === CampaignStatus.CANCELLED ? "Campaign cancelled" : "Campaign expired",
+      };
+    } else {
+      // Still in open status, waiting for selection
+      return {
+        canSubmitProof: false,
+        canClaim: false,
+        proofStatus: ProofStatus.NOT_REQUIRED,
+        paymentStatus: PaymentStatus.NOT_EARNED,
+        nextAction: "Awaiting selection decision",
+      };
+    }
   }
 
   // Determine proof status and submission capability
   if (!application.proofLink) {
     proofStatus = ProofStatus.PENDING;
     
-    // EXPLICIT timing checks for proof submission
-    console.log('Checking submission timing:', {
-      currentPhase: briefTiming.phase,
-      currentTime,
-      promotionStartTime: brief.promotionStartTime,
-      promotionEndTime: brief.promotionEndTime,
-      proofSubmissionDeadline: brief.proofSubmissionDeadline,
-    });
-
+    // FIXED: More specific timing messages (Issue 3)
     if (briefTiming.phase === CampaignPhase.PREPARATION) {
-      // In preparation phase - CANNOT submit yet
       canSubmitProof = false;
-      const timeUntilStart = brief.promotionStartTime - currentTime;
       const timeRemaining = getTimeRemaining(brief.promotionStartTime);
-      nextAction = `Campaign starts in ${formatTimeRemaining(timeRemaining)}`;
+      nextAction = `Campaign starts ${formatDetailedTimeRemaining(timeRemaining)} (${formatDate(brief.promotionStartTime)})`;
       
     } else if (briefTiming.phase === CampaignPhase.PROMOTION) {
-      // During promotion phase - CAN submit proof
       canSubmitProof = true;
-      nextAction = "Submit proof of your promotional work";
+      const timeRemaining = getTimeRemaining(brief.promotionEndTime);
+      nextAction = `Submit proof - campaign ends ${formatDetailedTimeRemaining(timeRemaining)} (${formatDate(brief.promotionEndTime)})`;
       if (briefTiming.isUrgent) {
         warning = "Campaign ends soon!";
       }
       
     } else if (briefTiming.phase === CampaignPhase.PROOF_SUBMISSION) {
-      // After campaign ends but within submission grace period - CAN submit
       canSubmitProof = true;
-      nextAction = "Submit proof of work";
+      const timeRemaining = getTimeRemaining(brief.proofSubmissionDeadline);
+      nextAction = `Submit proof - deadline ${formatDetailedTimeRemaining(timeRemaining)} (${formatDate(brief.proofSubmissionDeadline)})`;
       if (briefTiming.isUrgent) {
         warning = "Proof submission deadline approaching!";
       }
@@ -300,13 +313,11 @@ export function computeApplicationInfo(
       briefTiming.phase === CampaignPhase.VERIFICATION ||
       briefTiming.phase === CampaignPhase.COMPLETED
     ) {
-      // Too late to submit
       canSubmitProof = false;
-      nextAction = "Proof submission period ended";
+      nextAction = `Proof submission period ended (${formatDate(brief.proofSubmissionDeadline)})`;
       warning = "You missed the submission deadline";
       
     } else {
-      // Default case - cannot submit
       canSubmitProof = false;
       nextAction = "Awaiting campaign start";
     }
@@ -325,7 +336,12 @@ export function computeApplicationInfo(
   } else {
     proofStatus = ProofStatus.SUBMITTED;
     canSubmitProof = false;
-    nextAction = "Awaiting proof review";
+    if (briefTiming.phase === CampaignPhase.VERIFICATION) {
+      const timeRemaining = getTimeRemaining(brief.verificationDeadline);
+      nextAction = `Under review - decision ${formatDetailedTimeRemaining(timeRemaining)} (${formatDate(brief.verificationDeadline)})`;
+    } else {
+      nextAction = "Awaiting proof review";
+    }
   }
 
   // Determine payment status
@@ -355,6 +371,44 @@ export function computeApplicationInfo(
     warning,
   };
 }
+
+/**
+ * Helper function for more detailed time formatting 
+ */
+function formatDetailedTimeRemaining(timeRemaining: {
+  days: number;
+  hours: number;
+  minutes: number;
+  totalSeconds: number;
+  isExpired: boolean;
+}): string {
+  if (timeRemaining.isExpired) {
+    return "now";
+  }
+
+  if (timeRemaining.days > 0) {
+    return `in ${timeRemaining.days}d ${timeRemaining.hours}h`;
+  } else if (timeRemaining.hours > 0) {
+    return `in ${timeRemaining.hours}h ${timeRemaining.minutes}m`;
+  } else if (timeRemaining.minutes > 0) {
+    return `in ${timeRemaining.minutes}m`;
+  } else {
+    return "very soon";
+  }
+}
+
+/**
+ * Helper function to format dates 
+ */
+function formatDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 
 /**
  * Gets a human-readable status label
