@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface GetStartedModalProps {
   isOpen?: boolean;
@@ -40,7 +41,7 @@ const GetStartedModal = ({
 }: GetStartedModalProps) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({ userType: "" });
   const router = useRouter();
-  const { isConnected, chain } = useAccount();
+  const { isConnected, chain, address } = useAccount();
   const { register, isPending, isSuccess, isError, error } = useRegisterUser();
   const [showNextStep, setShowNextStep] = useState(false);
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
@@ -66,6 +67,8 @@ const GetStartedModal = ({
       );
     }
   }, [isSuccess, userDetails.userType, router, onClose]);
+
+  const { generateDivviTag, trackTransaction } = useDivviIntegration()
 
   const handleUserTypeSelection = (type: UserType) => {
     setUserDetails({ ...userDetails, userType: type });
@@ -98,11 +101,20 @@ const GetStartedModal = ({
             }),
       });
 
-      await register(
+      // Add Divvi tag
+      const divviTag = generateDivviTag()
+      const profileWithDivvi = profileData + divviTag
+
+      const txHash = await register(
         userDetails.userType === "advertiser",
         userDetails.userType === "influencer",
-        profileData
-      );
+        profileWithDivvi
+      )
+
+      if (typeof txHash === "string") {
+        await trackTransaction(txHash)
+      }
+      
     });
   };
 

@@ -16,6 +16,7 @@ import { toast } from "react-hot-toast";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface FormData {
   name: string;
@@ -32,7 +33,7 @@ interface CreateCampaignModalProps {
   setFormData: (data: FormData) => void;
   isCreatingBrief: boolean;
   isFormValid: boolean;
-  onCreateCampaign: () => Promise<void>;
+  onCreateCampaign: () => Promise<string>;
   onClose: () => void;
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
@@ -57,8 +58,6 @@ function CreateCampaignModal({
   // Monitor transaction states to update phase
   useEffect(() => {
     if (isCreatingBrief) {
-      // This could be either approval or creation phase
-      // We'll determine based on the current phase
       if (transactionPhase === "idle") {
         setTransactionPhase("approving");
       } else if (transactionPhase === "approving") {
@@ -72,6 +71,8 @@ function CreateCampaignModal({
       }
     }
   }, [isCreatingBrief, transactionPhase]);
+
+  const { generateDivviTag, trackTransaction } = useDivviIntegration()
 
   const handleCreateCampaign = async () => {
     if (!guardedAction) {
@@ -87,7 +88,16 @@ function CreateCampaignModal({
     setTransactionPhase("idle");
 
     await guardedAction(async () => {
-      await onCreateCampaign();
+      
+      const divviTag = generateDivviTag()
+      const requirementsWithDivvi = formData.requirements + divviTag
+
+      // Update requirements in formData before calling onCreateCampaign
+      setFormData({ ...formData, requirements: requirementsWithDivvi });
+      const txHash = await onCreateCampaign()
+
+      // Track with Divvi
+      await trackTransaction(txHash)
     });
   };
 

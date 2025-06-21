@@ -34,6 +34,7 @@ import {
   usePendingDisputeCount,
 } from "@/hooks/adsBazaar";
 import { hasPendingDisputes } from "@/utils/campaignUtils";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface SubmissionsModalProps {
   selectedBrief: Brief | null;
@@ -62,6 +63,8 @@ export const SubmissionsModal = ({
   const { pendingDisputeCount, isLoadingCount } = usePendingDisputeCount(
     selectedBrief?.id || "0x0"
   );
+
+  const { trackTransaction } = useDivviIntegration()
 
   if (!selectedBrief) return null;
 
@@ -316,7 +319,12 @@ export const SubmissionsModal = ({
                   </Link>
                   {canAutoApprove && (
                     <button
-                      onClick={() => onReleaseFunds(selectedBrief.id)}
+                      onClick={async () => {
+                        const txHash = await onReleaseFunds(selectedBrief.id);
+                        if (typeof txHash === "string") {
+                          await trackTransaction(txHash);
+                        }
+                      }}
                       className="text-emerald-400 hover:text-emerald-300 text-sm font-medium px-3 py-1 bg-emerald-500/20 rounded"
                       disabled={isCompletingCampaign}
                     >

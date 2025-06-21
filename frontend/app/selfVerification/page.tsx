@@ -14,6 +14,7 @@ import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
 interface VerificationResult {
   isValid: boolean;
@@ -44,6 +45,7 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const { userProfile, isLoadingProfile } = useUserProfile();
   const { verifySelfProof, isPending, isSuccess } = useVerifySelfProof();
+  const { trackTransaction } = useDivviIntegration();
 
   useEffect(() => {
     if (address) {
@@ -77,7 +79,10 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
       setIsLoading(true);
       try {
         await guardedAction(async () => {
-          await verifySelfProof(proof, publicSignals);
+          const txHash = await verifySelfProof(proof, publicSignals);
+          
+          // Track high-value identity verification with Divvi
+          await trackTransaction(txHash);
         });
         toast.success("Proof submitted for verification!");
       } catch (error) {

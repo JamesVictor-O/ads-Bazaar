@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Clock,
   Award,
-  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAccount } from "wagmi";
@@ -23,6 +22,7 @@ import {
   useTotalPendingAmount,
 } from "@/hooks/adsBazaar";
 import { formatEther } from "viem";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface ClaimPaymentsModalProps {
   isOpen: boolean;
@@ -42,6 +42,7 @@ function ClaimPaymentsModal({
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "claiming" | "success" | "error"
   >("idle");
+  const { trackTransaction } = useDivviIntegration()
 
   // Fetch pending payments data
   const { pendingPayments, isLoadingPayments, paymentsError, refetchPayments } =
@@ -127,7 +128,10 @@ function ClaimPaymentsModal({
 
     await guardedAction(async () => {
       try {
-        await claimPayments();
+        const txHash = await claimPayments();
+        if (typeof txHash === "string") {
+          await trackTransaction(txHash);
+        }
       } catch (err) {
         console.error("Claim failed:", err);
         throw err;
