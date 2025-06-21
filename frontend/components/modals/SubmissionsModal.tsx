@@ -329,26 +329,6 @@ export const SubmissionsModal = ({
           </div>
         )}
 
-        {/* FIXED: No submissions warning (Issue 2) */}
-        {canReleaseFunds.noSubmissions && (
-          <div className="p-3 sm:p-4 bg-blue-500/10 border-b border-blue-500/20 flex-shrink-0">
-            <div className="flex items-start gap-3">
-              <Clock className="w-5 h-5 text-blue-400 mt-1 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-blue-400 font-medium mb-2">
-                  📄 No Proof Submissions Yet
-                </h3>
-                <p className="text-blue-300 text-sm mb-3">
-                  None of the selected influencers have submitted proof of their work yet. 
-                  Campaign completion is only available after submissions are received.
-                </p>
-                <div className="text-blue-300 text-xs">
-                  Proof submission deadline: {format(new Date(selectedBrief.proofSubmissionDeadline * 1000), "MMM d, yyyy HH:mm")}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
           {/* Timing Information Section - Fix for issue #5 */}
           <div className="p-3 sm:p-4 bg-slate-900/30 border-b border-slate-700/50 flex-shrink-0">
