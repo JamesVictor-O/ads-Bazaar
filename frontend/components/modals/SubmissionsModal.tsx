@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -120,6 +119,7 @@ export const SubmissionsModal = ({
     currentTime,
   ]);
 
+  //  Enhanced logic to check for actual submissions 
   const canReleaseFunds = useMemo(() => {
     // Can't release if proof submission period still active
     if (currentTime < selectedBrief.proofSubmissionDeadline) {
@@ -129,6 +129,20 @@ export const SubmissionsModal = ({
         timeRemaining: selectedBrief.proofSubmissionDeadline - currentTime,
       };
     }
+
+    //  Check if there are any submissions to review
+    const submissionsWithProof = selectedApplications.filter(
+      (app) => app.proofLink && app.proofLink.trim() !== ""
+    );
+
+    if (submissionsWithProof.length === 0) {
+      return {
+        canRelease: false,
+        reason: "No proof submissions to review",
+        noSubmissions: true,
+      };
+    }
+
     // Can't manually complete if there are pending disputes
     if (disputeAnalysis.hasPending && !canAutoApprove) {
       return {
@@ -142,6 +156,7 @@ export const SubmissionsModal = ({
   }, [
     currentTime,
     selectedBrief.proofSubmissionDeadline,
+    selectedApplications,
     disputeAnalysis,
     canAutoApprove,
   ]);
@@ -202,7 +217,7 @@ export const SubmissionsModal = ({
       !submission.isApproved &&
       submission.disputeStatus === DisputeStatus.NONE && // Can't dispute if already flagged
       !isCompletingCampaign &&
-      canReleaseFunds // Can only dispute during fund release period
+      canReleaseFunds.canRelease // Can only dispute during fund release period
     );
   };
 
@@ -314,7 +329,26 @@ export const SubmissionsModal = ({
           </div>
         )}
 
-        
+        {/* FIXED: No submissions warning (Issue 2) */}
+        {canReleaseFunds.noSubmissions && (
+          <div className="p-3 sm:p-4 bg-blue-500/10 border-b border-blue-500/20 flex-shrink-0">
+            <div className="flex items-start gap-3">
+              <Clock className="w-5 h-5 text-blue-400 mt-1 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-blue-400 font-medium mb-2">
+                  📄 No Proof Submissions Yet
+                </h3>
+                <p className="text-blue-300 text-sm mb-3">
+                  None of the selected influencers have submitted proof of their work yet. 
+                  Campaign completion is only available after submissions are received.
+                </p>
+                <div className="text-blue-300 text-xs">
+                  Proof submission deadline: {format(new Date(selectedBrief.proofSubmissionDeadline * 1000), "MMM d, yyyy HH:mm")}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
           {/* Timing Information Section - Fix for issue #5 */}
           <div className="p-3 sm:p-4 bg-slate-900/30 border-b border-slate-700/50 flex-shrink-0">
@@ -380,13 +414,12 @@ export const SubmissionsModal = ({
               </div>
             </div>
 
-            {!canReleaseFunds && (
+            {!canReleaseFunds.canRelease && !canReleaseFunds.noSubmissions && (
               <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-400" />
                   <p className="text-sm text-amber-400">
-                    Funds can only be released after proof submission period
-                    ends
+                    {canReleaseFunds.reason}
                   </p>
                 </div>
               </div>
@@ -543,7 +576,7 @@ export const SubmissionsModal = ({
                                 )}
 
                               {/* Action buttons - Enhanced dispute logic */}
-                              {canReleaseFunds && (
+                              {canReleaseFunds.canRelease && (
                                 <div className="flex gap-2">
                                   {canRaiseDispute(submission) && (
                                     <motion.button
@@ -621,6 +654,10 @@ export const SubmissionsModal = ({
                         ? "🕒 Verification period complete - you can now finalize all payments"
                         : "✅ Review all submissions and complete the campaign"}
                     </span>
+                  ) : canReleaseFunds.noSubmissions ? (
+                    <span>
+                      📄 Waiting for influencer submissions before campaign can be completed
+                    </span>
                   ) : (
                     <span>
                       ⏳ {canReleaseFunds.reason}
@@ -681,6 +718,14 @@ export const SubmissionsModal = ({
                           ✅ Complete & Release Funds
                         </span>
                         <span className="sm:hidden">✅ Complete</span>
+                      </>
+                    ) : canReleaseFunds.noSubmissions ? (
+                      <>
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">
+                          📄 Awaiting Submissions
+                        </span>
+                        <span className="sm:hidden">📄 Waiting</span>
                       </>
                     ) : (
                       <>
