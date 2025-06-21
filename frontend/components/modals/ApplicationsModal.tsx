@@ -26,6 +26,7 @@ import { Hex } from "viem";
 import { useSelectInfluencer, useCompleteCampaign } from "@/hooks/adsBazaar";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { motion } from "framer-motion";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface EnhancedApplicationsModalProps extends ApplicationsModalProps {
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
@@ -44,6 +45,8 @@ const ApplicationsModal = ({
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "selecting" | "completing"
   >("idle");
+
+  const { generateDivviTag, trackTransaction } = useDivviIntegration()
 
   // Filter applications based on showOnlySelected prop
   const filteredApplications = showOnlySelected
@@ -136,7 +139,10 @@ const ApplicationsModal = ({
     setPendingIndex(index);
 
     await guardedAction(async () => {
-      await selectInfluencer(briefId, index);
+      const txHash = await selectInfluencer(briefId, index);
+      if (typeof txHash === "string") {
+        await trackTransaction(txHash);
+      }
     });
   };
 

@@ -19,6 +19,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface ApplyModalProps {
   showApplyModal: boolean;
@@ -51,6 +52,8 @@ function ApplyModal({
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
+
+  const { generateDivviTag, trackTransaction } = useDivviIntegration()
 
   useEffect(() => {
     setIsClient(true);
@@ -126,8 +129,13 @@ function ApplyModal({
     setTransactionPhase("idle");
 
     await guardedAction(async () => {
+      const divviTag = generateDivviTag()
+      const messageWithDivvi = applicationMessage + divviTag
       try {
-        await applyToBrief(selectedBrief.id, applicationMessage);
+        const txHash = await applyToBrief(selectedBrief.id, messageWithDivvi)
+        if (typeof txHash === "string") {
+          await trackTransaction(txHash)
+        }
       } catch (err) {
         console.error("Application failed:", err);
         throw err;

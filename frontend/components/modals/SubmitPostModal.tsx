@@ -16,6 +16,7 @@ import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { useAccount } from "wagmi";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface TransactionStatus {
   stage: "idle" | "preparing" | "confirming" | "mining" | "success" | "error";
@@ -59,6 +60,7 @@ function SubmitPostModal({
   const { isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const [showExistingProof, setShowExistingProof] = useState(false);
+  const { generateDivviTag, trackTransaction } = useDivviIntegration()
 
   // Auto-populate with existing proof link if it's a resubmission
   useEffect(() => {
@@ -128,7 +130,14 @@ function SubmitPostModal({
     }
 
     await guardedAction(async () => {
-      await onSubmit();
+      const divviTag = generateDivviTag()
+      const postLinkWithDivvi = postLink + divviTag
+      setPostLink(postLinkWithDivvi)
+      const txHash = await onSubmit()
+      // Track with Divvi if txHash is a string
+      if (typeof txHash === "string") {
+        await trackTransaction(txHash)
+      }
     });
   };
 

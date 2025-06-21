@@ -5,6 +5,7 @@ import { Hex } from "viem";
 import { useFlagSubmission } from "@/hooks/useDisputeResolution";
 import { toast } from "react-hot-toast";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface DisputeModalProps {
   briefId: Hex;
@@ -23,6 +24,8 @@ function DisputeModal({
   const { flagSubmission, isFlagging, flagSuccess, flagError } =
     useFlagSubmission();
 
+  const { generateDivviTag, trackTransaction } = useDivviIntegration()
+
   const handleSubmit = async () => {
     if (!reason.trim()) {
       toast.error("Please provide a reason for the dispute");
@@ -35,7 +38,13 @@ function DisputeModal({
     }
 
     await guardedAction(async () => {
-      await flagSubmission(briefId, influencer, reason);
+      const divviTag = generateDivviTag()
+      const reasonWithDivvi = reason + divviTag
+      const txHash = await flagSubmission(briefId, influencer, reasonWithDivvi)
+      // Track with Divvi
+      if (typeof txHash === "string") {
+        await trackTransaction(txHash)
+      }
     });
   };
 

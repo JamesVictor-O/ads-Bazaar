@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
+import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface Dispute {
   id: string;
@@ -57,6 +58,8 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
     useState<TransactionPhase>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
+  const { trackTransaction } = useDivviIntegration()
+
   const isExpired = useMemo(() => {
     const currentTime = new Date();
     return dispute.status === "FLAGGED" && currentTime > dispute.deadline;
@@ -72,7 +75,11 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
     setErrorMessage("");
 
     try {
-      await onResolveDispute(dispute.id, isValid);
+      // If onResolveDispute returns a txHash, use it; otherwise, just call it and then trackTransaction if needed
+      const txHash = await onResolveDispute(dispute.id, isValid);
+      if (typeof txHash === "string") {
+        await trackTransaction(txHash);
+      }
       setTransactionPhase("success");
       toast.success(`Dispute resolved as ${isValid ? "valid" : "invalid"}`);
       setTimeout(() => {
