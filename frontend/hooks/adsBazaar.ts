@@ -381,15 +381,13 @@ export function useUserProfile(userAddress?: Address) {
     if (!data) return null;
 
     return {
-      isRegistered: (data as [boolean, boolean, boolean, string])[0],
-      isBusiness: (data as [boolean, boolean, boolean, string])[1],
-      isInfluencer: (data as [boolean, boolean, boolean, string])[2],
-      profileData: (data as [boolean, boolean, boolean, string])[3],
-
-      // Add default values for dashboard compatibility
-      status: 0, // UserStatus.NEW_COMER
-      completedCampaigns: 0,
-      totalEscrowed: 0,
+      isRegistered: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[0],
+      isBusiness: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[1],
+      isInfluencer: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[2],
+      status: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[3],
+      profileData: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[4],
+      completedCampaigns: Number((data as [boolean, boolean, boolean, number, string, bigint, bigint])[5]),
+      totalEscrowed: Number((data as [boolean, boolean, boolean, number, string, bigint, bigint])[6]),
     };
   }, [data]);
 
