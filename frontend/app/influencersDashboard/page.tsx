@@ -1147,28 +1147,9 @@ export default function InfluencerDashboard() {
                               {/* Campaign Timeline for Selected Influencers */}
                               {briefData.application.isSelected && (
                                 <div className="bg-slate-800/30 p-3 md:p-4 rounded-xl border border-slate-700/50 mb-4 md:mb-6">
-                                  <h4 className="text-slate-300 font-semibold mb-2 md:mb-3 text-sm md:text-base">
-                                    📅 Campaign Timeline:
-                                  </h4>
+                                  
                                   <div className="space-y-2 text-xs md:text-sm">
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-400">Campaign Start:</span>
-                                      <span className="text-slate-200">
-                                        {format(new Date(briefData.brief.promotionStartTime * 1000), "MMM d, yyyy HH:mm")}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-400">Campaign End:</span>
-                                      <span className="text-slate-200">
-                                        {format(new Date(briefData.brief.promotionEndTime * 1000), "MMM d, yyyy HH:mm")}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-400">Proof Deadline:</span>
-                                      <span className="text-slate-200">
-                                        {format(new Date(briefData.brief.proofSubmissionDeadline * 1000), "MMM d, yyyy HH:mm")}
-                                      </span>
-                                    </div>
+                         
                                     <div className="mt-3 p-2 bg-blue-500/10 rounded border border-blue-500/20">
                                       <p className="text-blue-400 text-xs md:text-sm">
                                         ⏰ {appInfo.nextAction}
