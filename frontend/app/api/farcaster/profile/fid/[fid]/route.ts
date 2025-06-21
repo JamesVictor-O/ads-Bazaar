@@ -1,17 +1,26 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { neynarServerService } from "@/lib/neynar-server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { identifier: string } }
+  { params }: { params: { fid: string } }
 ) {
   try {
-    const identifier = params.identifier;
+    const fidString = params.fid;
 
-    // Validate the identifier
-    if (!identifier) {
+    // Validate the FID
+    if (!fidString) {
       return NextResponse.json(
-        { error: "Identifier is required" }, 
+        { error: "FID is required" }, 
+        { status: 400 }
+      );
+    }
+
+    const fid = parseInt(fidString);
+    if (isNaN(fid) || fid <= 0) {
+      return NextResponse.json(
+        { error: "Invalid FID format" }, 
         { status: 400 }
       );
     }
@@ -29,22 +38,20 @@ export async function GET(
       );
     }
 
-    console.log(`Fetching Farcaster profile for: ${identifier}`);
+    console.log(`Fetching Farcaster profile for FID: ${fid}`);
 
-    // Handle address lookup
-    const profile = await neynarServerService.getUserByVerifiedAddress(
-      identifier
-    );
+    // Handle FID lookup
+    const profile = await neynarServerService.getUserByFid(fid);
 
     if (!profile) {
-      console.log(`No Farcaster profile found for address: ${identifier}`);
+      console.log(`No Farcaster profile found for FID: ${fid}`);
       return NextResponse.json(
         { error: "Profile not found" }, 
         { status: 404 }
       );
     }
 
-    console.log(`Found profile for ${identifier}:`, {
+    console.log(`Found profile for FID ${fid}:`, {
       fid: profile.fid,
       username: profile.username,
       displayName: profile.displayName
@@ -52,7 +59,7 @@ export async function GET(
 
     return NextResponse.json({ profile });
   } catch (error) {
-    console.error("Error fetching Farcaster profile:", error);
+    console.error("Error fetching Farcaster profile by FID:", error);
     
     // Handle specific error types
     let errorMessage = "Failed to fetch profile";

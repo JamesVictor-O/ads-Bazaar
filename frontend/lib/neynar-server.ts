@@ -1,4 +1,3 @@
-
 import { NeynarAPIClient, Configuration } from "@neynar/nodejs-sdk";
 
 export interface FarcasterProfile {
@@ -13,15 +12,15 @@ export interface FarcasterProfile {
   isVerified: boolean;
 }
 
-class NeynarService {
+class NeynarServerService {
   private client: NeynarAPIClient;
   private apiKey: string;
 
   constructor() {
-    this.apiKey = process.env.NEYNAR_API_KEY || process.env.NEXT_PUBLIC_NEYNAR_API_KEY || "";
+    this.apiKey = process.env.NEYNAR_API_KEY || "";
     
     if (!this.apiKey) {
-      console.warn("Neynar API key not found. Set NEYNAR_API_KEY or NEXT_PUBLIC_NEYNAR_API_KEY environment variable.");
+      console.warn("Neynar API key not found. Set NEYNAR_API_KEY environment variable.");
     }
 
     const config = new Configuration({
@@ -37,7 +36,7 @@ class NeynarService {
     }
 
     try {
-      const response = await this.client.fetchUserByFid(fid);
+      const response = await this.client.getUserByFID(fid);
       return this.formatUserProfile(response.result.user);
     } catch (error) {
       console.error("Error fetching user by FID:", error);
@@ -45,8 +44,7 @@ class NeynarService {
     }
   }
 
-  // Server-side method for API route
-  async getUserByVerifiedAddressServer(
+  async getUserByVerifiedAddress(
     address: string
   ): Promise<FarcasterProfile | null> {
     if (!this.apiKey) {
@@ -55,47 +53,8 @@ class NeynarService {
     }
 
     try {
-      const response = await this.client.fetchUserByVerification(address);
+      const response = await this.client.getUserByVerification(address);
       return this.formatUserProfile(response.result.user);
-    } catch (error) {
-      console.error("Error fetching user by verified address:", error);
-      return null;
-    }
-  }
-
-  async storeFidMapping(address: string, fid: number): Promise<void> {
-    // Check if we're in browser environment
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`fid_${address}`, fid.toString());
-    }
-  }
-
-  async getFidByAddress(address: string): Promise<number | null> {
-    // Check if we're in browser environment
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(`fid_${address}`);
-      return stored ? parseInt(stored) : null;
-    }
-    return null;
-  }
-
-  // Client-side method
-  async getUserByVerifiedAddress(
-    address: string
-  ): Promise<FarcasterProfile | null> {
-    try {
-      const response = await fetch(
-        `/api/farcaster/profile/${address}?type=address`
-      );
-      if (!response.ok) {
-        if (response.status === 404) {
-          console.log("No Farcaster profile found for address:", address);
-          return null;
-        }
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      return data.profile;
     } catch (error) {
       console.error("Error fetching user by verified address:", error);
       return null;
@@ -122,4 +81,4 @@ class NeynarService {
   }
 }
 
-export const neynarService = new NeynarService();
+export const neynarServerService = new NeynarServerService();
