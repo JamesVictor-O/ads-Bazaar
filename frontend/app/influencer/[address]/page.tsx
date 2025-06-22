@@ -10,32 +10,20 @@ import {
   Copy,
   Users,
   MessageSquare,
-  Star,
   Award,
   Globe,
   Sparkles,
   CheckCircle,
   X,
-  Instagram,
-  Youtube,
-  Facebook,
-  Linkedin,
   ArrowRight,
-  UserPlus,
   TrendingUp,
   AlertCircle,
   Loader2,
   Zap,
-  Link as LinkIcon,
   Crown,
-  Gem,
   Target,
-  Calendar,
-  MapPin,
-  Hash,
   Eye,
   Share2,
-  Heart,
   ChevronDown,
   Verified
 } from "lucide-react";
@@ -45,7 +33,6 @@ import { useFarcasterProfile } from "@/hooks/useFarcasterProfile";
 import { useFarcasterAuth } from "@/hooks/UseFarcasterAuth";
 import { useIsInfluencerVerified, useUserProfile } from "@/hooks/adsBazaar";
 import {
-  getUserStatusColor,
   getUserStatusLabel,
   formatNumber,
 } from "@/utils/format";
@@ -173,7 +160,7 @@ function FarcasterConnectButton({
         >
           <p className="text-sm text-slate-600 mb-2 text-center">Scan with Warpcast</p>
           <div className="flex justify-center">
-            <img src={url} alt="Farcaster QR Code" className="w-32 h-32" />
+            <Image src={url} alt="Farcaster QR Code" className="w-32 h-32" />
           </div>
           <button
             onClick={() => setShowQR(false)}
@@ -196,7 +183,7 @@ export default function EnhancedInfluencerProfile() {
   const { address: connectedAddress, isConnected } = useAccount();
   const [isOwner, setIsOwner] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'social' | 'activity'>('overview');
   const [showAllStats, setShowAllStats] = useState(false);
 
@@ -212,7 +199,6 @@ export default function EnhancedInfluencerProfile() {
   const {
     profile: farcasterProfile,
     isLoading: isFarcasterLoading,
-    error: farcasterError,
   } = useFarcasterProfile(profileAddress as string);
 
   // Handle connection success

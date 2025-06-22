@@ -36,8 +36,8 @@ class NeynarServerService {
     }
 
     try {
-      const response = await this.client.getUserByFID(fid);
-      return this.formatUserProfile(response.result.user);
+      const response = await this.client.fetchBulkUsers({ fids: [fid] });
+      return this.formatUserProfile(response.users[0]);
     } catch (error) {
       console.error("Error fetching user by FID:", error);
       return null;
@@ -53,8 +53,8 @@ class NeynarServerService {
     }
 
     try {
-      const response = await this.client.getUserByVerification(address);
-      return this.formatUserProfile(response.result.user);
+      const response = await this.client.fetchBulkUsersByEthOrSolAddress({ addresses: [address] });
+      return this.formatUserProfile(response.users[0]);
     } catch (error) {
       console.error("Error fetching user by verified address:", error);
       return null;

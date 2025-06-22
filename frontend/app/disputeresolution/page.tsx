@@ -1,32 +1,26 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import DisputeResolutionModal from "@/components/modals/DisputeResolutionModal";
 import { motion } from "framer-motion";
 import {
   Scale,
   AlertTriangle,
   CheckCircle,
-  XCircle,
   Clock,
   Search,
-  ExternalLink,
   TrendingUp,
   Eye,
   Shield,
-  Ban,
   Loader2,
 } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
-import { format } from "date-fns";
-import { useAccount, useReadContracts } from "wagmi";
+import { useAccount } from "wagmi";
 import {
   useIsDisputeResolver,
   useResolveDispute,
 } from "@/hooks/useDisputeResolution";
 import { useGetAllBriefs } from "@/hooks/adsBazaar";
-import { CONTRACT_ADDRESS } from "@/lib/contracts";
-import ABI from "@/lib/AdsBazaar.json";
-import { Brief, Application, DisputeStatus } from "@/types";
+import { DisputeStatus } from "@/types";
 import { truncateAddress } from "@/utils/format";
 
 interface DisputeData {

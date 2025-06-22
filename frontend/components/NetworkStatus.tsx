@@ -93,7 +93,6 @@ export const NetworkGuardWrapper = ({
   className?: string;
 }) => {
   const { isConnected } = useAccount();
-  const { isCorrectChain } = useEnsureNetwork();
 
   if (!isConnected) {
     return (

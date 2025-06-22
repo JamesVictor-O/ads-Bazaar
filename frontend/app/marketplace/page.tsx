@@ -5,28 +5,19 @@ import {
   Target,
   Calendar,
   Users,
-  Clock,
   Award,
   Check,
   UserCheck,
   AlertTriangle,
   Loader2,
-  Wifi,
-  WifiOff,
-  XCircle,
-  CheckCircle,
   Timer,
   TrendingUp,
   Star,
   DollarSign,
   ArrowRight,
-  Eye,
-  Zap,
-  AlertCircle,
-  RefreshCw,
+  
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
-import { useGetInfluencerApplications } from "@/hooks/useGetInfluncersApplication";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { useAccount, usePublicClient } from "wagmi";
@@ -37,20 +28,14 @@ import { motion } from "framer-motion";
 import {
   Brief,
   CampaignStatus,
-  TargetAudience,
-  CampaignPhase,
   AUDIENCE_LABELS,
   InfluencerApplication,
-  DisputeStatus,
 } from "@/types";
 import {
-  getStatusColor,
   getPhaseColor,
   formatTimeRemaining,
-  isActionUrgent,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
-import toast from "react-hot-toast";
 import { Address } from "viem";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import ABI from "@/lib/AdsBazaar.json";
@@ -73,12 +58,11 @@ export default function Marketplace() {
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
   const [applicationMessage, setApplicationMessage] = useState<string>("");
-  const [applicationStatus, setApplicationStatus] = useState<
+  const [applicationStatus, ] = useState<
     Record<string, "applied" | "assigned" | null>
   >({});
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
-  const [refreshCount, setRefreshCount] = useState(0);
+  
 
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
@@ -87,10 +71,10 @@ export default function Marketplace() {
   const publicClient = usePublicClient();
 
   // State to track all applications for the current user
-  const [applications, setApplications] = useState<{
+  const [] = useState<{
     [briefId: string]: InfluencerApplication;
   }>({});
-  const [applicationStatuses, setApplicationStatuses] = useState<
+  const [, setApplicationStatuses] = useState<
     ApplicationStatus[]
   >([]);
 
@@ -112,55 +96,55 @@ export default function Marketplace() {
     return true; // Show all if "All Campaigns" is selected
   });
 
-  const {
-    applications: influencerApplications = [],
-    isLoading: isLoadingApplications,
-    error: applicationsError,
-  } = useGetInfluencerApplications(address as `0x${string}`);
+  // const {
+  //   applications: influencerApplications = [],
+  //   isLoading: isLoadingApplications,
+  //   error: applicationsError,
+  // } = useGetInfluencerApplications(address as `0x${string}`);
 
-  const computeApplicationStatus = (
-    application: InfluencerApplication,
-    briefData: any[]
-  ) => {
-    const currentTime = Math.floor(Date.now() / 1000);
-    const promotionEndTime = Number(briefData[9]); // from contract
-    const proofSubmissionDeadline = Number(briefData[10]);
+  // const computeApplicationStatus = (
+  //   application: InfluencerApplication,
+  //   briefData: any[]
+  // ) => {
+  //   const currentTime = Math.floor(Date.now() / 1000);
+  //   const promotionEndTime = Number(briefData[9]); // from contract
+  //   const proofSubmissionDeadline = Number(briefData[10]);
 
-    let status: ApplicationStatus["status"] = "applied";
-    let nextAction = "";
-    let canSubmitProof = false;
-    let canClaim = false;
+  //   let status: ApplicationStatus["status"] = "applied";
+  //   let nextAction = "";
+  //   let canSubmitProof = false;
+  //   let canClaim = false;
 
-    if (application.hasClaimed) {
-      status = "paid";
-      nextAction = "Payment received";
-    } else if (application.isApproved) {
-      status = "approved";
-      nextAction = "Ready to claim payment";
-      canClaim = true;
-    } else if (application.proofLink) {
-      status = "proof_submitted";
-      nextAction = "Awaiting approval";
-    } else if (application.isSelected) {
-      status = "selected";
-      if (
-        currentTime >= promotionEndTime &&
-        currentTime <= proofSubmissionDeadline
-      ) {
-        nextAction = "Submit proof of work";
-        canSubmitProof = true;
-      } else if (currentTime < promotionEndTime) {
-        nextAction = "Campaign in progress";
-      } else {
-        nextAction = "Proof submission deadline passed";
-      }
-    } else {
-      status = "applied";
-      nextAction = "Awaiting selection";
-    }
+  //   if (application.hasClaimed) {
+  //     status = "paid";
+  //     nextAction = "Payment received";
+  //   } else if (application.isApproved) {
+  //     status = "approved";
+  //     nextAction = "Ready to claim payment";
+  //     canClaim = true;
+  //   } else if (application.proofLink) {
+  //     status = "proof_submitted";
+  //     nextAction = "Awaiting approval";
+  //   } else if (application.isSelected) {
+  //     status = "selected";
+  //     if (
+  //       currentTime >= promotionEndTime &&
+  //       currentTime <= proofSubmissionDeadline
+  //     ) {
+  //       nextAction = "Submit proof of work";
+  //       canSubmitProof = true;
+  //     } else if (currentTime < promotionEndTime) {
+  //       nextAction = "Campaign in progress";
+  //     } else {
+  //       nextAction = "Proof submission deadline passed";
+  //     }
+  //   } else {
+  //     status = "applied";
+  //     nextAction = "Awaiting selection";
+  //   }
 
-    return { status, nextAction, canSubmitProof, canClaim };
-  };
+  //   return { status, nextAction, canSubmitProof, canClaim };
+  // };
 
   // Function to refresh application status
   const refreshApplicationStatus = useCallback(
@@ -198,7 +182,7 @@ export default function Marketplace() {
         const updatedApplications: {
           [briefId: string]: "applied" | "assigned";
         } = {};
-        const statusesData: ApplicationStatus[] = [];
+        
 
         for (const briefId of appliedBriefIds) {
           try {
@@ -289,12 +273,12 @@ export default function Marketplace() {
   }, [isConnected, userProfile?.isInfluencer]);
 
 
-  const handleApplicationSuccess = useCallback(() => {
-    // Immediately refresh the application status after successful application
-    setTimeout(() => {
-      refreshApplicationStatus();
-    }, 1000); // Small delay to allow blockchain state to update
-  }, [refreshApplicationStatus]);
+  // const handleApplicationSuccess = useCallback(() => {
+  //   // Immediately refresh the application status after successful application
+  //   setTimeout(() => {
+  //     refreshApplicationStatus();
+  //   }, 1000); // Small delay to allow blockchain state to update
+  // }, [refreshApplicationStatus]);
 
   if (isLoading) {
     return (

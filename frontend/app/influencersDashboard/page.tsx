@@ -11,11 +11,9 @@ import {
   Calendar,
   TrendingUp,
   CheckCircle,
-  Link as LinkIcon,
   ExternalLink,
   AlertCircle,
   Shield,
-  Clock3,
   CheckSquare,
   Sparkles,
   User,
@@ -23,17 +21,14 @@ import {
   Star,
   Award,
   Zap,
-  Target,
   ArrowRight,
-  PlayCircle,
-  PauseCircle,
   Upload,
   Bell,
   Edit3,
   Eye,
   ChevronDown,
-  ChevronRight,
-  Crown,
+ 
+  
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@farcaster/auth-kit";
@@ -55,19 +50,12 @@ import {
   Brief,
   Application,
   CampaignStatus,
-  CampaignPhase,
-  ProofStatus,
-  PaymentStatus,
 } from "@/types";
 import {
   computeApplicationInfo,
-  getStatusColor,
   getPhaseColor,
-  getProofStatusColor,
-  getPaymentStatusColor,
   formatTimeRemaining,
   getPhaseLabel,
-  getTimeRemaining
 } from "@/utils/campaignUtils";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 

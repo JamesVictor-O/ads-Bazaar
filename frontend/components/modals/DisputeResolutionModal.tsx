@@ -9,8 +9,6 @@ import {
   Loader2,
   Shield,
   Eye,
-  Ban,
-  AlertTriangle,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";

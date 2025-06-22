@@ -3,10 +3,11 @@ import { neynarServerService } from "@/lib/neynar-server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { identifier: string } }
+  { params }: { params: Promise<{ identifier: string }> }
 ) {
   try {
-    const identifier = params.identifier;
+    const resolvedParams = await params;
+    const identifier = resolvedParams.identifier;
 
     // Validate the identifier
     if (!identifier) {
