@@ -1,23 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { 
-  CheckCircle, 
-  AlertCircle, 
-  ArrowRight, 
-  Home, 
-  Shield, 
-  Star, 
-  Zap, 
-  Lock, 
-  Globe, 
-  Users, 
-  TrendingUp, 
+import {
+  CheckCircle,
+  AlertCircle,
+  ArrowRight,
+  Home,
+  Shield,
+  Star,
+  Zap,
+  Lock,
+  Globe,
+  Users,
+  TrendingUp,
   Sparkles,
   Eye,
   UserCheck,
   Crown,
-  Gem
+  Gem,
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { useUserProfile } from "@/hooks/adsBazaar";
@@ -58,62 +58,63 @@ const verificationBenefits = [
   {
     icon: Crown,
     title: "Premium Campaign Access",
-    description: "Unlock exclusive high-paying campaigns reserved for verified creators",
-    color: "from-yellow-400 to-orange-500"
+    description:
+      "Unlock exclusive high-paying campaigns reserved for verified creators",
+    color: "from-yellow-400 to-orange-500",
   },
   {
     icon: TrendingUp,
     title: "Higher Earnings",
     description: "Earn up to 30% more with verified creator premium rates",
-    color: "from-emerald-400 to-emerald-600"
+    color: "from-emerald-400 to-emerald-600",
   },
   {
     icon: Shield,
     title: "Trust & Credibility",
     description: "Build trust with brands and get priority consideration",
-    color: "from-blue-400 to-blue-600"
+    color: "from-blue-400 to-blue-600",
   },
   {
     icon: Star,
     title: "Priority Support",
     description: "Get dedicated support and faster campaign approvals",
-    color: "from-purple-400 to-purple-600"
+    color: "from-purple-400 to-purple-600",
   },
   {
     icon: Zap,
     title: "Instant Approval",
     description: "Skip manual reviews with automated verification status",
-    color: "from-amber-400 to-orange-500"
+    color: "from-amber-400 to-orange-500",
   },
   {
     icon: Globe,
     title: "Global Opportunities",
     description: "Access international campaigns with compliance verification",
-    color: "from-cyan-400 to-cyan-600"
-  }
+    color: "from-cyan-400 to-cyan-600",
+  },
 ];
 
 const securityFeatures = [
   {
     icon: Lock,
     title: "Privacy First",
-    description: "Zero-knowledge proofs protect your personal data"
+    description: "Zero-knowledge proofs protect your personal data",
   },
   {
     icon: Eye,
     title: "Selective Disclosure",
-    description: "Share only what's needed, nothing more"
+    description: "Share only what's needed, nothing more",
   },
   {
     icon: UserCheck,
     title: "Anti-Bot Protection",
-    description: "Ensures only real humans can participate"
+    description: "Ensures only real humans can participate",
   },
   {
     icon: Shield,
     title: "Compliance Ready",
-    description: "Meet international advertising standards"
-  }
+    description: "Meet international advertising standards",
+  },
 ];
 
 function SelfVerification({ guardedAction }: SelfVerificationProps) {
@@ -160,7 +161,7 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
       try {
         await guardedAction(async () => {
           const txHash = await verifySelfProof(proof, publicSignals);
-          
+
           // Track high-value identity verification with Divvi
           if (txHash) {
             await trackTransaction(txHash);
@@ -175,7 +176,7 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
         setIsLoading(false);
       }
     },
-    [isConnected, address, verifySelfProof, guardedAction]
+    [isConnected, address, verifySelfProof, guardedAction, trackTransaction]
   );
 
   useEffect(() => {
@@ -306,7 +307,8 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
                 Get Started
               </h3>
               <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                Connect your wallet to access identity verification and unlock premium creator benefits.
+                Connect your wallet to access identity verification and unlock
+                premium creator benefits.
               </p>
               <Link href="/">
                 <motion.button
@@ -408,8 +410,8 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
         {/* Verification Status Card */}
         <motion.div
           className={`mb-8 bg-gradient-to-br ${
-            isVerified 
-              ? "from-emerald-500/10 to-emerald-600/5 border-emerald-500/20" 
+            isVerified
+              ? "from-emerald-500/10 to-emerald-600/5 border-emerald-500/20"
               : "from-slate-800/50 to-slate-900/50 border-slate-700/50"
           } backdrop-blur-xl border rounded-2xl overflow-hidden`}
           initial={{ opacity: 0, y: 20 }}
@@ -431,7 +433,8 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
                 Verification Complete! 🎉
               </h3>
               <p className="text-emerald-400 mb-6">
-                You now have access to premium campaigns and higher earning rates
+                You now have access to premium campaigns and higher earning
+                rates
               </p>
               <div className="flex flex-col gap-3">
                 <Link href="/marketplace">
@@ -464,7 +467,8 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
                   Verify with Self Protocol
                 </h3>
                 <p className="text-slate-400 leading-relaxed">
-                  Scan the QR code below with the Self app to complete secure identity verification
+                  Scan the QR code below with the Self app to complete secure
+                  identity verification
                 </p>
               </div>
 
@@ -482,10 +486,13 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
                       size={Math.min(220, window.innerWidth * 0.6)}
                     />
                   </motion.div>
-                  
+
                   <div className="space-y-2 text-xs text-slate-400 mb-6">
                     <p>
-                      Wallet: {`${address.substring(0, 8)}...${address.substring(address.length - 6)}`}
+                      Wallet:{" "}
+                      {`${address.substring(0, 8)}...${address.substring(
+                        address.length - 6
+                      )}`}
                     </p>
                     <p>Network: {currentNetwork.name}</p>
                   </div>
@@ -512,7 +519,8 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
                     Network Switch Required
                   </h4>
                   <p className="text-amber-400">
-                    Please switch to {currentNetwork.name} to verify your identity
+                    Please switch to {currentNetwork.name} to verify your
+                    identity
                   </p>
                 </div>
               ) : (
@@ -520,7 +528,11 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
                   <motion.div
                     className="w-12 h-12 mx-auto mb-4 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full"
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
                   />
                   <p className="text-slate-400">Initializing verification...</p>
                 </div>
@@ -558,8 +570,12 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
                     >
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${benefit.color}/20 border border-slate-600/30`}>
-                        <benefit.icon className={`w-5 h-5 bg-gradient-to-br ${benefit.color} bg-clip-text text-transparent`} />
+                      <div
+                        className={`p-2 rounded-lg bg-gradient-to-br ${benefit.color}/20 border border-slate-600/30`}
+                      >
+                        <benefit.icon
+                          className={`w-5 h-5 bg-gradient-to-br ${benefit.color} bg-clip-text text-transparent`}
+                        />
                       </div>
                       <div>
                         <h5 className="font-semibold text-white mb-1">
@@ -614,31 +630,32 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
         )}
 
         {/* Registration CTA */}
-        {isConnected && (!userProfile?.isRegistered || !userProfile.isInfluencer) && (
-          <motion.div
-            className="mt-8 p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <Users className="w-8 h-8 text-purple-400 mx-auto mb-3" />
-            <h4 className="text-lg font-semibold text-white mb-2">
-              Not Registered Yet?
-            </h4>
-            <p className="text-slate-400 text-sm mb-4">
-              Register as an influencer to start applying for campaigns
-            </p>
-            <Link href="/">
-              <motion.button
-                className="flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
-                whileTap={{ scale: 0.95 }}
-              >
-                Register Now
-                <ArrowRight className="w-4 h-4" />
-              </motion.button>
-            </Link>
-          </motion.div>
-        )}
+        {isConnected &&
+          (!userProfile?.isRegistered || !userProfile.isInfluencer) && (
+            <motion.div
+              className="mt-8 p-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <Users className="w-8 h-8 text-purple-400 mx-auto mb-3" />
+              <h4 className="text-lg font-semibold text-white mb-2">
+                Not Registered Yet?
+              </h4>
+              <p className="text-slate-400 text-sm mb-4">
+                Register as an influencer to start applying for campaigns
+              </p>
+              <Link href="/">
+                <motion.button
+                  className="flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Register Now
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
+              </Link>
+            </motion.div>
+          )}
       </div>
     </div>
   );

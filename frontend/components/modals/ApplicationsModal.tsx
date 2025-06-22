@@ -24,7 +24,7 @@ import { Hex } from "viem";
 import { useSelectInfluencer } from "@/hooks/adsBazaar";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { motion } from "framer-motion";
-import { useDivviIntegration } from '@/hooks/useDivviIntegration'
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
 interface EnhancedApplicationsModalProps extends ApplicationsModalProps {
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
@@ -44,7 +44,7 @@ const ApplicationsModal = ({
     "idle" | "selecting"
   >("idle");
 
-  const { trackTransaction } = useDivviIntegration()
+  const { trackTransaction } = useDivviIntegration();
 
   // Filter applications based on showOnlySelected prop
   const filteredApplications = showOnlySelected
@@ -58,15 +58,11 @@ const ApplicationsModal = ({
     error: selectError,
   } = useSelectInfluencer();
 
-
   // Track transaction phases for better UX
   useEffect(() => {
     if (isSelectingInfluencer && transactionPhase !== "selecting") {
       setTransactionPhase("selecting");
-    } else if (
-      !isSelectingInfluencer &&
-      transactionPhase !== "idle"
-    ) {
+    } else if (!isSelectingInfluencer && transactionPhase !== "idle") {
       setTransactionPhase("idle");
     }
   }, [isSelectingInfluencer, transactionPhase]);
@@ -79,7 +75,6 @@ const ApplicationsModal = ({
       setTransactionPhase("idle");
     }
   }, [isInfluencerSelected]);
-
 
   // Handle errors
   useEffect(() => {
@@ -129,7 +124,6 @@ const ApplicationsModal = ({
     });
   };
 
-
   const extractRevertReason = (message: string): string | null => {
     const revertPatterns = [
       /reason="([^"]+)"/,
@@ -151,7 +145,7 @@ const ApplicationsModal = ({
   };
 
   // Get proof submission status with clear YES/NO
-  const getProofSubmissionStatus = (application: any) => {
+  const getProofSubmissionStatus = (application: { proofLink?: string }) => {
     if (application.proofLink && application.proofLink.trim() !== "") {
       return {
         status: "YES",
@@ -171,8 +165,6 @@ const ApplicationsModal = ({
   const maxInfluencers = Number(selectedBrief.maxInfluencers);
   const selectedCount = applications.filter((app) => app.isSelected).length;
   const spotsRemaining = maxInfluencers - selectedCount;
-
-
 
   const isTransactionInProgress =
     transactionPhase !== "idle" || isSelectingInfluencer;
@@ -500,7 +492,6 @@ const ApplicationsModal = ({
             </div>
           )}
         </div>
-
       </motion.div>
     </motion.div>
   );

@@ -27,8 +27,6 @@ import {
   Edit3,
   Eye,
   ChevronDown,
- 
-  
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@farcaster/auth-kit";
@@ -46,11 +44,7 @@ import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
 import Link from "next/link";
 import Image from "next/image";
 import { formatEther } from "viem";
-import {
-  Brief,
-  Application,
-  CampaignStatus,
-} from "@/types";
+import { Brief, Application, CampaignStatus } from "@/types";
 import {
   computeApplicationInfo,
   getPhaseColor,
@@ -690,7 +684,11 @@ export default function InfluencerDashboard() {
             ].map((tab) => (
               <motion.button
                 key={tab.key}
-                onClick={() => setFilter(tab.key as any)}
+                onClick={() =>
+                  setFilter(
+                    tab.key as "all" | "active" | "completed" | "urgent"
+                  )
+                }
                 className={`px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base ${
                   filter === tab.key
                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -938,11 +936,14 @@ export default function InfluencerDashboard() {
           ) : (
             <div className="space-y-4 md:space-y-6">
               {filteredCampaigns.map((briefData, index) => {
-                const appInfo = computeApplicationInfo(briefData.application, briefData.brief);
+                const appInfo = computeApplicationInfo(
+                  briefData.application,
+                  briefData.brief
+                );
                 const isExpanded = expandedBriefId === briefData.briefId;
                 const budget = briefData.brief.budget;
                 const hasProof = !!briefData.application.proofLink;
-                
+
                 // Use the computed application info instead of simple checks
                 const canSubmitProof = appInfo.canSubmitProof;
                 const canClaim = appInfo.canClaim;
@@ -978,22 +979,38 @@ export default function InfluencerDashboard() {
                               {briefData.application.isSelected && (
                                 <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                                   <Star className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">Selected</span>
+                                  <span className="hidden sm:inline">
+                                    Selected
+                                  </span>
                                   <span className="sm:hidden">✓</span>
                                 </span>
                               )}
 
                               {/* Campaign phase indicator */}
-                              <span className={`px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full border ${getPhaseColor(briefData.brief.timingInfo.phase)}`}>
-                                <span className="hidden sm:inline">{getPhaseLabel(briefData.brief.timingInfo.phase)}</span>
-                                <span className="sm:hidden">{briefData.brief.timingInfo.phase}</span>
+                              <span
+                                className={`px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full border ${getPhaseColor(
+                                  briefData.brief.timingInfo.phase
+                                )}`}
+                              >
+                                <span className="hidden sm:inline">
+                                  {getPhaseLabel(
+                                    briefData.brief.timingInfo.phase
+                                  )}
+                                </span>
+                                <span className="sm:hidden">
+                                  {briefData.brief.timingInfo.phase}
+                                </span>
                               </span>
 
                               {/* Urgent indicator */}
-                              {(appInfo.canSubmitProof || appInfo.canClaim || appInfo.warning) && (
+                              {(appInfo.canSubmitProof ||
+                                appInfo.canClaim ||
+                                appInfo.warning) && (
                                 <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
                                   <Zap className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">Action</span>
+                                  <span className="hidden sm:inline">
+                                    Action
+                                  </span>
                                   <span className="sm:hidden">!</span>
                                 </span>
                               )}
@@ -1009,10 +1026,14 @@ export default function InfluencerDashboard() {
                             <div className="flex items-center gap-1 md:gap-2">
                               <Calendar className="w-3 h-3 md:w-5 md:h-5" />
                               <span className="hidden sm:inline">
-                                {new Date(briefData.brief.creationTime * 1000).toLocaleDateString()}
+                                {new Date(
+                                  briefData.brief.creationTime * 1000
+                                ).toLocaleDateString()}
                               </span>
                               <span className="sm:hidden">
-                                {new Date(briefData.brief.creationTime * 1000).toLocaleDateString("en-US", {
+                                {new Date(
+                                  briefData.brief.creationTime * 1000
+                                ).toLocaleDateString("en-US", {
                                   month: "short",
                                   day: "numeric",
                                 })}
@@ -1027,8 +1048,16 @@ export default function InfluencerDashboard() {
                             {briefData.brief.timingInfo.timeRemaining && (
                               <div className="flex items-center gap-1 md:gap-2">
                                 <Timer className="w-3 h-3 md:w-5 md:h-5" />
-                                <span className={briefData.brief.timingInfo.isUrgent ? "text-orange-400" : ""}>
-                                  {formatTimeRemaining(briefData.brief.timingInfo.timeRemaining)}{" "}
+                                <span
+                                  className={
+                                    briefData.brief.timingInfo.isUrgent
+                                      ? "text-orange-400"
+                                      : ""
+                                  }
+                                >
+                                  {formatTimeRemaining(
+                                    briefData.brief.timingInfo.timeRemaining
+                                  )}{" "}
                                   <span className="hidden sm:inline">left</span>
                                 </span>
                               </div>
@@ -1051,9 +1080,12 @@ export default function InfluencerDashboard() {
                                   : appInfo.nextAction}
                               </p>
                               <p className="text-orange-400/70 text-xs md:text-sm">
-                                {appInfo.warning || 
-                                (canSubmitProof ? "Upload your promotional content for review" : 
-                                  canClaim ? "Claim your earnings now" : "")}
+                                {appInfo.warning ||
+                                  (canSubmitProof
+                                    ? "Upload your promotional content for review"
+                                    : canClaim
+                                    ? "Claim your earnings now"
+                                    : "")}
                               </p>
                             </div>
                           </div>
@@ -1064,13 +1096,15 @@ export default function InfluencerDashboard() {
                       {briefData.application.isSelected && (
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-6 mb-4 md:mb-6">
                           <div className="flex items-center gap-2 md:gap-3">
-                            <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
-                              briefData.application.isApproved
-                                ? "bg-emerald-400"
-                                : hasProof
-                                ? "bg-amber-400"
-                                : "bg-slate-500"
-                            }`}></div>
+                            <div
+                              className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
+                                briefData.application.isApproved
+                                  ? "bg-emerald-400"
+                                  : hasProof
+                                  ? "bg-amber-400"
+                                  : "bg-slate-500"
+                              }`}
+                            ></div>
                             <span className="text-slate-300 font-medium text-sm md:text-base">
                               {briefData.application.isApproved
                                 ? "Content Approved"
@@ -1095,7 +1129,11 @@ export default function InfluencerDashboard() {
                     {/* Expandable Requirements */}
                     <div className="border-t border-slate-700/30">
                       <motion.button
-                        onClick={() => setExpandedBriefId(isExpanded ? null : briefData.briefId)}
+                        onClick={() =>
+                          setExpandedBriefId(
+                            isExpanded ? null : briefData.briefId
+                          )
+                        }
                         className="w-full p-3 md:p-6 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
                         whileTap={{ scale: 0.995 }}
                       >
@@ -1135,9 +1173,7 @@ export default function InfluencerDashboard() {
                               {/* Campaign Timeline for Selected Influencers */}
                               {briefData.application.isSelected && (
                                 <div className="bg-slate-800/30 p-3 md:p-4 rounded-xl border border-slate-700/50 mb-4 md:mb-6">
-                                  
                                   <div className="space-y-2 text-xs md:text-sm">
-                         
                                     <div className="mt-3 p-2 bg-blue-500/10 rounded border border-blue-500/20">
                                       <p className="text-blue-400 text-xs md:text-sm">
                                         ⏰ {appInfo.nextAction}
@@ -1159,7 +1195,9 @@ export default function InfluencerDashboard() {
                                     whileTap={{ scale: 0.98 }}
                                   >
                                     <Eye className="w-4 h-4 md:w-5 md:h-5" />
-                                    <span className="hidden sm:inline">View Submission</span>
+                                    <span className="hidden sm:inline">
+                                      View Submission
+                                    </span>
                                     <span className="sm:hidden">View</span>
                                     <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
                                   </motion.a>
@@ -1168,7 +1206,12 @@ export default function InfluencerDashboard() {
                                 {/* Submit/Update button - now properly controlled by timing */}
                                 {canSubmitProof && (
                                   <motion.button
-                                    onClick={() => handleSubmitProofClick(briefData, hasProof)}
+                                    onClick={() =>
+                                      handleSubmitProofClick(
+                                        briefData,
+                                        hasProof
+                                      )
+                                    }
                                     className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg md:rounded-xl border border-emerald-500/30 transition-all font-medium text-sm md:text-base"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
@@ -1177,28 +1220,39 @@ export default function InfluencerDashboard() {
                                     {hasProof ? (
                                       <>
                                         <Edit3 className="w-4 h-4 md:w-5 md:h-5" />
-                                        <span className="hidden sm:inline">Update Content</span>
-                                        <span className="sm:hidden">Update</span>
+                                        <span className="hidden sm:inline">
+                                          Update Content
+                                        </span>
+                                        <span className="sm:hidden">
+                                          Update
+                                        </span>
                                       </>
                                     ) : (
                                       <>
                                         <Upload className="w-4 h-4 md:w-5 md:h-5" />
-                                        <span className="hidden sm:inline">Submit Content</span>
-                                        <span className="sm:hidden">Submit</span>
+                                        <span className="hidden sm:inline">
+                                          Submit Content
+                                        </span>
+                                        <span className="sm:hidden">
+                                          Submit
+                                        </span>
                                       </>
                                     )}
                                   </motion.button>
                                 )}
 
                                 {/* Timing message when can't submit yet */}
-                                {briefData.application.isSelected && !canSubmitProof && !briefData.application.isApproved && (
-                                  <div className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-amber-600/10 text-amber-400 rounded-lg md:rounded-xl border border-amber-500/20 text-sm md:text-base">
-                                    <Timer className="w-4 h-4 md:w-5 md:h-5" />
-                                    <span className="text-xs md:text-sm">
-                                      {appInfo.nextAction || "Campaign not ready for submissions yet"}
-                                    </span>
-                                  </div>
-                                )}
+                                {briefData.application.isSelected &&
+                                  !canSubmitProof &&
+                                  !briefData.application.isApproved && (
+                                    <div className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-amber-600/10 text-amber-400 rounded-lg md:rounded-xl border border-amber-500/20 text-sm md:text-base">
+                                      <Timer className="w-4 h-4 md:w-5 md:h-5" />
+                                      <span className="text-xs md:text-sm">
+                                        {appInfo.nextAction ||
+                                          "Campaign not ready for submissions yet"}
+                                      </span>
+                                    </div>
+                                  )}
 
                                 {canClaim && (
                                   <motion.button
@@ -1223,7 +1277,7 @@ export default function InfluencerDashboard() {
                     </div>
                   </motion.div>
                 );
-            })}
+              })}
             </div>
           )}
         </motion.div>

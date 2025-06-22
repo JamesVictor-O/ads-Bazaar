@@ -224,6 +224,7 @@ export default function EnhancedInfluencerProfile() {
       setTimeout(() => setCopiedText(null), 2000);
     } catch (error) {
       toast.error("Failed to copy");
+      console.log(error)
     }
   };
 
@@ -497,7 +498,7 @@ export default function EnhancedInfluencerProfile() {
             ].map((tab) => (
               <motion.button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
+                onClick={() => setActiveTab(tab.key as 'overview' | 'social' | 'activity')}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
                   activeTab === tab.key
                     ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/20"

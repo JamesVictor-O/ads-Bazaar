@@ -47,7 +47,7 @@ export const NetworkStatus = ({
                 Connected to {currentNetwork.name}
               </p>
               <p className="text-xs text-slate-500">
-                You're on the correct network
+                You&apos;re on the correct network
               </p>
             </div>
           ) : (

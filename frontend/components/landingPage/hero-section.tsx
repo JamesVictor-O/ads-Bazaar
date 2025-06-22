@@ -67,7 +67,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
     } catch (error) {
       console.error("Error navigating to dashboard:", error);
     }
-  }, [getDashboardUrl, isLoadingProfile]);
+  }, [getDashboardUrl, isLoadingProfile, router]);
 
   // Animation cycle for floating elements
   useEffect(() => {
@@ -76,7 +76,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
-
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -162,9 +161,9 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             )}
           </motion.button>
           <Link href={"/learn"} passHref>
-          <button className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
-            Learn More
-          </button>
+            <button className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
+              Learn More
+            </button>
           </Link>
         </div>
       );
@@ -189,9 +188,9 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           )}
         </motion.button>
         <Link href={"/learn"} passHref>
-        <button className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
-          Learn More
-        </button>
+          <button className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
+            Learn More
+          </button>
         </Link>
       </div>
     );

@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
-import { useDivviIntegration } from '@/hooks/useDivviIntegration'
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
 interface GetStartedModalProps {
   isOpen?: boolean;
@@ -68,7 +68,7 @@ const GetStartedModal = ({
     }
   }, [isSuccess, userDetails.userType, router, onClose]);
 
-  const { generateDivviTag, trackTransaction } = useDivviIntegration()
+  const { generateDivviTag, trackTransaction } = useDivviIntegration();
 
   const handleUserTypeSelection = (type: UserType) => {
     setUserDetails({ ...userDetails, userType: type });
@@ -102,19 +102,18 @@ const GetStartedModal = ({
       });
 
       // Add Divvi tag
-      const divviTag = generateDivviTag()
-      const profileWithDivvi = profileData + divviTag
+      const divviTag = generateDivviTag();
+      const profileWithDivvi = profileData + divviTag;
 
       const txHash = await register(
         userDetails.userType === "advertiser",
         userDetails.userType === "influencer",
         profileWithDivvi
-      )
+      );
 
       if (typeof txHash === "string") {
-        await trackTransaction(txHash)
+        await trackTransaction(txHash);
       }
-      
     });
   };
 
@@ -230,7 +229,7 @@ const GetStartedModal = ({
                         </div>
                         <div className="text-left">
                           <h3 className="text-base sm:text-lg font-medium text-white group-hover:text-emerald-300 group-disabled:group-hover:text-white transition-colors duration-200">
-                            I'm an Influencer
+                            I&apos;m an Influencer
                           </h3>
                           <p className="text-xs sm:text-sm text-slate-400 mt-1">
                             Monetize your audience with brands

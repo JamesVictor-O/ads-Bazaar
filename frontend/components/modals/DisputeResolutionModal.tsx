@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
-import { useDivviIntegration } from '@/hooks/useDivviIntegration'
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
 interface Dispute {
   id: string;
@@ -56,7 +56,7 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
     useState<TransactionPhase>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const { trackTransaction } = useDivviIntegration()
+  const { trackTransaction } = useDivviIntegration();
 
   const isExpired = useMemo(() => {
     const currentTime = new Date();
@@ -370,7 +370,7 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
                 <li>
                   • Review the submitted content against campaign requirements
                 </li>
-                <li>• Consider if the business's concerns are valid</li>
+                <li>• Consider if the business&apos;s concerns are valid</li>
                 <li>• Check content quality, relevance, and compliance</li>
                 <li>• Make a fair decision based on objective criteria</li>
               </ul>

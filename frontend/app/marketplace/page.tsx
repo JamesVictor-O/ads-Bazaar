@@ -15,7 +15,6 @@ import {
   Star,
   DollarSign,
   ArrowRight,
-  
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
@@ -58,11 +57,10 @@ export default function Marketplace() {
   const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Brief | null>(null);
   const [applicationMessage, setApplicationMessage] = useState<string>("");
-  const [applicationStatus, ] = useState<
+  const [applicationStatus] = useState<
     Record<string, "applied" | "assigned" | null>
   >({});
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  
 
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
@@ -74,9 +72,7 @@ export default function Marketplace() {
   const [] = useState<{
     [briefId: string]: InfluencerApplication;
   }>({});
-  const [, setApplicationStatuses] = useState<
-    ApplicationStatus[]
-  >([]);
+  const [, setApplicationStatuses] = useState<ApplicationStatus[]>([]);
 
   const [userApplications, setUserApplications] = useState<{
     [briefId: string]: "applied" | "assigned" | null;
@@ -182,7 +178,6 @@ export default function Marketplace() {
         const updatedApplications: {
           [briefId: string]: "applied" | "assigned";
         } = {};
-        
 
         for (const briefId of appliedBriefIds) {
           try {
@@ -211,7 +206,9 @@ export default function Marketplace() {
 
               if (influencerIndex !== -1) {
                 const isSelected = applicationData.isSelected[influencerIndex];
-                updatedApplications[briefId] = isSelected ? "assigned" : "applied";
+                updatedApplications[briefId] = isSelected
+                  ? "assigned"
+                  : "applied";
 
                 console.log(
                   `Updated application for campaign ${briefId}: ${updatedApplications[briefId]}`
@@ -270,8 +267,7 @@ export default function Marketplace() {
     if (isConnected && userProfile?.isInfluencer) {
       refreshApplicationStatus();
     }
-  }, [isConnected, userProfile?.isInfluencer]);
-
+  }, [isConnected, userProfile?.isInfluencer, refreshApplicationStatus]);
 
   // const handleApplicationSuccess = useCallback(() => {
   //   // Immediately refresh the application status after successful application
@@ -312,7 +308,7 @@ export default function Marketplace() {
 
   // Enhanced button state logic
   const getButtonState = (campaign: Brief) => {
-    const status = userApplications[campaign.id]; 
+    const status = userApplications[campaign.id];
     const { statusInfo, timingInfo } = campaign;
 
     if (status === "applied") {
@@ -409,7 +405,7 @@ export default function Marketplace() {
   };
 
   // Enhanced button styling
-  const getButtonStyles = (variant: string, disabled: boolean) => {
+  const getButtonStyles = (variant: string) => {
     const baseStyles =
       "w-full py-3 px-4 rounded-xl text-sm font-medium flex items-center justify-center transition-all duration-200 shadow-md";
 
@@ -514,31 +510,31 @@ export default function Marketplace() {
 
             {/* Quick Stats */}
             {isConnected && userProfile?.isInfluencer && (
-            <div className="text-right text-sm text-slate-400">
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-emerald-400">
-                    {
-                      Object.values(userApplications).filter(
-                        (s) => s === "applied"
-                      ).length
-                    }
+              <div className="text-right text-sm text-slate-400">
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-emerald-400">
+                      {
+                        Object.values(userApplications).filter(
+                          (s) => s === "applied"
+                        ).length
+                      }
+                    </div>
+                    <div className="text-xs">Applied</div>
                   </div>
-                  <div className="text-xs">Applied</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-blue-400">
-                    {
-                      Object.values(userApplications).filter(
-                        (s) => s === "assigned"
-                      ).length
-                    }
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-400">
+                      {
+                        Object.values(userApplications).filter(
+                          (s) => s === "assigned"
+                        ).length
+                      }
+                    </div>
+                    <div className="text-xs">Assigned</div>
                   </div>
-                  <div className="text-xs">Assigned</div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
           </div>
         </div>
 
@@ -788,10 +784,7 @@ export default function Marketplace() {
                   {/* Apply button */}
                   <button
                     onClick={buttonState.onClick}
-                    className={getButtonStyles(
-                      buttonState.variant,
-                      buttonState.disabled
-                    )}
+                    className={getButtonStyles(buttonState.variant)}
                     disabled={buttonState.disabled}
                   >
                     {buttonState.icon && buttonState.icon}
