@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { neynarServerService } from "@/lib/neynar-server";
 
@@ -32,13 +33,19 @@ export async function GET(
 
     console.log(`Fetching Farcaster profile for: ${identifier}`);
 
-    // Handle address lookup
-    const profile = await neynarServerService.getUserByVerifiedAddress(
-      identifier
-    );
+    let profile = null;
+
+    // Check if identifier is a FID (numeric)
+    if (/^\d+$/.test(identifier)) {
+      const fid = parseInt(identifier);
+      profile = await neynarServerService.getUserByFid(fid);
+    } else {
+      // Assume it's an Ethereum address
+      profile = await neynarServerService.getUserByVerifiedAddress(identifier);
+    }
 
     if (!profile) {
-      console.log(`No Farcaster profile found for address: ${identifier}`);
+      console.log(`No Farcaster profile found for identifier: ${identifier}`);
       return NextResponse.json(
         { error: "Profile not found" }, 
         { status: 404 }
@@ -48,10 +55,14 @@ export async function GET(
     console.log(`Found profile for ${identifier}:`, {
       fid: profile.fid,
       username: profile.username,
-      displayName: profile.displayName
+      displayName: profile.displayName,
+      twitterUsername: profile.twitterUsername
     });
 
-    return NextResponse.json({ profile });
+    return NextResponse.json({ 
+      profile,
+      success: true
+    });
   } catch (error) {
     console.error("Error fetching Farcaster profile:", error);
     
@@ -75,7 +86,8 @@ export async function GET(
     return NextResponse.json(
       { 
         error: errorMessage,
-        details: error instanceof Error ? error.message : "Unknown error"
+        details: error instanceof Error ? error.message : "Unknown error",
+        success: false
       },
       { status: statusCode }
     );

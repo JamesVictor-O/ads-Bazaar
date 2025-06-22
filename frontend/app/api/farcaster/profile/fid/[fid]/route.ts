@@ -1,4 +1,4 @@
-
+// frontend/app/api/farcaster/profile/fid/[fid]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { neynarServerService } from "@/lib/neynar-server";
 
@@ -21,7 +21,7 @@ export async function GET(
     const fid = parseInt(fidString);
     if (isNaN(fid) || fid <= 0) {
       return NextResponse.json(
-        { error: "Invalid FID format" }, 
+        { error: "Invalid FID format. Must be a positive integer" }, 
         { status: 400 }
       );
     }
@@ -41,7 +41,6 @@ export async function GET(
 
     console.log(`Fetching Farcaster profile for FID: ${fid}`);
 
-    // Handle FID lookup
     const profile = await neynarServerService.getUserByFid(fid);
 
     if (!profile) {
@@ -55,10 +54,14 @@ export async function GET(
     console.log(`Found profile for FID ${fid}:`, {
       fid: profile.fid,
       username: profile.username,
-      displayName: profile.displayName
+      displayName: profile.displayName,
+      twitterUsername: profile.twitterUsername
     });
 
-    return NextResponse.json({ profile });
+    return NextResponse.json({ 
+      profile,
+      success: true
+    });
   } catch (error) {
     console.error("Error fetching Farcaster profile by FID:", error);
     
@@ -82,7 +85,8 @@ export async function GET(
     return NextResponse.json(
       { 
         error: errorMessage,
-        details: error instanceof Error ? error.message : "Unknown error"
+        details: error instanceof Error ? error.message : "Unknown error",
+        success: false
       },
       { status: statusCode }
     );

@@ -1,4 +1,3 @@
-// frontend/app/influencer/[address]/page.tsx
 "use client";
 
 import { useParams } from "next/navigation";
@@ -25,11 +24,12 @@ import {
   Eye,
   Share2,
   ChevronDown,
-  Verified
+  Verified,
+  Twitter,
+  User
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
-import { useFarcasterProfile } from "@/hooks/useFarcasterProfile";
 import { useFarcasterAuth } from "@/hooks/UseFarcasterAuth";
 import { useIsInfluencerVerified, useUserProfile } from "@/hooks/adsBazaar";
 import {
@@ -39,6 +39,185 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
+// Helper hook to get FID from address
+function useFidFromAddress(address: string) {
+  const [fid, setFid] = useState<number | null>(null);
+  
+  useEffect(() => {
+    if (address) {
+      try {
+        const storedFid = localStorage.getItem(`fid_${address}`);
+        if (storedFid) {
+          setFid(parseInt(storedFid));
+        }
+      } catch (error) {
+        console.warn("Failed to get FID from address:", error);
+      }
+    }
+  }, [address]);
+
+  return fid;
+}
+
+// FID-based Farcaster Profile Hook
+function useFarcasterProfile(fid: number | null, address?: string) {
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isFromCache, setIsFromCache] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      // If no FID provided, try to get it from localStorage using address
+      let actualFid = fid;
+      
+      if (!actualFid && address) {
+        try {
+          const storedFid = localStorage.getItem(`fid_${address}`);
+          if (storedFid) {
+            actualFid = parseInt(storedFid);
+            console.log(`Retrieved FID ${actualFid} from localStorage for address ${address}`);
+          }
+        } catch (error) {
+          console.warn("Failed to get FID from localStorage:", error);
+        }
+      }
+
+      if (!actualFid) {
+        console.log("No FID provided and no stored FID found");
+        setProfile(null);
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      setIsFromCache(false);
+
+      try {
+        // Check cache first
+        const cacheKey = `profile_fid_${actualFid}`;
+        try {
+          const cachedProfile = localStorage.getItem(cacheKey);
+          if (cachedProfile) {
+            const parsed = JSON.parse(cachedProfile);
+            console.log(`Using cached profile for FID ${actualFid}`);
+            setProfile(parsed);
+            setIsFromCache(true);
+            setIsLoading(false);
+            
+            // Background refresh
+            setTimeout(async () => {
+              try {
+                console.log(`Background refresh for FID ${actualFid}`);
+                const response = await fetch(`/api/farcaster/profile/fid/${actualFid}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  if (data.success && data.profile) {
+                    setProfile(data.profile);
+                    setIsFromCache(false);
+                    localStorage.setItem(cacheKey, JSON.stringify(data.profile));
+                    
+                    // Also store FID mapping if we have an address
+                    if (address) {
+                      localStorage.setItem(`fid_${address}`, actualFid.toString());
+                    }
+                  }
+                }
+              } catch (error) {
+                console.log("Background refresh failed, keeping cached profile");
+              }
+            }, 100);
+            return;
+          }
+        } catch (error) {
+          console.warn("Failed to read cached profile:", error);
+        }
+
+        // Fetch from API
+        console.log(`Fetching profile for FID: ${actualFid}`);
+        const response = await fetch(`/api/farcaster/profile/fid/${actualFid}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.profile) {
+            setProfile(data.profile);
+            // Cache the profile
+            localStorage.setItem(cacheKey, JSON.stringify(data.profile));
+            
+            // Store FID mapping if we have an address
+            if (address) {
+              localStorage.setItem(`fid_${address}`, actualFid.toString());
+            }
+          } else {
+            setError("Profile not found");
+          }
+        } else {
+          setError("Failed to fetch profile");
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to fetch profile";
+        console.error("Profile fetch error:", errorMessage);
+        setError(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [fid, address]);
+
+  // Method to refresh profile data
+  const refreshProfile = async () => {
+    let actualFid = fid;
+    
+    if (!actualFid && address) {
+      const storedFid = localStorage.getItem(`fid_${address}`);
+      if (storedFid) {
+        actualFid = parseInt(storedFid);
+      }
+    }
+
+    if (!actualFid) return;
+    
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/farcaster/profile/fid/${actualFid}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.profile) {
+          setProfile(data.profile);
+          localStorage.setItem(`profile_fid_${actualFid}`, JSON.stringify(data.profile));
+          if (address) {
+            localStorage.setItem(`fid_${address}`, actualFid.toString());
+          }
+        } else {
+          setError("Profile not found");
+        }
+      } else {
+        setError("Failed to refresh profile");
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to refresh profile";
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { 
+    profile, 
+    isLoading, 
+    error, 
+    isFromCache,
+    refreshProfile,
+    fid: fid || (address && typeof window !== 'undefined' ? parseInt(localStorage.getItem(`fid_${address}`) || "0") : null)
+  };
+}
+
 // Farcaster Connect Component
 function FarcasterConnectButton({ 
   address, 
@@ -47,7 +226,7 @@ function FarcasterConnectButton({
 }: { 
   address: string; 
   isOwner: boolean;
-  onConnectionSuccess?: () => void;
+  onConnectionSuccess?: (fid: number) => void;
 }) {
   const { signIn, connect, isAuthenticated, user, isLoading, error, channelToken, url, validSignature } = useFarcasterAuth();
   const [showQR, setShowQR] = useState(false);
@@ -55,35 +234,37 @@ function FarcasterConnectButton({
 
   // Handle successful authentication
   useEffect(() => {
-    if (isAuthenticated && user && validSignature) {
+    if (isAuthenticated && user && validSignature && user.fid) {
       const storeConnection = async () => {
         try {
           setIsConnecting(true);
           
-          // Store the FID mapping locally
+          // Store the FID mapping - this is the key part!
           localStorage.setItem(`fid_${address}`, user.fid.toString());
+          console.log(`Stored FID mapping: ${address} -> ${user.fid}`);
           
-          // Create a profile entry for immediate display
+          // Create a profile entry for immediate display (cached)
           const profileData = {
             fid: user.fid,
             username: user.username,
             displayName: user.displayName,
             bio: user.bio,
             pfpUrl: user.pfpUrl,
-            followerCount: 0, // Will be updated when profile is fetched
+            followerCount: 0, // Will be updated when profile is fetched from API
             followingCount: 0,
-            isVerified: false, // Will be updated when profile is fetched
+            isVerified: false, // Will be updated when profile is fetched from API
           };
           
-          // Store profile data temporarily
-          localStorage.setItem(`profile_${address}`, JSON.stringify(profileData));
+          // Store profile data temporarily with FID-based key
+          localStorage.setItem(`profile_fid_${user.fid}`, JSON.stringify(profileData));
+          console.log(`Stored temporary profile for FID ${user.fid}`);
           
           toast.success(`Successfully connected Farcaster as @${user.username}!`);
           setShowQR(false);
           
-          // Trigger refresh of the profile data
+          // Trigger refresh with the FID
           if (onConnectionSuccess) {
-            onConnectionSuccess();
+            onConnectionSuccess(user.fid);
           }
           
           // Refresh the page to show updated profile
@@ -122,14 +303,24 @@ function FarcasterConnectButton({
     }
   };
 
+  // Check if we already have a stored FID for this address
+  const storedFid = typeof window !== 'undefined' ? 
+    localStorage.getItem(`fid_${address}`) : null;
+
   if (!isOwner) return null;
 
-  if (isAuthenticated && user && validSignature) {
+  if ((isAuthenticated && user && validSignature) || storedFid) {
+    const displayFid = user?.fid || (storedFid ? parseInt(storedFid) : null);
+    const displayUsername = user?.username || "Connected";
+    
     return (
       <div className="flex items-center gap-2 text-sm">
         <CheckCircle className="w-4 h-4 text-emerald-400" />
         <span className="text-emerald-400">
-          {isConnecting ? "Connecting..." : `Connected as @${user.username}`}
+          {isConnecting ? "Connecting..." : `Connected as @${displayUsername}`}
+          {displayFid && (
+            <span className="text-slate-400 ml-1">(FID: {displayFid})</span>
+          )}
         </span>
       </div>
     );
@@ -160,7 +351,7 @@ function FarcasterConnectButton({
         >
           <p className="text-sm text-slate-600 mb-2 text-center">Scan with Warpcast</p>
           <div className="flex justify-center">
-            <Image src={url} alt="Farcaster QR Code" className="w-32 h-32" />
+            <Image src={url} alt="Farcaster QR Code" width={128} height={128} className="w-32 h-32" />
           </div>
           <button
             onClick={() => setShowQR(false)}
@@ -178,15 +369,281 @@ function FarcasterConnectButton({
   );
 }
 
+// Farcaster Profile Card Component
+function FarcasterProfileCard({ 
+  profile, 
+  isLoading, 
+  error 
+}: { 
+  profile: any, 
+  isLoading: boolean, 
+  error: string | null 
+}) {
+  if (isLoading) {
+    return (
+      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
+            <MessageSquare className="w-6 h-6 text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-white font-semibold text-lg">Farcaster</h3>
+            <p className="text-slate-400 text-sm">Loading profile...</p>
+          </div>
+        </div>
+        <div className="animate-pulse">
+          <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
+          <div className="h-3 bg-slate-700 rounded w-1/2"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
+            <MessageSquare className="w-6 h-6 text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-white font-semibold text-lg">Farcaster</h3>
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
+              <MessageSquare className="w-6 h-6 text-purple-400" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold text-lg">Farcaster</h3>
+              <p className="text-slate-400 text-sm">Not connected</p>
+            </div>
+          </div>
+          <span className="text-sm text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+            Not Found
+          </span>
+        </div>
+        <p className="text-slate-400 text-sm">
+          No Farcaster profile found for this address.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
+            <MessageSquare className="w-6 h-6 text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-white font-semibold text-lg">Farcaster</h3>
+            <div className="flex items-center gap-2">
+              <p className="text-emerald-400 text-sm">@{profile.username}</p>
+              <span className="text-slate-500">•</span>
+              <p className="text-slate-400 text-sm">FID: {profile.fid}</p>
+            </div>
+          </div>
+        </div>
+        <a
+          href={`https://warpcast.com/${profile.username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-3 bg-slate-600/50 rounded-xl hover:bg-slate-600 transition-colors"
+          title="View on Warpcast"
+        >
+          <ExternalLink className="w-5 h-5 text-slate-300" />
+        </a>
+      </div>
+
+      {/* Profile Stats */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="text-center p-3 bg-slate-900/30 rounded-xl">
+          <p className="text-2xl font-bold text-white">
+            {profile.followerCount.toLocaleString()}
+          </p>
+          <p className="text-slate-400 text-sm">Followers</p>
+        </div>
+        <div className="text-center p-3 bg-slate-900/30 rounded-xl">
+          <p className="text-2xl font-bold text-white">
+            {profile.followingCount.toLocaleString()}
+          </p>
+          <p className="text-slate-400 text-sm">Following</p>
+        </div>
+      </div>
+
+      {/* Bio */}
+      {profile.bio && (
+        <div className="mb-6">
+          <p className="text-slate-300 text-sm leading-relaxed">
+            {profile.bio}
+          </p>
+        </div>
+      )}
+
+      {/* X/Twitter Integration */}
+      {profile.twitterUsername && (
+        <div className="bg-slate-900/30 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <X className="w-4 h-4 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-white font-medium">X (Twitter)</p>
+                <p className="text-blue-400 text-sm">@{profile.twitterUsername}</p>
+              </div>
+            </div>
+            <a
+              href={`https://twitter.com/${profile.twitterUsername}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition-colors text-sm font-medium"
+            >
+              Visit Profile
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Status */}
+      <div className="mt-4 flex items-center gap-2">
+        {profile.isVerified ? (
+          <>
+            <CheckCircle className="w-4 h-4 text-emerald-400" />
+            <span className="text-emerald-400 text-sm">Verified on Farcaster</span>
+          </>
+        ) : (
+          <>
+            <AlertCircle className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-400 text-sm">Unverified</span>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Enhanced Social Tab Content
+function EnhancedSocialTabContent({ 
+  farcasterProfile, 
+  isFarcasterLoading, 
+  farcasterError 
+}: {
+  farcasterProfile: any,
+  isFarcasterLoading: boolean,
+  farcasterError: string | null
+}) {
+  return (
+    <motion.div
+      key="social"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-4"
+    >
+      {/* Enhanced Farcaster Section */}
+      <FarcasterProfileCard 
+        profile={farcasterProfile}
+        isLoading={isFarcasterLoading}
+        error={farcasterError}
+      />
+
+      {/* Other Social Platforms */}
+      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
+        <h3 className="text-white font-semibold text-lg mb-4">Other Platforms</h3>
+        <div className="space-y-3">
+          {/* Instagram */}
+          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-pink-500/20 rounded-lg">
+                <User className="w-4 h-4 text-pink-400" />
+              </div>
+              <span className="text-slate-300">Instagram</span>
+            </div>
+            <span className="text-slate-500 text-sm">Not connected</span>
+          </div>
+
+          {/* TikTok */}
+          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-pink-500/20 rounded-lg">
+                <User className="w-4 h-4 text-pink-400" />
+              </div>
+              <span className="text-slate-300">TikTok</span>
+            </div>
+            <span className="text-slate-500 text-sm">Not connected</span>
+          </div>
+
+          {/* YouTube */}
+          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/20 rounded-lg">
+                <User className="w-4 h-4 text-red-400" />
+              </div>
+              <span className="text-slate-300">YouTube</span>
+            </div>
+            <span className="text-slate-500 text-sm">Not connected</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Social Metrics Summary */}
+      {farcasterProfile && (
+        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-2xl p-6">
+          <h3 className="text-white font-semibold text-lg mb-4">Social Reach</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-400">
+                {farcasterProfile.followerCount.toLocaleString()}
+              </div>
+              <div className="text-slate-400 text-sm">Total Followers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-400">
+                {Math.round((farcasterProfile.followerCount / 1000) * 3.2)}
+              </div>
+              <div className="text-slate-400 text-sm">Avg. Engagement</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-emerald-400">
+                {farcasterProfile.isVerified ? "High" : "Medium"}
+              </div>
+              <div className="text-slate-400 text-sm">Trust Score</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// Main Component
 export default function EnhancedInfluencerProfile() {
   const { address: profileAddress } = useParams();
   const { address: connectedAddress, isConnected } = useAccount();
   const [isOwner, setIsOwner] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [, setRefreshTrigger] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'social' | 'activity'>('overview');
   const [showAllStats, setShowAllStats] = useState(false);
+  const [connectedFid, setConnectedFid] = useState<number | null>(null);
 
+  // Get stored FID for this address
+  const storedFid = useFidFromAddress(profileAddress as string);
+  
   // Fetch blockchain data
   const { userProfile, isLoadingProfile } = useUserProfile(
     profileAddress as `0x${string}`
@@ -195,15 +652,24 @@ export default function EnhancedInfluencerProfile() {
     profileAddress as `0x${string}`
   );
 
-  // Try to fetch Farcaster profile by address
+  // Use FID-based profile lookup
   const {
     profile: farcasterProfile,
     isLoading: isFarcasterLoading,
-  } = useFarcasterProfile(profileAddress as string);
+    error: farcasterError,
+    refreshProfile: refreshFarcasterProfile
+  } = useFarcasterProfile(storedFid, profileAddress as string);
 
-  // Handle connection success
-  const handleConnectionSuccess = () => {
+  // Handle connection success - updates the FID
+  const handleConnectionSuccess = (fid: number) => {
+    console.log(`Farcaster connected with FID: ${fid}`);
+    setConnectedFid(fid);
     setRefreshTrigger(prev => prev + 1);
+    
+    // Refresh the Farcaster profile with the new FID
+    setTimeout(() => {
+      refreshFarcasterProfile();
+    }, 1000);
   };
 
   // Check if connected wallet owns this profile
@@ -215,6 +681,9 @@ export default function EnhancedInfluencerProfile() {
       setIsOwner(ownerStatus);
     }
   }, [isConnected, connectedAddress, profileAddress]);
+
+  // Get the effective FID (either stored or newly connected)
+  const effectiveFid = connectedFid || storedFid;
 
   const handleCopy = async (text: string, label: string) => {
     try {
@@ -342,8 +811,8 @@ export default function EnhancedInfluencerProfile() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.1),transparent_50%)]"></div>
           
           <div className="relative px-4 pt-20 sm:pt-24 md:pt-28 pb-6">
-            {/* Connect Farcaster Banner - Top Priority */}
-            {!farcasterProfile && (
+            {/* Connect Farcaster Banner - Enhanced for FID-based approach */}
+            {!effectiveFid && (
               <motion.div
                 className="mb-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4"
                 initial={{ opacity: 0, y: -20 }}
@@ -357,7 +826,7 @@ export default function EnhancedInfluencerProfile() {
                     </div>
                     <div>
                       <h3 className="text-white font-semibold">Connect Farcaster</h3>
-                      <p className="text-slate-400 text-sm">Verify your social presence</p>
+                      <p className="text-slate-400 text-sm">Link your social presence with FID</p>
                     </div>
                   </div>
                   <FarcasterConnectButton 
@@ -365,6 +834,29 @@ export default function EnhancedInfluencerProfile() {
                     isOwner={isOwner} 
                     onConnectionSuccess={handleConnectionSuccess}
                   />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Farcaster Connection Status */}
+            {effectiveFid && (
+              <motion.div
+                className="mb-6 bg-gradient-to-r from-emerald-500/10 to-emerald-400/10 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-emerald-400 font-semibold">Farcaster Connected</h3>
+                    <p className="text-emerald-300 text-sm">
+                      FID: {effectiveFid} • 
+                      {farcasterProfile ? ` @${farcasterProfile.username}` : " Profile loading..."}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -409,15 +901,15 @@ export default function EnhancedInfluencerProfile() {
                     </motion.div>
                   )}
 
-                  {/* Premium Badge */}
-                  {isVerified && (
+                  {/* FID Badge */}
+                  {effectiveFid && (
                     <motion.div
-                      className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full border-2 border-slate-900 flex items-center justify-center"
+                      className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full border-2 border-slate-900 flex items-center justify-center"
                       initial={{ scale: 0, rotate: -180 }}
                       animate={{ scale: 1, rotate: 0 }}
                       transition={{ type: "spring", duration: 0.6, delay: 0.4 }}
                     >
-                      <Crown className="w-3 h-3 text-white" />
+                      <span className="text-white text-xs font-bold">F</span>
                     </motion.div>
                   )}
                 </div>
@@ -428,7 +920,7 @@ export default function EnhancedInfluencerProfile() {
                 {displayName}
               </h1>
               
-              {/* Verification Status with Enhanced Design */}
+              {/* Enhanced status and verification */}
               <div className="flex items-center justify-center gap-3 mb-4">
                 <span
                   className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border ${
@@ -450,11 +942,13 @@ export default function EnhancedInfluencerProfile() {
                   )}
                 </span>
 
-                {/* Farcaster Username */}
+                {/* Farcaster Username and FID */}
                 {farcasterProfile && (
                   <span className="flex items-center gap-2 text-slate-400 text-sm">
                     <MessageSquare className="w-4 h-4" />
                     @{farcasterProfile.username}
+                    <span className="text-slate-500">•</span>
+                    <span className="text-purple-400">FID {effectiveFid}</span>
                   </span>
                 )}
               </div>
@@ -570,93 +1064,11 @@ export default function EnhancedInfluencerProfile() {
             )}
 
             {activeTab === 'social' && (
-              <motion.div
-                key="social"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                {/* Farcaster */}
-                <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
-                        <MessageSquare className="w-6 h-6 text-purple-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-white font-semibold text-lg">Farcaster</h3>
-                        {farcasterProfile ? (
-                          <p className="text-emerald-400 text-sm">@{farcasterProfile.username}</p>
-                        ) : (
-                          <p className="text-slate-400 text-sm">Not connected</p>
-                        )}
-                      </div>
-                    </div>
-                    {farcasterProfile ? (
-                      <a
-                        href={`https://warpcast.com/${farcasterProfile.username}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-3 bg-slate-600/50 rounded-xl hover:bg-slate-600 transition-colors"
-                      >
-                        <ExternalLink className="w-5 h-5 text-slate-300" />
-                      </a>
-                    ) : (
-                      <span className="text-sm text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
-                        Connect
-                      </span>
-                    )}
-                  </div>
-
-                  {farcasterProfile && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-slate-900/30 rounded-xl">
-                        <p className="text-2xl font-bold text-white">
-                          {formatNumber(farcasterProfile.followerCount)}
-                        </p>
-                        <p className="text-slate-400 text-sm">Followers</p>
-                      </div>
-                      <div className="text-center p-3 bg-slate-900/30 rounded-xl">
-                        <p className="text-2xl font-bold text-white">
-                          {formatNumber(farcasterProfile.followingCount)}
-                        </p>
-                        <p className="text-slate-400 text-sm">Following</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Twitter */}
-                <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-500/20 rounded-xl border border-blue-500/30">
-                        <X className="w-6 h-6 text-blue-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-white font-semibold text-lg">X (Twitter)</h3>
-                        {farcasterProfile?.twitterUsername ? (
-                          <p className="text-emerald-400 text-sm">@{farcasterProfile.twitterUsername}</p>
-                        ) : (
-                          <p className="text-slate-400 text-sm">Not connected</p>
-                        )}
-                      </div>
-                    </div>
-                    {farcasterProfile?.twitterUsername && (
-                      <a
-                        href={`https://twitter.com/${farcasterProfile.twitterUsername}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-3 bg-slate-600/50 rounded-xl hover:bg-slate-600 transition-colors"
-                      >
-                        <ExternalLink className="w-5 h-5 text-slate-300" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
+              <EnhancedSocialTabContent 
+                farcasterProfile={farcasterProfile}
+                isFarcasterLoading={isFarcasterLoading}
+                farcasterError={farcasterError}
+              />
             )}
 
             {activeTab === 'activity' && (
@@ -733,7 +1145,7 @@ export default function EnhancedInfluencerProfile() {
         </div>
 
         {/* Success State for Farcaster Connection */}
-        {farcasterProfile && (
+        {farcasterProfile && effectiveFid && (
           <motion.div
             className="fixed top-4 left-4 right-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 backdrop-blur-xl z-50"
             initial={{ opacity: 0, y: -50 }}
@@ -745,7 +1157,7 @@ export default function EnhancedInfluencerProfile() {
               <CheckCircle className="w-6 h-6 text-emerald-400" />
               <div>
                 <p className="text-emerald-400 font-semibold">
-                  ✅ Farcaster Connected
+                  ✅ Farcaster Connected (FID: {effectiveFid})
                 </p>
                 <p className="text-emerald-400/70 text-sm">
                   Profile verified and social presence confirmed
