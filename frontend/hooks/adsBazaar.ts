@@ -10,12 +10,10 @@ import { parseUnits, Hex, formatEther } from "viem";
 import { cUSDContractConfig, CONTRACT_ADDRESS } from "../lib/contracts";
 import {
   Brief,
-  RawBriefData,
   Application,
   CampaignStatus,
   TargetAudience,
   DisputeStatus,
-  UserStatus,
 } from "../types";
 import {
   computeCampaignStatusInfo,
@@ -26,17 +24,18 @@ import {
 import ABI from "../lib/AdsBazaar.json";
 import { toast } from "react-hot-toast";
 import { useEnsureNetwork } from "./useEnsureNetwork";
+import { CIRCUIT_CONSTANTS } from "@/lib/circuit";
 
 // Type definitions
 type Address = `0x${string}`;
 type Bytes32 = Hex;
 
-type UserProfile = {
-  isRegistered: boolean;
-  isBusiness: boolean;
-  isInfluencer: boolean;
-  profileData: string;
-};
+// type UserProfile = {
+//   isRegistered: boolean;
+//   isBusiness: boolean;
+//   isInfluencer: boolean;
+//   profileData: string;
+// };
 
 type Payment = {
   briefId: Bytes32;
@@ -1193,5 +1192,76 @@ export function useTriggerAutoApproval() {
   return {
     triggerAutoApproval,
     ...tx,
+  };
+}
+
+export function useVerifySelfProof() {
+  const tx = useHandleTransaction();
+  const { address } = useAccount();
+
+  const verifySelfProof = async (proof: any, publicSignals: string[]) => {
+    if (!address) {
+      toast.error("Please connect your wallet");
+      throw new Error("Wallet not connected");
+    }
+
+    // Validate public signals length
+    if (publicSignals.length !== CIRCUIT_CONSTANTS.REQUIRED_PUBLIC_SIGNALS) {
+      toast.error(`Invalid proof format. Expected ${CIRCUIT_CONSTANTS.REQUIRED_PUBLIC_SIGNALS} signals, got ${publicSignals.length}`);
+      throw new Error("Invalid public signals length");
+    }
+
+    try {
+      // Format proof for contract (matching Self protocol format)
+      const formattedProof = {
+        a: proof.a,
+        b: [
+          [proof.b[0][1], proof.b[0][0]],
+          [proof.b[1][1], proof.b[1][0]],
+        ],
+        c: proof.c,
+        pubSignals: publicSignals,
+      };
+
+      console.log("Submitting Self proof verification...");
+      console.log("Nullifier:", publicSignals[CIRCUIT_CONSTANTS.NULLIFIER_INDEX]);
+      console.log("User address from proof:", `0x${BigInt(publicSignals[CIRCUIT_CONSTANTS.USER_IDENTIFIER_INDEX]).toString(16).padStart(40, '0')}`);
+
+      await tx.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: "verifySelfProof", 
+        args: [formattedProof],
+      });
+
+      return tx.hash;
+    } catch (error) {
+      console.error("Error verifying Self proof:", error);
+      
+      // Enhanced error handling
+      if (error instanceof Error) {
+        if (error.message.includes("RegisteredNullifier")) {
+          toast.error("This identity proof has already been used");
+        } else if (error.message.includes("InvalidScope")) {
+          toast.error("Invalid verification scope - please refresh and try again");
+        } else if (error.message.includes("User rejected")) {
+          toast.error("Transaction was cancelled");
+        } else if (error.message.includes("insufficient funds")) {
+          toast.error("Insufficient funds for gas fees");
+        } else {
+          toast.error("Identity verification failed. Please try again.");
+        }
+      }
+      throw error;
+    }
+  };
+
+  return {
+    verifySelfProof,
+    isPending: tx.isPending,
+    isSuccess: tx.isSuccess,
+    isError: tx.isError,
+    error: tx.error,
+    hash: tx.hash,
   };
 }

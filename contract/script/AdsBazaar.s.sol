@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {Script, console} from "forge-std/Script.sol";
 import {AdsBazaar} from "../src/AdsBazaar.sol";
+import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISelfVerificationRoot.sol";
 
 contract DeployAdsBazaar is Script {
    
@@ -44,6 +45,24 @@ contract DeployAdsBazaar is Script {
             scope,
             attestationIds
         );
+
+        console.log("Setting up verification configuration...");
+
+        // Configure Self protocol verification settings
+        ISelfVerificationRoot.VerificationConfig memory config = ISelfVerificationRoot.VerificationConfig({
+            olderThanEnabled: false,  // Don't require age verification
+            olderThan: 0,
+            forbiddenCountriesEnabled: false,  // Don't restrict countries
+            forbiddenCountriesListPacked: [uint256(0), uint256(0), uint256(0), uint256(0)],
+            ofacEnabled: [true, true, true]  // Enable all OFAC checks for compliance
+        });
+
+        adsBazaar.setVerificationConfig(config);
+
+        
+        console.log("Self verification configuration set with indices:");
+        console.log("NULLIFIER_INDEX = 7");
+        console.log("USER_IDENTIFIER_INDEX = 20");
         
         // Stop broadcasting
         vm.stopBroadcast();

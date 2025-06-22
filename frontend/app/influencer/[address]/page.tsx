@@ -27,6 +27,17 @@ import {
   Loader2,
   Zap,
   Link as LinkIcon,
+  Crown,
+  Gem,
+  Target,
+  Calendar,
+  MapPin,
+  Hash,
+  Eye,
+  Share2,
+  Heart,
+  ChevronDown,
+  Verified
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
@@ -186,6 +197,8 @@ export default function EnhancedInfluencerProfile() {
   const [isOwner, setIsOwner] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState<'overview' | 'social' | 'activity'>('overview');
+  const [showAllStats, setShowAllStats] = useState(false);
 
   // Fetch blockchain data
   const { userProfile, isLoadingProfile } = useUserProfile(
@@ -240,8 +253,27 @@ export default function EnhancedInfluencerProfile() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className="text-slate-400 text-sm">Loading profile...</p>
+          <motion.div
+            className="relative w-16 h-16 mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
+            <div className="absolute inset-0 rounded-full border-t-4 border-emerald-500"></div>
+          </motion.div>
+          <p className="text-slate-400 text-lg font-medium">Loading profile...</p>
+          <div className="flex justify-center mt-3">
+            <div className="flex space-x-1">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-2 h-2 bg-emerald-500 rounded-full"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                />
+              ))}
+            </div>
+          </div>
         </motion.div>
       </div>
     );
@@ -251,21 +283,23 @@ export default function EnhancedInfluencerProfile() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <motion.div
-          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 max-w-sm w-full text-center"
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 max-w-sm w-full text-center"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-3">
+          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-4">
             Profile Not Found
           </h2>
-          <p className="text-slate-400 text-sm leading-relaxed mb-6">
+          <p className="text-slate-400 text-sm leading-relaxed mb-8">
             This address is not registered as an influencer on AdsBazaar.
           </p>
           <Link href="/marketplace">
             <motion.button
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-medium py-2.5 px-4 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all text-sm"
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/20"
               whileTap={{ scale: 0.95 }}
             >
               Explore Marketplace
@@ -281,290 +315,455 @@ export default function EnhancedInfluencerProfile() {
   const bio = farcasterProfile?.bio || "Digital creator and influencer";
   const pfpUrl = farcasterProfile?.pfpUrl;
 
+  const stats = [
+    {
+      icon: Users,
+      value: farcasterProfile ? formatNumber(farcasterProfile.followerCount) : (userProfile?.completedCampaigns || 0),
+      label: farcasterProfile ? "Followers" : "Campaigns",
+      color: "text-emerald-400"
+    },
+    {
+      icon: Target,
+      value: farcasterProfile ? formatNumber(farcasterProfile.followingCount) : "4.9",
+      label: farcasterProfile ? "Following" : "Rating",
+      color: "text-blue-400"
+    },
+    {
+      icon: Award,
+      value: getUserStatusLabel(userProfile?.status || 0),
+      label: "Status",
+      color: "text-purple-400"
+    },
+    {
+      icon: Sparkles,
+      value: isVerified ? "Verified" : "Unverified",
+      label: "Creator",
+      color: isVerified ? "text-emerald-400" : "text-amber-400"
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-4 pb-6 px-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Toaster position="top-center" />
 
-      <div className="max-w-lg mx-auto space-y-4">
-        {/* Connect Farcaster Section - Top Priority */}
-        {!farcasterProfile && (
-          <motion.div
-            className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-xl border border-purple-500/20 rounded-xl p-4"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-purple-400" />
-                </div>
-                <div>
-                  <h3 className="text-white font-medium text-sm">Connect Farcaster</h3>
-                  <p className="text-slate-400 text-xs">Verify your social presence</p>
-                </div>
-              </div>
-              <FarcasterConnectButton 
-                address={profileAddress as string} 
-                isOwner={isOwner} 
-                onConnectionSuccess={handleConnectionSuccess}
-              />
-            </div>
-          </motion.div>
-        )}
-
-        {/* Header Section */}
-        <motion.div
-          className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <div className="flex items-center gap-4 mb-4">
-            {/* Avatar */}
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center overflow-hidden border-2 border-slate-700/50">
-                {pfpUrl ? (
-                  <Image
-                    src={pfpUrl}
-                    alt={displayName}
-                    width={64}
-                    height={64}
-                    className="w-full h-full object-cover"
+      {/* Scrollable Container */}
+      <div className="max-w-lg mx-auto min-h-screen overflow-y-auto">
+        {/* Header Section with Hero Design */}
+        <div className="relative">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-blue-500/5 to-purple-500/10"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.1),transparent_50%)]"></div>
+          
+          <div className="relative px-4 pt-20 sm:pt-24 md:pt-28 pb-6">
+            {/* Connect Farcaster Banner - Top Priority */}
+            {!farcasterProfile && (
+              <motion.div
+                className="mb-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                      <MessageSquare className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">Connect Farcaster</h3>
+                      <p className="text-slate-400 text-sm">Verify your social presence</p>
+                    </div>
+                  </div>
+                  <FarcasterConnectButton 
+                    address={profileAddress as string} 
+                    isOwner={isOwner} 
+                    onConnectionSuccess={handleConnectionSuccess}
                   />
-                ) : (
-                  <Users className="w-8 h-8 text-white" />
-                )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Profile Header */}
+            <motion.div
+              className="text-center mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              {/* Avatar with Enhanced Design */}
+              <div className="relative inline-block mb-6">
+                <div className="relative w-24 h-24 mx-auto">
+                  <div className="w-full h-full rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 p-1">
+                    <div className="w-full h-full rounded-full overflow-hidden bg-slate-800">
+                      {pfpUrl ? (
+                        <Image
+                          src={pfpUrl}
+                          alt={displayName}
+                          width={96}
+                          height={96}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600">
+                          <Users className="w-10 h-10 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Verification Badge */}
+                  {isVerified && (
+                    <motion.div
+                      className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full border-3 border-slate-900 flex items-center justify-center shadow-lg"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", duration: 0.6, delay: 0.3 }}
+                    >
+                      <Shield className="w-4 h-4 text-white" />
+                    </motion.div>
+                  )}
+
+                  {/* Premium Badge */}
+                  {isVerified && (
+                    <motion.div
+                      className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full border-2 border-slate-900 flex items-center justify-center"
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", duration: 0.6, delay: 0.4 }}
+                    >
+                      <Crown className="w-3 h-3 text-white" />
+                    </motion.div>
+                  )}
+                </div>
               </div>
 
-              {/* Verification Badge */}
-              {isVerified && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
-                  <Shield className="w-3 h-3 text-white" />
-                </div>
-              )}
-            </div>
-
-            {/* Basic Info */}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-white truncate">
+              {/* Name and Username */}
+              <h1 className="text-3xl font-bold text-white mb-2">
                 {displayName}
               </h1>
               
-              {/* Verification Status */}
-              <span
-                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
-                  isVerified
-                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                    : "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                }`}
-              >
-                <Shield className="w-3 h-3 mr-1" />
-                {isVerified ? "Verified" : "Unverified"}
-              </span>
-
-              {/* Farcaster Username */}
-              {farcasterProfile && (
-                <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
-                  <MessageSquare className="w-3 h-3" />
-                  <span>@{farcasterProfile.username}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="flex items-center gap-2 mb-3">
-            <span className="font-mono bg-slate-700/50 px-2 py-1 rounded text-xs text-slate-300">
-              {`${(profileAddress as string).slice(0, 6)}...${(
-                profileAddress as string
-              ).slice(-4)}`}
-            </span>
-            <button
-              onClick={() =>
-                handleCopy(profileAddress as string, "Address")
-              }
-              className="text-slate-500 hover:text-emerald-400 transition-colors"
-            >
-              {copiedText === "Address" ? (
-                <CheckCircle className="h-3 w-3 text-emerald-400" />
-              ) : (
-                <Copy className="h-3 w-3" />
-              )}
-            </button>
-          </div>
-
-          {/* Bio */}
-          <p className="text-slate-300 text-sm leading-relaxed">
-            {bio}
-          </p>
-        </motion.div>
-
-        {/* Stats Grid */}
-        <motion.div
-          className="grid grid-cols-3 gap-3"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-white">
-              {farcasterProfile ? formatNumber(farcasterProfile.followerCount) : (userProfile?.completedCampaigns || 0)}
-            </p>
-            <p className="text-xs text-slate-400">
-              {farcasterProfile ? "Followers" : "Campaigns"}
-            </p>
-          </div>
-
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-white">
-              {farcasterProfile ? formatNumber(farcasterProfile.followingCount) : "4.9"}
-            </p>
-            <p className="text-xs text-slate-400">
-              {farcasterProfile ? "Following" : "Rating"}
-            </p>
-          </div>
-
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-white">
-              {getUserStatusLabel(userProfile?.status || 0)}
-            </p>
-            <p className="text-xs text-slate-400">Status</p>
-          </div>
-        </motion.div>
-
-        {/* Social Media */}
-        <motion.div
-          className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <Globe className="w-5 h-5 text-emerald-400" />
-            Social Presence
-          </h2>
-
-          <div className="space-y-3">
-            {/* Farcaster */}
-            <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/20 rounded-lg">
-                  <MessageSquare className="w-4 h-4 text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-white text-sm font-medium">Farcaster</p>
-                  {farcasterProfile ? (
-                    <p className="text-emerald-400 text-xs">@{farcasterProfile.username}</p>
-                  ) : (
-                    <p className="text-slate-400 text-xs">Not connected</p>
-                  )}
-                </div>
-              </div>
-              {farcasterProfile ? (
-                <a
-                  href={`https://warpcast.com/${farcasterProfile.username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 bg-slate-600/50 rounded-md hover:bg-slate-600 transition-colors"
+              {/* Verification Status with Enhanced Design */}
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span
+                  className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border ${
+                    isVerified
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-500/20"
+                      : "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                  }`}
                 >
-                  <ExternalLink className="w-3 h-3 text-slate-300" />
-                </a>
-              ) : (
-                <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
-                  Connect
+                  {isVerified ? (
+                    <>
+                      <Verified className="w-4 h-4 mr-2" />
+                      Verified Creator
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                      Unverified
+                    </>
+                  )}
                 </span>
-              )}
-            </div>
 
-            {/* Twitter */}
-            <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
-                  <X className="w-4 h-4 text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-white text-sm font-medium">X (Twitter)</p>
-                  {farcasterProfile?.twitterUsername ? (
-                    <p className="text-emerald-400 text-xs">@{farcasterProfile.twitterUsername}</p>
+                {/* Farcaster Username */}
+                {farcasterProfile && (
+                  <span className="flex items-center gap-2 text-slate-400 text-sm">
+                    <MessageSquare className="w-4 h-4" />
+                    @{farcasterProfile.username}
+                  </span>
+                )}
+              </div>
+
+              {/* Address */}
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="font-mono bg-slate-800/60 px-3 py-1.5 rounded-lg text-sm text-slate-300 border border-slate-700/50">
+                  {`${(profileAddress as string).slice(0, 6)}...${(
+                    profileAddress as string
+                  ).slice(-4)}`}
+                </span>
+                <button
+                  onClick={() =>
+                    handleCopy(profileAddress as string, "Address")
+                  }
+                  className="text-slate-500 hover:text-emerald-400 transition-colors p-1.5 rounded-lg hover:bg-slate-800/50"
+                >
+                  {copiedText === "Address" ? (
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
                   ) : (
-                    <p className="text-slate-400 text-xs">Not connected</p>
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+
+              {/* Bio */}
+              <p className="text-slate-300 text-lg leading-relaxed max-w-md mx-auto">
+                {bio}
+              </p>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="px-4 mb-6">
+          <div className="flex bg-slate-800/50 rounded-2xl p-1 border border-slate-700/50">
+            {[
+              { key: 'overview', label: 'Overview', icon: Eye },
+              { key: 'social', label: 'Social', icon: Globe },
+              { key: 'activity', label: 'Activity', icon: TrendingUp }
+            ].map((tab) => (
+              <motion.button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
+                  activeTab === tab.key
+                    ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/20"
+                    : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                }`}
+                whileTap={{ scale: 0.95 }}
+              >
+                <tab.icon className="w-4 h-4" />
+                <span className="text-sm">{tab.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="px-4 pb-8">
+          <AnimatePresence mode="wait">
+            {activeTab === 'overview' && (
+              <motion.div
+                key="overview"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  {stats.slice(0, showAllStats ? stats.length : 4).map((stat, index) => (
+                    <motion.div
+                      key={stat.label}
+                      className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 text-center"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <div className="flex justify-center mb-3">
+                        <div className="p-2 bg-slate-700/50 rounded-xl">
+                          <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                        </div>
+                      </div>
+                      <p className="text-xl font-bold text-white mb-1">
+                        {stat.value}
+                      </p>
+                      <p className="text-slate-400 text-sm">
+                        {stat.label}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {stats.length > 4 && (
+                  <button
+                    onClick={() => setShowAllStats(!showAllStats)}
+                    className="w-full flex items-center justify-center gap-2 py-3 text-slate-400 hover:text-emerald-400 transition-colors"
+                  >
+                    <span className="text-sm font-medium">
+                      {showAllStats ? "Show Less" : "Show More Stats"}
+                    </span>
+                    <motion.div
+                      animate={{ rotate: showAllStats ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.div>
+                  </button>
+                )}
+              </motion.div>
+            )}
+
+            {activeTab === 'social' && (
+              <motion.div
+                key="social"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-4"
+              >
+                {/* Farcaster */}
+                <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
+                        <MessageSquare className="w-6 h-6 text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-semibold text-lg">Farcaster</h3>
+                        {farcasterProfile ? (
+                          <p className="text-emerald-400 text-sm">@{farcasterProfile.username}</p>
+                        ) : (
+                          <p className="text-slate-400 text-sm">Not connected</p>
+                        )}
+                      </div>
+                    </div>
+                    {farcasterProfile ? (
+                      <a
+                        href={`https://warpcast.com/${farcasterProfile.username}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-3 bg-slate-600/50 rounded-xl hover:bg-slate-600 transition-colors"
+                      >
+                        <ExternalLink className="w-5 h-5 text-slate-300" />
+                      </a>
+                    ) : (
+                      <span className="text-sm text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+                        Connect
+                      </span>
+                    )}
+                  </div>
+
+                  {farcasterProfile && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-slate-900/30 rounded-xl">
+                        <p className="text-2xl font-bold text-white">
+                          {formatNumber(farcasterProfile.followerCount)}
+                        </p>
+                        <p className="text-slate-400 text-sm">Followers</p>
+                      </div>
+                      <div className="text-center p-3 bg-slate-900/30 rounded-xl">
+                        <p className="text-2xl font-bold text-white">
+                          {formatNumber(farcasterProfile.followingCount)}
+                        </p>
+                        <p className="text-slate-400 text-sm">Following</p>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-              {farcasterProfile?.twitterUsername && (
-                <a
-                  href={`https://twitter.com/${farcasterProfile.twitterUsername}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 bg-slate-600/50 rounded-md hover:bg-slate-600 transition-colors"
+
+                {/* Twitter */}
+                <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-blue-500/20 rounded-xl border border-blue-500/30">
+                        <X className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-semibold text-lg">X (Twitter)</h3>
+                        {farcasterProfile?.twitterUsername ? (
+                          <p className="text-emerald-400 text-sm">@{farcasterProfile.twitterUsername}</p>
+                        ) : (
+                          <p className="text-slate-400 text-sm">Not connected</p>
+                        )}
+                      </div>
+                    </div>
+                    {farcasterProfile?.twitterUsername && (
+                      <a
+                        href={`https://twitter.com/${farcasterProfile.twitterUsername}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-3 bg-slate-600/50 rounded-xl hover:bg-slate-600 transition-colors"
+                      >
+                        <ExternalLink className="w-5 h-5 text-slate-300" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'activity' && (
+              <motion.div
+                key="activity"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-4"
+              >
+                <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 text-center">
+                  <TrendingUp className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Activity Coming Soon
+                  </h3>
+                  <p className="text-slate-400">
+                    Campaign activity and engagement stats will appear here.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Action Buttons - Fixed at bottom */}
+        <div className="sticky bottom-0 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent p-4 border-t border-slate-700/50">
+          <div className="space-y-4">
+            {isOwner && (
+              <Link href="/influencersDashboard">
+                <motion.button
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-2xl font-semibold transition-all shadow-lg shadow-emerald-500/20"
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <ExternalLink className="w-3 h-3 text-slate-300" />
-                </a>
-              )}
+                  <TrendingUp className="w-5 h-5" />
+                  Go to Dashboard
+                  <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              </Link>
+            )}
+
+            <div className="flex gap-3">
+              <motion.button
+                onClick={() =>
+                  handleCopy(
+                    typeof window !== "undefined"
+                      ? `${window.location.origin}/influencer/${profileAddress}`
+                      : "",
+                    "Profile Link"
+                  )
+                }
+                className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-slate-800/60 hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-600/50 transition-all font-medium"
+                whileTap={{ scale: 0.95 }}
+              >
+                {copiedText === "Profile Link" ? (
+                  <CheckCircle className="w-5 h-5 text-emerald-400" />
+                ) : (
+                  <Share2 className="w-5 h-5" />
+                )}
+                Share
+              </motion.button>
+
+              <Link href="/marketplace" className="flex-1">
+                <motion.button
+                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl transition-all font-medium shadow-lg shadow-emerald-500/20"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Explore
+                </motion.button>
+              </Link>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Action Buttons */}
-        <motion.div
-          className="flex flex-col gap-3"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          {isOwner && (
-            <Link href="/influencersDashboard">
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg font-medium transition-all">
-                <TrendingUp className="w-4 h-4" />
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </Link>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={() =>
-                handleCopy(
-                  typeof window !== "undefined"
-                    ? `${window.location.origin}/influencer/${profileAddress}`
-                    : "",
-                  "Profile Link"
-                )
-              }
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-600/50 transition-all text-sm"
-            >
-              {copiedText === "Profile Link" ? (
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
-              ) : (
-                <LinkIcon className="w-4 h-4" />
-              )}
-              Share
-            </button>
-
-            <Link href="/marketplace" className="flex-1">
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-all text-sm">
-                <Sparkles className="w-4 h-4" />
-                Explore
-              </button>
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* Farcaster Connection Status */}
+        {/* Success State for Farcaster Connection */}
         {farcasterProfile && (
           <motion.div
-            className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3"
-            initial={{ opacity: 0, y: 10 }}
+            className="fixed top-4 left-4 right-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 backdrop-blur-xl z-50"
+            initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.5 }}
+            exit={{ opacity: 0, y: -50 }}
+            transition={{ duration: 0.3 }}
           >
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-400 text-sm font-medium">
-                ✅ Farcaster Connected
-              </span>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6 text-emerald-400" />
+              <div>
+                <p className="text-emerald-400 font-semibold">
+                  ✅ Farcaster Connected
+                </p>
+                <p className="text-emerald-400/70 text-sm">
+                  Profile verified and social presence confirmed
+                </p>
+              </div>
             </div>
           </motion.div>
         )}
