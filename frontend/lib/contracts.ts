@@ -1,12 +1,15 @@
 import { erc20Abi } from "viem";
 import { CURRENT_NETWORK } from "./networks";
 
+// 0x3df55Df1de82388F92D2B381ea511d247600825f
+
 const CONTRACT_ADDRESSES = {
   // Celo Mainnet
   42220: {
     CUSD: "0x765DE816845861e75A25fCA122bb6898B8B1282a", // Mainnet cUSD
-    ADS_BAZAAR: "0x3df55Df1de82388F92D2B381ea511d247600825f", // deployed contract
+    ADS_BAZAAR: "0xB2Dbc7689F4C1E7310693bD19cbd33c6548B9a73", // deployed contract
     SELF_SCOPE: "AdsBazaar"
+    
   },
   // Celo Alfajores Testnet
   44787: {
