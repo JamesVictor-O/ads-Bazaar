@@ -12,9 +12,7 @@ import {
   Flag,
   Timer,
   CalendarClock,
-  ExternalLink,
   Scale,
-  Play,
   Pause,
   Clock3,
 } from "lucide-react";
@@ -29,10 +27,6 @@ import {
   getTimeRemaining,
 } from "@/utils/format";
 import Link from "next/link";
-import {
-  useHasPendingDisputes,
-  usePendingDisputeCount,
-} from "@/hooks/adsBazaar";
 import { hasPendingDisputes } from "@/utils/campaignUtils";
 import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
@@ -57,29 +51,16 @@ export const SubmissionsModal = ({
   const [selectedInfluencer, setSelectedInfluencer] = useState<Hex | null>(
     null
   );
-  const { hasPendingDisputes: contractHasPending, isLoadingPendingCheck } =
-    useHasPendingDisputes(selectedBrief?.id || "0x0");
-
-  const { pendingDisputeCount, isLoadingCount } = usePendingDisputeCount(
-    selectedBrief?.id || "0x0"
-  );
+  
 
   const { trackTransaction } = useDivviIntegration()
-
-  if (!selectedBrief) return null;
-
-  const selectedApplications = applications.filter((app) => app.isSelected);
 
   // Calculate timing information for button state
   const currentTime = Math.floor(Date.now() / 1000);
 
-  // Enhanced dispute analysis
-  const disputeAnalysis = hasPendingDisputes(selectedApplications, currentTime);
-  const canAutoApprove = currentTime > selectedBrief.verificationDeadline;
-
-  // Enhanced timing calculations
+  // Always call hooks, even if selectedBrief is null
   const proofSubmissionTimeInfo = useMemo(() => {
-    if (!selectedBrief.proofSubmissionDeadline) return null;
+    if (!selectedBrief || !selectedBrief.proofSubmissionDeadline) return null;
 
     const hasStarted = currentTime >= selectedBrief.promotionEndTime;
     const timeRemaining = getTimeRemaining(
@@ -96,13 +77,12 @@ export const SubmissionsModal = ({
         : "Not Started",
     };
   }, [
-    selectedBrief.proofSubmissionDeadline,
-    selectedBrief.promotionEndTime,
+    selectedBrief,
     currentTime,
   ]);
 
   const verificationTimeInfo = useMemo(() => {
-    if (!selectedBrief.verificationDeadline) return null;
+    if (!selectedBrief || !selectedBrief.verificationDeadline) return null;
 
     const hasStarted = currentTime >= selectedBrief.proofSubmissionDeadline;
     const timeRemaining = getTimeRemaining(selectedBrief.verificationDeadline);
@@ -117,13 +97,31 @@ export const SubmissionsModal = ({
         : "Not Started",
     };
   }, [
-    selectedBrief.verificationDeadline,
-    selectedBrief.proofSubmissionDeadline,
+    selectedBrief,
     currentTime,
   ]);
 
+  const selectedApplications = applications.filter((app) => app.isSelected);
+
+  // Enhanced dispute analysis
+  const disputeAnalysis = useMemo(() => {
+    return selectedBrief
+      ? hasPendingDisputes(selectedApplications, currentTime)
+      : { hasPending: false, pendingCount: 0 };
+  }, [selectedBrief, selectedApplications, currentTime]);
+  const canAutoApprove = selectedBrief
+    ? currentTime > selectedBrief.verificationDeadline
+    : false;
+
   //  Enhanced logic to check for actual submissions 
   const canReleaseFunds = useMemo(() => {
+    if (!selectedBrief) {
+      return {
+        canRelease: false,
+        reason: "No campaign selected",
+        noSubmissions: true,
+      };
+    }
     // Can't release if proof submission period still active
     if (currentTime < selectedBrief.proofSubmissionDeadline) {
       return {
@@ -157,12 +155,14 @@ export const SubmissionsModal = ({
 
     return { canRelease: true };
   }, [
+    selectedBrief,
     currentTime,
-    selectedBrief.proofSubmissionDeadline,
     selectedApplications,
     disputeAnalysis,
     canAutoApprove,
   ]);
+
+  if (!selectedBrief) return null;
 
   const handleOpenDisputeModal = (influencer: Hex) => {
     setSelectedInfluencer(influencer);

@@ -61,9 +61,19 @@ class NeynarServerService {
     }
   }
 
-  private formatUserProfile(user: any): FarcasterProfile {
+  private formatUserProfile(user: {
+    fid: number;
+    username: string;
+    displayName?: string;
+    profile?: { bio?: { text?: string } };
+    pfp?: { url?: string };
+    followerCount?: number;
+    followingCount?: number;
+    connectedAccounts?: { platform: string; username: string }[];
+    verifiedAddresses?: { ethAddresses?: string[] };
+  }): FarcasterProfile {
     const twitterAccount = user.connectedAccounts?.find(
-      (account: any) =>
+      (account) =>
         account.platform === "twitter" || account.platform === "x"
     );
 
