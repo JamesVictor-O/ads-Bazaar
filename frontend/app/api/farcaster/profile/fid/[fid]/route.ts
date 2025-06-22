@@ -4,10 +4,11 @@ import { neynarServerService } from "@/lib/neynar-server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { fid: string } }
+  { params }: { params: Promise<{ fid: string }> }
 ) {
   try {
-    const fidString = params.fid;
+    const resolvedParams = await params;
+    const fidString = resolvedParams.fid;
 
     // Validate the FID
     if (!fidString) {

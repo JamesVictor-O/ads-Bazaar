@@ -30,29 +30,18 @@ import {
   XCircle,
   Trash2,
   Ban,
-  Timer,
-  TrendingUp,
   Zap,
-  Star,
-  Eye,
-  Settings,
-  ArrowRight,
   Bell,
-  AlertCircle,
-  PlayCircle,
-  PauseCircle,
   Flag,
-  Building2,
   Crown,
   CheckSquare,
   ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
-import { format, isAfter, addHours } from "date-fns";
+import { format } from "date-fns";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { truncateAddress, formatCurrency } from "@/utils/format";
+import { formatCurrency, fromWei } from "@/utils/format";
 import {
   getStatusColor,
   getPhaseColor,
@@ -61,7 +50,7 @@ import {
   getActionPriority,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
-import { CampaignStatus, CampaignPhase, PHASE_LABELS } from "@/types";
+import { CampaignStatus } from "@/types";
 
 // Import custom hooks
 import {
@@ -260,14 +249,14 @@ const BrandDashboard = () => {
     );
   };
 
-  const handleCreateCampaign = async () => {
+  const handleCreateCampaign = async (): Promise<string> => {
     if (!isFormValid()) {
       toast.error("Please fill in all required fields correctly");
-      return;
+      return Promise.reject("Form is invalid");
     }
 
     try {
-      await createBrief(
+      const result = await createBrief(
         formData.name,
         formData.description,
         formData.requirements,
@@ -276,12 +265,17 @@ const BrandDashboard = () => {
         Number(formData.maxInfluencers),
         Number(formData.targetAudience)
       );
+      // If createBrief returns a string (e.g., campaign ID), return it
+      return typeof result === "string" ? result : "";
     } catch (error) {
       console.error("Error creating campaign:", error);
       toast.error(
         `Failed to create campaign: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
+      );
+      return Promise.reject(
+        error instanceof Error ? error.message : "Unknown error"
       );
     }
   };
@@ -431,7 +425,7 @@ const BrandDashboard = () => {
                 {userProfile?.totalEscrowed !== undefined && (
                   <span className="text-xs md:text-sm text-slate-500 bg-slate-800/50 px-2 py-1 md:px-3 md:py-1 rounded-full">
                     Total invested:{" "}
-                    {formatCurrency(userProfile.totalEscrowed, "cUSD", 0)}
+                    {formatCurrency(fromWei(userProfile.totalEscrowed), "cUSD")}
                   </span>
                 )}
               </div>

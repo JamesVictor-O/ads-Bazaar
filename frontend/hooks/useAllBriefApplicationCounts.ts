@@ -1,18 +1,18 @@
 import { useReadContracts } from "wagmi";
 
-import { FormattedBriefData } from "@/types/index";
+import { Brief } from "@/types/index";
 import ABI from "../lib/AdsBazaar.json";
 import { CONTRACT_ADDRESS } from "../lib/contracts";
 
 // Hook to fetch application counts for multiple briefs
-export const useAllBriefApplicationCounts = (briefs: FormattedBriefData[]) => {
+export const useAllBriefApplicationCounts = (briefs: Brief[]) => {
   const briefIds = briefs
     .map((brief) => brief.id)
     .filter((id) => id && id !== "0x0");
 
   const contracts = briefIds.map((briefId) => ({
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: ABI.abi,
+    abi: ABI.abi as any,
     functionName: "briefApplicationCounts",
     args: [briefId],
   }));

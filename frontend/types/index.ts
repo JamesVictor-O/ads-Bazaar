@@ -1,5 +1,4 @@
 import { Hex } from "viem";
-import { CheckSquare } from "lucide-react";
 
 // Enums that match the smart contract
 export enum CampaignStatus {
@@ -158,6 +157,12 @@ export interface Application {
 
   // Enhanced info
   applicationInfo: ApplicationInfo;
+  
+  // Optional influencer profile data
+  influencerProfile?: {
+    name?: string;
+    avatar?: string;
+  };
 }
 
 export interface ApplicationStatus {

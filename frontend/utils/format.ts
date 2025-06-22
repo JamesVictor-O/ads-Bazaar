@@ -26,9 +26,95 @@ export function truncateAddress(
 }
 
 /**
- * Formats currency values with proper localization
+ * Converts wei amount to decimal format (18 decimals for cUSD)
+ */
+export function fromWei(weiAmount: number | string, decimals: number = 18): number {
+  const divisor = Math.pow(10, decimals);
+  const amount = typeof weiAmount === 'string' ? parseFloat(weiAmount) : weiAmount;
+  return amount / divisor;
+}
+
+/**
+ * Smart currency formatting that adapts based on the amount
  */
 export function formatCurrency(
+  amount: number,
+  currency: string = "cUSD",
+  decimals?: number
+): string {
+  // If decimals is explicitly provided, use it
+  if (decimals !== undefined) {
+    return `${amount.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })} ${currency}`;
+  }
+
+  // Handle zero and negative amounts
+  if (amount === 0) {
+    return `0 ${currency}`;
+  }
+  
+  if (amount < 0) {
+    return `-${formatCurrency(Math.abs(amount), currency)}`;
+  }
+
+  // Smart formatting based on amount size
+  if (amount >= 1000000) {
+    // For millions and above, use compact notation
+    return `${(amount / 1000000).toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 2,
+    })}M ${currency}`;
+  } else if (amount >= 100000) {
+    // For 100K+, show as whole numbers with K notation
+    return `${(amount / 1000).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })}K ${currency}`;
+  } else if (amount >= 10000) {
+    // For 10K+, show with 1 decimal place and K notation
+    return `${(amount / 1000).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    })}K ${currency}`;
+  } else if (amount >= 1000) {
+    // For 1K+, show with up to 2 decimal places and K notation
+    return `${(amount / 1000).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}K ${currency}`;
+  } else if (amount >= 100) {
+    // For 100+, show as whole numbers
+    return `${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })} ${currency}`;
+  } else if (amount >= 1) {
+    // For amounts >= 1, show up to 2 decimal places
+    return `${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })} ${currency}`;
+  } else if (amount >= 0.01) {
+    // For small amounts, show up to 4 decimal places
+    return `${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    })} ${currency}`;
+  } else {
+    // For very small amounts, show more precision
+    return `${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 6,
+      maximumFractionDigits: 8,
+    })} ${currency}`;
+  }
+}
+
+/**
+ * Formats currency values with proper localization (legacy version for compatibility)
+ */
+export function formatCurrencyLegacy(
   amount: number,
   currency: string = "cUSD",
   decimals: number = 2

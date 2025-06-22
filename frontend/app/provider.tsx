@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { wagmiConfig } from "@/lib/wagmi";
+import { SUPPORTED_CHAINS } from "@/lib/networks";
 import "@rainbow-me/rainbowkit/styles.css";
 import { ReactNode, useEffect, useState, PropsWithChildren } from "react";
 import { SessionProvider } from "next-auth/react";
@@ -52,7 +53,11 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
+        <RainbowKitProvider
+          modalSize="compact"
+          initialChain={SUPPORTED_CHAINS[0]}
+          showRecentTransactions={true}
+        >
           <AuthKitProvider config={farcasterConfig}>
             <SessionProvider refetchInterval={60 * 5}>
               <FarcasterFrameProvider>{children}</FarcasterFrameProvider>

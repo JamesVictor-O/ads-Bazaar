@@ -6,12 +6,10 @@ import {
   Loader2,
   ExternalLink,
   Check,
-  Calendar,
   XCircle,
   Award,
   X,
   AlertTriangle,
-  Shield,
   CheckCircle,
   Upload,
   Eye,
@@ -23,7 +21,7 @@ import { toast } from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 import { truncateAddress } from "@/utils/format";
 import { Hex } from "viem";
-import { useSelectInfluencer, useCompleteCampaign } from "@/hooks/adsBazaar";
+import { useSelectInfluencer } from "@/hooks/adsBazaar";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { motion } from "framer-motion";
 import { useDivviIntegration } from '@/hooks/useDivviIntegration'
@@ -43,10 +41,10 @@ const ApplicationsModal = ({
 }: EnhancedApplicationsModalProps) => {
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [transactionPhase, setTransactionPhase] = useState<
-    "idle" | "selecting" | "completing"
+    "idle" | "selecting"
   >("idle");
 
-  const { generateDivviTag, trackTransaction } = useDivviIntegration()
+  const { trackTransaction } = useDivviIntegration()
 
   // Filter applications based on showOnlySelected prop
   const filteredApplications = showOnlySelected
@@ -60,27 +58,18 @@ const ApplicationsModal = ({
     error: selectError,
   } = useSelectInfluencer();
 
-  const {
-    completeCampaign,
-    isPending: isCompleting,
-    isSuccess: isCompleted,
-    error: completeError,
-  } = useCompleteCampaign();
 
   // Track transaction phases for better UX
   useEffect(() => {
     if (isSelectingInfluencer && transactionPhase !== "selecting") {
       setTransactionPhase("selecting");
-    } else if (isCompleting && transactionPhase !== "completing") {
-      setTransactionPhase("completing");
     } else if (
       !isSelectingInfluencer &&
-      !isCompleting &&
       transactionPhase !== "idle"
     ) {
       setTransactionPhase("idle");
     }
-  }, [isSelectingInfluencer, isCompleting, transactionPhase]);
+  }, [isSelectingInfluencer, transactionPhase]);
 
   // Handle success states
   useEffect(() => {
@@ -91,16 +80,10 @@ const ApplicationsModal = ({
     }
   }, [isInfluencerSelected]);
 
-  useEffect(() => {
-    if (isCompleted) {
-      toast.success("Campaign completed successfully!");
-      onClose();
-    }
-  }, [isCompleted, onClose]);
 
   // Handle errors
   useEffect(() => {
-    const error = selectError || completeError;
+    const error = selectError;
     if (!error) return;
 
     let errorMessage = "Transaction failed";
@@ -123,7 +106,7 @@ const ApplicationsModal = ({
     toast.error(errorMessage, { duration: 5000 });
     setPendingIndex(null);
     setTransactionPhase("idle");
-  }, [selectError, completeError]);
+  }, [selectError]);
 
   const handleAssignInfluencer = async (briefId: Hex, index: number) => {
     if (!guardedAction) {
@@ -146,16 +129,6 @@ const ApplicationsModal = ({
     });
   };
 
-  const handleCompleteCampaign = async () => {
-    if (!selectedBrief || !guardedAction) {
-      toast.error("Network configuration error. Please refresh and try again.");
-      return;
-    }
-
-    await guardedAction(async () => {
-      await completeCampaign(selectedBrief.briefId);
-    });
-  };
 
   const extractRevertReason = (message: string): string | null => {
     const revertPatterns = [
@@ -199,17 +172,10 @@ const ApplicationsModal = ({
   const selectedCount = applications.filter((app) => app.isSelected).length;
   const spotsRemaining = maxInfluencers - selectedCount;
 
-  const deadline = new Date(Number(selectedBrief.applicationDeadline) * 1000);
-  const deadlinePassed = deadline < new Date();
 
-  const hasSubmissions = applications.some(
-    (app) => app.isSelected && app.hasClaimed
-  );
-
-  const showCompleteButton = selectedCount > 0 && hasSubmissions;
 
   const isTransactionInProgress =
-    transactionPhase !== "idle" || isSelectingInfluencer || isCompleting;
+    transactionPhase !== "idle" || isSelectingInfluencer;
 
   return (
     <motion.div
@@ -244,12 +210,6 @@ const ApplicationsModal = ({
                     } remaining out of ${maxInfluencers}`
                   : "All influencer spots filled"}
               </span>
-              {deadlinePassed && (
-                <div className="flex items-center text-amber-400">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  <span>Deadline passed</span>
-                </div>
-              )}
             </div>
           </div>
           <button
@@ -272,7 +232,6 @@ const ApplicationsModal = ({
               </p>
               <p className="text-xs text-slate-400 mt-1">
                 {transactionPhase === "selecting" && "Assigning influencer..."}
-                {transactionPhase === "completing" && "Completing campaign..."}
               </p>
             </div>
           </div>
@@ -542,33 +501,6 @@ const ApplicationsModal = ({
           )}
         </div>
 
-        {/* Footer with complete button (only when showing selected applications) */}
-        {showOnlySelected && showCompleteButton && (
-          <div className="border-t border-slate-700/50 pt-4 mt-4">
-            <motion.button
-              onClick={handleCompleteCampaign}
-              disabled={isTransactionInProgress}
-              className={`w-full px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center justify-center gap-2 ${
-                isTransactionInProgress
-                  ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
-                  : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
-              }`}
-              whileTap={!isTransactionInProgress ? { scale: 0.95 } : {}}
-            >
-              {isCompleting ? (
-                <>
-                  <Loader2 className="animate-spin h-4 w-4" />
-                  <span>Processing</span>
-                </>
-              ) : (
-                <>
-                  <Award className="w-4 h-4" />
-                  <span>Complete Campaign</span>
-                </>
-              )}
-            </motion.button>
-          </div>
-        )}
       </motion.div>
     </motion.div>
   );

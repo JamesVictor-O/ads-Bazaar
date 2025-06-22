@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useAccount } from "wagmi";
 import { motion } from "framer-motion";
-import { Zap, Clock, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Zap, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { useGetAllBriefs, useTriggerAutoApproval } from "@/hooks/adsBazaar";
 import { CampaignStatus } from "@/types";
 import { formatTimeRemaining, getTimeRemaining } from "@/utils/format";
@@ -11,9 +11,9 @@ import { toast, Toaster } from "react-hot-toast";
 import Link from "next/link";
 
 export default function AutoApprovalPage() {
-  const { address, isConnected } = useAccount();
+  const {  isConnected } = useAccount();
   const { briefs, isLoading } = useGetAllBriefs();
-  const { triggerAutoApproval, isPending, isSuccess, error } =
+  const { triggerAutoApproval, isPending, isSuccess} =
     useTriggerAutoApproval();
 
   // Filter campaigns eligible for auto-approval

@@ -13,7 +13,6 @@ import {
   Globe, 
   Users, 
   TrendingUp, 
-  Award,
   Sparkles,
   Eye,
   UserCheck,

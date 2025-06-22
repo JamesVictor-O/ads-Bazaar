@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, easeInOut } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle,
@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { useUserProfile } from "../../hooks/adsBazaar";
 import { usePlatformStats } from "../../hooks/usePlatformStats";
 import { formatNumber } from "@/utils/format";
+import Link from "next/link";
 
 interface HeroSectionProps {
   setIsModalOpen: (isOpen: boolean) => void;
@@ -76,12 +77,13 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
     return () => clearInterval(interval);
   }, []);
 
+
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: "easeOut", staggerChildren: 0.2 },
+      transition: { duration: 0.6, ease: easeInOut, staggerChildren: 0.2 },
     },
   };
 
@@ -159,9 +161,11 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               </>
             )}
           </motion.button>
-          <button className="hidden md:block px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
+          <Link href={"/learn"} passHref>
+          <button className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
             Learn More
           </button>
+          </Link>
         </div>
       );
     }
@@ -184,15 +188,17 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             </>
           )}
         </motion.button>
-        <button className="hidden md:block px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
+        <Link href={"/learn"} passHref>
+        <button className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
           Learn More
         </button>
+        </Link>
       </div>
     );
   };
 
   return (
-    <section className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 md:bg-gradient-to-br md:from-slate-900 md:via-slate-800 md:to-emerald-900 px-4 sm:px-6 lg:px-16 py-20 sm:py-12 lg:py-16 overflow-hidden">
+    <section className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 md:bg-gradient-to-br md:from-slate-900 md:via-slate-800 md:to-emerald-900 px-4 sm:px-6 lg:px-16 pt-40 sm:pt-40 lg:pt-24 pb-20 sm:pb-12 lg:pb-16 overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 md:hidden">
         <div

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
-import { celo } from "viem/chains";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import ABI from "@/lib/AdsBazaar.json";
 
@@ -15,10 +14,11 @@ const publicClient = createPublicClient({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { briefId: string } }
+  { params }: { params: Promise<{ briefId: string }> }
 ) {
   try {
-    const briefId = params.briefId as `0x${string}`;
+    const resolvedParams = await params;
+    const briefId = resolvedParams.briefId as `0x${string}`;
 
     // Get applications for this brief
     const applicationsData = await publicClient.readContract({
@@ -32,7 +32,15 @@ export async function GET(
       return NextResponse.json({ applications: [] });
     }
 
-    const rawData = applicationsData as any;
+    const rawData = applicationsData as {
+      influencers: string[];
+      messages: string[];
+      timestamps: bigint[];
+      isSelected: boolean[];
+      hasClaimed: boolean[];
+      proofLinks: string[];
+      isApproved: boolean[];
+    };
     const applications = (rawData.influencers as string[]).map(
       (influencer, index) => ({
         influencer,

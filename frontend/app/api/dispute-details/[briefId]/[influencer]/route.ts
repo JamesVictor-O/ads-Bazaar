@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
-import { celo } from "viem/chains";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import ABI from "@/lib/AdsBazaar.json";
 
@@ -10,11 +9,12 @@ const currentNetwork = getCurrentNetworkConfig();
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { briefId: string; influencer: string } }
+  { params }: { params: Promise<{ briefId: string; influencer: string }> }
 ) {
   try {
-    const briefId = params.briefId as `0x${string}`;
-    const influencer = params.influencer as `0x${string}`;
+    const resolvedParams = await params;
+    const briefId = resolvedParams.briefId as `0x${string}`;
+    const influencer = resolvedParams.influencer as `0x${string}`;
 
     const publicClient = createPublicClient({
       chain: currentNetwork.chain,
