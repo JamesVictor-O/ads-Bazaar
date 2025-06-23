@@ -16,6 +16,7 @@ import { toast } from "react-hot-toast";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
+import { useDivviIntegration } from "@/hooks/useDivviIntegration"; 
 
 interface FormData {
   name: string;
@@ -32,7 +33,7 @@ interface CreateCampaignModalProps {
   setFormData: (data: FormData) => void;
   isCreatingBrief: boolean;
   isFormValid: boolean;
-  onCreateCampaign: () => Promise<string>;
+  onCreateCampaign: (referralTag?: `0x${string}`) => Promise<string>;
   onClose: () => void;
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
 }
@@ -51,6 +52,7 @@ function CreateCampaignModal({
 }: CreateCampaignModalProps) {
   const { isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
+  const { generateDivviReferralTag } = useDivviIntegration(); // ADD THIS LINE
   const [transactionPhase, setTransactionPhase] =
     useState<TransactionPhase>("idle");
 
@@ -71,8 +73,6 @@ function CreateCampaignModal({
     }
   }, [isCreatingBrief, transactionPhase]);
 
-  
-
   const handleCreateCampaign = async () => {
     if (!guardedAction) {
       toast.error("Network guard not available. Please refresh and try again.");
@@ -87,12 +87,15 @@ function CreateCampaignModal({
     setTransactionPhase("idle");
 
     await guardedAction(async () => {
-      const requirements = formData.requirements 
+      const requirements = formData.requirements;
+
+      // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag(); // ADD THIS LINE
+      console.log('DIVVI: About to create campaign with referral tag:', referralTag); // ADD THIS LINE
 
       // Update requirements in formData before calling onCreateCampaign
       setFormData({ ...formData, requirements: requirements });
-      await onCreateCampaign()
-
+      await onCreateCampaign(referralTag); // PASS THE REFERRAL TAG
     });
   };
 

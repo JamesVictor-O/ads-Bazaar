@@ -42,7 +42,7 @@ function ClaimPaymentsModal({
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "claiming" | "success" | "error"
   >("idle");
-  const { trackTransaction } = useDivviIntegration()
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
 
   // Fetch pending payments data
   const { pendingPayments, isLoadingPayments, paymentsError, refetchPayments } =
@@ -130,8 +130,12 @@ function ClaimPaymentsModal({
     setTransactionPhase("idle");
 
     await guardedAction(async () => {
+      // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to claim payments with referral tag:', referralTag);
+
       try {
-        await claimPayments();
+        await claimPayments(referralTag); 
       } catch (err) {
         console.error("Claim failed:", err);
         throw err;

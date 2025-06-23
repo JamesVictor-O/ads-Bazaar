@@ -35,7 +35,7 @@ interface SubmissionsModalProps {
   applications: Application[];
   isLoadingApplications: boolean;
   isCompletingCampaign: boolean;
-  onReleaseFunds: (briefId: Hex) => void;
+  onReleaseFunds: (briefId: Hex, referralTag?: `0x${string}`) => void; // UPDATED TO ACCEPT REFERRAL TAG
   onClose: () => void;
 }
 
@@ -53,7 +53,7 @@ export const SubmissionsModal = ({
   );
   
 
-  const { trackTransaction } = useDivviIntegration()
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
 
   // Calculate timing information for button state
   const currentTime = Math.floor(Date.now() / 1000);
@@ -167,6 +167,15 @@ export const SubmissionsModal = ({
   const handleOpenDisputeModal = (influencer: Hex) => {
     setSelectedInfluencer(influencer);
     setDisputeModalOpen(true);
+  };
+
+  // ADDED: Handler to generate referral tag and call onReleaseFunds
+  const handleReleaseFunds = async () => {
+    // Generate Divvi referral tag to append to transaction calldata
+    const referralTag = generateDivviReferralTag();
+    console.log('DIVVI: About to release funds with referral tag:', referralTag);
+    
+    onReleaseFunds(selectedBrief.id, referralTag);
   };
 
   const getSubmissionStatus = (submission: Application) => {
@@ -318,12 +327,7 @@ export const SubmissionsModal = ({
                   </Link>
                   {canAutoApprove && (
                     <button
-                      onClick={async () => {
-                        const txHash = await onReleaseFunds(selectedBrief.id);
-                        if (typeof txHash === "string") {
-                          await trackTransaction(txHash);
-                        }
-                      }}
+                      onClick={handleReleaseFunds} // UPDATED TO USE NEW HANDLER
                       className="text-emerald-400 hover:text-emerald-300 text-xs sm:text-sm font-medium px-2 py-1 sm:px-3 bg-emerald-500/20 rounded"
                       disabled={isCompletingCampaign}
                     >
@@ -672,7 +676,7 @@ export const SubmissionsModal = ({
                   </button>
 
                   <motion.button
-                    onClick={() => onReleaseFunds(selectedBrief.id)}
+                    onClick={handleReleaseFunds} // UPDATED TO USE NEW HANDLER
                     disabled={
                       (!canReleaseFunds.canRelease && !canAutoApprove) ||
                       isCompletingCampaign
