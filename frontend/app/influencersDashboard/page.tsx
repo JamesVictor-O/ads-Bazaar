@@ -52,7 +52,7 @@ import {
   formatTimeRemaining,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
-import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
+import { getUserStatusColor, getUserStatusLabel, truncateAddress } from "@/utils/format";
 
 // Define precise interfaces
 interface ApplicationWithBrief {
@@ -986,7 +986,7 @@ export default function InfluencerDashboard() {
                                 {briefData.brief.name}
                               </h3>
                               <p className="text-slate-400 font-medium text-sm md:text-base">
-                                by {briefData.brief.business}
+                                by {truncateAddress(briefData.brief.business)}
                               </p>
                             </div>
 

@@ -594,7 +594,7 @@ export default function Marketplace() {
 
         {/* Enhanced Campaign Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredCampaigns.map((campaign) => {
+          {filteredCampaigns.map((campaign: Brief) => {
             const category =
               AUDIENCE_LABELS[campaign.targetAudience] || "Other";
             const buttonState = getButtonState(campaign);

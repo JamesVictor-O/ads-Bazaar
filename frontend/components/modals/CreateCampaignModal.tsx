@@ -366,6 +366,12 @@ function CreateCampaignModal({
                   <option value="432000">5 days</option>
                   <option value="518400">6 days</option>
                   <option value="604800">7 days</option>
+                  <option value="691200">8 days</option>
+                  <option value="777600">9 days</option>
+                  <option value="864000">10 days</option>
+                  <option value="950400">11 days</option>
+                  <option value="1036800">12 days</option>
+                  <option value="1123200">13 days</option>
                   <option value="1209600">14 days</option>
                 </select>
               </div>
@@ -396,7 +402,7 @@ function CreateCampaignModal({
                   <option value="10">Entertainment</option>
                   <option value="11">Sports</option>
                   <option value="12">Lifestyle</option>
-                  <option value="13">Other</option>
+                  
                 </select>
               </div>
             </div>

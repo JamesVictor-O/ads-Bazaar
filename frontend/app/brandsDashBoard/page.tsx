@@ -201,7 +201,7 @@ const BrandDashboard = () => {
         maxInfluencers: "5",
         targetAudience: "0",
       });
-      router.push("/brandsDashboard");
+      router.push("/brandsDashBoard");
     }
 
     if (isCreateError) {
