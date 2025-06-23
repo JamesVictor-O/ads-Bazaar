@@ -163,9 +163,7 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
           const txHash = await verifySelfProof(proof, publicSignals);
 
           // Track high-value identity verification with Divvi
-          if (txHash) {
-            await trackTransaction(txHash);
-          }
+          await trackTransaction(txHash);
         });
         toast.success("Proof submitted for verification!");
       } catch (error) {

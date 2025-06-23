@@ -14,15 +14,45 @@ export interface FarcasterProfile {
   verifiedAddresses?: string[];
 }
 
+type NeynarAccount = {
+  platform?: string;
+  username: string;
+};
+
+type NeynarUser = {
+  fid: number;
+  username: string;
+  display_name?: string;
+  displayName?: string;
+  bio?: string;
+  profile?: { bio?: { text?: string } };
+  pfp_url?: string;
+  pfp?: { url?: string };
+  pfpUrl?: string;
+  follower_count?: number;
+  followerCount?: number;
+  following_count?: number;
+  followingCount?: number;
+  custody_address?: string;
+  custodyAddress?: string;
+  verified_accounts?: NeynarAccount[];
+  verified_addresses?: { eth_addresses?: string[] };
+  verifications?: string[];
+  verifiedAddresses?: string[];
+  user?: NeynarUser;
+};
+
 class NeynarServerService {
   private client: NeynarAPIClient;
   private apiKey: string;
 
   constructor() {
     this.apiKey = process.env.NEYNAR_API_KEY || "";
-    
+
     if (!this.apiKey) {
-      console.warn("Neynar API key not found. Set NEYNAR_API_KEY environment variable.");
+      console.warn(
+        "Neynar API key not found. Set NEYNAR_API_KEY environment variable."
+      );
     }
 
     const config = new Configuration({
@@ -40,7 +70,7 @@ class NeynarServerService {
     try {
       console.log(`Fetching user by FID: ${fid}`);
       const response = await this.client.fetchBulkUsers({ fids: [fid] });
-      
+
       if (!response.users || response.users.length === 0) {
         console.log(`No user found for FID: ${fid}`);
         return null;
@@ -48,14 +78,24 @@ class NeynarServerService {
 
       const user = response.users[0];
       console.log("FID API response structure:", JSON.stringify(user, null, 2));
-      return this.formatUserProfile(user);
+      if (
+        user &&
+        typeof user === "object" &&
+        !Array.isArray(user) &&
+        "fid" in user
+      ) {
+        return this.formatUserProfile(user as NeynarUser);
+      }
+      return null;
     } catch (error) {
       console.error("Error fetching user by FID:", error);
       return null;
     }
   }
 
-  async getUserByVerifiedAddress(address: string): Promise<FarcasterProfile | null> {
+  async getUserByVerifiedAddress(
+    address: string
+  ): Promise<FarcasterProfile | null> {
     if (!this.apiKey) {
       console.error("Neynar API key not configured");
       return null;
@@ -63,16 +103,19 @@ class NeynarServerService {
 
     try {
       console.log(`Fetching user by verified address: ${address}`);
-      const response = await this.client.fetchBulkUsersByEthOrSolAddress({ 
-        addresses: [address] 
+      const response = await this.client.fetchBulkUsersByEthOrSolAddress({
+        addresses: [address],
       });
-      
-      console.log("Address API full response:", JSON.stringify(response, null, 2));
-      
+
+      console.log(
+        "Address API full response:",
+        JSON.stringify(response, null, 2)
+      );
+
       // The response structure for address lookup is different
       // It can be either response.users[0] or response[address] or another structure
       let user = null;
-      
+
       // Try different possible response structures
       if (response.users && response.users.length > 0) {
         user = response.users[0];
@@ -83,9 +126,9 @@ class NeynarServerService {
       } else if (
         response.result &&
         !Array.isArray(response.result) &&
-        (response.result as any).user
+        (response.result as { user: NeynarUser }).user
       ) {
-        user = (response.result as any).user;
+        user = (response.result as { user: NeynarUser }).user;
         console.log("Found user in response.result.user");
       } else if (response.user) {
         user = response.user;
@@ -94,12 +137,19 @@ class NeynarServerService {
         // Look for any user object in the response
         const keys = Object.keys(response);
         for (const key of keys) {
-          if (response[key] && typeof response[key] === 'object') {
-            if (Array.isArray(response[key]) && response[key].length > 0 && response[key][0].fid) {
+          if (response[key] && typeof response[key] === "object") {
+            if (
+              Array.isArray(response[key]) &&
+              response[key].length > 0 &&
+              (response[key][0] as NeynarUser).fid
+            ) {
               user = response[key][0];
               console.log(`Found user in response.${key}[0]`);
               break;
-            } else if (!Array.isArray(response[key]) && (response[key] as any).fid) {
+            } else if (
+              !Array.isArray(response[key]) &&
+              (response[key] as NeynarUser).fid
+            ) {
               user = response[key];
               console.log(`Found user in response.${key}`);
               break;
@@ -107,7 +157,7 @@ class NeynarServerService {
           }
         }
       }
-      
+
       if (!user) {
         console.log(`No user found for address: ${address}`);
         console.log("Available response keys:", Object.keys(response));
@@ -115,16 +165,24 @@ class NeynarServerService {
       }
 
       console.log("Address API user data:", JSON.stringify(user, null, 2));
-      return this.formatUserProfile(user);
+      if (
+        user &&
+        typeof user === "object" &&
+        !Array.isArray(user) &&
+        "fid" in user
+      ) {
+        return this.formatUserProfile(user as NeynarUser);
+      }
+      return null;
     } catch (error) {
       console.error("Error fetching user by verified address:", error);
       return null;
     }
   }
 
-  private formatUserProfile(user: any): FarcasterProfile {
+  private formatUserProfile(user: NeynarUser): FarcasterProfile {
     console.log("Formatting user profile from:", JSON.stringify(user, null, 2));
-    
+
     // Handle different field naming conventions
     const fid = user.fid;
     const username = user.username;
@@ -134,10 +192,11 @@ class NeynarServerService {
     const followerCount = user.follower_count || user.followerCount || 0;
     const followingCount = user.following_count || user.followingCount || 0;
     const custodyAddress = user.custody_address || user.custodyAddress;
-    
+
     // Extract X/Twitter username from verified_accounts
     const twitterAccount = user.verified_accounts?.find(
-      (account: any) => account.platform === "x" || account.platform === "twitter"
+      (account: NeynarAccount) =>
+        account.platform === "x" || account.platform === "twitter"
     );
 
     // Extract verified Ethereum addresses - handle different structures

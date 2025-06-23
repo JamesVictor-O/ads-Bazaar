@@ -24,23 +24,21 @@ import {
   Share2,
   ChevronDown,
   Verified,
-  User
+  User,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
 import { useFarcasterAuth } from "@/hooks/UseFarcasterAuth";
 import { useIsInfluencerVerified, useUserProfile } from "@/hooks/adsBazaar";
-import {
-  getUserStatusLabel,
-  formatNumber,
-} from "@/utils/format";
+import { getUserStatusLabel, formatNumber } from "@/utils/format";
 import Image from "next/image";
 import Link from "next/link";
+import type { FarcasterProfile } from "@/lib/neynar";
 
 // Helper hook to get FID from address
 function useFidFromAddress(address: string) {
   const [fid, setFid] = useState<number | null>(null);
-  
+
   useEffect(() => {
     if (address) {
       try {
@@ -59,7 +57,7 @@ function useFidFromAddress(address: string) {
 
 // FID-based Farcaster Profile Hook
 function useFarcasterProfile(fid: number | null, address?: string) {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<FarcasterProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
@@ -68,13 +66,15 @@ function useFarcasterProfile(fid: number | null, address?: string) {
     const fetchProfile = async () => {
       // If no FID provided, try to get it from localStorage using address
       let actualFid = fid;
-      
+
       if (!actualFid && address) {
         try {
           const storedFid = localStorage.getItem(`fid_${address}`);
           if (storedFid) {
             actualFid = parseInt(storedFid);
-            console.log(`Retrieved FID ${actualFid} from localStorage for address ${address}`);
+            console.log(
+              `Retrieved FID ${actualFid} from localStorage for address ${address}`
+            );
           }
         } catch (error) {
           console.warn("Failed to get FID from localStorage:", error);
@@ -104,27 +104,37 @@ function useFarcasterProfile(fid: number | null, address?: string) {
             setProfile(parsed);
             setIsFromCache(true);
             setIsLoading(false);
-            
+
             // Background refresh
             setTimeout(async () => {
               try {
                 console.log(`Background refresh for FID ${actualFid}`);
-                const response = await fetch(`/api/farcaster/profile/fid/${actualFid}`);
+                const response = await fetch(
+                  `/api/farcaster/profile/fid/${actualFid}`
+                );
                 if (response.ok) {
                   const data = await response.json();
                   if (data.success && data.profile) {
                     setProfile(data.profile);
                     setIsFromCache(false);
-                    localStorage.setItem(cacheKey, JSON.stringify(data.profile));
-                    
+                    localStorage.setItem(
+                      cacheKey,
+                      JSON.stringify(data.profile)
+                    );
+
                     // Also store FID mapping if we have an address
                     if (address) {
-                      localStorage.setItem(`fid_${address}`, actualFid.toString());
+                      localStorage.setItem(
+                        `fid_${address}`,
+                        actualFid.toString()
+                      );
                     }
                   }
                 }
               } catch (error) {
-                console.log("Background refresh failed, keeping cached profile");
+                console.log(
+                  `Background refresh failed, keeping cached profile ${error}`
+                );
               }
             }, 100);
             return;
@@ -136,14 +146,14 @@ function useFarcasterProfile(fid: number | null, address?: string) {
         // Fetch from API
         console.log(`Fetching profile for FID: ${actualFid}`);
         const response = await fetch(`/api/farcaster/profile/fid/${actualFid}`);
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.profile) {
             setProfile(data.profile);
             // Cache the profile
             localStorage.setItem(cacheKey, JSON.stringify(data.profile));
-            
+
             // Store FID mapping if we have an address
             if (address) {
               localStorage.setItem(`fid_${address}`, actualFid.toString());
@@ -155,7 +165,8 @@ function useFarcasterProfile(fid: number | null, address?: string) {
           setError("Failed to fetch profile");
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to fetch profile";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to fetch profile";
         console.error("Profile fetch error:", errorMessage);
         setError(errorMessage);
       } finally {
@@ -169,7 +180,7 @@ function useFarcasterProfile(fid: number | null, address?: string) {
   // Method to refresh profile data
   const refreshProfile = async () => {
     let actualFid = fid;
-    
+
     if (!actualFid && address) {
       const storedFid = localStorage.getItem(`fid_${address}`);
       if (storedFid) {
@@ -178,7 +189,7 @@ function useFarcasterProfile(fid: number | null, address?: string) {
     }
 
     if (!actualFid) return;
-    
+
     setIsLoading(true);
     setError(null);
 
@@ -188,7 +199,10 @@ function useFarcasterProfile(fid: number | null, address?: string) {
         const data = await response.json();
         if (data.success && data.profile) {
           setProfile(data.profile);
-          localStorage.setItem(`profile_fid_${actualFid}`, JSON.stringify(data.profile));
+          localStorage.setItem(
+            `profile_fid_${actualFid}`,
+            JSON.stringify(data.profile)
+          );
           if (address) {
             localStorage.setItem(`fid_${address}`, actualFid.toString());
           }
@@ -199,34 +213,49 @@ function useFarcasterProfile(fid: number | null, address?: string) {
         setError("Failed to refresh profile");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to refresh profile";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to refresh profile";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return { 
-    profile, 
-    isLoading, 
-    error, 
+  return {
+    profile,
+    isLoading,
+    error,
     isFromCache,
     refreshProfile,
-    fid: fid || (address && typeof window !== 'undefined' ? parseInt(localStorage.getItem(`fid_${address}`) || "0") : null)
+    fid:
+      fid ||
+      (address && typeof window !== "undefined"
+        ? parseInt(localStorage.getItem(`fid_${address}`) || "0")
+        : null),
   };
 }
 
 // Farcaster Connect Component
-function FarcasterConnectButton({ 
-  address, 
-  isOwner, 
-  onConnectionSuccess 
-}: { 
-  address: string; 
+function FarcasterConnectButton({
+  address,
+  isOwner,
+  onConnectionSuccess,
+}: {
+  address: string;
   isOwner: boolean;
   onConnectionSuccess?: (fid: number) => void;
 }) {
-  const { signIn, connect, isAuthenticated, user, isLoading, error, channelToken, url, validSignature } = useFarcasterAuth();
+  const {
+    signIn,
+    connect,
+    isAuthenticated,
+    user,
+    isLoading,
+    error,
+    channelToken,
+    url,
+    validSignature,
+  } = useFarcasterAuth();
   const [showQR, setShowQR] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -236,11 +265,11 @@ function FarcasterConnectButton({
       const storeConnection = async () => {
         try {
           setIsConnecting(true);
-          
+
           // Store the FID mapping - this is the key part!
           localStorage.setItem(`fid_${address}`, user.fid.toString());
           console.log(`Stored FID mapping: ${address} -> ${user.fid}`);
-          
+
           // Create a profile entry for immediate display (cached)
           const profileData = {
             fid: user.fid,
@@ -252,24 +281,28 @@ function FarcasterConnectButton({
             followingCount: 0,
             isVerified: false, // Will be updated when profile is fetched from API
           };
-          
+
           // Store profile data temporarily with FID-based key
-          localStorage.setItem(`profile_fid_${user.fid}`, JSON.stringify(profileData));
+          localStorage.setItem(
+            `profile_fid_${user.fid}`,
+            JSON.stringify(profileData)
+          );
           console.log(`Stored temporary profile for FID ${user.fid}`);
-          
-          toast.success(`Successfully connected Farcaster as @${user.username}!`);
+
+          toast.success(
+            `Successfully connected Farcaster as @${user.username}!`
+          );
           setShowQR(false);
-          
+
           // Trigger refresh with the FID
           if (onConnectionSuccess) {
             onConnectionSuccess(user.fid);
           }
-          
+
           // Refresh the page to show updated profile
           setTimeout(() => {
             window.location.reload();
           }, 1500);
-          
         } catch (error) {
           console.error("Error storing connection:", error);
           toast.error("Connected but failed to save profile data");
@@ -277,7 +310,7 @@ function FarcasterConnectButton({
           setIsConnecting(false);
         }
       };
-      
+
       storeConnection();
     }
   }, [isAuthenticated, user, validSignature, address, onConnectionSuccess]);
@@ -302,15 +335,17 @@ function FarcasterConnectButton({
   };
 
   // Check if we already have a stored FID for this address
-  const storedFid = typeof window !== 'undefined' ? 
-    localStorage.getItem(`fid_${address}`) : null;
+  const storedFid =
+    typeof window !== "undefined"
+      ? localStorage.getItem(`fid_${address}`)
+      : null;
 
   if (!isOwner) return null;
 
   if ((isAuthenticated && user && validSignature) || storedFid) {
     const displayFid = user?.fid || (storedFid ? parseInt(storedFid) : null);
     const displayUsername = user?.username || "Connected";
-    
+
     return (
       <div className="flex items-center gap-2 text-sm">
         <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -333,12 +368,12 @@ function FarcasterConnectButton({
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        {(isLoading || isConnecting) ? (
+        {isLoading || isConnecting ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <Zap className="w-4 h-4" />
         )}
-        {(isLoading || isConnecting) ? "Connecting..." : "Connect Farcaster"}
+        {isLoading || isConnecting ? "Connecting..." : "Connect Farcaster"}
       </motion.button>
 
       {showQR && url && (
@@ -347,9 +382,17 @@ function FarcasterConnectButton({
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white p-4 rounded-lg"
         >
-          <p className="text-sm text-slate-600 mb-2 text-center">Scan with Warpcast</p>
+          <p className="text-sm text-slate-600 mb-2 text-center">
+            Scan with Warpcast
+          </p>
           <div className="flex justify-center">
-            <Image src={url} alt="Farcaster QR Code" width={128} height={128} className="w-32 h-32" />
+            <Image
+              src={url}
+              alt="Farcaster QR Code"
+              width={128}
+              height={128}
+              className="w-32 h-32"
+            />
           </div>
           <button
             onClick={() => setShowQR(false)}
@@ -360,22 +403,20 @@ function FarcasterConnectButton({
         </motion.div>
       )}
 
-      {error && (
-        <p className="text-red-400 text-xs">{error}</p>
-      )}
+      {error && <p className="text-red-400 text-xs">{error}</p>}
     </div>
   );
 }
 
 // Farcaster Profile Card Component
-function FarcasterProfileCard({ 
-  profile, 
-  isLoading, 
-  error 
-}: { 
-  profile: any, 
-  isLoading: boolean, 
-  error: string | null 
+function FarcasterProfileCard({
+  profile,
+  isLoading,
+  error,
+}: {
+  profile: FarcasterProfile | null;
+  isLoading: boolean;
+  error: string | null;
 }) {
   if (isLoading) {
     return (
@@ -499,7 +540,9 @@ function FarcasterProfileCard({
               </div>
               <div>
                 <p className="text-white font-medium">X (Twitter)</p>
-                <p className="text-blue-400 text-sm">@{profile.twitterUsername}</p>
+                <p className="text-blue-400 text-sm">
+                  @{profile.twitterUsername}
+                </p>
               </div>
             </div>
             <a
@@ -520,7 +563,9 @@ function FarcasterProfileCard({
         {profile.isVerified ? (
           <>
             <CheckCircle className="w-4 h-4 text-emerald-400" />
-            <span className="text-emerald-400 text-sm">Verified on Farcaster</span>
+            <span className="text-emerald-400 text-sm">
+              Verified on Farcaster
+            </span>
           </>
         ) : (
           <>
@@ -534,14 +579,14 @@ function FarcasterProfileCard({
 }
 
 // Enhanced Social Tab Content
-function EnhancedSocialTabContent({ 
-  farcasterProfile, 
-  isFarcasterLoading, 
-  farcasterError 
+function EnhancedSocialTabContent({
+  farcasterProfile,
+  isFarcasterLoading,
+  farcasterError,
 }: {
-  farcasterProfile: any,
-  isFarcasterLoading: boolean,
-  farcasterError: string | null
+  farcasterProfile: FarcasterProfile | null;
+  isFarcasterLoading: boolean;
+  farcasterError: string | null;
 }) {
   return (
     <motion.div
@@ -553,7 +598,7 @@ function EnhancedSocialTabContent({
       className="space-y-4"
     >
       {/* Enhanced Farcaster Section */}
-      <FarcasterProfileCard 
+      <FarcasterProfileCard
         profile={farcasterProfile}
         isLoading={isFarcasterLoading}
         error={farcasterError}
@@ -561,7 +606,9 @@ function EnhancedSocialTabContent({
 
       {/* Other Social Platforms */}
       <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-        <h3 className="text-white font-semibold text-lg mb-4">Other Platforms</h3>
+        <h3 className="text-white font-semibold text-lg mb-4">
+          Other Platforms
+        </h3>
         <div className="space-y-3">
           {/* Instagram */}
           <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-xl">
@@ -601,7 +648,9 @@ function EnhancedSocialTabContent({
       {/* Social Metrics Summary */}
       {farcasterProfile && (
         <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-2xl p-6">
-          <h3 className="text-white font-semibold text-lg mb-4">Social Reach</h3>
+          <h3 className="text-white font-semibold text-lg mb-4">
+            Social Reach
+          </h3>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-400">
@@ -635,13 +684,15 @@ export default function EnhancedInfluencerProfile() {
   const [isOwner, setIsOwner] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [, setRefreshTrigger] = useState(0);
-  const [activeTab, setActiveTab] = useState<'overview' | 'social' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "social" | "activity"
+  >("overview");
   const [showAllStats, setShowAllStats] = useState(false);
   const [connectedFid, setConnectedFid] = useState<number | null>(null);
 
   // Get stored FID for this address
   const storedFid = useFidFromAddress(profileAddress as string);
-  
+
   // Fetch blockchain data
   const { userProfile, isLoadingProfile } = useUserProfile(
     profileAddress as `0x${string}`
@@ -655,15 +706,15 @@ export default function EnhancedInfluencerProfile() {
     profile: farcasterProfile,
     isLoading: isFarcasterLoading,
     error: farcasterError,
-    refreshProfile: refreshFarcasterProfile
+    refreshProfile: refreshFarcasterProfile,
   } = useFarcasterProfile(storedFid, profileAddress as string);
 
   // Handle connection success - updates the FID
   const handleConnectionSuccess = (fid: number) => {
     console.log(`Farcaster connected with FID: ${fid}`);
     setConnectedFid(fid);
-    setRefreshTrigger(prev => prev + 1);
-    
+    setRefreshTrigger((prev) => prev + 1);
+
     // Refresh the Farcaster profile with the new FID
     setTimeout(() => {
       refreshFarcasterProfile();
@@ -689,9 +740,9 @@ export default function EnhancedInfluencerProfile() {
       setCopiedText(label);
       toast.success(`${label} copied!`);
       setTimeout(() => setCopiedText(null), 2000);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to copy");
-      console.log(error)
+      console.log(_error)
     }
   };
 
@@ -715,7 +766,9 @@ export default function EnhancedInfluencerProfile() {
             <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
             <div className="absolute inset-0 rounded-full border-t-4 border-emerald-500"></div>
           </motion.div>
-          <p className="text-slate-400 text-lg font-medium">Loading profile...</p>
+          <p className="text-slate-400 text-lg font-medium">
+            Loading profile...
+          </p>
           <div className="flex justify-center mt-3">
             <div className="flex space-x-1">
               {[0, 1, 2].map((i) => (
@@ -772,28 +825,32 @@ export default function EnhancedInfluencerProfile() {
   const stats = [
     {
       icon: Users,
-      value: farcasterProfile ? formatNumber(farcasterProfile.followerCount) : (userProfile?.completedCampaigns || 0),
+      value: farcasterProfile
+        ? formatNumber(farcasterProfile.followerCount)
+        : userProfile?.completedCampaigns || 0,
       label: farcasterProfile ? "Followers" : "Campaigns",
-      color: "text-emerald-400"
+      color: "text-emerald-400",
     },
     {
       icon: Target,
-      value: farcasterProfile ? formatNumber(farcasterProfile.followingCount) : "4.9",
+      value: farcasterProfile
+        ? formatNumber(farcasterProfile.followingCount)
+        : "4.9",
       label: farcasterProfile ? "Following" : "Rating",
-      color: "text-blue-400"
+      color: "text-blue-400",
     },
     {
       icon: Award,
       value: getUserStatusLabel(userProfile?.status || 0),
       label: "Status",
-      color: "text-purple-400"
+      color: "text-purple-400",
     },
     {
       icon: Sparkles,
       value: isVerified ? "Verified" : "Unverified",
       label: "Creator",
-      color: isVerified ? "text-emerald-400" : "text-amber-400"
-    }
+      color: isVerified ? "text-emerald-400" : "text-amber-400",
+    },
   ];
 
   return (
@@ -807,7 +864,7 @@ export default function EnhancedInfluencerProfile() {
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-blue-500/5 to-purple-500/10"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.1),transparent_50%)]"></div>
-          
+
           <div className="relative px-4 pt-20 sm:pt-24 md:pt-28 pb-6">
             {/* Connect Farcaster Banner - Enhanced for FID-based approach */}
             {!effectiveFid && (
@@ -817,7 +874,6 @@ export default function EnhancedInfluencerProfile() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-
                 {isOwner && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -825,13 +881,17 @@ export default function EnhancedInfluencerProfile() {
                         <MessageSquare className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-white font-semibold">Connect Farcaster</h3>
-                        <p className="text-slate-400 text-sm">Link your social presence with FID</p>
+                        <h3 className="text-white font-semibold">
+                          Connect Farcaster
+                        </h3>
+                        <p className="text-slate-400 text-sm">
+                          Link your social presence with FID
+                        </p>
                       </div>
                     </div>
-                    <FarcasterConnectButton 
-                      address={profileAddress as string} 
-                      isOwner={isOwner} 
+                    <FarcasterConnectButton
+                      address={profileAddress as string}
+                      isOwner={isOwner}
                       onConnectionSuccess={handleConnectionSuccess}
                     />
                   </div>
@@ -852,10 +912,14 @@ export default function EnhancedInfluencerProfile() {
                     <CheckCircle className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-emerald-400 font-semibold">Farcaster Connected</h3>
+                    <h3 className="text-emerald-400 font-semibold">
+                      Farcaster Connected
+                    </h3>
                     <p className="text-emerald-300 text-sm">
-                      FID: {effectiveFid} • 
-                      {farcasterProfile ? ` @${farcasterProfile.username}` : " Profile loading..."}
+                      FID: {effectiveFid} •
+                      {farcasterProfile
+                        ? ` @${farcasterProfile.username}`
+                        : " Profile loading..."}
                     </p>
                   </div>
                 </div>
@@ -889,7 +953,7 @@ export default function EnhancedInfluencerProfile() {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Verification Badge */}
                   {isVerified && (
                     <motion.div
@@ -920,7 +984,7 @@ export default function EnhancedInfluencerProfile() {
               <h1 className="text-3xl font-bold text-white mb-2">
                 {displayName}
               </h1>
-              
+
               {/* Enhanced status and verification */}
               <div className="flex items-center justify-center gap-3 mb-4">
                 <span
@@ -946,8 +1010,8 @@ export default function EnhancedInfluencerProfile() {
                 {/* Farcaster Username and FID */}
                 {farcasterProfile && (
                   <span className="flex items-center gap-2 text-slate-400 text-sm">
-                    <MessageSquare className="w-4 h-4" />
-                    @{farcasterProfile.username}
+                    <MessageSquare className="w-4 h-4" />@
+                    {farcasterProfile.username}
                     <span className="text-slate-500">•</span>
                     <span className="text-purple-400">FID {effectiveFid}</span>
                   </span>
@@ -987,13 +1051,15 @@ export default function EnhancedInfluencerProfile() {
         <div className="px-4 mb-6">
           <div className="flex bg-slate-800/50 rounded-2xl p-1 border border-slate-700/50">
             {[
-              { key: 'overview', label: 'Overview', icon: Eye },
-              { key: 'social', label: 'Social', icon: Globe },
-              { key: 'activity', label: 'Activity', icon: TrendingUp }
+              { key: "overview", label: "Overview", icon: Eye },
+              { key: "social", label: "Social", icon: Globe },
+              { key: "activity", label: "Activity", icon: TrendingUp },
             ].map((tab) => (
               <motion.button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as 'overview' | 'social' | 'activity')}
+                onClick={() =>
+                  setActiveTab(tab.key as "overview" | "social" | "activity")
+                }
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all ${
                   activeTab === tab.key
                     ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/20"
@@ -1011,7 +1077,7 @@ export default function EnhancedInfluencerProfile() {
         {/* Tab Content */}
         <div className="px-4 pb-8">
           <AnimatePresence mode="wait">
-            {activeTab === 'overview' && (
+            {activeTab === "overview" && (
               <motion.div
                 key="overview"
                 initial={{ opacity: 0, y: 20 }}
@@ -1022,27 +1088,27 @@ export default function EnhancedInfluencerProfile() {
               >
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 gap-4">
-                  {stats.slice(0, showAllStats ? stats.length : 4).map((stat, index) => (
-                    <motion.div
-                      key={stat.label}
-                      className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 text-center"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                      <div className="flex justify-center mb-3">
-                        <div className="p-2 bg-slate-700/50 rounded-xl">
-                          <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                  {stats
+                    .slice(0, showAllStats ? stats.length : 4)
+                    .map((stat, index) => (
+                      <motion.div
+                        key={stat.label}
+                        className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 text-center"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                      >
+                        <div className="flex justify-center mb-3">
+                          <div className="p-2 bg-slate-700/50 rounded-xl">
+                            <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                          </div>
                         </div>
-                      </div>
-                      <p className="text-xl font-bold text-white mb-1">
-                        {stat.value}
-                      </p>
-                      <p className="text-slate-400 text-sm">
-                        {stat.label}
-                      </p>
-                    </motion.div>
-                  ))}
+                        <p className="text-xl font-bold text-white mb-1">
+                          {stat.value}
+                        </p>
+                        <p className="text-slate-400 text-sm">{stat.label}</p>
+                      </motion.div>
+                    ))}
                 </div>
 
                 {stats.length > 4 && (
@@ -1064,15 +1130,15 @@ export default function EnhancedInfluencerProfile() {
               </motion.div>
             )}
 
-            {activeTab === 'social' && (
-              <EnhancedSocialTabContent 
+            {activeTab === "social" && (
+              <EnhancedSocialTabContent
                 farcasterProfile={farcasterProfile}
                 isFarcasterLoading={isFarcasterLoading}
                 farcasterError={farcasterError}
               />
             )}
 
-            {activeTab === 'activity' && (
+            {activeTab === "activity" && (
               <motion.div
                 key="activity"
                 initial={{ opacity: 0, y: 20 }}
