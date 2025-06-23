@@ -37,6 +37,7 @@ import {
   Crown,
   CheckSquare,
   ChevronDown,
+  FileText,
 } from "lucide-react";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { format } from "date-fns";
@@ -80,6 +81,10 @@ const BrandDashboard = () => {
   );
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [expandedBriefId, setExpandedBriefId] = useState<string | null>(null);
+  
+  // New state for expandable descriptions
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -127,6 +132,30 @@ const BrandDashboard = () => {
     error: cancelError,
     hash: cancelHash,
   } = useCancelAdBrief();
+
+  // Function to toggle description expansion
+  const toggleDescription = (briefId: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(briefId)) {
+        newSet.delete(briefId);
+      } else {
+        newSet.add(briefId);
+      }
+      return newSet;
+    });
+  };
+
+  // Function to check if description should show expand button
+  const shouldShowExpandButton = (description: string) => {
+    return description.length > 120; // Show expand button if description is longer than 120 characters
+  };
+
+  // Function to get truncated description
+  const getTruncatedDescription = (description: string) => {
+    if (description.length <= 120) return description;
+    return description.substring(0, 120) + "...";
+  };
 
   // Track transactions when hash becomes available
   useEffect(() => {
@@ -720,6 +749,8 @@ const BrandDashboard = () => {
                 const isUrgent = isActionUrgent(brief);
                 const priority = getActionPriority(brief);
                 const isExpanded = expandedBriefId === brief.id;
+                const isDescriptionExpanded = expandedDescriptions.has(brief.id);
+                const showExpandButton = shouldShowExpandButton(brief.description);
 
                 return (
                   <motion.div
@@ -791,9 +822,32 @@ const BrandDashboard = () => {
                             </div>
                           </div>
 
-                          <p className="text-slate-300 text-sm md:text-lg leading-relaxed mb-3 md:mb-6 line-clamp-2">
-                            {brief.description}
-                          </p>
+                          {/* Expandable Description */}
+                          <div className="mb-3 md:mb-6">
+                            <div className="text-slate-300 text-sm md:text-lg leading-relaxed">
+                              {isDescriptionExpanded 
+                                ? brief.description 
+                                : getTruncatedDescription(brief.description)
+                              }
+                            </div>
+                            
+                            {showExpandButton && (
+                              <motion.button
+                                onClick={() => toggleDescription(brief.id)}
+                                className="mt-2 flex items-center gap-1 text-xs md:text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <FileText className="w-3 h-3 md:w-4 md:h-4" />
+                                <span>{isDescriptionExpanded ? "Show less" : "Show more"}</span>
+                                <motion.div
+                                  animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
+                                </motion.div>
+                              </motion.button>
+                            )}
+                          </div>
 
                           {/* Metrics Row */}
                           <div className="flex items-center gap-3 md:gap-8 text-slate-400 text-xs md:text-sm">

@@ -25,6 +25,7 @@ import { useSelectInfluencer } from "@/hooks/adsBazaar";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { motion } from "framer-motion";
 import { useDivviIntegration } from "@/hooks/useDivviIntegration";
+import Link from "next/link";
 
 interface EnhancedApplicationsModalProps extends ApplicationsModalProps {
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
@@ -281,7 +282,7 @@ const ApplicationsModal = ({
                             )}
                           </div>
                           <div>
-                            <a
+                            <Link
                               href={`/influencer/${application.influencer}`}
                               className="text-sm font-medium text-emerald-400 hover:text-emerald-300 inline-flex items-center transition-colors duration-200"
                               target="_blank"
@@ -290,7 +291,7 @@ const ApplicationsModal = ({
                               {application.influencerProfile?.name ||
                                 truncateAddress(application.influencer)}
                               <ExternalLink className="w-4 h-4 ml-1" />
-                            </a>
+                            </Link>
                             <p className="text-xs text-slate-400 mt-1">
                               Applied{" "}
                               {formatDistanceToNow(
@@ -356,7 +357,7 @@ const ApplicationsModal = ({
                         </p>
                       </div>
 
-                      {/* Enhanced status section - Fix for issue 3 */}
+                      {/* Enhanced status section  */}
                       {application.isSelected && (
                         <div className="space-y-3 border-t border-slate-700/50 pt-4">
                           {/* Status Grid */}

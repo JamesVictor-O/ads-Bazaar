@@ -15,6 +15,8 @@ import {
   Star,
   DollarSign,
   ArrowRight,
+  ChevronDown,
+  FileText,
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
@@ -61,6 +63,9 @@ export default function Marketplace() {
     Record<string, "applied" | "assigned" | null>
   >({});
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  
+  // New state for expandable descriptions
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
@@ -92,55 +97,29 @@ export default function Marketplace() {
     return true; // Show all if "All Campaigns" is selected
   });
 
-  // const {
-  //   applications: influencerApplications = [],
-  //   isLoading: isLoadingApplications,
-  //   error: applicationsError,
-  // } = useGetInfluencerApplications(address as `0x${string}`);
+  // Function to toggle description expansion
+  const toggleDescription = (campaignId: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(campaignId)) {
+        newSet.delete(campaignId);
+      } else {
+        newSet.add(campaignId);
+      }
+      return newSet;
+    });
+  };
 
-  // const computeApplicationStatus = (
-  //   application: InfluencerApplication,
-  //   briefData: any[]
-  // ) => {
-  //   const currentTime = Math.floor(Date.now() / 1000);
-  //   const promotionEndTime = Number(briefData[9]); // from contract
-  //   const proofSubmissionDeadline = Number(briefData[10]);
+  // Function to check if description should show expand button
+  const shouldShowExpandButton = (description: string) => {
+    return description.length > 120; // Show expand button if description is longer than 120 characters
+  };
 
-  //   let status: ApplicationStatus["status"] = "applied";
-  //   let nextAction = "";
-  //   let canSubmitProof = false;
-  //   let canClaim = false;
-
-  //   if (application.hasClaimed) {
-  //     status = "paid";
-  //     nextAction = "Payment received";
-  //   } else if (application.isApproved) {
-  //     status = "approved";
-  //     nextAction = "Ready to claim payment";
-  //     canClaim = true;
-  //   } else if (application.proofLink) {
-  //     status = "proof_submitted";
-  //     nextAction = "Awaiting approval";
-  //   } else if (application.isSelected) {
-  //     status = "selected";
-  //     if (
-  //       currentTime >= promotionEndTime &&
-  //       currentTime <= proofSubmissionDeadline
-  //     ) {
-  //       nextAction = "Submit proof of work";
-  //       canSubmitProof = true;
-  //     } else if (currentTime < promotionEndTime) {
-  //       nextAction = "Campaign in progress";
-  //     } else {
-  //       nextAction = "Proof submission deadline passed";
-  //     }
-  //   } else {
-  //     status = "applied";
-  //     nextAction = "Awaiting selection";
-  //   }
-
-  //   return { status, nextAction, canSubmitProof, canClaim };
-  // };
+  // Function to get truncated description
+  const getTruncatedDescription = (description: string) => {
+    if (description.length <= 120) return description;
+    return description.substring(0, 120) + "...";
+  };
 
   // Function to refresh application status
   const refreshApplicationStatus = useCallback(
@@ -268,13 +247,6 @@ export default function Marketplace() {
       refreshApplicationStatus();
     }
   }, [isConnected, userProfile?.isInfluencer, refreshApplicationStatus]);
-
-  // const handleApplicationSuccess = useCallback(() => {
-  //   // Immediately refresh the application status after successful application
-  //   setTimeout(() => {
-  //     refreshApplicationStatus();
-  //   }, 1000); // Small delay to allow blockchain state to update
-  // }, [refreshApplicationStatus]);
 
   if (isLoading) {
     return (
@@ -599,6 +571,8 @@ export default function Marketplace() {
               AUDIENCE_LABELS[campaign.targetAudience] || "Other";
             const buttonState = getButtonState(campaign);
             const userApplicationStatus = applicationStatus[campaign.id];
+            const isDescriptionExpanded = expandedDescriptions.has(campaign.id);
+            const showExpandButton = shouldShowExpandButton(campaign.description);
 
             return (
               <motion.div
@@ -708,9 +682,32 @@ export default function Marketplace() {
 
                 {/* Campaign details */}
                 <div className="p-5">
-                  <p className="text-sm text-slate-300 mb-4 line-clamp-3">
-                    {campaign.description}
-                  </p>
+                  {/* Expandable Description */}
+                  <div className="mb-4">
+                    <div className="text-sm text-slate-300">
+                      {isDescriptionExpanded 
+                        ? campaign.description 
+                        : getTruncatedDescription(campaign.description)
+                      }
+                    </div>
+                    
+                    {showExpandButton && (
+                      <motion.button
+                        onClick={() => toggleDescription(campaign.id)}
+                        className="mt-2 flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <FileText className="w-3 h-3" />
+                        <span>{isDescriptionExpanded ? "Show less" : "Show more"}</span>
+                        <motion.div
+                          animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </motion.div>
+                      </motion.button>
+                    )}
+                  </div>
 
                   {/* Status and next action */}
                   {campaign.statusInfo.nextAction && (

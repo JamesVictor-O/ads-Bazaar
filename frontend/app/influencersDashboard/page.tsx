@@ -27,6 +27,7 @@ import {
   Edit3,
   Eye,
   ChevronDown,
+  FileText,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@farcaster/auth-kit";
@@ -99,6 +100,9 @@ export default function InfluencerDashboard() {
   const [filter, setFilter] = useState<
     "all" | "active" | "completed" | "urgent"
   >("all");
+  
+  // New state for expandable descriptions
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
   // Enhanced state for tracking resubmissions
   const [isResubmission, setIsResubmission] = useState(false);
@@ -134,6 +138,30 @@ export default function InfluencerDashboard() {
     error: submitError,
     hash: submitHash,
   } = useSubmitProof();
+
+  // Function to toggle description expansion
+  const toggleDescription = (briefId: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(briefId)) {
+        newSet.delete(briefId);
+      } else {
+        newSet.add(briefId);
+      }
+      return newSet;
+    });
+  };
+
+  // Function to check if description should show expand button
+  const shouldShowExpandButton = (description: string) => {
+    return description.length > 120; // Show expand button if description is longer than 120 characters
+  };
+
+  // Function to get truncated description
+  const getTruncatedDescription = (description: string) => {
+    if (description.length <= 120) return description;
+    return description.substring(0, 120) + "...";
+  };
 
   // Track transaction when hash becomes available
   useEffect(() => {
@@ -958,6 +986,8 @@ export default function InfluencerDashboard() {
                 const isExpanded = expandedBriefId === briefData.briefId;
                 const budget = briefData.brief.budget;
                 const hasProof = !!briefData.application.proofLink;
+                const isDescriptionExpanded = expandedDescriptions.has(briefData.briefId);
+                const showExpandButton = shouldShowExpandButton(briefData.brief.description);
 
                 // Use the computed application info instead of simple checks
                 const canSubmitProof = appInfo.canSubmitProof;
@@ -1032,9 +1062,32 @@ export default function InfluencerDashboard() {
                             </div>
                           </div>
 
-                          <p className="text-slate-300 text-sm md:text-lg leading-relaxed mb-4 md:mb-6 line-clamp-2">
-                            {briefData.brief.description}
-                          </p>
+                          {/* Expandable Description */}
+                          <div className="mb-4 md:mb-6">
+                            <div className="text-slate-300 text-sm md:text-lg leading-relaxed">
+                              {isDescriptionExpanded 
+                                ? briefData.brief.description 
+                                : getTruncatedDescription(briefData.brief.description)
+                              }
+                            </div>
+                            
+                            {showExpandButton && (
+                              <motion.button
+                                onClick={() => toggleDescription(briefData.briefId)}
+                                className="mt-2 flex items-center gap-1 text-xs md:text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <FileText className="w-3 h-3 md:w-4 md:h-4" />
+                                <span>{isDescriptionExpanded ? "Show less" : "Show more"}</span>
+                                <motion.div
+                                  animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
+                                </motion.div>
+                              </motion.button>
+                            )}
+                          </div>
 
                           {/* Metrics Row */}
                           <div className="flex items-center gap-3 md:gap-8 text-slate-400 text-xs md:text-sm">
