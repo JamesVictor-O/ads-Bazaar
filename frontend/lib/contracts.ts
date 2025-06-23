@@ -7,7 +7,7 @@ const CONTRACT_ADDRESSES = {
   // Celo Mainnet
   42220: {
     CUSD: "0x765DE816845861e75A25fCA122bb6898B8B1282a", // Mainnet cUSD
-    ADS_BAZAAR: "0xB2Dbc7689F4C1E7310693bD19cbd33c6548B9a73", // deployed contract
+    ADS_BAZAAR: "0xe93D4E7aC180D7e23DEb8b123F8E040982E00d22", // deployed contract
     SELF_SCOPE: "AdsBazaar"
     
   },
