@@ -12,8 +12,9 @@ import {
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { toast } from "react-hot-toast";
-import { useRegisterUser } from "../../hooks/adsBazaar";
 import { motion, AnimatePresence } from "framer-motion";
+
+import { useRegisterUser } from "../../hooks/adsBazaar";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
@@ -40,11 +41,13 @@ const GetStartedModal = ({
   guardedAction,
 }: GetStartedModalProps) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({ userType: "" });
+  const [showNextStep, setShowNextStep] = useState(false);
+
   const router = useRouter();
   const { isConnected } = useAccount();
-  const { register, isPending, isSuccess, isError, error } = useRegisterUser();
-  const [showNextStep, setShowNextStep] = useState(false);
+  const { register, isPending, isSuccess, isError, error, hash } = useRegisterUser();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
 
   // Handle registration errors
   useEffect(() => {
@@ -68,7 +71,13 @@ const GetStartedModal = ({
     }
   }, [isSuccess, userDetails.userType, router, onClose]);
 
-  const { generateDivviTag, trackTransaction } = useDivviIntegration();
+  // Track transaction when hash becomes available
+  useEffect(() => {
+    if (hash) {
+      console.log('DIVVI: Hash available from registration:', hash);
+      trackTransaction(hash);
+    }
+  }, [hash, trackTransaction]);
 
   const handleUserTypeSelection = (type: UserType) => {
     setUserDetails({ ...userDetails, userType: type });
@@ -91,6 +100,7 @@ const GetStartedModal = ({
     }
 
     await guardedAction(async () => {
+      // Create profile data
       const profileData = JSON.stringify({
         userType: userDetails.userType,
         ...(userDetails.userType === "influencer"
@@ -101,19 +111,17 @@ const GetStartedModal = ({
             }),
       });
 
-      // Add Divvi tag
-      const divviTag = generateDivviTag();
-      const profileWithDivvi = profileData + divviTag;
+      // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to call register with referral tag:', referralTag);
 
-      const txHash = await register(
+      // Call register with referral tag as dataSuffix
+      await register(
         userDetails.userType === "advertiser",
         userDetails.userType === "influencer",
-        profileWithDivvi
+        profileData,
+        referralTag // This appends referral tag to transaction calldata
       );
-
-      if (typeof txHash === "string") {
-        await trackTransaction(txHash);
-      }
     });
   };
 
@@ -167,7 +175,7 @@ const GetStartedModal = ({
 
         {/* Content */}
         <div className="p-4 sm:p-6 flex-grow">
-          {/* Network Status - Always show if wallet is connected */}
+          {/* Network Status */}
           {isConnected && (
             <div className="mb-4">
               <NetworkStatus className="bg-slate-900/30 border-slate-600/50" />
@@ -239,6 +247,7 @@ const GetStartedModal = ({
                       <div className="w-5 h-5 rounded-full border-2 border-slate-600 group-hover:border-emerald-500 group-disabled:group-hover:border-slate-600 transition-colors duration-200"></div>
                     </div>
                   </button>
+
                   <button
                     onClick={() => handleUserTypeSelection("advertiser")}
                     disabled={!isConnected}

@@ -553,25 +553,35 @@ export function useRegisterUser() {
   const register = async (
     isBusiness: boolean,
     isInfluencer: boolean,
-    profileData: string
+    profileData: string,
+    dataSuffix?: `0x${string}` // Referral tag to append to calldata
   ) => {
-    if (!address) return;
+    console.log('DIVVI: Calling writeContract with dataSuffix:', dataSuffix);
+
+    if (!address) {
+      console.error('No wallet address available');
+      return;
+    }
 
     try {
-      await tx.writeContract({
+      tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "registerUser",
         args: [isBusiness, isInfluencer, profileData],
+        dataSuffix: dataSuffix, // This appends referral tag to transaction calldata
       });
+
+      console.log('DIVVI: writeContract called, waiting for hash...');
     } catch (error) {
       console.error("Error registering user:", error);
+      throw error;
     }
   };
 
   return {
     register,
-    ...tx,
+    ...tx, 
   };
 }
 
@@ -692,18 +702,26 @@ export function useApplyToBrief() {
   const tx = useHandleTransaction();
   const { address } = useAccount();
 
-  const applyToBrief = async (briefId: Bytes32, message: string) => {
+  const applyToBrief = async (
+    briefId: string,
+    message: string,
+    dataSuffix?: `0x${string}`
+  ) => {
+    console.log('DIVVI: Applying to brief with dataSuffix:', dataSuffix);
+
     if (!address) return;
 
     try {
-      await tx.writeContract({
+      tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "applyToBrief",
         args: [briefId, message],
+        dataSuffix: dataSuffix,
       });
     } catch (error) {
       console.error("Error applying to brief:", error);
+      throw error;
     }
   };
 
@@ -885,23 +903,44 @@ export function useClaimPayments() {
   const tx = useHandleTransaction();
   const { address } = useAccount();
 
-  const claimPayments = async () => {
-    if (!address) return;
+  const claimPayments = async (dataSuffix?: `0x${string}`) => {
+    console.log('DIVVI: Claiming payments with dataSuffix:', dataSuffix);
+
+    // Early return with more descriptive error
+    if (!address) {
+      const error = new Error('Wallet not connected');
+      console.error(' Cannot claim payments: Wallet not connected');
+      throw error;
+    }
 
     try {
-      await tx.writeContract({
+      const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "claimPayments",
+        args: [],
+        dataSuffix: dataSuffix,
       });
+
+      console.log('DIVVI: Payment claim transaction submitted:', result);
+      return result;
     } catch (error) {
-      console.error("Error claiming payments:", error);
+      console.error(" Error claiming payments:", error);
+      
+      // Enhanced error handling with more context
+      if (error instanceof Error) {
+        throw new Error(`Failed to claim payments: ${error.message}`);
+      }
+      throw error;
     }
   };
 
-  return {
-    claimPayments,
+  return { 
+    claimPayments, 
     ...tx,
+    // Expose useful state for UI
+    isConnected: !!address,
+    address
   };
 }
 

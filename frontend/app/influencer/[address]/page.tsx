@@ -19,13 +19,11 @@ import {
   AlertCircle,
   Loader2,
   Zap,
-  Crown,
   Target,
   Eye,
   Share2,
   ChevronDown,
   Verified,
-  Twitter,
   User
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -636,7 +634,7 @@ export default function EnhancedInfluencerProfile() {
   const { address: connectedAddress, isConnected } = useAccount();
   const [isOwner, setIsOwner] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'social' | 'activity'>('overview');
   const [showAllStats, setShowAllStats] = useState(false);
   const [connectedFid, setConnectedFid] = useState<number | null>(null);
