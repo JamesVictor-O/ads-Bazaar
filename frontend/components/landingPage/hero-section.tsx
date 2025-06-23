@@ -10,6 +10,8 @@ import {
   Star,
   Users,
   Zap,
+  TrendingUp,
+  Target,
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -182,7 +184,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           ) : (
             <>
-              Get Started
+              Start Earning Now
               <ArrowRight className="w-5 h-5" />
             </>
           )}
@@ -244,52 +246,52 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           {/* Header Section */}
           <div>
             <motion.div
-              className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-2 mb-4 md:hidden"
+              className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-2 mb-4"
               variants={itemVariants}
             >
               <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
               <span className="text-emerald-400 text-sm font-medium">
-                Web3 Influencer Economy
+                Web3 Creator Economy
               </span>
             </motion.div>
+
+            
 
             <motion.h1
               className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight"
               variants={itemVariants}
             >
-              <span className="md:hidden ">
-                Connect{" "}
-                <span className="text-emerald-400 animate-pulse">Brands</span>{" "}
-                with{" "}
-                <span className="text-emerald-400 animate-pulse">
-                  Creators / Influencers
-                </span>
+              <span className="md:hidden">
+                <span className="text-emerald-400 animate-pulse">Amplify</span>{" "}
+                Your Brand,{" "}
+                <span className="text-emerald-400 animate-pulse">Monetize</span>{" "}
+                Your Influence
                 <br />
-                <span className="text-xl block mt-2 bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                  Guaranteed Growth & Earnings
+                <span className="text-lg block mt-2 bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                  <span className="text-emerald-400 animate-pulse">Where Every Post Pays</span>{" "}
+                  
                 </span>
               </span>
               <span className="hidden md:block">
-                Connecting{" "}
-                <span className="text-emerald-400">Brands, Businesses</span>{" "}
-                with{" "}
-                <span className="text-emerald-400">
-                  Influencers, Content Creators
-                </span>
-                <br className="hidden sm:block" />{" "}
+                <span className="text-emerald-400">Amplify</span> Your Brand,{" "}
+                <span className="text-emerald-400">Monetize</span> Your
+                Influence
+                <br className="hidden sm:block" />
                 <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl block mt-2">
-                  For Measurable Growth & Guaranteed Earnings
+                  Where Every Post Pays &{" "}
+                  <span className="bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent">
+                    Every Campaign Converts
+                  </span>
                 </span>
               </span>
             </motion.h1>
-
             <motion.p
-              className="mt-4 sm:mt-6 text-base md:text-lg lg:text-xl xl:text-2xl text-slate-300 leading-relaxed max-w-sm md:max-w-none mx-auto lg:mx-0"
+              className="mt-4 sm:mt-6 text-base md:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-sm md:max-w-none mx-auto lg:mx-0"
               variants={itemVariants}
             >
               <span className="md:hidden">
-                Verified creators / Influencers, secure crypto payments,
-                transparent campaigns with real results.
+                Your audience is your asset.
+                Time to cash in with brands that value your influence.
               </span>
               <span className="hidden md:block">
                 The trusted marketplace where verified creators help brands
@@ -310,30 +312,33 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             variants={containerVariants}
           >
             <motion.div
-              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center"
+              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center hover:bg-slate-700/50 transition-all duration-300"
               variants={itemVariants}
+              whileHover={{ scale: 1.05 }}
             >
-              <Shield className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-emerald-400 md:border md:rounded-full md:p-1" />
+              <Shield className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-emerald-400" />
               <div className="text-xs md:text-sm text-slate-300">
                 Self Protocol Verified
               </div>
             </motion.div>
 
             <motion.div
-              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center"
+              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center hover:bg-slate-700/50 transition-all duration-300"
               variants={itemVariants}
+              whileHover={{ scale: 1.05 }}
             >
-              <DollarSign className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-indigo-400 md:border md:rounded-full md:p-1" />
+              <DollarSign className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-indigo-400" />
               <div className="text-xs md:text-sm text-slate-300">
                 Celo Blockchain
               </div>
             </motion.div>
 
             <motion.div
-              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center"
+              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center hover:bg-slate-700/50 transition-all duration-300"
               variants={itemVariants}
+              whileHover={{ scale: 1.05 }}
             >
-              <Users className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-purple-400 md:border md:rounded-full md:p-1" />
+              <Users className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-purple-400" />
               <div className="text-xs md:text-sm text-slate-300">
                 Farcaster MiniApp
               </div>
@@ -433,6 +438,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           </div>
         </div>
       </motion.div>
+      
       {/* Platform Statistics */}
       <motion.div
         className="mt-16 md:mt-24"

@@ -311,7 +311,7 @@ const EducationPage = () => {
       howItWorks: [
         "Visit the Self Verification page",
         "Scan QR code with Self mobile app",
-        "Complete identity verification process",
+        "Complete identity verification process with your passport",
         "Verification status appears on your profile",
       ],
     },
