@@ -42,7 +42,7 @@ function ClaimPaymentsModal({
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "claiming" | "success" | "error"
   >("idle");
-  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
+  const { trackTransaction } = useDivviIntegration()
 
   // Fetch pending payments data
   const { pendingPayments, isLoadingPayments, paymentsError, refetchPayments } =

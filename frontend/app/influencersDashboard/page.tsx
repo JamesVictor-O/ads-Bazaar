@@ -83,7 +83,7 @@ export default function InfluencerDashboard() {
   const {
     profile: { username, displayName, pfpUrl },
   } = useProfile();
-  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
+  const {  trackTransaction } = useDivviIntegration();
   
   const [isMounted, setIsMounted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);

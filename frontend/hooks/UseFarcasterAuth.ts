@@ -1,5 +1,5 @@
 // frontend/hooks/useFarcasterAuth.ts
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AuthKitProvider, useSignIn, StatusAPIResponse } from '@farcaster/auth-kit';
 
 export interface FarcasterAuthState {
@@ -40,21 +40,7 @@ export function useFarcasterAuth() {
     
     try {
       await signIn();
-      
-      if (isSuccess && data) {
-        setAuthState({
-          isAuthenticated: true,
-          user: {
-            fid: data.fid ?? 0,
-            username: data.username ?? '',
-            displayName: data.displayName ?? '',
-            pfpUrl: data.pfpUrl ?? '',
-            bio: data.bio ?? '',
-          },
-          isLoading: false,
-          error: null,
-        });
-      }
+      setAuthState(prev => ({ ...prev, isLoading: false }));
     } catch (error) {
       setAuthState(prev => ({
         ...prev,
@@ -62,7 +48,25 @@ export function useFarcasterAuth() {
         error: error instanceof Error ? error.message : 'Authentication failed',
       }));
     }
-  }, [signIn, isSuccess, data]);
+  }, [signIn]);
+
+  // Handle authentication state changes
+  useEffect(() => {
+    if (isSuccess && data && validSignature) {
+      setAuthState({
+        isAuthenticated: true,
+        user: {
+          fid: data.fid ?? 0,
+          username: data.username ?? '',
+          displayName: data.displayName ?? '',
+          pfpUrl: data.pfpUrl ?? '',
+          bio: data.bio ?? '',
+        },
+        isLoading: false,
+        error: null,
+      });
+    }
+  }, [isSuccess, data, validSignature]);
 
   const handleConnect = useCallback(async () => {
     if (channelToken) {
@@ -80,7 +84,10 @@ export function useFarcasterAuth() {
   }, []);
 
   return {
-    ...authState,
+    isAuthenticated: authState.isAuthenticated,
+    user: authState.user,
+    isLoading: authState.isLoading,
+    error: authState.error,
     signIn: handleSignIn,
     connect: handleConnect,
     reconnect,

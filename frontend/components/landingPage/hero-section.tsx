@@ -10,8 +10,6 @@ import {
   Star,
   Users,
   Zap,
-  TrendingUp,
-  Target,
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";

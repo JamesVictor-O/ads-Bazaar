@@ -80,8 +80,12 @@ class NeynarServerService {
       } else if (response[address]) {
         user = response[address];
         console.log("Found user in response[address]");
-      } else if (response.result && response.result.user) {
-        user = response.result.user;
+      } else if (
+        response.result &&
+        !Array.isArray(response.result) &&
+        (response.result as any).user
+      ) {
+        user = (response.result as any).user;
         console.log("Found user in response.result.user");
       } else if (response.user) {
         user = response.user;
@@ -90,10 +94,16 @@ class NeynarServerService {
         // Look for any user object in the response
         const keys = Object.keys(response);
         for (const key of keys) {
-          if (response[key] && typeof response[key] === 'object' && response[key].fid) {
-            user = response[key];
-            console.log(`Found user in response.${key}`);
-            break;
+          if (response[key] && typeof response[key] === 'object') {
+            if (Array.isArray(response[key]) && response[key].length > 0 && response[key][0].fid) {
+              user = response[key][0];
+              console.log(`Found user in response.${key}[0]`);
+              break;
+            } else if (!Array.isArray(response[key]) && (response[key] as any).fid) {
+              user = response[key];
+              console.log(`Found user in response.${key}`);
+              break;
+            }
           }
         }
       }
