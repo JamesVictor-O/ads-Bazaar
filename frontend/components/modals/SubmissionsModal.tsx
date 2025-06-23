@@ -35,7 +35,7 @@ interface SubmissionsModalProps {
   applications: Application[];
   isLoadingApplications: boolean;
   isCompletingCampaign: boolean;
-  onReleaseFunds: (briefId: Hex, referralTag?: `0x${string}`) => void; // UPDATED TO ACCEPT REFERRAL TAG
+  onReleaseFunds: (briefId: Hex, referralTag?: `0x${string}`) => void;
   onClose: () => void;
 }
 
@@ -53,7 +53,7 @@ export const SubmissionsModal = ({
   );
   
 
-  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
+  const { generateDivviReferralTag } = useDivviIntegration()
 
   // Calculate timing information for button state
   const currentTime = Math.floor(Date.now() / 1000);
