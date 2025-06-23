@@ -32,7 +32,7 @@ interface Dispute {
 
 interface DisputeResolutionModalProps {
   dispute: Dispute;
-  onResolveDispute: (disputeId: string, isValid: boolean) => Promise<void>;
+  onResolveDispute: (disputeId: string, isValid: boolean, referralTag?: `0x${string}`) => Promise<void>; 
   onClose: () => void;
   getStatusColor: (status: string) => string;
   getPriorityColor: (priority: string) => string;
@@ -56,7 +56,7 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
     useState<TransactionPhase>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const { trackTransaction } = useDivviIntegration();
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
 
   const isExpired = useMemo(() => {
     const currentTime = new Date();
@@ -73,8 +73,11 @@ const DisputeResolutionModal: React.FC<DisputeResolutionModalProps> = ({
     setErrorMessage("");
 
     try {
+      // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to resolve dispute with referral tag:', referralTag);
       // If onResolveDispute returns a txHash, use it; otherwise, just call it and then trackTransaction if needed
-      const txHash = await onResolveDispute(dispute.id, isValid);
+      const txHash = await onResolveDispute(dispute.id, isValid, referralTag);
       if (typeof txHash === "string") {
         await trackTransaction(txHash);
       }

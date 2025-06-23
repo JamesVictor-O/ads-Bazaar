@@ -41,6 +41,7 @@ import {
 } from "../../hooks/adsBazaar";
 import { Toaster, toast } from "react-hot-toast";
 import { useInfluencerDashboard } from "@/hooks/useInfluencerDashboard";
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 import Link from "next/link";
 import Image from "next/image";
 import { formatEther } from "viem";
@@ -82,6 +83,8 @@ export default function InfluencerDashboard() {
   const {
     profile: { username, displayName, pfpUrl },
   } = useProfile();
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
+  
   const [isMounted, setIsMounted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
@@ -129,7 +132,16 @@ export default function InfluencerDashboard() {
     isSuccess: isSubmittingSuccess,
     isError: isSubmittingError,
     error: submitError,
+    hash: submitHash,
   } = useSubmitProof();
+
+  // Track transaction when hash becomes available
+  useEffect(() => {
+    if (submitHash) {
+      console.log('DIVVI: Hash available from submit proof:', submitHash);
+      trackTransaction(submitHash);
+    }
+  }, [submitHash, trackTransaction]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -213,7 +225,9 @@ export default function InfluencerDashboard() {
     }
   }, [assignedBriefs]);
 
-  const handleSubmitPost = async (briefId: string): Promise<void> => {
+  const handleSubmitPost = async (briefId: string, referralTag?: `0x${string}`): Promise<void> => {
+    console.log('DIVVI: Submitting proof with referral tag:', referralTag);
+
     if (!postLink) {
       toast.error("Please enter a post link");
       return;
@@ -226,7 +240,8 @@ export default function InfluencerDashboard() {
     });
 
     try {
-      const result: SubmitProofResult = await submitProof(briefId, postLink);
+      const result: SubmitProofResult = await submitProof(briefId, postLink, referralTag);
+      console.log('DIVVI: Submit proof result:', result);
       if (result?.hash) {
         setTxStatus({
           stage: "confirming",
@@ -1379,7 +1394,7 @@ export default function InfluencerDashboard() {
           selectedTask={selectedTask}
           postLink={postLink}
           setPostLink={setPostLink}
-          onSubmit={() => handleSubmitPost(selectedCampaign.briefId)}
+          onSubmit={(referralTag) => handleSubmitPost(selectedCampaign.briefId, referralTag as `0x${string}` | undefined)}
           onClose={handleCloseModal}
           transactionStatus={txStatus}
           isSubmitting={isSubmittingProof}

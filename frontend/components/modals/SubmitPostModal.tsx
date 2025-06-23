@@ -35,7 +35,7 @@ interface SubmitPostModalProps {
   } | null;
   postLink: string;
   setPostLink: (link: string) => void;
-  onSubmit: () => Promise<void>;
+  onSubmit: (referralTag?: string) => Promise<void>
   onClose: () => void;
   transactionStatus?: TransactionStatus;
   isSubmitting?: boolean;
@@ -60,7 +60,8 @@ function SubmitPostModal({
   const { isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const [showExistingProof, setShowExistingProof] = useState(false);
-  const { generateDivviTag, trackTransaction } = useDivviIntegration()
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
+
 
   // Auto-populate with existing proof link if it's a resubmission
   useEffect(() => {
@@ -130,10 +131,10 @@ function SubmitPostModal({
     }
 
     await guardedAction(async () => {
-      const divviTag = generateDivviTag()
-      const postLinkWithDivvi = postLink + divviTag
-      setPostLink(postLinkWithDivvi)
-      const txHash = await onSubmit()
+      // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to submit proof with referral tag:', referralTag);
+      const txHash = await onSubmit(referralTag);
       // Track with Divvi if txHash is a string
       if (typeof txHash === "string") {
         await trackTransaction(txHash)

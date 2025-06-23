@@ -10,6 +10,7 @@ import { NetworkStatus } from "@/components/NetworkStatus";
 import { useRouter } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 import {
   Users,
   Briefcase,
@@ -66,6 +67,7 @@ const BrandDashboard = () => {
   const router = useRouter();
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
@@ -105,6 +107,7 @@ const BrandDashboard = () => {
     isSuccess: isCreateSuccess,
     isError: isCreateError,
     error: createError,
+    hash: createHash,
   } = useCreateAdBrief();
 
   const {
@@ -113,6 +116,7 @@ const BrandDashboard = () => {
     isSuccess: isCompleteSuccess,
     isError: isCompleteError,
     error: completeError,
+    hash: completeHash,
   } = useCompleteCampaign();
 
   const {
@@ -121,7 +125,30 @@ const BrandDashboard = () => {
     isSuccess: isCancelSuccess,
     isError: isCancelError,
     error: cancelError,
+    hash: cancelHash,
   } = useCancelAdBrief();
+
+  // Track transactions when hash becomes available
+  useEffect(() => {
+    if (createHash) {
+      console.log('DIVVI: Hash available from create campaign:', createHash);
+      trackTransaction(createHash);
+    }
+  }, [createHash, trackTransaction]);
+
+  useEffect(() => {
+    if (completeHash) {
+      console.log('DIVVI: Hash available from complete campaign:', completeHash);
+      trackTransaction(completeHash);
+    }
+  }, [completeHash, trackTransaction]);
+
+  useEffect(() => {
+    if (cancelHash) {
+      console.log('DIVVI: Hash available from cancel campaign:', cancelHash);
+      trackTransaction(cancelHash);
+    }
+  }, [cancelHash, trackTransaction]);
 
   // Computed dashboard data
   const dashboardData = useMemo(() => {
@@ -249,7 +276,9 @@ const BrandDashboard = () => {
     );
   };
 
-  const handleCreateCampaign = async (): Promise<string> => {
+  const handleCreateCampaign = async (referralTag?: `0x${string}`): Promise<string> => {
+    console.log('DIVVI: Creating campaign with referral tag:', referralTag);
+
     if (!isFormValid()) {
       toast.error("Please fill in all required fields correctly");
       return Promise.reject("Form is invalid");
@@ -263,8 +292,10 @@ const BrandDashboard = () => {
         formData.budget,
         Number(formData.promotionDuration),
         Number(formData.maxInfluencers),
-        Number(formData.targetAudience)
+        Number(formData.targetAudience),
+        referralTag
       );
+      console.log('DIVVI: Create campaign result:', result);
       // If createBrief returns a string (e.g., campaign ID), return it
       return typeof result === "string" ? result : "";
     } catch (error) {
@@ -280,9 +311,13 @@ const BrandDashboard = () => {
     }
   };
 
-  const handleReleaseFunds = async (briefId: string) => {
+  const handleReleaseFunds = async (briefId: string, referralTag?: `0x${string}`) => {
+    console.log('DIVVI: Releasing funds with referral tag:', referralTag);
+
     try {
-      await completeCampaign(briefId as `0x${string}`);
+      const result = await completeCampaign(briefId as `0x${string}`, referralTag);
+      console.log('DIVVI: Release funds result:', result);
+      return result;
     } catch (error) {
       console.error("Error releasing funds:", error);
       toast.error(
@@ -290,12 +325,21 @@ const BrandDashboard = () => {
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+      throw error;
     }
   };
 
   const handleCancelCampaign = async (briefId: string) => {
+    console.log('DIVVI: Cancelling campaign for briefId:', briefId);
+
     try {
-      await cancelBrief(briefId as `0x${string}`);
+      // Generate Divvi referral tag
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to cancel campaign with referral tag:', referralTag);
+
+      const result = await cancelBrief(briefId as `0x${string}`, referralTag);
+      console.log('DIVVI: Cancel campaign result:', result);
+      return result;
     } catch (error) {
       console.error("Error canceling campaign:", error);
       toast.error(
@@ -303,6 +347,7 @@ const BrandDashboard = () => {
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+      throw error;
     }
   };
 

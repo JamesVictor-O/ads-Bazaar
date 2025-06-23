@@ -46,18 +46,25 @@ function ApplyModal({
   guardedAction,
 }: ApplyModalProps) {
   const [isClient, setIsClient] = useState(false);
-  const { applyToBrief, isPending, isSuccess, error } = useApplyToBrief();
+  const { applyToBrief, isPending, isSuccess, error, hash: ApplyHash } = useApplyToBrief();
   const { isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
 
-  const { generateDivviTag, trackTransaction } = useDivviIntegration()
+   const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (ApplyHash) {
+      console.log('DIVVI: Hash available from application:', ApplyHash);
+      trackTransaction(ApplyHash);
+    }
+  }, [ApplyHash, trackTransaction]);
 
   useEffect(() => {
     if (isPending && transactionPhase !== "submitting") {
@@ -129,13 +136,12 @@ function ApplyModal({
     setTransactionPhase("idle");
 
     await guardedAction(async () => {
-      const divviTag = generateDivviTag()
-      const messageWithDivvi = applicationMessage + divviTag
+       // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to apply to brief with referral tag:', referralTag);
+
       try {
-        const txHash = await applyToBrief(selectedBrief.id, messageWithDivvi)
-        if (typeof txHash === "string") {
-          await trackTransaction(txHash)
-        }
+        applyToBrief(selectedBrief.id, applicationMessage, referralTag)
       } catch (err) {
         console.error("Application failed:", err);
         throw err;

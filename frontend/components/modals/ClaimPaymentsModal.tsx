@@ -42,7 +42,7 @@ function ClaimPaymentsModal({
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "claiming" | "success" | "error"
   >("idle");
-  const { trackTransaction } = useDivviIntegration()
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
 
   // Fetch pending payments data
   const { pendingPayments, isLoadingPayments, paymentsError, refetchPayments } =
@@ -53,6 +53,7 @@ function ClaimPaymentsModal({
 
   const {
     claimPayments,
+    hash,
     isPending: isClaimPending,
     isSuccess: isClaimSuccess,
     isError: isClaimError,
@@ -113,6 +114,8 @@ function ClaimPaymentsModal({
     }
   }, [isClaimError, claimError]);
 
+  
+
   const handleClaimPayments = async () => {
     if (!guardedAction) {
       toast.error("Network guard not available. Please refresh and try again.");
@@ -128,16 +131,20 @@ function ClaimPaymentsModal({
 
     await guardedAction(async () => {
       try {
-        const txHash = await claimPayments();
-        if (typeof txHash === "string") {
-          await trackTransaction(txHash);
-        }
+        await claimPayments();
       } catch (err) {
         console.error("Claim failed:", err);
         throw err;
       }
     });
   };
+
+  useEffect(() => {
+    if (hash) {
+      console.log('DIVVI: Hash available from claim payments:', hash);
+      trackTransaction(hash);
+    }
+  }, [hash, trackTransaction]);
 
   const getTransactionMessage = () => {
     switch (transactionPhase) {

@@ -20,6 +20,12 @@ export const useDivviIntegration = () => {
     return referralTag;
   };
 
+  const generateDivviTag = (): string => {
+    console.log('DIVVI: generateDivviTag called (content modification)');
+    const referralTag = generateDivviReferralTag();
+    return ` #DIVVI:${referralTag}`;
+  };
+
   const trackTransaction = async (txHash: string | unknown) => {
     console.log('DIVVI: trackTransaction called');
     console.log('TX Hash received:', txHash, typeof txHash);
@@ -46,6 +52,7 @@ export const useDivviIntegration = () => {
 
   return {
     generateDivviReferralTag,
+    generateDivviTag, 
     trackTransaction,
   };
 };

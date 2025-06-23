@@ -32,20 +32,26 @@ export function useFlagSubmission() {
   const flagSubmission = async (
     briefId: Hex,
     influencer: Hex,
-    reason: string
+    reason: string,
+    dataSuffix?: `0x${string}`
   ) => {
+    console.log('DIVVI: Flagging submission with dataSuffix:', dataSuffix);
+
     if (!address) {
       toast.error("Please connect your wallet");
       return;
     }
 
     try {
-      await writeContract({
+      const result = await writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "flagSubmission",
         args: [briefId, influencer, reason],
+        dataSuffix: dataSuffix,
       });
+      console.log('DIVVI: Flag submission transaction submitted:', result);
+      return result;
     } catch (error) {
       console.error("Error flagging submission:", error);
       throw error;
@@ -82,20 +88,26 @@ export function useResolveDispute() {
   const resolveDispute = async (
     briefId: Hex,
     influencer: Hex,
-    isValid: boolean
+    isValid: boolean,
+    dataSuffix?: `0x${string}`
   ) => {
+    console.log('DIVVI: Resolving dispute with dataSuffix:', dataSuffix);
+
     if (!address) {
       toast.error("Please connect your wallet");
       return;
     }
 
     try {
-      await writeContract({
+      const result = await writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "resolveDispute",
         args: [briefId, influencer, isValid],
+        dataSuffix: dataSuffix,
       });
+      console.log('DIVVI: Resolve dispute transaction submitted:', result);
+      return result;
     } catch (error) {
       console.error("Error resolving dispute:", error);
       throw error;

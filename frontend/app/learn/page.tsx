@@ -26,7 +26,6 @@ import {
   PauseCircle,
   Flag,
   ChevronDown,
-  Home,
   BookOpen,
   HelpCircle,
   Upload,
@@ -200,7 +199,7 @@ const EducationPage = () => {
               "Complete business profile setup",
             ],
             tips: [
-              "Have cUSD ready for campaigns",
+              "Have cUSD ready for campaigns & Celo for gas fees",
               "Choose realistic budget ranges",
             ],
             icon: Wallet,
@@ -216,7 +215,7 @@ const EducationPage = () => {
             ],
             tips: [
               "Budget includes 0.5% platform fee",
-              "Keep some extra for gas fees",
+              "Keep some extra celo for gas fees",
             ],
             icon: DollarSign,
           },
@@ -229,10 +228,13 @@ const EducationPage = () => {
               "Choose budget and maximum number of influencers",
               "Select promotion duration (1-14 days)",
               "Pick target audience category",
+              
             ],
             tips: [
               "Be specific about requirements",
               "Higher budgets attract better influencers",
+              "Once you select max influencers, campaign immediately starts after 1 day",
+              "You can cancel the campaign only before assigning influencers & the funds will be refunded immediately",
             ],
             icon: Target,
           },
@@ -442,11 +444,6 @@ const EducationPage = () => {
     return () => clearInterval(interval);
   }, [isPlaying, activeTab, selectedJourney, userJourneys]);
 
-  const handleGoHome = () => {
-    if (typeof window !== "undefined") {
-      window.history.back();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-20 sm:pt-28">
@@ -454,7 +451,7 @@ const EducationPage = () => {
       <div className="border-b border-slate-700/50 bg-slate-800/50 backdrop-blur-xl sticky top-20 sm:top-28 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
@@ -466,15 +463,6 @@ const EducationPage = () => {
                   Learn how to navigate the platform
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleGoHome}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg border border-slate-600/50 transition-all"
-              >
-                <Home className="w-4 h-4" />
-                Back to Home
-              </button>
             </div>
           </div>
         </div>
@@ -1040,13 +1028,13 @@ const EducationPage = () => {
               transparent, secure influencer marketing campaigns.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={handleGoHome}
+              <Link
+                href="/"
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all font-medium shadow-lg shadow-emerald-500/20"
               >
                 Start Your Journey
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Link>
               <Link
                 href={"/marketplace"}
                 className="flex items-center gap-2 px-6 py-3 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-600/50 transition-all font-medium"

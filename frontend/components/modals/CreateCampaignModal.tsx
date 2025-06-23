@@ -16,7 +16,6 @@ import { toast } from "react-hot-toast";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
-import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface FormData {
   name: string;
@@ -72,7 +71,7 @@ function CreateCampaignModal({
     }
   }, [isCreatingBrief, transactionPhase]);
 
-  const { generateDivviTag, trackTransaction } = useDivviIntegration()
+  
 
   const handleCreateCampaign = async () => {
     if (!guardedAction) {
@@ -88,16 +87,12 @@ function CreateCampaignModal({
     setTransactionPhase("idle");
 
     await guardedAction(async () => {
-      
-      const divviTag = generateDivviTag()
-      const requirementsWithDivvi = formData.requirements + divviTag
+      const requirements = formData.requirements 
 
       // Update requirements in formData before calling onCreateCampaign
-      setFormData({ ...formData, requirements: requirementsWithDivvi });
-      const txHash = await onCreateCampaign()
+      setFormData({ ...formData, requirements: requirements });
+      await onCreateCampaign()
 
-      // Track with Divvi
-      await trackTransaction(txHash)
     });
   };
 

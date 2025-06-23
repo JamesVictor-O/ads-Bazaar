@@ -44,7 +44,7 @@ const ApplicationsModal = ({
     "idle" | "selecting"
   >("idle");
 
-  const { trackTransaction } = useDivviIntegration();
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
 
   // Filter applications based on showOnlySelected prop
   const filteredApplications = showOnlySelected
@@ -56,7 +56,15 @@ const ApplicationsModal = ({
     isPending: isSelectingInfluencer,
     isSuccess: isInfluencerSelected,
     error: selectError,
+    hash: selectHash,
   } = useSelectInfluencer();
+
+  useEffect(() => {
+    if (selectHash) {
+      console.log('DIVVI: Hash available from select influencer:', selectHash);
+      trackTransaction(selectHash);
+    }
+  }, [selectHash, trackTransaction]);
 
   // Track transaction phases for better UX
   useEffect(() => {
@@ -115,12 +123,14 @@ const ApplicationsModal = ({
     }
 
     setPendingIndex(index);
+    
 
     await guardedAction(async () => {
-      const txHash = await selectInfluencer(briefId, index);
-      if (typeof txHash === "string") {
-        await trackTransaction(txHash);
-      }
+      // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to apply to brief with referral tag:', referralTag);
+      await selectInfluencer(briefId, index, referralTag);
+      
     });
   };
 

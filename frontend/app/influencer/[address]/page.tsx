@@ -817,22 +817,25 @@ export default function EnhancedInfluencerProfile() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                      <MessageSquare className="w-6 h-6 text-white" />
+
+                {isOwner && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <MessageSquare className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-semibold">Connect Farcaster</h3>
+                        <p className="text-slate-400 text-sm">Link your social presence with FID</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-white font-semibold">Connect Farcaster</h3>
-                      <p className="text-slate-400 text-sm">Link your social presence with FID</p>
-                    </div>
+                    <FarcasterConnectButton 
+                      address={profileAddress as string} 
+                      isOwner={isOwner} 
+                      onConnectionSuccess={handleConnectionSuccess}
+                    />
                   </div>
-                  <FarcasterConnectButton 
-                    address={profileAddress as string} 
-                    isOwner={isOwner} 
-                    onConnectionSuccess={handleConnectionSuccess}
-                  />
-                </div>
+                )}
               </motion.div>
             )}
 

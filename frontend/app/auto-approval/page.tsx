@@ -9,13 +9,14 @@ import { CampaignStatus } from "@/types";
 import { formatTimeRemaining, getTimeRemaining } from "@/utils/format";
 import { toast, Toaster } from "react-hot-toast";
 import Link from "next/link";
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
 export default function AutoApprovalPage() {
   const {  isConnected } = useAccount();
   const { briefs, isLoading } = useGetAllBriefs();
-  const { triggerAutoApproval, isPending, isSuccess} =
+  const { triggerAutoApproval, isPending, isSuccess, hash: triggerApprovalHash} =
     useTriggerAutoApproval();
-
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
   // Filter campaigns eligible for auto-approval
   const eligibleCampaigns =
     briefs?.filter((brief) => {
@@ -26,9 +27,22 @@ export default function AutoApprovalPage() {
       );
     }) || [];
 
+  // Track transaction when hash becomes available
+  useEffect(() => {
+    if (triggerApprovalHash) {
+      console.log('DIVVI: Hash available from auto-approval:', triggerApprovalHash);
+      trackTransaction(triggerApprovalHash);
+    }
+  }, [triggerApprovalHash, trackTransaction]);
+
+
   const handleAutoApproval = async (briefId: string) => {
     try {
-      await triggerAutoApproval(briefId as `0x${string}`);
+      // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to trigger auto-approval with referral tag:', referralTag);
+
+      await triggerAutoApproval(briefId as `0x${string}`, referralTag);
     } catch (error) {
       console.error("Auto-approval failed:", error);
     }

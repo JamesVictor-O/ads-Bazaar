@@ -21,10 +21,10 @@ function DisputeModal({
   guardedAction,
 }: DisputeModalProps) {
   const [reason, setReason] = useState("");
-  const { flagSubmission, isFlagging, flagSuccess, flagError } =
+  const { flagSubmission, isFlagging, flagSuccess, flagError, hash: flagHash } =
     useFlagSubmission();
 
-  const { generateDivviTag, trackTransaction } = useDivviIntegration()
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -38,15 +38,21 @@ function DisputeModal({
     }
 
     await guardedAction(async () => {
-      const divviTag = generateDivviTag()
-      const reasonWithDivvi = reason + divviTag
-      const txHash = await flagSubmission(briefId, influencer, reasonWithDivvi)
-      // Track with Divvi
-      if (typeof txHash === "string") {
-        await trackTransaction(txHash)
-      }
+      // Generate Divvi referral tag to append to transaction calldata
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to flag submission with referral tag:', referralTag);
+
+     await flagSubmission(briefId, influencer, reason, referralTag)
+     
     });
   };
+
+  useEffect(() => {
+    if (flagHash) {
+      console.log('DIVVI: Hash available from flag submission:', flagHash);
+      trackTransaction(flagHash);
+    }
+  }, [flagHash, trackTransaction]);
 
   useEffect(() => {
     if (flagSuccess) {

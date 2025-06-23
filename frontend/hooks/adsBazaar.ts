@@ -603,6 +603,7 @@ export function useCreateAdBrief() {
     promotionDuration: number;
     maxInfluencers: number;
     targetAudience: number;
+    dataSuffix?: `0x${string}`;
   } | null>(null);
 
   // Wait for approval transaction receipt
@@ -617,6 +618,7 @@ export function useCreateAdBrief() {
     if (isApproving && approvalStatus === "success" && briefData) {
       setIsApproving(false);
       try {
+        console.log('DIVVI: Creating brief with dataSuffix:', briefData.dataSuffix);
         tx.writeContract({
           address: CONTRACT_ADDRESS,
           abi: ABI.abi,
@@ -630,7 +632,9 @@ export function useCreateAdBrief() {
             BigInt(briefData.maxInfluencers),
             briefData.targetAudience,
           ],
+          dataSuffix: briefData.dataSuffix,
         });
+        console.log('DIVVI: Brief creation writeContract called, waiting for hash...');
       } catch (error) {
         console.error("Error creating ad brief:", error);
         setBriefData(null);
@@ -652,8 +656,11 @@ export function useCreateAdBrief() {
     budget: string,
     promotionDuration: number,
     maxInfluencers: number,
-    targetAudience: number
+    targetAudience: number,
+    dataSuffix?: `0x${string}`
   ) => {
+    console.log('DIVVI: Creating brief with dataSuffix:', dataSuffix);
+
     if (!address) {
       throw new Error("Wallet not connected");
     }
@@ -667,15 +674,19 @@ export function useCreateAdBrief() {
         promotionDuration,
         maxInfluencers,
         targetAudience,
+        dataSuffix,
       });
 
       setIsApproving(true);
+      console.log('DIVVI: Approving cUSD with dataSuffix:', dataSuffix);
       await approveCUSD({
         address: cUSDContractConfig.address,
         abi: cUSDContractConfig.abi,
         functionName: "approve",
         args: [CONTRACT_ADDRESS, parseUnits(budget, 18)],
+        dataSuffix: dataSuffix,
       });
+      console.log('DIVVI: Approval transaction submitted');
     } catch (error) {
       console.error("Error initiating approval:", error);
       setIsApproving(false);
@@ -694,6 +705,7 @@ export function useCreateAdBrief() {
     isSuccess: tx.isSuccess && !isApproving,
     isError,
     error,
+    hash: tx.hash,
   };
 }
 
@@ -738,19 +750,26 @@ export function useSelectInfluencer() {
 
   const selectInfluencer = async (
     briefId: Bytes32,
-    applicationIndex: number
+    applicationIndex: number,
+    dataSuffix?: `0x${string}`
   ) => {
+    console.log('DIVVI: Selecting influencer with dataSuffix:', dataSuffix);
+
     if (!address) return;
 
     try {
-      await tx.writeContract({
+      const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "selectInfluencer",
         args: [briefId, applicationIndex],
+        dataSuffix: dataSuffix,
       });
+      console.log('DIVVI: Select influencer transaction submitted:', result);
+      return result;
     } catch (error) {
       console.error("Error selecting influencer:", error);
+      throw error;
     }
   };
 
@@ -765,19 +784,24 @@ export function useCompleteCampaign() {
   const tx = useHandleTransaction();
   const { address } = useAccount();
 
-  const completeCampaign = async (briefId: Bytes32) => {
+  const completeCampaign = async (briefId: Bytes32, dataSuffix?: `0x${string}`) => {
+    console.log('DIVVI: Completing campaign with dataSuffix:', dataSuffix);
+
     if (!address) {
       toast.error("Please connect your wallet");
       return;
     }
 
     try {
-      await tx.writeContract({
+      const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "completeCampaign",
         args: [briefId],
+        dataSuffix: dataSuffix,
       });
+      console.log('DIVVI: Complete campaign transaction submitted:', result);
+      return result;
     } catch (error) {
       console.error("Error completing campaign:", error);
       // Enhanced error handling
@@ -807,7 +831,9 @@ export function useCancelAdBrief() {
   const { address } = useAccount();
   const { isCorrectChain, ensureNetwork } = useEnsureNetwork();
 
-  const cancelBrief = async (briefId: Bytes32) => {
+  const cancelBrief = async (briefId: Bytes32, dataSuffix?: `0x${string}`) => {
+    console.log('DIVVI: Cancelling brief with dataSuffix:', dataSuffix);
+
     if (!address) {
       toast.error("Please connect your wallet");
       return;
@@ -819,12 +845,15 @@ export function useCancelAdBrief() {
     }
 
     try {
-      await writeContract({
+      const result = await writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "cancelAdBrief",
         args: [briefId],
+        dataSuffix: dataSuffix,
       });
+      console.log('DIVVI: Cancel brief transaction submitted:', result);
+      return result;
     } catch (error) {
       console.error("Error cancelling ad brief:", error);
       throw error;
@@ -847,19 +876,24 @@ export function useSubmitProof() {
     useHandleTransaction();
   const { address } = useAccount();
 
-  const submitProof = async (briefId: string, proofLink: string) => {
+  const submitProof = async (briefId: string, proofLink: string, dataSuffix?: `0x${string}`) => {
+    console.log('DIVVI: Submitting proof with dataSuffix:', dataSuffix);
+
     if (!address) {
       toast.error("Please connect your wallet");
       return { success: false, status: "error" };
     }
 
     try {
-      await writeContract({
+      const result = await writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "submitProof",
         args: [briefId, proofLink],
+        dataSuffix: dataSuffix,
       });
+      
+      console.log('DIVVI: Submit proof transaction submitted:', result);
 
       return {
         success: true,
@@ -1196,19 +1230,24 @@ export function useTriggerAutoApproval() {
   const tx = useHandleTransaction();
   const { address } = useAccount();
 
-  const triggerAutoApproval = async (briefId: `0x${string}`) => {
+  const triggerAutoApproval = async (briefId: `0x${string}`, dataSuffix?: `0x${string}`) => {
+    console.log('DIVVI: Triggering auto-approval with dataSuffix:', dataSuffix);
+
     if (!address) {
       toast.error("Please connect your wallet");
       return;
     }
 
     try {
-      await tx.writeContract({
+      const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "triggerAutoApproval",
         args: [briefId],
+        dataSuffix: dataSuffix,
       });
+      console.log('DIVVI: Auto-approval transaction submitted:', result);
+      return result;
     } catch (error) {
       console.error("Error triggering auto-approval:", error);
       if (error instanceof Error) {
@@ -1238,7 +1277,9 @@ export function useVerifySelfProof() {
   const tx = useHandleTransaction();
   const { address } = useAccount();
 
-  const verifySelfProof = async (proof: any, publicSignals: string[]) => {
+  const verifySelfProof = async (proof: any, publicSignals: string[], dataSuffix?: `0x${string}`) => {
+    console.log('DIVVI: Verifying Self proof with dataSuffix:', dataSuffix);
+
     if (!address) {
       toast.error("Please connect your wallet");
       throw new Error("Wallet not connected");
@@ -1266,14 +1307,16 @@ export function useVerifySelfProof() {
       console.log("Nullifier:", publicSignals[CIRCUIT_CONSTANTS.NULLIFIER_INDEX]);
       console.log("User address from proof:", `0x${BigInt(publicSignals[CIRCUIT_CONSTANTS.USER_IDENTIFIER_INDEX]).toString(16).padStart(40, '0')}`);
 
-      await tx.writeContract({
+      const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "verifySelfProof", 
         args: [formattedProof],
+        dataSuffix: dataSuffix,
       });
 
-      return tx.hash;
+      console.log('DIVVI: Self proof verification transaction submitted:', result);
+      return result;
     } catch (error) {
       console.error("Error verifying Self proof:", error);
       
