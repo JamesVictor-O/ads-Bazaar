@@ -652,7 +652,7 @@ export default function InfluencerDashboard() {
                 >
                   {isVerified
                     ? "✓ Verified Creator"
-                    : " Boost Your Profile with Verification"}
+                    : " Boost Your Profile with Self Verification"}
                 </p>
                 <p className="text-slate-400 text-xs md:text-sm">
                   {isVerified
