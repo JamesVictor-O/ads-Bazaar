@@ -281,6 +281,7 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
     isLoading: isLoadingIds,
     isError: isErrorIds,
     error: idError,
+    refetch: refetchBriefIds,
   } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
@@ -353,11 +354,18 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
     }
   }, [businessAddress, briefIds, isLoadingIds, fetchBusinessBriefDetails]);
 
+  const refetch = useCallback(async () => {
+    // First refetch the brief IDs
+    await refetchBriefIds();
+    // The useEffect will automatically refetch the details when briefIds changes
+  }, [refetchBriefIds]);
+
   return {
     briefs,
     isLoading: isLoading || isLoadingIds,
     isError: isErrorIds || !!error,
     error: idError || error,
+    refetch,
   };
 }
 

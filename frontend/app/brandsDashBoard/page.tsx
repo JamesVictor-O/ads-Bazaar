@@ -96,7 +96,7 @@ const BrandDashboard = () => {
   });
 
   const { userProfile } = useUserProfile();
-  const { briefs: fetchedBriefs, isLoading } = useGetBusinessBriefs(
+  const { briefs: fetchedBriefs, isLoading, refetch: refetchBriefs } = useGetBusinessBriefs(
     address as `0x${string}`
   );
   const briefs = useMemo(
@@ -230,7 +230,10 @@ const BrandDashboard = () => {
         maxInfluencers: "5",
         targetAudience: "0",
       });
-      router.push("/brandsDashBoard");
+      // Refetch the campaigns to show the new one immediately
+      setTimeout(() => {
+        refetchBriefs();
+      }, 1000); // Small delay to ensure blockchain transaction is processed
     }
 
     if (isCreateError) {
@@ -238,12 +241,16 @@ const BrandDashboard = () => {
         `Failed to create campaign: ${createError?.message || "Unknown error"}`
       );
     }
-  }, [isCreateSuccess, isCreateError, createError, router]);
+  }, [isCreateSuccess, isCreateError, createError, refetchBriefs]);
 
   useEffect(() => {
     if (isCompleteSuccess) {
       toast.success("Campaign completed and funds released successfully!");
       refetchApplications();
+      // Also refetch briefs to update campaign status
+      setTimeout(() => {
+        refetchBriefs();
+      }, 1000);
       setShowSubmissionsModal(false);
     }
 
@@ -254,13 +261,16 @@ const BrandDashboard = () => {
         }`
       );
     }
-  }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications]);
+  }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications, refetchBriefs]);
 
   useEffect(() => {
     if (isCancelSuccess) {
       toast.success("Campaign cancelled successfully!");
       setShowCancelConfirm(null);
-      router.refresh();
+      // Refetch briefs to remove the cancelled campaign from the list
+      setTimeout(() => {
+        refetchBriefs();
+      }, 1000);
     }
 
     if (isCancelError) {
@@ -269,7 +279,7 @@ const BrandDashboard = () => {
       );
       setShowCancelConfirm(null);
     }
-  }, [isCancelSuccess, isCancelError, cancelError, router]);
+  }, [isCancelSuccess, isCancelError, cancelError, refetchBriefs]);
 
   // Enhanced filtering logic
   const filteredBriefs = briefs.filter((brief) => {
