@@ -456,7 +456,7 @@ export default function Marketplace() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-900 pt-10 md:pt-28">
+    <div className="flex flex-col min-h-screen bg-slate-900 pt-20 md:pt-28">
       <div className="p-6 lg:p-8">
         {/* Network Status */}
         {isConnected && !isCorrectChain && (
@@ -468,11 +468,11 @@ export default function Marketplace() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-3xl font-bold text-white">
+            <div className="flex items-center md:items-start justify-center flex-col">
+              <h2 className="text-2xl md:text-3xl  font-bold text-white">
                 Campaign Marketplace
               </h2>
-              <p className="text-sm text-slate-400 mt-2">
+              <p className="text-lg text-slate-400 text-center mt-2">
                 Discover active campaigns that match your influencer profile
                 {isRefreshing && (
                   <span className="ml-2 inline-flex items-center text-emerald-400">

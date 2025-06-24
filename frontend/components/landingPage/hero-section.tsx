@@ -197,7 +197,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 md:bg-gradient-to-br md:from-slate-900 md:via-slate-800 md:to-emerald-900 px-4 sm:px-6 lg:px-16 pt-40 sm:pt-40 lg:pt-24 pb-20 sm:pb-12 lg:pb-16 overflow-hidden">
+    <section className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 md:bg-gradient-to-br md:from-slate-900 md:via-slate-800 md:to-emerald-900 px-4 sm:px-6 lg:px-16 pt-24 sm:pt-40 lg:pt-24 pb-20 sm:pb-12 lg:pb-16 overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 md:hidden">
         <div
