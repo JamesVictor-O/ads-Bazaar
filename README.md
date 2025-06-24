@@ -1,17 +1,18 @@
 # AdsBazaar: Decentralized Influencer Marketing Platform
 
-> **🏆 Revolutionizing the $21B influencer marketing industry with blockchain technology, zero-knowledge verification, and automated smart contracts**
+> **Revolutionizing the $21B influencer marketing industry with blockchain technology, zero-knowledge verification, and automated smart contracts**
 
 ![AdsBazaar Demo](https://ads-bazaar.vercel.app/adsBazaar-GettingStarted.png)
 
-## 🚀 Try It Now
-- **📱 Live Demo**: [https://ads-bazaar.vercel.app](https://ads-bazaar.vercel.app/)
-- **🎥 Video Walkthrough**: [2-minute demo](https://www.loom.com/share/2ef728b6756d4c9b80e48f5ed0d0bf0a)
-- **⛓️ Contract**: [Celo Mainnet](https://celo.blockscout.com/address/0x106702795D0bd411B178e96Ad1f64cCB5971fCD7)
+## Try It Now
+- **Farcaster Mini-App**:[https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar](https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar)
+- **Live Demo**: [https://ads-bazaar.vercel.app](https://ads-bazaar.vercel.app/)
+- **Video Walkthrough**: [demo](https://www.loom.com/share/e80f001464a3445797832db0cc9f2599)
+- **Contract**: [Celo Mainnet](https://celo.blockscout.com/address/0xe93D4E7aC180D7e23DEb8b123F8E040982E00d22)
 
 ---
 
-## 💡 The Problem We Solve
+## The Problem We Solve
 
 | Pain Point | Industry Impact | AdsBazaar Solution |
 |------------|----------------|-------------------|
@@ -20,18 +21,54 @@
 | **Fake influencer epidemic** | Brands waste millions | Zero-knowledge identity verification |
 | **Payment disputes** take months | Manual arbitration fails | Automated blockchain resolution |
 
-## 🎯 What We Built
+## What We Built
 
 **The first fully decentralized influencer marketplace with:**
-- **🔐 Self Protocol Integration**: Privacy-preserving identity verification
-- **⚡ Smart Contract Escrow**: Guaranteed payments for completed work
-- **📱 Farcaster Integration**: Real social media verification
-- **🤖 Auto-Dispute Resolution**: Community-driven conflict resolution
-- **🌍 Global Access**: Permissionless, borderless participation
+- **Self Protocol Integration**: Privacy-preserving identity verification
+- **Smart Contract Escrow**: Guaranteed payments for completed work
+- **Farcaster Integration**: Real social media verification
+- **Auto-Dispute Resolution**: Community-driven conflict resolution
+- **Global Access**: Permissionless, borderless participation
 
 ---
 
-## 🏆 Key Innovations
+## User Flow
+
+### 1. **Business/Individuals Creates Campaign**
+   * Create ad brief with budget, target audience, requirements and promotion duration
+   * Lock cUSD in smart contract escrow
+   * Specify maximum number of influencers (max is 10 per campaign)
+
+### 2. **Influencer Participation**
+   * Browse available ad campaigns
+   * Apply to campaigns matching their audience (Application period is 5 days)
+   * Submit application when assigned with social media credentials
+
+### 3. **Campaign Selection**
+   * Ads creators reviews influencer applications
+   * Select preferred influencers based on profile and message
+   * Assign campaign to chosen influencers
+
+### 4. **Content Creation**
+   * Selected influencers create and share promotional content
+   * Post content on Farcaster, X, or Lens Protocol
+   * Submit proof of promotion (post links)
+   * They get to update submissions only during submission period
+
+### 5. **Performance Tracking & Payout**
+   * Business/Individuals evaluates content performance based on requirements
+   * They can flag submissions that does not meet their provided requirements
+   * Dispute resolvers will inspect the flagged submission and give a valid or invalid verdict
+   * If valid, the funds of that submission returns to you the business
+   * Influencers receive instant cUSD payments to claim when campaign is completed
+   * Status increase based on successful campaigns
+
+### 6. **Auto-approval opportunities**
+   * Any campaign that is not completed by the business, after the deadline, any registered user can approve such campaigns, triggering the funds to influencers who submitted their proof link
+
+---
+
+## Key Innovations
 
 ### 1. **Zero-Knowledge Identity Verification**
 ```solidity
@@ -67,7 +104,7 @@ function _processPayments(bytes32 _briefId) internal {
 
 ---
 
-## 📊 Technical Architecture
+## Technical Architecture
 
 ```mermaid
 graph TB
@@ -89,7 +126,7 @@ graph TB
 
 ---
 
-## 🎮 Demo User Flows
+## Demo User Flows
 
 ### **For Influencers:**
 1. Connect wallet → Register → Verify with Self Protocol
@@ -111,26 +148,26 @@ graph TB
 
 ---
 
-## 🏅 Hackathon Achievements
+## Hackathon Achievements
 
-### **✅ Fully Functional**
+### **Fully Functional**
 - Complete campaign lifecycle working
 - Real money transactions on mainnet
 - 5+ test campaigns completed successfully so far
 
-### **🔐 Advanced Security**
+### **Advanced Security**
 - Multi-layer security architecture
 - Zero-knowledge privacy protection
 - Community-driven dispute resolution
 - Smart contract auto-enforcement
 
-### **🌟 Real Innovation**
+### **Real Innovation**
 - Self Protocol + Farcaster integration
 - Novel automated dispute resolution
 - Breakthrough 0.5% fee structure
 - Privacy-first identity verification
 
-### **📈 Market Ready**
+### **Market Ready**
 - Production deployment on Celo
 - Mobile-responsive PWA
 - Enterprise-grade security
@@ -138,7 +175,7 @@ graph TB
 
 ---
 
-## 💰 Business Impact
+## Business Impact
 
 ### **Cost Comparison**
 | Platform | Fee | Creator Take-Home | Business Cost |
@@ -154,26 +191,18 @@ graph TB
 
 ---
 
-## 🚀 Future Vision
+## Future Vision
 
 ### **Immediate (Next 3 months)**
-- Security audit completion
+- Reward contract to reward users
+- Complete Notification system
 - Mobile app launch
-- Multi-token support (USDC, USDT)
+- Multi-platform support (Lens, Tiktok, Facebook)
 
-### **Medium-term (6-12 months)**
-- Cross-chain deployment (Ethereum, Polygon)
-- AI-powered creator matching
-- DAO governance launch
-
-### **Long-term (1-2 years)**
-- Global enterprise adoption
-- Creator economy infrastructure
-- Next-generation social media integration
 
 ---
 
-## 🛠️ Quick Start
+## Quick Start
 
 ```bash
 # Try locally
@@ -189,23 +218,23 @@ open https://ads-bazaar.vercel.app
 
 ---
 
-## 🎯 Why We'll Win
+## Why We'll Win
 
-1. **🔥 Solving Real Problems**: $1.3B fraud market + 67% payment issues
-2. **💡 Technical Innovation**: First ZK + social + blockchain integration  
-3. **💰 Massive Savings**: 96% cost reduction vs competitors
-4. **🌍 Global Impact**: Accessible to creators worldwide
-5. **✅ Production Ready**: Real users, real money, real results
+1. **Solving Real Problems**: $1.3B fraud market + 67% payment issues
+2. **Technical Innovation**: First ZK + social + blockchain integration  
+3. **Massive Savings**: 96% cost reduction vs competitors
+4. **Global Impact**: Accessible to creators worldwide
+5. **Production Ready**: Real users, real money, real results
 
 **We're not just building a platform - we're creating the infrastructure for the future creator economy.**
 
 ---
 
-**🏆 Ready to revolutionize influencer marketing? [Try AdsBazaar now](https://ads-bazaar.vercel.app)**
+**Ready to revolutionize influencer marketing? [Try AdsBazaar now](https://ads-bazaar.vercel.app)**
 
 ---
 
-### 📞 Contact
+### Contact
 - **Team**: [@AdsBazaar5](https://twitter.com/AdsBazaar5)
 - **Demo**: [Live Platform](https://ads-bazaar.vercel.app)
-- **Video**: [2-min walkthrough](https://www.loom.com/share/2ef728b6756d4c9b80e48f5ed0d0bf0a)
+- **Video**: [walkthrough](https://www.loom.com/share/e80f001464a3445797832db0cc9f2599)
