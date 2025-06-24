@@ -220,15 +220,17 @@ export default function Marketplace() {
   );
 
   useEffect(() => {
-    refreshApplicationStatus();
-  }, [refreshApplicationStatus]);
+    if (address && publicClient) {
+      refreshApplicationStatus();
+    }
+  }, [address, publicClient]);
 
   // Auto-refresh every 30 seconds when connected
   useEffect(() => {
     if (!isConnected || !userProfile?.isInfluencer) return;
 
     const interval = setInterval(() => {
-      if (!isRefreshing) {
+      if (!isRefreshing && address && publicClient) {
         refreshApplicationStatus();
       }
     }, 30000); // 30 seconds
@@ -238,15 +240,16 @@ export default function Marketplace() {
     isConnected,
     userProfile?.isInfluencer,
     isRefreshing,
-    refreshApplicationStatus,
+    address,
+    publicClient,
   ]);
 
   // Refresh when wallet connects
   useEffect(() => {
-    if (isConnected && userProfile?.isInfluencer) {
+    if (isConnected && userProfile?.isInfluencer && address && publicClient) {
       refreshApplicationStatus();
     }
-  }, [isConnected, userProfile?.isInfluencer, refreshApplicationStatus]);
+  }, [isConnected, userProfile?.isInfluencer, address, publicClient]);
 
   if (isLoading) {
     return (
