@@ -63,9 +63,11 @@ export default function Marketplace() {
     Record<string, "applied" | "assigned" | null>
   >({});
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  
+
   // New state for expandable descriptions
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(
+    new Set()
+  );
 
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
@@ -99,7 +101,7 @@ export default function Marketplace() {
 
   // Function to toggle description expansion
   const toggleDescription = (campaignId: string) => {
-    setExpandedDescriptions(prev => {
+    setExpandedDescriptions((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(campaignId)) {
         newSet.delete(campaignId);
@@ -467,12 +469,12 @@ export default function Marketplace() {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex md:items-center justify-between mb-4">
             <div className="flex items-center md:items-start justify-center flex-col">
               <h2 className="text-2xl md:text-3xl  font-bold text-white">
                 Campaign Marketplace
               </h2>
-              <p className="text-lg text-slate-400 text-center mt-2">
+              <p className="text-lg text-slate-400 md:text-center  mt-2">
                 Discover active campaigns that match your influencer profile
                 {isRefreshing && (
                   <span className="ml-2 inline-flex items-center text-emerald-400">
@@ -514,7 +516,7 @@ export default function Marketplace() {
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 mb-8 shadow-lg shadow-emerald-500/10">
+        <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 mb-8 ">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-grow">
               <div className="relative">
@@ -575,7 +577,9 @@ export default function Marketplace() {
             const buttonState = getButtonState(campaign);
             const userApplicationStatus = applicationStatus[campaign.id];
             const isDescriptionExpanded = expandedDescriptions.has(campaign.id);
-            const showExpandButton = shouldShowExpandButton(campaign.description);
+            const showExpandButton = shouldShowExpandButton(
+              campaign.description
+            );
 
             return (
               <motion.div
@@ -688,12 +692,11 @@ export default function Marketplace() {
                   {/* Expandable Description */}
                   <div className="mb-4">
                     <div className="text-sm text-slate-300">
-                      {isDescriptionExpanded 
-                        ? campaign.description 
-                        : getTruncatedDescription(campaign.description)
-                      }
+                      {isDescriptionExpanded
+                        ? campaign.description
+                        : getTruncatedDescription(campaign.description)}
                     </div>
-                    
+
                     {showExpandButton && (
                       <motion.button
                         onClick={() => toggleDescription(campaign.id)}
@@ -701,7 +704,9 @@ export default function Marketplace() {
                         whileTap={{ scale: 0.95 }}
                       >
                         <FileText className="w-3 h-3" />
-                        <span>{isDescriptionExpanded ? "Show less" : "Show more"}</span>
+                        <span>
+                          {isDescriptionExpanded ? "Show less" : "Show more"}
+                        </span>
                         <motion.div
                           animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
                           transition={{ duration: 0.2 }}

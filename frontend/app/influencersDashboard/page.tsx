@@ -53,7 +53,11 @@ import {
   formatTimeRemaining,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
-import { getUserStatusColor, getUserStatusLabel, truncateAddress } from "@/utils/format";
+import {
+  getUserStatusColor,
+  getUserStatusLabel,
+  truncateAddress,
+} from "@/utils/format";
 
 // Define precise interfaces
 interface ApplicationWithBrief {
@@ -84,8 +88,8 @@ export default function InfluencerDashboard() {
   const {
     profile: { username, displayName, pfpUrl },
   } = useProfile();
-  const {  trackTransaction } = useDivviIntegration();
-  
+  const { trackTransaction } = useDivviIntegration();
+
   const [isMounted, setIsMounted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
@@ -100,9 +104,11 @@ export default function InfluencerDashboard() {
   const [filter, setFilter] = useState<
     "all" | "active" | "completed" | "urgent"
   >("all");
-  
+
   // New state for expandable descriptions
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(
+    new Set()
+  );
 
   // Enhanced state for tracking resubmissions
   const [isResubmission, setIsResubmission] = useState(false);
@@ -141,7 +147,7 @@ export default function InfluencerDashboard() {
 
   // Function to toggle description expansion
   const toggleDescription = (briefId: string) => {
-    setExpandedDescriptions(prev => {
+    setExpandedDescriptions((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(briefId)) {
         newSet.delete(briefId);
@@ -166,7 +172,7 @@ export default function InfluencerDashboard() {
   // Track transaction when hash becomes available
   useEffect(() => {
     if (submitHash) {
-      console.log('DIVVI: Hash available from submit proof:', submitHash);
+      console.log("DIVVI: Hash available from submit proof:", submitHash);
       trackTransaction(submitHash);
     }
   }, [submitHash, trackTransaction]);
@@ -254,8 +260,11 @@ export default function InfluencerDashboard() {
     }
   }, [assignedBriefs]);
 
-  const handleSubmitPost = async (briefId: string, referralTag?: `0x${string}`): Promise<void> => {
-    console.log('DIVVI: Submitting proof with referral tag:', referralTag);
+  const handleSubmitPost = async (
+    briefId: string,
+    referralTag?: `0x${string}`
+  ): Promise<void> => {
+    console.log("DIVVI: Submitting proof with referral tag:", referralTag);
 
     if (!postLink) {
       toast.error("Please enter a post link");
@@ -269,8 +278,12 @@ export default function InfluencerDashboard() {
     });
 
     try {
-      const result: SubmitProofResult = await submitProof(briefId, postLink, referralTag);
-      console.log('DIVVI: Submit proof result:', result);
+      const result: SubmitProofResult = await submitProof(
+        briefId,
+        postLink,
+        referralTag
+      );
+      console.log("DIVVI: Submit proof result:", result);
       if (result?.hash) {
         setTxStatus({
           stage: "confirming",
@@ -518,49 +531,55 @@ export default function InfluencerDashboard() {
                     </span>
                   </h1>
 
-                  {/* Enhanced Verification Status Badge */}
-                  {isVerified ? (
-                    <motion.span
-                      className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-semibold bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-500/20"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.3, delay: 0.2 }}
-                    >
-                      <Shield className="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" />
-                      <span className="hidden sm:inline">Verified Creator</span>
-                      <span className="sm:hidden">Verified</span>
-                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full ml-2 animate-pulse"></div>
-                    </motion.span>
-                  ) : (
-                    <motion.span
-                      className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.3, delay: 0.2 }}
-                    >
-                      <AlertCircle className="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" />
-                      <span className="hidden sm:inline">Unverified</span>
-                      <span className="sm:hidden">Unverified</span>
-                    </motion.span>
-                  )}
+                  <div className="flex flex-row items-center">
+                    {/* Enhanced Verification Status Badge */}
+                    {isVerified ? (
+                      <motion.span
+                        className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-semibold bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-500/20"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                      >
+                        <Shield className="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+                        <span className="hidden sm:inline">
+                          Verified Creator
+                        </span>
+                        <span className="sm:hidden">Verified</span>
+                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full ml-2 animate-pulse"></div>
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        className="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                      >
+                        <AlertCircle className="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" />
+                        <span className="hidden sm:inline">Unverified</span>
+                        <span className="sm:hidden">Unverified</span>
+                      </motion.span>
+                    )}
+
+                    {/* Enhanced Status Badge */}
+                    {userProfile?.status !== undefined && (
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-3 ml-2">
+                        <span
+                          className={`inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full font-medium border text-sm md:text-base ${getUserStatusColor(
+                            userProfile.status
+                          )}`}
+                        >
+                          <Award className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
+                          {getUserStatusLabel(userProfile.status)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Enhanced Status Badge */}
-                {userProfile?.status !== undefined && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-3 mb-2 md:mb-3">
-                    <span
-                      className={`inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-full font-medium border text-sm md:text-base ${getUserStatusColor(
-                        userProfile.status
-                      )}`}
-                    >
-                      <Award className="w-4 h-4 md:w-5 md:h-5 mr-1.5 md:mr-2" />
-                      {getUserStatusLabel(userProfile.status)}
-                    </span>
-                    <span className="text-slate-400 text-xs md:text-sm">
-                      {userProfile.completedCampaigns} campaigns completed
-                    </span>
-                  </div>
-                )}
+                <span className="text-slate-400 text-xs md:text-sm">
+                  {userProfile.completedCampaigns} campaigns completed
+                </span>
+
                 <p className="text-lg md:text-xl text-slate-400">
                   {stats.urgentActions > 0
                     ? `${stats.urgentActions} action${
@@ -571,58 +590,9 @@ export default function InfluencerDashboard() {
               </div>
             </div>
 
-            {/* Enhanced Verification Alert for Unverified Users */}
-            {!isVerified && (
-              <motion.div
-                className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl md:rounded-2xl p-4 md:p-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <div className="flex items-start gap-3 md:gap-4">
-                  <div className="p-2 md:p-3 bg-amber-500/20 rounded-lg md:rounded-xl border border-amber-500/30">
-                    <Shield className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg md:text-xl font-semibold text-white mb-2">
-                      🚀 Boost Your Profile with Verification
-                    </h3>
-                    <p className="text-amber-300 mb-4 text-sm md:text-base leading-relaxed">
-                      Get verified to increase your credibility, unlock premium
-                      campaigns, and earn up to 30% more! Verified creators get
-                      priority access to exclusive opportunities.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
-                      <Link href="/selfVerification">
-                        <motion.button
-                          className="flex items-center gap-2 px-4 py-2.5 md:px-6 md:py-3 font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg md:rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/20 text-sm md:text-base"
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Shield className="w-4 h-4 md:w-5 md:h-5" />
-                          <span className="hidden sm:inline">
-                            Get Verified Now
-                          </span>
-                          <span className="sm:hidden">Verify Now</span>
-                          <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-                        </motion.button>
-                      </Link>
-                      <button
-                        className="text-amber-400 text-sm md:text-base font-medium hover:text-amber-300 transition-colors"
-                        onClick={() => {
-                          /* Add learn more functionality */
-                        }}
-                      >
-                        Learn more about verification benefits
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
             {/* Action Buttons Row */}
             <div className="flex flex-wrap gap-2 md:gap-3">
-              {isVerified ? (
+              {isVerified && (
                 <motion.div
                   className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-emerald-600/10 text-emerald-400 rounded-lg md:rounded-xl border border-emerald-500/20 text-sm md:text-base"
                   initial={{ opacity: 0, x: -20 }}
@@ -635,21 +605,6 @@ export default function InfluencerDashboard() {
                   </span>
                   <span className="sm:hidden font-medium">Verified ✓</span>
                 </motion.div>
-              ) : (
-                <Link href="/selfVerification">
-                  <motion.button
-                    className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-lg md:rounded-xl transition-all shadow-md shadow-emerald-500/20 text-sm md:text-base"
-                    whileTap={{ scale: 0.95 }}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.3 }}
-                  >
-                    <Shield className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">Verify Account</span>
-                    <span className="sm:hidden">Verify</span>
-                    <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
-                  </motion.button>
-                </Link>
               )}
 
               <Link href={`/influencer/${address}`}>
@@ -664,6 +619,100 @@ export default function InfluencerDashboard() {
                 </motion.button>
               </Link>
             </div>
+          </div>
+        </motion.div>
+
+        {/* Verification Status Card */}
+        <motion.div
+          className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl mb-5 p-3 md:p-6 transition-all duration-200 shadow-sm relative col-span-2 lg:col-span-4"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, delay: 0.3 }}
+        >
+          <div className="flex md:items-center flex-col md:flex-row justify-between">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div
+                className={`p-2 hidden md:block md:p-3 rounded-lg md:rounded-xl border ${
+                  isVerified
+                    ? "bg-emerald-500/10 border-emerald-500/20"
+                    : "bg-amber-500/10 border-amber-500/20"
+                }`}
+              >
+                <Shield
+                  className={`w-4 h-4 md:w-6 md:h-6 ${
+                    isVerified ? "text-emerald-400" : "text-amber-400"
+                  }`}
+                />
+              </div>
+              <div>
+                <p
+                  className={`text-lg md:text-xl font-bold mb-0.5 ${
+                    isVerified ? "text-emerald-400" : "text-amber-400"
+                  }`}
+                >
+                  {isVerified
+                    ? "✓ Verified Creator"
+                    : " Boost Your Profile with Verification"}
+                </p>
+                <p className="text-slate-400 text-xs md:text-sm">
+                  {isVerified
+                    ? "You have access to premium campaigns and higher rates"
+                    : "Get verified to increase your credibility, unlock premium campaigns, and earn up to 30% more! Verified creators get priority access to exclusive opportunities."}
+                </p>
+              </div>
+            </div>
+
+            {!isVerified && (
+              <Link href="/selfVerification">
+                <motion.button
+                  className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 my-2 text-white rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span className="">Get Verified Now</span>
+                  <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                </motion.button>
+              </Link>
+            )}
+          </div>
+
+          {/* Verification Benefits Bar */}
+          <div className="mt-3 md:mt-4 flex flex-wrap gap-2 md:gap-3 text-xs md:text-sm">
+            <span
+              className={`px-2 py-1 rounded-full ${
+                isVerified
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : "bg-slate-700/50 text-slate-500"
+              }`}
+            >
+              {isVerified ? "✓" : "○"} Premium Campaigns
+            </span>
+            <span
+              className={`px-2 py-1 rounded-full ${
+                isVerified
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : "bg-slate-700/50 text-slate-500"
+              }`}
+            >
+              {isVerified ? "✓" : "○"} 30% Higher Rates
+            </span>
+            <span
+              className={`px-2 py-1 rounded-full ${
+                isVerified
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : "bg-slate-700/50 text-slate-500"
+              }`}
+            >
+              {isVerified ? "✓" : "○"} Priority Support
+            </span>
+            <span
+              className={`px-2 py-1 rounded-full ${
+                isVerified
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : "bg-slate-700/50 text-slate-500"
+              }`}
+            >
+              {isVerified ? "✓" : "○"} Exclusive Access
+            </span>
           </div>
         </motion.div>
 
@@ -842,101 +891,6 @@ export default function InfluencerDashboard() {
               )}
             </motion.div>
           ))}
-
-          {/* Verification Status Card */}
-          <motion.div
-            className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-3 md:p-6 transition-all duration-200 shadow-sm relative col-span-2 lg:col-span-4"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: 0.3 }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 md:gap-4">
-                <div
-                  className={`p-2 md:p-3 rounded-lg md:rounded-xl border ${
-                    isVerified
-                      ? "bg-emerald-500/10 border-emerald-500/20"
-                      : "bg-amber-500/10 border-amber-500/20"
-                  }`}
-                >
-                  <Shield
-                    className={`w-4 h-4 md:w-6 md:h-6 ${
-                      isVerified ? "text-emerald-400" : "text-amber-400"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <p
-                    className={`text-lg md:text-xl font-bold mb-0.5 ${
-                      isVerified ? "text-emerald-400" : "text-amber-400"
-                    }`}
-                  >
-                    {isVerified
-                      ? "✓ Verified Creator"
-                      : "⏳ Verification Pending"}
-                  </p>
-                  <p className="text-slate-400 text-xs md:text-sm">
-                    {isVerified
-                      ? "You have access to premium campaigns and higher rates"
-                      : "Complete verification to unlock premium opportunities"}
-                  </p>
-                </div>
-              </div>
-
-              {!isVerified && (
-                <Link href="/selfVerification">
-                  <motion.button
-                    className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base"
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <span className="hidden sm:inline">Verify Now</span>
-                    <span className="sm:hidden">Verify</span>
-                    <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
-                  </motion.button>
-                </Link>
-              )}
-            </div>
-
-            {/* Verification Benefits Bar */}
-            <div className="mt-3 md:mt-4 flex flex-wrap gap-2 md:gap-3 text-xs md:text-sm">
-              <span
-                className={`px-2 py-1 rounded-full ${
-                  isVerified
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-slate-700/50 text-slate-500"
-                }`}
-              >
-                {isVerified ? "✓" : "○"} Premium Campaigns
-              </span>
-              <span
-                className={`px-2 py-1 rounded-full ${
-                  isVerified
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-slate-700/50 text-slate-500"
-                }`}
-              >
-                {isVerified ? "✓" : "○"} 30% Higher Rates
-              </span>
-              <span
-                className={`px-2 py-1 rounded-full ${
-                  isVerified
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-slate-700/50 text-slate-500"
-                }`}
-              >
-                {isVerified ? "✓" : "○"} Priority Support
-              </span>
-              <span
-                className={`px-2 py-1 rounded-full ${
-                  isVerified
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-slate-700/50 text-slate-500"
-                }`}
-              >
-                {isVerified ? "✓" : "○"} Exclusive Access
-              </span>
-            </div>
-          </motion.div>
         </div>
 
         {/* Enhanced Campaigns List with Resubmission Support */}
@@ -987,8 +941,12 @@ export default function InfluencerDashboard() {
                 const isExpanded = expandedBriefId === briefData.briefId;
                 const budget = briefData.brief.budget;
                 const hasProof = !!briefData.application.proofLink;
-                const isDescriptionExpanded = expandedDescriptions.has(briefData.briefId);
-                const showExpandButton = shouldShowExpandButton(briefData.brief.description);
+                const isDescriptionExpanded = expandedDescriptions.has(
+                  briefData.briefId
+                );
+                const showExpandButton = shouldShowExpandButton(
+                  briefData.brief.description
+                );
 
                 // Use the computed application info instead of simple checks
                 const canSubmitProof = appInfo.canSubmitProof;
@@ -1066,22 +1024,31 @@ export default function InfluencerDashboard() {
                           {/* Expandable Description */}
                           <div className="mb-4 md:mb-6">
                             <div className="text-slate-300 text-sm md:text-lg leading-relaxed">
-                              {isDescriptionExpanded 
-                                ? briefData.brief.description 
-                                : getTruncatedDescription(briefData.brief.description)
-                              }
+                              {isDescriptionExpanded
+                                ? briefData.brief.description
+                                : getTruncatedDescription(
+                                    briefData.brief.description
+                                  )}
                             </div>
-                            
+
                             {showExpandButton && (
                               <motion.button
-                                onClick={() => toggleDescription(briefData.briefId)}
+                                onClick={() =>
+                                  toggleDescription(briefData.briefId)
+                                }
                                 className="mt-2 flex items-center gap-1 text-xs md:text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                                 whileTap={{ scale: 0.95 }}
                               >
                                 <FileText className="w-3 h-3 md:w-4 md:h-4" />
-                                <span>{isDescriptionExpanded ? "Show less" : "Show more"}</span>
+                                <span>
+                                  {isDescriptionExpanded
+                                    ? "Show less"
+                                    : "Show more"}
+                                </span>
                                 <motion.div
-                                  animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                                  animate={{
+                                    rotate: isDescriptionExpanded ? 180 : 0,
+                                  }}
                                   transition={{ duration: 0.2 }}
                                 >
                                   <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
@@ -1448,7 +1415,12 @@ export default function InfluencerDashboard() {
           selectedTask={selectedTask}
           postLink={postLink}
           setPostLink={setPostLink}
-          onSubmit={(referralTag) => handleSubmitPost(selectedCampaign.briefId, referralTag as `0x${string}` | undefined)}
+          onSubmit={(referralTag) =>
+            handleSubmitPost(
+              selectedCampaign.briefId,
+              referralTag as `0x${string}` | undefined
+            )
+          }
           onClose={handleCloseModal}
           transactionStatus={txStatus}
           isSubmitting={isSubmittingProof}

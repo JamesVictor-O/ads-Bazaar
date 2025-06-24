@@ -326,86 +326,85 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-8">
-      <div className="max-w-lg mx-auto">
-        {/* Header */}
-        <motion.div
-          className="text-center mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex items-center justify-between mb-6">
-            <Link
-              href={userProfile?.isInfluencer ? "/influencersDashboard" : "/"}
-            >
-              <motion.button
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-400 bg-slate-800/50 hover:bg-slate-800 rounded-lg border border-slate-700/50 transition-all"
-                whileTap={{ scale: 0.95 }}
-              >
-                <Home className="w-4 h-4" />
-                Back
-              </motion.button>
-            </Link>
-            <span
-              className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border ${
-                isVerified
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-              }`}
-            >
-              {isVerified ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Verified
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-4 h-4 mr-2" />
-                  Unverified
-                </>
-              )}
-            </span>
-          </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 pt-36 md:pt-40 md:pb-6">
+      <div className=" flex justify-between md:px-10 md:flex-row flex-col">
+        <div>
           <motion.div
-            className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center relative"
-            animate={{ rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 4, repeat: Infinity }}
-          >
-            <Shield className="w-12 h-12 text-white" />
-            <motion.div
-              className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center"
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <Sparkles className="w-4 h-4 text-white" />
-            </motion.div>
-          </motion.div>
-
-          <h1 className="text-3xl font-bold text-white mb-4">
-            {isVerified ? "✨ You're Verified!" : "Identity Verification"}
-          </h1>
-          <p className="text-slate-400 text-lg leading-relaxed">
-            {isVerified
-              ? "You have access to all premium features and campaigns"
-              : "Unlock premium campaigns and earn up to 30% more"}
-          </p>
-        </motion.div>
-
-        {/* Network Status */}
-        {isConnected && (
-          <motion.div
-            className="mb-6"
-            initial={{ opacity: 0, y: 10 }}
+            className="text-center mb-8"
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.5 }}
           >
-            <NetworkStatus className="bg-slate-800/60 border-slate-600/50" />
-          </motion.div>
-        )}
+            <div className="flex items-center justify-between mb-6">
+              <Link
+                href={userProfile?.isInfluencer ? "/influencersDashboard" : "/"}
+              >
+                <motion.button
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-400 bg-slate-800/50 hover:bg-slate-800 rounded-lg border border-slate-700/50 transition-all"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Home className="w-4 h-4" />
+                  Back
+                </motion.button>
+              </Link>
+              <span
+                className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border ${
+                  isVerified
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                }`}
+              >
+                {isVerified ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Verified
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Unverified
+                  </>
+                )}
+              </span>
+            </div>
 
-        {/* Verification Status Card */}
+            <motion.div
+              className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl flex items-center justify-center relative"
+              animate={{ rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            >
+              <Shield className="w-12 h-12 text-white" />
+              <motion.div
+                className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full flex items-center justify-center"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Sparkles className="w-4 h-4 text-white" />
+              </motion.div>
+            </motion.div>
+
+            <h1 className="text-3xl font-bold text-white mb-4">
+              {isVerified ? "✨ You're Verified!" : "Identity Verification"}
+            </h1>
+            <p className="text-slate-400 text-lg leading-relaxed">
+              {isVerified
+                ? "You have access to all premium features and campaigns"
+                : "Unlock premium campaigns and earn up to 30% more"}
+            </p>
+          </motion.div>
+
+          {/* Network Status */}
+          {isConnected && (
+            <motion.div
+              className="mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <NetworkStatus className="bg-slate-800/60 border-slate-600/50" />
+            </motion.div>
+          )}
+           {/* Verification Status Card */}
         <motion.div
           className={`mb-8 bg-gradient-to-br ${
             isVerified
@@ -538,6 +537,10 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
             </div>
           )}
         </motion.div>
+        </div>
+        {/* Header */}
+
+       
 
         {/* Benefits Section */}
         <AnimatePresence>
