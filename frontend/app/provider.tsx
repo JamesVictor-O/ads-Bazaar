@@ -48,7 +48,20 @@ function FarcasterFrameProvider({ children }: PropsWithChildren) {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 30 * 1000, // 30 seconds
+        gcTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnWindowFocus: false, // Prevent aggressive refetching on window focus
+        refetchOnMount: false, // Prevent refetch on component mount if data exists
+        retry: (failureCount, error) => {
+          // Only retry on network errors, not on contract revert errors
+          return failureCount < 2 && !error?.message?.includes('execution reverted');
+        },
+      },
+    },
+  }));
 
   return (
     <WagmiProvider config={wagmiConfig}>

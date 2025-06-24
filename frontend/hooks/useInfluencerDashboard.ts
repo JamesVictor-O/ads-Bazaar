@@ -312,7 +312,10 @@ export const useInfluencerDashboard = () => {
   ]);
 
   const refetch = useCallback(() => {
-    refetchBriefIds();
+    // Add a small delay to prevent aggressive re-fetching
+    setTimeout(() => {
+      refetchBriefIds();
+    }, 100);
   }, [refetchBriefIds]);
 
   return { ...dashboardData, refetch };

@@ -203,8 +203,9 @@ export default function InfluencerDashboard() {
           ? "Proof updated successfully!"
           : "Post submitted successfully!"
       );
-      refetch();
+      // Only refetch once, after a brief delay to ensure transaction is processed
       setTimeout(() => {
+        refetch();
         setShowSubmitModal(false);
         setPostLink("");
         setTxStatus({ stage: "idle", message: "", hash: undefined });

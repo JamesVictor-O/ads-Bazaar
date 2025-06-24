@@ -73,18 +73,21 @@ function ApplyModal({
   }, [isPending, transactionPhase]);
 
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && transactionPhase !== "success") {
       setTransactionPhase("success");
       toast.success("Application submitted successfully!");
 
-      // Auto-close after success
-      setTimeout(() => {
-        setShowApplyModal(false);
-        setApplicationMessage("");
+      // Auto-close after success with proper cleanup
+      const timeoutId = setTimeout(() => {
         setTransactionPhase("idle");
+        setApplicationMessage("");
+        setShowApplyModal(false);
       }, 2000);
+
+      // Cleanup timeout if component unmounts or effect runs again
+      return () => clearTimeout(timeoutId);
     }
-  }, [isSuccess, setShowApplyModal, setApplicationMessage]);
+  }, [isSuccess, transactionPhase, setShowApplyModal, setApplicationMessage]);
 
   useEffect(() => {
     if (error) {
