@@ -7,7 +7,6 @@ import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
 import ApplicationsModal from "@/components/modals/ApplicationsModal";
 import CreateCampaignModal from "@/components/modals/CreateCampaignModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
-import { useRouter } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { useDivviIntegration } from "@/hooks/useDivviIntegration";
@@ -65,7 +64,6 @@ import {
 } from "../../hooks/adsBazaar";
 
 const BrandDashboard = () => {
-  const router = useRouter();
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
