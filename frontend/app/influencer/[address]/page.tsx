@@ -259,6 +259,14 @@ function FarcasterConnectButton({
   const [showQR, setShowQR] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
+  // Handle showing QR code when URL becomes available
+  useEffect(() => {
+    if (url && !isAuthenticated && !user) {
+      setShowQR(true);
+      console.log("QR code URL available, showing QR code");
+    }
+  }, [url, isAuthenticated, user]);
+
   // Handle successful authentication
   useEffect(() => {
     if (isAuthenticated && user && validSignature && user.fid) {
@@ -324,7 +332,7 @@ function FarcasterConnectButton({
     try {
       if (!isAuthenticated) {
         await signIn();
-        setShowQR(true);
+        // Don't set showQR immediately - let useEffect handle it when url is available
       } else if (channelToken && !validSignature) {
         await connect();
       }
