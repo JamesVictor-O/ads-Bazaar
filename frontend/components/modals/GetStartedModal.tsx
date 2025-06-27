@@ -14,7 +14,7 @@ import { useAccount } from "wagmi";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { useRegisterUser } from "../../hooks/adsBazaar";
+import { useRegisterUser, useUserProfile } from "../../hooks/adsBazaar";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
@@ -48,6 +48,7 @@ const GetStartedModal = ({
   const { register, isPending, isSuccess, isError, error, hash } = useRegisterUser();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
+  const { refetchProfile } = useUserProfile();
 
   // Handle registration errors
   useEffect(() => {
@@ -62,6 +63,10 @@ const GetStartedModal = ({
   useEffect(() => {
     if (isSuccess) {
       toast.success("Registration completed successfully!");
+      
+      // Refetch user profile to update registration status
+      refetchProfile();
+      
       onClose();
       router.push(
         userDetails.userType === "influencer"
@@ -69,7 +74,7 @@ const GetStartedModal = ({
           : "/brandsDashBoard"
       );
     }
-  }, [isSuccess, userDetails.userType, router, onClose]);
+  }, [isSuccess, userDetails.userType, router, onClose, refetchProfile]);
 
   // Track transaction when hash becomes available
   useEffect(() => {

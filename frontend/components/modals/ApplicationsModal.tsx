@@ -30,6 +30,7 @@ import Link from "next/link";
 interface EnhancedApplicationsModalProps extends ApplicationsModalProps {
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
   showOnlySelected?: boolean;
+  onAssignSuccess?: () => void;
 }
 
 const ApplicationsModal = ({
@@ -39,11 +40,13 @@ const ApplicationsModal = ({
   onClose,
   guardedAction,
   showOnlySelected = false,
+  onAssignSuccess,
 }: EnhancedApplicationsModalProps) => {
   const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "selecting"
   >("idle");
+  const [successfullyAssignedIndices, setSuccessfullyAssignedIndices] = useState<Set<number>>(new Set());
 
   const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
 
@@ -78,12 +81,28 @@ const ApplicationsModal = ({
 
   // Handle success states
   useEffect(() => {
-    if (isInfluencerSelected) {
+    if (isInfluencerSelected && pendingIndex !== null) {
       toast.success("Influencer assigned successfully!");
+      
+      // Mark this index as successfully assigned
+      setSuccessfullyAssignedIndices(prev => new Set(prev).add(pendingIndex));
+      
+      // Call success callback to refresh data
+      if (onAssignSuccess) {
+        onAssignSuccess();
+      }
+      
       setPendingIndex(null);
       setTransactionPhase("idle");
     }
-  }, [isInfluencerSelected]);
+  }, [isInfluencerSelected, pendingIndex, onAssignSuccess]);
+
+  // Reset local state when modal opens/applications change
+  useEffect(() => {
+    setSuccessfullyAssignedIndices(new Set());
+    setPendingIndex(null);
+    setTransactionPhase("idle");
+  }, [applications]);
 
   // Handle errors
   useEffect(() => {
@@ -302,7 +321,7 @@ const ApplicationsModal = ({
                           </div>
                         </div>
                         <div>
-                          {application.isSelected ? (
+                          {application.isSelected || successfullyAssignedIndices.has(index) ? (
                             <div className="flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-medium border border-emerald-500/20">
                               <Check className="w-4 h-4" />
                               <span>Selected</span>
@@ -319,18 +338,21 @@ const ApplicationsModal = ({
                                 }
                                 disabled={
                                   isTransactionInProgress ||
-                                  pendingIndex === index
+                                  pendingIndex === index ||
+                                  successfullyAssignedIndices.has(index)
                                 }
                                 className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2 ${
                                   isTransactionInProgress ||
-                                  pendingIndex === index
+                                  pendingIndex === index ||
+                                  successfullyAssignedIndices.has(index)
                                     ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
                                     : "text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25"
                                 }`}
                                 whileTap={
                                   !(
                                     isTransactionInProgress ||
-                                    pendingIndex === index
+                                    pendingIndex === index ||
+                                    successfullyAssignedIndices.has(index)
                                   )
                                     ? { scale: 0.95 }
                                     : {}
@@ -340,6 +362,11 @@ const ApplicationsModal = ({
                                   <>
                                     <Loader2 className="animate-spin h-4 w-4" />
                                     <span>Processing</span>
+                                  </>
+                                ) : successfullyAssignedIndices.has(index) ? (
+                                  <>
+                                    <Check className="h-4 w-4" />
+                                    <span>Assigned</span>
                                   </>
                                 ) : (
                                   "Assign"

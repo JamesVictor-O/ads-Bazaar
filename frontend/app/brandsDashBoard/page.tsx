@@ -93,7 +93,7 @@ const BrandDashboard = () => {
     targetAudience: "0",
   });
 
-  const { userProfile } = useUserProfile();
+  const { userProfile, refetchProfile } = useUserProfile();
   const { briefs: fetchedBriefs, isLoading, refetch: refetchBriefs } = useGetBusinessBriefs(
     address as `0x${string}`
   );
@@ -162,6 +162,13 @@ const BrandDashboard = () => {
       trackTransaction(createHash);
     }
   }, [createHash, trackTransaction]);
+
+  // Refetch user profile when component mounts or address changes
+  useEffect(() => {
+    if (isConnected && address && refetchProfile) {
+      refetchProfile();
+    }
+  }, [isConnected, address, refetchProfile]);
 
   useEffect(() => {
     if (completeHash) {
@@ -1184,6 +1191,10 @@ const BrandDashboard = () => {
           applications={applications || []}
           isLoadingApplications={isLoadingApplications}
           onClose={() => setShowApplicationsModal(false)}
+          onAssignSuccess={() => {
+            // Refresh applications data after successful assignment
+            refetchApplications();
+          }}
         />
       )}
 

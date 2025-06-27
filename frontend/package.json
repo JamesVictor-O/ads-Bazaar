@@ -11,6 +11,7 @@
   "type": "module",
   "dependencies": {
     "@divvi/referral-sdk": "^2.0.0",
+    "@farcaster/auth-client": "^0.7.0",
     "@farcaster/auth-kit": "^0.7.0",
     "@farcaster/frame-sdk": "^0.0.51",
     "@farcaster/frame-wagmi-connector": "^0.0.40",

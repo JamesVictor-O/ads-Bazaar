@@ -35,6 +35,7 @@ interface ApplyModalProps {
   applicationMessage: string;
   setApplicationMessage: (message: string) => void;
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
+  onSuccess?: () => void;
 }
 
 function ApplyModal({
@@ -44,6 +45,7 @@ function ApplyModal({
   applicationMessage,
   setApplicationMessage,
   guardedAction,
+  onSuccess,
 }: ApplyModalProps) {
   const [isClient, setIsClient] = useState(false);
   const { applyToBrief, isPending, isSuccess, error, hash: ApplyHash } = useApplyToBrief();
@@ -77,17 +79,24 @@ function ApplyModal({
       setTransactionPhase("success");
       toast.success("Application submitted successfully!");
 
-      // Auto-close after success with proper cleanup
+      // Immediately clear form and trigger success callback
+      setApplicationMessage("");
+      
+      // Call success callback to refresh data
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      // Auto-close after a short delay to show success message
       const timeoutId = setTimeout(() => {
         setTransactionPhase("idle");
-        setApplicationMessage("");
         setShowApplyModal(false);
-      }, 2000);
+      }, 1500);
 
       // Cleanup timeout if component unmounts or effect runs again
       return () => clearTimeout(timeoutId);
     }
-  }, [isSuccess, transactionPhase, setShowApplyModal, setApplicationMessage]);
+  }, [isSuccess, transactionPhase, setShowApplyModal, setApplicationMessage, onSuccess]);
 
   useEffect(() => {
     if (error) {
@@ -150,6 +159,13 @@ function ApplyModal({
         throw err;
       }
     });
+  };
+
+  const handleClose = () => {
+    // Clear form when closing manually
+    setApplicationMessage("");
+    setTransactionPhase("idle");
+    setShowApplyModal(false);
   };
 
   const extractRevertReason = (message: string): string | null => {
@@ -244,7 +260,7 @@ function ApplyModal({
                 </p>
               </div>
               <button
-                onClick={() => setShowApplyModal(false)}
+                onClick={handleClose}
                 className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
                 disabled={
                   isTransactionInProgress && transactionPhase !== "error"
@@ -408,7 +424,7 @@ function ApplyModal({
         <div className="border-t border-slate-700/50 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
             <motion.button
-              onClick={() => setShowApplyModal(false)}
+              onClick={handleClose}
               disabled={isTransactionInProgress && transactionPhase !== "error"}
               className="px-4 sm:px-6 py-3 text-sm font-medium text-slate-300 bg-slate-700/50 rounded-xl border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-2 sm:order-1"
               whileTap={{ scale: 0.95 }}

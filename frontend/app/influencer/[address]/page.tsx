@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
-import { useFarcasterAuth } from "@/hooks/UseFarcasterAuth";
+import { useFarcasterAuth } from "@/hooks/UseFarcasterAuthNextAuth";
 import { useIsInfluencerVerified, useUserProfile } from "@/hooks/adsBazaar";
 import { getUserStatusLabel, formatNumber } from "@/utils/format";
 import Image from "next/image";
@@ -261,9 +261,12 @@ function FarcasterConnectButton({
 
   // Handle showing QR code when URL becomes available
   useEffect(() => {
+    console.log("QR effect triggered:", { url, isAuthenticated, user, showQR });
     if (url && !isAuthenticated && !user) {
       setShowQR(true);
       console.log("QR code URL available, showing QR code");
+    } else if (url) {
+      console.log("URL available but conditions not met:", { url, isAuthenticated, user });
     }
   }, [url, isAuthenticated, user]);
 
@@ -324,21 +327,32 @@ function FarcasterConnectButton({
   }, [isAuthenticated, user, validSignature, address, onConnectionSuccess]);
 
   const handleConnect = async () => {
+    console.log("Connect button clicked");
+    console.log("isOwner:", isOwner);
+    console.log("isAuthenticated:", isAuthenticated);
+    console.log("channelToken:", channelToken);
+    console.log("validSignature:", validSignature);
+    
     if (!isOwner) {
+      console.log("Not owner - showing error");
       toast.error("You can only connect your own profile");
       return;
     }
 
     try {
       if (!isAuthenticated) {
-        await signIn();
+        console.log("Not authenticated - calling signIn");
+        signIn();
         // Don't set showQR immediately - let useEffect handle it when url is available
       } else if (channelToken && !validSignature) {
+        console.log("Calling connect with channelToken");
         await connect();
+      } else {
+        console.log("Unexpected state - isAuthenticated:", isAuthenticated, "channelToken:", channelToken, "validSignature:", validSignature);
       }
     } catch (error) {
-      toast.error("Failed to connect Farcaster");
       console.error("Farcaster auth error:", error);
+      toast.error("Failed to connect Farcaster");
     }
   };
 
@@ -348,7 +362,13 @@ function FarcasterConnectButton({
       ? localStorage.getItem(`fid_${address}`)
       : null;
 
-  if (!isOwner) return null;
+  if (!isOwner) {
+    console.log("FarcasterConnectButton: Not owner, component not rendering");
+    return null;
+  }
+
+  console.log("FarcasterConnectButton: Rendering for owner");
+  console.log("Button states:", { isLoading, isConnecting, isAuthenticated, error });
 
   if ((isAuthenticated && user && validSignature) || storedFid) {
     const displayFid = user?.fid || (storedFid ? parseInt(storedFid) : null);
@@ -370,11 +390,17 @@ function FarcasterConnectButton({
   return (
     <div className="space-y-3">
       <motion.button
-        onClick={handleConnect}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log("Button click event triggered");
+          handleConnect();
+        }}
         disabled={isLoading || isConnecting}
-        className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+        className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        type="button"
       >
         {isLoading || isConnecting ? (
           <Loader2 className="w-4 h-4 animate-spin" />

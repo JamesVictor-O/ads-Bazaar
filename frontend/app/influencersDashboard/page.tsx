@@ -124,7 +124,7 @@ export default function InfluencerDashboard() {
     hash: undefined,
   });
 
-  const { userProfile, isLoadingProfile } = useUserProfile();
+  const { userProfile, isLoadingProfile, refetchProfile } = useUserProfile();
   const { isVerified } = useIsInfluencerVerified();
   const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
     useInfluencerDashboard();
@@ -180,6 +180,13 @@ export default function InfluencerDashboard() {
   useEffect(() => {
     setIsMounted(true);
   }, [isConnected, address]);
+
+  // Refetch user profile when component mounts or address changes
+  useEffect(() => {
+    if (isConnected && address && refetchProfile) {
+      refetchProfile();
+    }
+  }, [isConnected, address, refetchProfile]);
 
   useEffect(() => {
     if (
@@ -615,7 +622,7 @@ export default function InfluencerDashboard() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.4 }}
                 >
-                  Profile <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
+                Edit Profile <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
                 </motion.button>
               </Link>
             </div>

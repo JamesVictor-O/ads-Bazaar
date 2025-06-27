@@ -846,6 +846,10 @@ export default function Marketplace() {
           }
           applicationMessage={applicationMessage}
           setApplicationMessage={setApplicationMessage}
+          onSuccess={() => {
+            // Immediately refresh application status on success
+            refreshApplicationStatus();
+          }}
         />
       )}
     </div>
