@@ -99,6 +99,7 @@ export interface CampaignStatusInfo {
   canSelect: boolean;
   canSubmitProof: boolean;
   canComplete: boolean;
+  canExpire: boolean;
   canCancel: boolean;
   nextAction?: string;
   warning?: string;

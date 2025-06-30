@@ -61,6 +61,7 @@ import {
   useCompleteCampaign,
   useGetBusinessBriefs,
   useCancelAdBrief,
+  useExpireCampaign,
 } from "../../hooks/adsBazaar";
 
 const BrandDashboard = () => {
@@ -75,6 +76,9 @@ const BrandDashboard = () => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(
+    null
+  );
+  const [showExpireConfirm, setShowExpireConfirm] = useState<string | null>(
     null
   );
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -131,6 +135,15 @@ const BrandDashboard = () => {
     hash: cancelHash,
   } = useCancelAdBrief();
 
+  const {
+    expireCampaign,
+    isPending: isExpiringBrief,
+    isSuccess: isExpireSuccess,
+    isError: isExpireError,
+    error: expireError,
+    hash: expireHash,
+  } = useExpireCampaign();
+
   // Function to toggle description expansion
   const toggleDescription = (briefId: string) => {
     setExpandedDescriptions(prev => {
@@ -183,6 +196,13 @@ const BrandDashboard = () => {
       trackTransaction(cancelHash);
     }
   }, [cancelHash, trackTransaction]);
+
+  useEffect(() => {
+    if (expireHash) {
+      console.log('DIVVI: Hash available from expire campaign:', expireHash);
+      trackTransaction(expireHash);
+    }
+  }, [expireHash, trackTransaction]);
 
   // Computed dashboard data
   const dashboardData = useMemo(() => {
@@ -286,6 +306,24 @@ const BrandDashboard = () => {
     }
   }, [isCancelSuccess, isCancelError, cancelError, refetchBriefs]);
 
+  useEffect(() => {
+    if (isExpireSuccess) {
+      toast.success("Campaign expired successfully!");
+      setShowExpireConfirm(null);
+      // Refetch briefs to update the campaign status
+      setTimeout(() => {
+        refetchBriefs();
+      }, 1000);
+    }
+
+    if (isExpireError) {
+      toast.error(
+        `Failed to expire campaign: ${expireError?.message || "Unknown error"}`
+      );
+      setShowExpireConfirm(null);
+    }
+  }, [isExpireSuccess, isExpireError, expireError, refetchBriefs]);
+
   // Enhanced filtering logic
   const filteredBriefs = briefs.filter((brief) => {
     const matchesSearch = brief.name
@@ -388,6 +426,28 @@ const BrandDashboard = () => {
       console.error("Error canceling campaign:", error);
       toast.error(
         `Failed to cancel campaign: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+      throw error;
+    }
+  };
+
+  const handleExpireCampaign = async (briefId: string) => {
+    console.log('DIVVI: Expiring campaign for briefId:', briefId);
+
+    try {
+      // Generate Divvi referral tag
+      const referralTag = generateDivviReferralTag();
+      console.log('DIVVI: About to expire campaign with referral tag:', referralTag);
+
+      const result = await expireCampaign(briefId as `0x${string}`, referralTag);
+      console.log('DIVVI: Expire campaign result:', result);
+      return result;
+    } catch (error) {
+      console.error("Error expiring campaign:", error);
+      toast.error(
+        `Failed to expire campaign: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
@@ -1072,6 +1132,23 @@ const BrandDashboard = () => {
                           Submissions
                         </motion.button>
 
+                        {/* Expire Campaign Button */}
+                        {brief.statusInfo.canExpire && (
+                          <motion.button
+                            onClick={() => setShowExpireConfirm(brief.id)}
+                            disabled={isExpiringBrief}
+                            className="px-2.5 py-2.5 md:px-4 md:py-4 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 rounded-lg md:rounded-xl border border-orange-500/30 hover:border-orange-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 md:gap-2"
+                            whileTap={{ scale: 0.95 }}
+                            title="Expire Campaign"
+                          >
+                            {isExpiringBrief ? (
+                              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                            ) : (
+                              <Clock className="w-4 h-4 md:w-5 md:h-5" />
+                            )}
+                          </motion.button>
+                        )}
+
                         {/* Cancel Campaign Button */}
                         {canCancelCampaign(brief) && (
                           <motion.button
@@ -1166,6 +1243,75 @@ const BrandDashboard = () => {
                     <XCircle className="w-4 h-4 md:w-5 md:h-5" />
                     <span className="hidden sm:inline">Cancel Campaign</span>
                     <span className="sm:hidden">Cancel</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Expire Confirmation Modal */}
+      {showExpireConfirm && (
+        <motion.div
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl md:rounded-2xl p-4 md:p-8 max-w-md mx-auto shadow-2xl shadow-orange-500/10 w-full"
+            initial={{ scale: 0.95, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.95, y: 20 }}
+          >
+            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+              <div className="p-2 md:p-3 bg-orange-500/10 rounded-xl md:rounded-2xl border border-orange-500/20">
+                <Clock className="w-6 h-6 md:w-8 md:h-8 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white">
+                  Expire Campaign
+                </h3>
+                <p className="text-sm md:text-base text-slate-400">
+                  Campaign past deadline
+                </p>
+              </div>
+            </div>
+
+            <p className="text-slate-300 mb-6 md:mb-8 leading-relaxed text-sm md:text-base">
+              Are you sure you want to expire this campaign? The remaining budget will be
+              refunded to your wallet. This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3 md:gap-4">
+              <button
+                onClick={() => setShowExpireConfirm(null)}
+                disabled={isExpiringBrief}
+                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 font-medium text-slate-300 bg-slate-700/50 rounded-lg md:rounded-xl border border-slate-600/50 hover:bg-slate-700 transition-all disabled:opacity-50 text-sm md:text-base"
+              >
+                Keep Campaign
+              </button>
+              <button
+                onClick={() => {
+                  if (showExpireConfirm) {
+                    handleExpireCampaign(showExpireConfirm);
+                  }
+                }}
+                disabled={isExpiringBrief}
+                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg md:rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm md:text-base"
+              >
+                {isExpiringBrief ? (
+                  <>
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                    <span className="hidden sm:inline">Expiring...</span>
+                    <span className="sm:hidden">...</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4 md:w-5 md:h-5" />
+                    <span className="hidden sm:inline">Expire Campaign</span>
+                    <span className="sm:hidden">Expire</span>
                   </>
                 )}
               </button>

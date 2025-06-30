@@ -1355,3 +1355,62 @@ export function useVerifySelfProof() {
     hash: tx.hash,
   };
 }
+
+export function useExpireCampaign() {
+  const tx = useHandleTransaction();
+  const { address } = useAccount();
+  const { isCorrectChain, ensureNetwork } = useEnsureNetwork();
+
+  const expireCampaign = async (briefId: Bytes32, dataSuffix?: `0x${string}`) => {
+    console.log('DIVVI: Expiring campaign with dataSuffix:', dataSuffix);
+
+    if (!address) {
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    if (!isCorrectChain) {
+      const switched = await ensureNetwork();
+      if (!switched) return;
+    }
+
+    try {
+      const result = await tx.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: "expireCampaign",
+        args: [briefId],
+        dataSuffix: dataSuffix,
+      });
+      console.log('DIVVI: Expire campaign transaction submitted:', result);
+      return result;
+    } catch (error) {
+      console.error("Error expiring campaign:", error);
+      
+      // Enhanced error handling
+      if (error instanceof Error) {
+        if (error.message.includes("Grace period still active")) {
+          toast.error("Campaign cannot be expired yet - grace period still active");
+        } else if (error.message.includes("Campaign is not open")) {
+          toast.error("Campaign is no longer in open status");
+        } else if (error.message.includes("User rejected")) {
+          toast.error("Transaction was cancelled");
+        } else if (error.message.includes("insufficient funds")) {
+          toast.error("Insufficient funds for gas fees");
+        } else {
+          toast.error("Failed to expire campaign. Please try again.");
+        }
+      }
+      throw error;
+    }
+  };
+
+  return {
+    expireCampaign,
+    isPending: tx.isPending,
+    isSuccess: tx.isSuccess,
+    isError: tx.isError,
+    error: tx.error,
+    hash: tx.hash,
+  };
+}

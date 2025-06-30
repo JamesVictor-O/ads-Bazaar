@@ -1,6 +1,6 @@
 import { celo, celoAlfajores } from "wagmi/chains";
 
-export const CURRENT_NETWORK = celo; // Change to celo for mainnet
+export const CURRENT_NETWORK = celoAlfajores; // Change to celo for mainnet
 
 export const NETWORK_CONFIG = {
   [celo.id]: {
