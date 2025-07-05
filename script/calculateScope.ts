@@ -19,7 +19,7 @@ async function main() {
   if (!deployerAddress) {
     throw new Error("DEPLOYER_ADDRESS environment variable is not set.");
   }
-  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+  const provider = new ethers.JsonRpcProvider(process.env.ALFAJORES_RPC_URL);
 
   // Get the current nonce for the deployer
   const nonce = await provider.getTransactionCount(deployerAddress);
