@@ -43,51 +43,6 @@ contract UserManagementFacet {
         emit LibAdsBazaar.InfluencerProfileUpdated(msg.sender, _profileData);
     }
 
-    function updateInfluencerStatus(address _influencer) external {
-        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
-        uint256 completed = ds.users[_influencer].completedCampaigns;
-        LibAdsBazaar.UserStatus newStatus;
-        
-        if (completed >= 500) {
-            newStatus = LibAdsBazaar.UserStatus.SUPERSTAR;
-        } else if (completed >= 100) {
-            newStatus = LibAdsBazaar.UserStatus.ELITE;
-        } else if (completed >= 50) {
-            newStatus = LibAdsBazaar.UserStatus.POPULAR;
-        } else if (completed >= 20) {
-            newStatus = LibAdsBazaar.UserStatus.RISING;
-        } else {
-            newStatus = LibAdsBazaar.UserStatus.NEW_COMER;
-        }
-        
-        if (ds.users[_influencer].status != newStatus) {
-            ds.users[_influencer].status = newStatus;
-            emit LibAdsBazaar.UserStatusUpdated(_influencer, newStatus);
-        }
-    }
-
-    function updateBusinessStatus(address _business) external {
-        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
-        uint256 totalEscrowed = ds.users[_business].totalEscrowed;
-        LibAdsBazaar.UserStatus newStatus;
-        
-        if (totalEscrowed >= 1000 ether) { 
-            newStatus = LibAdsBazaar.UserStatus.SUPERSTAR;
-        } else if (totalEscrowed >= 500 ether) {
-            newStatus = LibAdsBazaar.UserStatus.ELITE;
-        } else if (totalEscrowed >= 200 ether) {
-            newStatus = LibAdsBazaar.UserStatus.POPULAR;
-        } else if (totalEscrowed >= 50 ether) {
-            newStatus = LibAdsBazaar.UserStatus.RISING;
-        } else {
-            newStatus = LibAdsBazaar.UserStatus.NEW_COMER;
-        }
-        
-        if (ds.users[_business].status != newStatus) {
-            ds.users[_business].status = newStatus;
-            emit LibAdsBazaar.UserStatusUpdated(_business, newStatus);
-        }
-    }
 
     function setPlatformFee(uint256 _newFeePercentage) external {
         LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();

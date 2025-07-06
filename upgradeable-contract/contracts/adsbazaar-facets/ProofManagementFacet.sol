@@ -130,7 +130,7 @@ contract ProofManagementFacet {
                     
                     // Update influencer's completed campaigns and status
                     ds.users[influencer].completedCampaigns++;
-                    _updateInfluencerStatus(influencer);
+                    LibAdsBazaar.updateInfluencerStatus(influencer);
                     
                     emit LibAdsBazaar.ProofApproved(_briefId, influencer);
                     emit LibAdsBazaar.PaymentReleased(_briefId, influencer, influencerAmount);
@@ -148,26 +148,4 @@ contract ProofManagementFacet {
         emit LibAdsBazaar.CampaignCompleted(_briefId, refundAmount);
     }
 
-    function _updateInfluencerStatus(address _influencer) internal {
-        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
-        uint256 completed = ds.users[_influencer].completedCampaigns;
-        LibAdsBazaar.UserStatus newStatus;
-        
-        if (completed >= 500) {
-            newStatus = LibAdsBazaar.UserStatus.SUPERSTAR;
-        } else if (completed >= 100) {
-            newStatus = LibAdsBazaar.UserStatus.ELITE;
-        } else if (completed >= 50) {
-            newStatus = LibAdsBazaar.UserStatus.POPULAR;
-        } else if (completed >= 20) {
-            newStatus = LibAdsBazaar.UserStatus.RISING;
-        } else {
-            newStatus = LibAdsBazaar.UserStatus.NEW_COMER;
-        }
-        
-        if (ds.users[_influencer].status != newStatus) {
-            ds.users[_influencer].status = newStatus;
-            emit LibAdsBazaar.UserStatusUpdated(_influencer, newStatus);
-        }
-    }
 }

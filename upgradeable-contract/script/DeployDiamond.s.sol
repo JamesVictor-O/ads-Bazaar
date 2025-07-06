@@ -13,6 +13,7 @@ import {ProofManagementFacet} from "../contracts/adsbazaar-facets/ProofManagemen
 import {PaymentManagementFacet} from "../contracts/adsbazaar-facets/PaymentManagementFacet.sol";
 import {DisputeManagementFacet} from "../contracts/adsbazaar-facets/DisputeManagementFacet.sol";
 import {GettersFacet} from "../contracts/adsbazaar-facets/GettersFacet.sol";
+import {SelfVerificationFacet} from "../contracts/adsbazaar-facets/SelfVerificationFacet.sol";
 import {AdsBazaarInit} from "../contracts/upgradeInitializers/AdsBazaarInit.sol";
 import {IDiamondCut} from "../contracts/interfaces/IDiamondCut.sol";
 
@@ -88,6 +89,7 @@ contract DeployDiamond is Script {
         PaymentManagementFacet paymentManagementFacet = new PaymentManagementFacet();
         DisputeManagementFacet disputeManagementFacet = new DisputeManagementFacet();
         GettersFacet gettersFacet = new GettersFacet();
+        SelfVerificationFacet selfVerificationFacet = new SelfVerificationFacet();
         
         console.log("UserManagementFacet deployed:", address(userManagementFacet));
         console.log("CampaignManagementFacet deployed:", address(campaignManagementFacet));
@@ -96,13 +98,14 @@ contract DeployDiamond is Script {
         console.log("PaymentManagementFacet deployed:", address(paymentManagementFacet));
         console.log("DisputeManagementFacet deployed:", address(disputeManagementFacet));
         console.log("GettersFacet deployed:", address(gettersFacet));
+        console.log("SelfVerificationFacet deployed:", address(selfVerificationFacet));
         
         // Deploy AdsBazaarInit
         AdsBazaarInit adsBazaarInit = new AdsBazaarInit();
         console.log("AdsBazaarInit deployed:", address(adsBazaarInit));
         
         // Prepare diamond cut
-        IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](8);
+        IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](10);
         
         // Standard facets
         cut[0] = IDiamondCut.FacetCut({
@@ -154,6 +157,18 @@ contract DeployDiamond is Script {
             functionSelectors: getDisputeManagementSelectors()
         });
         
+        cut[8] = IDiamondCut.FacetCut({
+            facetAddress: address(gettersFacet),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: getGettersSelectors()
+        });
+        
+        cut[9] = IDiamondCut.FacetCut({
+            facetAddress: address(selfVerificationFacet),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: getSelfVerificationSelectors()
+        });
+        
         // Initialize diamond
         bytes memory initData = abi.encodeWithSelector(
             AdsBazaarInit.init.selector,
@@ -190,11 +205,10 @@ contract DeployDiamond is Script {
     }
     
     function getUserManagementSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](4);
+        selectors = new bytes4[](3);
         selectors[0] = UserManagementFacet.registerUser.selector;
         selectors[1] = UserManagementFacet.updateInfluencerProfile.selector;
-        selectors[2] = UserManagementFacet.updateInfluencerStatus.selector;
-        selectors[3] = UserManagementFacet.setPlatformFee.selector;
+        selectors[2] = UserManagementFacet.setPlatformFee.selector;
     }
     
     function getCampaignManagementSelectors() internal pure returns (bytes4[] memory selectors) {
@@ -226,7 +240,7 @@ contract DeployDiamond is Script {
     }
     
     function getDisputeManagementSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](8);
+        selectors = new bytes4[](9);
         selectors[0] = DisputeManagementFacet.addDisputeResolver.selector;
         selectors[1] = DisputeManagementFacet.removeDisputeResolver.selector;
         selectors[2] = DisputeManagementFacet.flagSubmission.selector;
@@ -235,5 +249,35 @@ contract DeployDiamond is Script {
         selectors[5] = DisputeManagementFacet.getDisputeResolvers.selector;
         selectors[6] = DisputeManagementFacet.getApplicationDispute.selector;
         selectors[7] = DisputeManagementFacet.hasPendingDisputes.selector;
+        selectors[8] = DisputeManagementFacet.getPendingDisputeCount.selector;
+    }
+    
+    function getGettersSelectors() internal pure returns (bytes4[] memory selectors) {
+        selectors = new bytes4[](17);
+        selectors[0] = GettersFacet.getInfluencerProfile.selector;
+        selectors[1] = GettersFacet.getAdBrief.selector;
+        selectors[2] = GettersFacet.getAllBriefs.selector;
+        selectors[3] = GettersFacet.getBusinessBriefs.selector;
+        selectors[4] = GettersFacet.getInfluencerApplications.selector;
+        selectors[5] = GettersFacet.getBriefApplications.selector;
+        selectors[6] = GettersFacet.getTotalInfluencers.selector;
+        selectors[7] = GettersFacet.getTotalBusinesses.selector;
+        selectors[8] = GettersFacet.getTotalUsers.selector;
+        selectors[9] = GettersFacet.getTotalEscrowAmount.selector;
+        selectors[10] = GettersFacet.getUserStatus.selector;
+        selectors[11] = GettersFacet.getInfluencerStats.selector;
+        selectors[12] = GettersFacet.getBusinessStats.selector;
+        selectors[13] = GettersFacet.getUsers.selector;
+        selectors[14] = GettersFacet.getOwner.selector;
+        selectors[15] = GettersFacet.getCUSD.selector;
+        selectors[16] = GettersFacet.getPlatformFeePercentage.selector;
+    }
+    
+    function getSelfVerificationSelectors() internal pure returns (bytes4[] memory selectors) {
+        selectors = new bytes4[](4);
+        selectors[0] = SelfVerificationFacet.verifySelfProof.selector;
+        selectors[1] = SelfVerificationFacet.setVerificationConfig.selector;
+        selectors[2] = SelfVerificationFacet.getVerificationConfig.selector;
+        selectors[3] = SelfVerificationFacet.isInfluencerVerified.selector;
     }
 }
