@@ -4,19 +4,17 @@ pragma solidity ^0.8.18;
 import {LibAdsBazaar} from "../libraries/LibAdsBazaar.sol";
 import {SelfVerificationRoot} from "@selfxyz/contracts/contracts/abstract/SelfVerificationRoot.sol";
 import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISelfVerificationRoot.sol";
-import {SelfCircuitLibrary} from "@selfxyz/contracts/contracts/libraries/SelfCircuitLibrary.sol";
 
-contract SelfVerificationFacet {
+contract SelfVerificationFacet is SelfVerificationRoot {
     using LibAdsBazaar for LibAdsBazaar.AdsBazaarStorage;
 
     error RegisteredNullifier();
-    
-    uint256 public constant NULLIFIER_INDEX = 7;
-    uint256 public constant USER_IDENTIFIER_INDEX = 20;
+
+    constructor() SelfVerificationRoot(address(0), 0, new uint256[](0)) {}
 
     function verifySelfProof(
         ISelfVerificationRoot.DiscloseCircuitProof memory proof
-    ) external {
+    ) public override {
         LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
         
         // Check if nullifier has been registered
@@ -24,9 +22,11 @@ contract SelfVerificationFacet {
             revert RegisteredNullifier();
         }
         
-        // TODO: Verify the proof with Self verification hub
-        // This would require integrating the Self verification logic directly
-        // For now, we'll skip the verification and just mark as verified
+        // Update verification config before verification
+        _setVerificationConfig(ds.verificationConfig);
+        
+        // Verify the proof with Self verification hub
+        super.verifySelfProof(proof);
         
         // Mark nullifier as used to prevent replay attacks
         ds.nullifiers[proof.pubSignals[NULLIFIER_INDEX]] = true;

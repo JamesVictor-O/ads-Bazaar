@@ -9,3 +9,8 @@ example.env
 .env.test.local
 .env.production.local
 coverage
+
+# Ignores development broadcast logs
+broadcast/
+/broadcast/
+**/broadcast/

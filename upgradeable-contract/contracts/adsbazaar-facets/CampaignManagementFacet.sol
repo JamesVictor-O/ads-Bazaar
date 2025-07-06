@@ -29,7 +29,7 @@ contract CampaignManagementFacet {
 
         // Update business's total escrowed amount and status
         ds.users[msg.sender].totalEscrowed += _budget;
-        _updateBusinessStatus(msg.sender);
+        LibAdsBazaar.updateBusinessStatus(msg.sender);
         
         // Update total escrow amount
         ds.totalEscrowAmount += _budget;
@@ -92,7 +92,7 @@ contract CampaignManagementFacet {
         
         // Update business's total escrowed amount and status
         ds.users[msg.sender].totalEscrowed -= brief.budget;
-        _updateBusinessStatus(msg.sender);
+        LibAdsBazaar.updateBusinessStatus(msg.sender);
         
         // Update total escrow amount
         ds.totalEscrowAmount -= brief.budget;
@@ -115,7 +115,7 @@ contract CampaignManagementFacet {
         
         // Update business's total escrowed amount and status
         ds.users[brief.business].totalEscrowed -= brief.budget;
-        _updateBusinessStatus(brief.business);
+        LibAdsBazaar.updateBusinessStatus(brief.business);
         
         // Update total escrow amount
         ds.totalEscrowAmount -= brief.budget;
@@ -149,28 +149,6 @@ contract CampaignManagementFacet {
         _processPayments(_briefId);
     }
 
-    function _updateBusinessStatus(address _business) internal {
-        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
-        uint256 totalEscrowed = ds.users[_business].totalEscrowed;
-        LibAdsBazaar.UserStatus newStatus;
-        
-        if (totalEscrowed >= 1000 ether) { 
-            newStatus = LibAdsBazaar.UserStatus.SUPERSTAR;
-        } else if (totalEscrowed >= 500 ether) {
-            newStatus = LibAdsBazaar.UserStatus.ELITE;
-        } else if (totalEscrowed >= 200 ether) {
-            newStatus = LibAdsBazaar.UserStatus.POPULAR;
-        } else if (totalEscrowed >= 50 ether) {
-            newStatus = LibAdsBazaar.UserStatus.RISING;
-        } else {
-            newStatus = LibAdsBazaar.UserStatus.NEW_COMER;
-        }
-        
-        if (ds.users[_business].status != newStatus) {
-            ds.users[_business].status = newStatus;
-            emit LibAdsBazaar.UserStatusUpdated(_business, newStatus);
-        }
-    }
 
     function _getPendingDisputeCount(bytes32 _briefId) internal view returns (uint256) {
         LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
@@ -252,7 +230,7 @@ contract CampaignManagementFacet {
                     
                     // Update influencer's completed campaigns and status
                     ds.users[influencer].completedCampaigns++;
-                    _updateInfluencerStatus(influencer);
+                    LibAdsBazaar.updateInfluencerStatus(influencer);
                     
                     emit LibAdsBazaar.ProofApproved(_briefId, influencer);
                     emit LibAdsBazaar.PaymentReleased(_briefId, influencer, influencerAmount);
@@ -270,26 +248,4 @@ contract CampaignManagementFacet {
         emit LibAdsBazaar.CampaignCompleted(_briefId, refundAmount);
     }
 
-    function _updateInfluencerStatus(address _influencer) internal {
-        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
-        uint256 completed = ds.users[_influencer].completedCampaigns;
-        LibAdsBazaar.UserStatus newStatus;
-        
-        if (completed >= 500) {
-            newStatus = LibAdsBazaar.UserStatus.SUPERSTAR;
-        } else if (completed >= 100) {
-            newStatus = LibAdsBazaar.UserStatus.ELITE;
-        } else if (completed >= 50) {
-            newStatus = LibAdsBazaar.UserStatus.POPULAR;
-        } else if (completed >= 20) {
-            newStatus = LibAdsBazaar.UserStatus.RISING;
-        } else {
-            newStatus = LibAdsBazaar.UserStatus.NEW_COMER;
-        }
-        
-        if (ds.users[_influencer].status != newStatus) {
-            ds.users[_influencer].status = newStatus;
-            emit LibAdsBazaar.UserStatusUpdated(_influencer, newStatus);
-        }
-    }
 }

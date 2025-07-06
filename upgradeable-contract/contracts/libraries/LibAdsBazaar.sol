@@ -198,4 +198,51 @@ library LibAdsBazaar {
     function enforceBriefExists(bytes32 _briefId) internal view {
         require(adsBazaarStorage().briefs[_briefId].business != address(0), "Brief does not exist");
     }
+
+    // Helper functions for status updates
+    function updateInfluencerStatus(address _influencer) internal {
+        AdsBazaarStorage storage ds = adsBazaarStorage();
+        uint256 completed = ds.users[_influencer].completedCampaigns;
+        UserStatus newStatus;
+        
+        if (completed >= 500) {
+            newStatus = UserStatus.SUPERSTAR;
+        } else if (completed >= 100) {
+            newStatus = UserStatus.ELITE;
+        } else if (completed >= 50) {
+            newStatus = UserStatus.POPULAR;
+        } else if (completed >= 20) {
+            newStatus = UserStatus.RISING;
+        } else {
+            newStatus = UserStatus.NEW_COMER;
+        }
+        
+        if (ds.users[_influencer].status != newStatus) {
+            ds.users[_influencer].status = newStatus;
+            emit UserStatusUpdated(_influencer, newStatus);
+        }
+    }
+    
+    function updateBusinessStatus(address _business) internal {
+        AdsBazaarStorage storage ds = adsBazaarStorage();
+        uint256 totalEscrowed = ds.users[_business].totalEscrowed;
+        UserStatus newStatus;
+        
+        if (totalEscrowed >= 1000 ether) { 
+            newStatus = UserStatus.SUPERSTAR;
+        } else if (totalEscrowed >= 500 ether) {
+            newStatus = UserStatus.ELITE;
+        } else if (totalEscrowed >= 200 ether) {
+            newStatus = UserStatus.POPULAR;
+        } else if (totalEscrowed >= 50 ether) {
+            newStatus = UserStatus.RISING;
+        } else {
+            newStatus = UserStatus.NEW_COMER;
+        }
+        
+        if (ds.users[_business].status != newStatus) {
+            ds.users[_business].status = newStatus;
+            emit UserStatusUpdated(_business, newStatus);
+        }
+    }
 }
