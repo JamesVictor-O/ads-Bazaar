@@ -29,7 +29,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
 import { useFarcasterAuth } from "@/hooks/UseFarcasterAuthNextAuth";
-import { useIsInfluencerVerified, useUserProfile } from "@/hooks/adsBazaar";
+import { useIsInfluencerVerified, useUserProfile, useGetInfluencerProfile } from "@/hooks/adsBazaar";
+import { SocialMediaCard } from "@/components/ui/SocialMediaCard";
 import { getUserStatusLabel, formatNumber } from "@/utils/format";
 import Image from "next/image";
 import Link from "next/link";
@@ -734,6 +735,9 @@ export default function EnhancedInfluencerProfile() {
   const { isVerified, isLoadingVerification } = useIsInfluencerVerified(
     profileAddress as `0x${string}`
   );
+  const { data: influencerProfile } = useGetInfluencerProfile(
+    profileAddress as `0x${string}`
+  );
 
   // Use FID-based profile lookup
   const {
@@ -1161,6 +1165,13 @@ export default function EnhancedInfluencerProfile() {
                     </motion.div>
                   </button>
                 )}
+
+                {/* Social Media Card */}
+                <SocialMediaCard 
+                  profileData={influencerProfile as string}
+                  userAddress={profileAddress as string}
+                  isOwner={isOwner}
+                />
               </motion.div>
             )}
 
