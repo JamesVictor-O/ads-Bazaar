@@ -14,7 +14,7 @@ import { useAccount } from "wagmi";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { useRegisterUser, useUserProfile } from "../../hooks/adsBazaar";
+import { useRegisterUser, useUserProfile, useIsUsernameAvailable } from "../../hooks/adsBazaar";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
@@ -30,6 +30,7 @@ type UserType = "influencer" | "advertiser";
 
 interface UserDetails {
   userType: UserType | "";
+  username?: string;
   niche?: string;
   businessType?: string;
   budget?: string;
@@ -42,6 +43,7 @@ const GetStartedModal = ({
 }: GetStartedModalProps) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({ userType: "" });
   const [showNextStep, setShowNextStep] = useState(false);
+  const { isAvailable, isLoadingAvailability } = useIsUsernameAvailable(userDetails.username);
 
   const router = useRouter();
   const { isConnected } = useAccount();
@@ -124,6 +126,7 @@ const GetStartedModal = ({
       await register(
         userDetails.userType === "advertiser",
         userDetails.userType === "influencer",
+        userDetails.username || "",
         profileData,
         referralTag // This appends referral tag to transaction calldata
       );
@@ -131,10 +134,15 @@ const GetStartedModal = ({
   };
 
   const isFormValid = () => {
+    const usernameValid = userDetails.username && 
+                         userDetails.username.length >= 3 && 
+                         userDetails.username.length <= 20 &&
+                         isAvailable && !isLoadingAvailability;
+    
     if (userDetails.userType === "influencer") {
-      return !!userDetails.niche;
+      return usernameValid && !!userDetails.niche;
     }
-    return !!userDetails.businessType && !!userDetails.budget;
+    return usernameValid && !!userDetails.businessType && !!userDetails.budget;
   };
 
   if (!isOpen) return null;
@@ -286,6 +294,47 @@ const GetStartedModal = ({
                 transition={{ duration: 0.2 }}
                 className="space-y-6"
               >
+                {/* Username Field */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Username{" "}
+                    <span className="text-red-400 ml-1">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={userDetails.username || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Remove any non-alphanumeric characters except underscore and dash
+                      const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '');
+                      setUserDetails({ ...userDetails, username: sanitized });
+                    }}
+                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
+                    placeholder="Enter your username (3-20 characters)"
+                    maxLength={20}
+                    disabled={isPending}
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    3-20 characters. Letters, numbers, underscore, and dash allowed.
+                  </p>
+                  {userDetails.username && userDetails.username.length >= 3 && (
+                    <div className="text-xs mt-1">
+                      {isLoadingAvailability ? (
+                        <span className="text-slate-400">Checking availability...</span>
+                      ) : isAvailable ? (
+                        <span className="text-emerald-400">✓ Username available</span>
+                      ) : (
+                        <span className="text-red-400">✗ Username already taken</span>
+                      )}
+                    </div>
+                  )}
+                  {userDetails.username && (userDetails.username.length < 3 || userDetails.username.length > 20) && (
+                    <p className="text-xs text-red-400 mt-1">
+                      Username must be between 3 and 20 characters.
+                    </p>
+                  )}
+                </div>
+
                 {userDetails.userType === "influencer" ? (
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">

@@ -181,4 +181,19 @@ contract GettersFacet {
         LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
         return ds.users[_user].isInfluencer;
     }
+
+    function getUserByUsername(string calldata _username) external view returns (address) {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        return ds.usernameToAddress[_username];
+    }
+
+    function isUsernameAvailable(string calldata _username) external view returns (bool) {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        return !ds.usernameExists[_username];
+    }
+
+    function getUserUsername(address _user) external view returns (string memory) {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        return ds.users[_user].username;
+    }
 }
