@@ -561,6 +561,7 @@ export function useRegisterUser() {
   const register = async (
     isBusiness: boolean,
     isInfluencer: boolean,
+    username: string,
     profileData: string,
     dataSuffix?: `0x${string}` // Referral tag to append to calldata
   ) => {
@@ -576,7 +577,7 @@ export function useRegisterUser() {
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: "registerUser",
-        args: [isBusiness, isInfluencer, profileData],
+        args: [isBusiness, isInfluencer, username, profileData],
         dataSuffix: dataSuffix, // This appends referral tag to transaction calldata
       });
 
@@ -590,6 +591,69 @@ export function useRegisterUser() {
   return {
     register,
     ...tx, 
+  };
+}
+
+// Get username by address
+export function useGetUsername(userAddress?: Address) {
+  const { address } = useAccount();
+  const targetAddress = userAddress || address;
+
+  const { data, error, isLoading, refetch } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "getUserUsername",
+    args: [targetAddress],
+    query: {
+      enabled: !!targetAddress,
+    },
+  });
+
+  return {
+    username: data as string | undefined,
+    isLoadingUsername: isLoading,
+    usernameError: error,
+    refetchUsername: refetch,
+  };
+}
+
+// Get address by username
+export function useGetUserByUsername(username?: string) {
+  const { data, error, isLoading, refetch } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "getUserByUsername",
+    args: [username],
+    query: {
+      enabled: !!username,
+    },
+  });
+
+  return {
+    userAddress: data as Address | undefined,
+    isLoadingUser: isLoading,
+    userError: error,
+    refetchUser: refetch,
+  };
+}
+
+// Check if username is available
+export function useIsUsernameAvailable(username?: string) {
+  const { data, error, isLoading, refetch } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "isUsernameAvailable",
+    args: [username],
+    query: {
+      enabled: !!username && username.length >= 3,
+    },
+  });
+
+  return {
+    isAvailable: data as boolean | undefined,
+    isLoadingAvailability: isLoading,
+    availabilityError: error,
+    refetchAvailability: refetch,
   };
 }
 

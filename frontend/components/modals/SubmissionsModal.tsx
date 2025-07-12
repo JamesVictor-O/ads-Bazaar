@@ -26,6 +26,7 @@ import {
   formatTimeRemaining,
   getTimeRemaining,
 } from "@/utils/format";
+import { UserDisplay } from "@/components/ui/UserDisplay";
 import Link from "next/link";
 import { hasPendingDisputes } from "@/utils/campaignUtils";
 import { useDivviIntegration } from '@/hooks/useDivviIntegration'
@@ -451,7 +452,7 @@ export const SubmissionsModal = ({
                                 Influencer #{index + 1}
                               </p>
                               <p className="text-xs sm:text-sm text-slate-400 font-mono truncate">
-                                {truncateAddress(submission.influencer, 4, 4)}
+                                <UserDisplay address={submission.influencer} />
                               </p>
                             </div>
                           </div>

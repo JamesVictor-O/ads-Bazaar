@@ -25,6 +25,7 @@ import { useAccount, usePublicClient } from "wagmi";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { format } from "date-fns";
 import { truncateAddress } from "@/utils/format";
+import { UserDisplay } from "@/components/ui/UserDisplay";
 import { motion } from "framer-motion";
 import {
   Brief,
@@ -660,7 +661,7 @@ export default function Marketplace() {
                     {campaign.name}
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    by {truncateAddress(campaign.business)}
+                    by <UserDisplay address={campaign.business} className="text-emerald-400" />
                   </p>
 
                   {/* Creation date and timing info */}

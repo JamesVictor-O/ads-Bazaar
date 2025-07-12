@@ -96,6 +96,7 @@ library LibAdsBazaar {
         bool isBusiness;
         bool isInfluencer;
         UserStatus status;
+        string username;
         string profileData; 
         uint256 completedCampaigns;
         uint256 totalEscrowed;
@@ -144,6 +145,10 @@ library LibAdsBazaar {
         mapping(address => uint256) totalPendingAmount;
         mapping(bytes32 => uint256) briefApplicationCounts;
         mapping(address => string) influencerProfiles;
+        
+        // Username mappings
+        mapping(string => address) usernameToAddress;
+        mapping(string => bool) usernameExists;
     }
 
     function adsBazaarStorage() internal pure returns (AdsBazaarStorage storage ds) {

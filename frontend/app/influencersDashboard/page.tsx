@@ -58,6 +58,7 @@ import {
   getUserStatusLabel,
   truncateAddress,
 } from "@/utils/format";
+import { UserDisplay } from "@/components/ui/UserDisplay";
 
 // Define precise interfaces
 interface ApplicationWithBrief {
@@ -982,7 +983,7 @@ export default function InfluencerDashboard() {
                                 {briefData.brief.name}
                               </h3>
                               <p className="text-slate-400 font-medium text-sm md:text-base">
-                                by {truncateAddress(briefData.brief.business)}
+                                by <UserDisplay address={briefData.brief.business} className="text-emerald-400" />
                               </p>
                             </div>
 

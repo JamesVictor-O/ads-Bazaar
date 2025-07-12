@@ -20,6 +20,7 @@ import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 import { truncateAddress } from "@/utils/format";
+import { UserDisplay } from "@/components/ui/UserDisplay";
 import { Hex } from "viem";
 import { useSelectInfluencer } from "@/hooks/adsBazaar";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
@@ -308,7 +309,7 @@ const ApplicationsModal = ({
                               rel="noopener noreferrer"
                             >
                               {application.influencerProfile?.name ||
-                                truncateAddress(application.influencer)}
+                                <UserDisplay address={application.influencer} />}
                               <ExternalLink className="w-4 h-4 ml-1" />
                             </Link>
                             <p className="text-xs text-slate-400 mt-1">
