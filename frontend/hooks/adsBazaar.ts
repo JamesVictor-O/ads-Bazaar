@@ -657,6 +657,35 @@ export function useIsUsernameAvailable(username?: string) {
   };
 }
 
+// Update influencer profile
+export function useUpdateInfluencerProfile() {
+  const tx = useHandleTransaction();
+  const { address } = useAccount();
+
+  const updateProfile = async (profileData: string) => {
+    if (!address) {
+      throw new Error("Wallet not connected");
+    }
+
+    try {
+      tx.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: "updateInfluencerProfile",
+        args: [profileData],
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      throw error;
+    }
+  };
+
+  return {
+    updateProfile,
+    ...tx,
+  };
+}
+
 // Create ad brief with improved error handling
 export function useCreateAdBrief() {
   const tx = useHandleTransaction();
