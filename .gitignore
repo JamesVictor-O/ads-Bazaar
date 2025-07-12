@@ -7,3 +7,6 @@ broadcast/
 /broadcast/
 **/broadcast/
 
+# Transaction folder
+txn/
+

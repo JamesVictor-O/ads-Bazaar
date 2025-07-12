@@ -611,6 +611,9 @@ export function useCreateAdBrief() {
     promotionDuration: number;
     maxInfluencers: number;
     targetAudience: number;
+    applicationPeriod: number;
+    proofSubmissionGracePeriod: number;
+    verificationPeriod: number;
     dataSuffix?: `0x${string}`;
   } | null>(null);
 
@@ -639,6 +642,9 @@ export function useCreateAdBrief() {
             BigInt(briefData.promotionDuration),
             BigInt(briefData.maxInfluencers),
             briefData.targetAudience,
+            BigInt(briefData.applicationPeriod),
+            BigInt(briefData.proofSubmissionGracePeriod),
+            BigInt(briefData.verificationPeriod),
           ],
           dataSuffix: briefData.dataSuffix,
         });
@@ -665,6 +671,9 @@ export function useCreateAdBrief() {
     promotionDuration: number,
     maxInfluencers: number,
     targetAudience: number,
+    applicationPeriod: number,
+    proofSubmissionGracePeriod: number,
+    verificationPeriod: number,
     dataSuffix?: `0x${string}`
   ) => {
     console.log('DIVVI: Creating brief with dataSuffix:', dataSuffix);
@@ -682,6 +691,9 @@ export function useCreateAdBrief() {
         promotionDuration,
         maxInfluencers,
         targetAudience,
+        applicationPeriod,
+        proofSubmissionGracePeriod,
+        verificationPeriod,
         dataSuffix,
       });
 

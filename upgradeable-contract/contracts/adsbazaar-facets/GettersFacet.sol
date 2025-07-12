@@ -21,6 +21,9 @@ contract GettersFacet {
         uint256 selectedInfluencersCount;
         LibAdsBazaar.TargetAudience targetAudience;
         uint256 selectionDeadline;
+        uint256 applicationPeriod;
+        uint256 proofSubmissionGracePeriod;
+        uint256 verificationPeriod;
     }
     
     struct ApplicationData {
@@ -56,7 +59,10 @@ contract GettersFacet {
             maxInfluencers: brief.maxInfluencers,
             selectedInfluencersCount: brief.selectedInfluencersCount,
             targetAudience: brief.targetAudience,
-            selectionDeadline: brief.selectionDeadline
+            selectionDeadline: brief.selectionDeadline,
+            applicationPeriod: brief.applicationPeriod,
+            proofSubmissionGracePeriod: brief.proofSubmissionGracePeriod,
+            verificationPeriod: brief.verificationPeriod
         });
     }
 
@@ -164,5 +170,15 @@ contract GettersFacet {
     function getPlatformFeePercentage() external view returns (uint256) {
         LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
         return ds.platformFeePercentage;
+    }
+
+    function isRegistered(address _user) external view returns (bool) {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        return ds.users[_user].isRegistered;
+    }
+
+    function isInfluencer(address _user) external view returns (bool) {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        return ds.users[_user].isInfluencer;
     }
 }
