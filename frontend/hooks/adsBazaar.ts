@@ -377,7 +377,7 @@ export function useUserProfile(userAddress?: Address) {
   const { data, error, isLoading, refetch } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
-    functionName: "users",
+    functionName: "getUsers",
     args: [targetAddress],
     query: {
       enabled: !!targetAddress,
@@ -388,13 +388,14 @@ export function useUserProfile(userAddress?: Address) {
     if (!data) return null;
 
     return {
-      isRegistered: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[0],
-      isBusiness: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[1],
-      isInfluencer: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[2],
-      status: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[3],
-      profileData: (data as [boolean, boolean, boolean, number, string, bigint, bigint])[4],
-      completedCampaigns: Number((data as [boolean, boolean, boolean, number, string, bigint, bigint])[5]),
-      totalEscrowed: Number((data as [boolean, boolean, boolean, number, string, bigint, bigint])[6]),
+      isRegistered: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[0],
+      isBusiness: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[1],
+      isInfluencer: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[2],
+      status: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[3],
+      username: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[4],
+      profileData: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[5],
+      completedCampaigns: Number((data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[6]),
+      totalEscrowed: Number((data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[7]),
     };
   }, [data]);
 
@@ -654,6 +655,29 @@ export function useIsUsernameAvailable(username?: string) {
     isLoadingAvailability: isLoading,
     availabilityError: error,
     refetchAvailability: refetch,
+  };
+}
+
+// Get influencer profile (using getInfluencerProfile function)
+export function useGetInfluencerProfile(influencerAddress?: Address) {
+  const { address } = useAccount();
+  const targetAddress = influencerAddress || address;
+
+  const { data, error, isLoading, refetch } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "getInfluencerProfile",
+    args: [targetAddress],
+    query: {
+      enabled: !!targetAddress,
+    },
+  });
+
+  return {
+    data: data as string | undefined,
+    isLoading: isLoading,
+    error: error,
+    refetch: refetch,
   };
 }
 

@@ -1,4 +1,5 @@
 {
+  "contractName": "AdsBazaarDiamond",
   "abi": [
     {
       "type": "function",
