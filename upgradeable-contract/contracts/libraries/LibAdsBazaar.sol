@@ -6,13 +6,10 @@ import {ISelfVerificationRoot} from "@selfxyz/contracts/contracts/interfaces/ISe
 library LibAdsBazaar {
     bytes32 constant ADSBAZAAR_STORAGE_POSITION = keccak256("adsbazaar.storage");
     
-    // Timing constants
-    uint256 constant CAMPAIGN_PREPARATION_PERIOD = 1 days;
-    uint256 constant PROOF_SUBMISSION_GRACE_PERIOD = 2 days;
-    uint256 constant VERIFICATION_PERIOD = 3 days;
-    uint256 constant SELECTION_DEADLINE_PERIOD = 5 days;
+    // Timing constants (only keep non-configurable ones)
     uint256 constant SELECTION_GRACE_PERIOD = 1 hours;
     uint256 constant DISPUTE_RESOLUTION_DEADLINE = 2 days;
+    uint256 constant MAX_VERIFICATION_PERIOD = 5 days; // Maximum allowed verification period
 
     enum UserStatus {
         NEW_COMER,
@@ -73,6 +70,10 @@ library LibAdsBazaar {
         TargetAudience targetAudience;
         uint256 creationTime;
         uint256 selectionDeadline;
+        // New configurable timing fields
+        uint256 applicationPeriod;        // How long applications are open
+        uint256 proofSubmissionGracePeriod; // Grace period for proof submission
+        uint256 verificationPeriod;       // Verification period (max 5 days)
     }
 
     struct InfluencerApplication {

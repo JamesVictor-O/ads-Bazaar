@@ -62,10 +62,11 @@ contract ApplicationManagementFacet {
         // If all slots filled, change status to ASSIGNED and set all timing parameters
         if (brief.selectedInfluencersCount == brief.maxInfluencers) {
             brief.status = LibAdsBazaar.CampaignStatus.ASSIGNED;
-            brief.promotionStartTime = block.timestamp + LibAdsBazaar.CAMPAIGN_PREPARATION_PERIOD;
+            // No preparation period - campaign starts immediately
+            brief.promotionStartTime = block.timestamp;
             brief.promotionEndTime = brief.promotionStartTime + brief.promotionDuration;
-            brief.proofSubmissionDeadline = brief.promotionEndTime + LibAdsBazaar.PROOF_SUBMISSION_GRACE_PERIOD;
-            brief.verificationDeadline = brief.proofSubmissionDeadline + LibAdsBazaar.VERIFICATION_PERIOD;
+            brief.proofSubmissionDeadline = brief.promotionEndTime + brief.proofSubmissionGracePeriod;
+            brief.verificationDeadline = brief.proofSubmissionDeadline + brief.verificationPeriod;
             
             emit LibAdsBazaar.PromotionStarted(
                 _briefId, 

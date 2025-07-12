@@ -95,6 +95,9 @@ const BrandDashboard = () => {
     promotionDuration: "604800", // 7 days in seconds
     maxInfluencers: "5",
     targetAudience: "0",
+    applicationPeriod: "432000", // 5 days default
+    proofSubmissionGracePeriod: "172800", // 2 days default
+    verificationPeriod: "259200", // 3 days default
   });
 
   const { userProfile, refetchProfile } = useUserProfile();
@@ -254,6 +257,9 @@ const BrandDashboard = () => {
         promotionDuration: "604800",
         maxInfluencers: "5",
         targetAudience: "0",
+        applicationPeriod: "432000", // 5 days default
+        proofSubmissionGracePeriod: "172800", // 2 days default
+        verificationPeriod: "259200", // 3 days default
       });
       // Refetch the campaigns to show the new one immediately
       setTimeout(() => {
@@ -354,7 +360,11 @@ const BrandDashboard = () => {
       Number(formData.budget) > 0 &&
       Number(formData.promotionDuration) >= 86400 &&
       Number(formData.maxInfluencers) >= 1 &&
-      Number(formData.maxInfluencers) <= 10
+      Number(formData.maxInfluencers) <= 10 &&
+      Number(formData.applicationPeriod) >= 86400 &&
+      Number(formData.proofSubmissionGracePeriod) >= 86400 &&
+      Number(formData.verificationPeriod) >= 86400 &&
+      Number(formData.verificationPeriod) <= 432000 // Max 5 days
     );
   };
 
@@ -375,6 +385,9 @@ const BrandDashboard = () => {
         Number(formData.promotionDuration),
         Number(formData.maxInfluencers),
         Number(formData.targetAudience),
+        Number(formData.applicationPeriod),
+        Number(formData.proofSubmissionGracePeriod),
+        Number(formData.verificationPeriod),
         referralTag
       );
       console.log('DIVVI: Create campaign result:', result);
