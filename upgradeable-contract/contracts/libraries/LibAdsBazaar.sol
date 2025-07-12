@@ -10,6 +10,8 @@ library LibAdsBazaar {
     uint256 constant SELECTION_GRACE_PERIOD = 1 hours;
     uint256 constant DISPUTE_RESOLUTION_DEADLINE = 2 days;
     uint256 constant MAX_VERIFICATION_PERIOD = 5 days; // Maximum allowed verification period
+    uint256 constant MAX_APPLICATION_PERIOD = 14 days; // Maximum application period
+    uint256 constant MAX_PROOF_GRACE_PERIOD = 2 days; // Maximum proof submission grace period
 
     enum UserStatus {
         NEW_COMER,

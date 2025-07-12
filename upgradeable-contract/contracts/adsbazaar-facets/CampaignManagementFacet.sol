@@ -26,8 +26,8 @@ contract CampaignManagementFacet {
         require(_maxInfluencers > 0, "Max influencers must be greater than 0");
         require(_maxInfluencers <= 10, "Cannot select more than 10 influencers");
         require(_targetAudience < uint8(type(LibAdsBazaar.TargetAudience).max), "Invalid target audience");
-        require(_applicationPeriod >= 1 days, "Application period must be at least 1 day");
-        require(_proofSubmissionGracePeriod >= 1 days, "Proof submission grace period must be at least 1 day");
+        require(_applicationPeriod >= 1 days && _applicationPeriod <= LibAdsBazaar.MAX_APPLICATION_PERIOD, "Application period must be between 1 day and 14 days");
+        require(_proofSubmissionGracePeriod >= 1 days && _proofSubmissionGracePeriod <= LibAdsBazaar.MAX_PROOF_GRACE_PERIOD, "Proof submission grace period must be between 1 day and 2 days");
         require(_verificationPeriod >= 1 days && _verificationPeriod <= LibAdsBazaar.MAX_VERIFICATION_PERIOD, "Verification period must be between 1 day and 5 days");
         
         // Transfer tokens from business to contract

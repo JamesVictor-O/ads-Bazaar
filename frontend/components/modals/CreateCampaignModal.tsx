@@ -468,10 +468,7 @@ function CreateCampaignModal({
                     disabled={isTransactionInProgress}
                   >
                     <option value="86400">1 day</option>
-                    <option value="172800">2 days</option>
-                    <option value="259200">3 days</option>
-                    <option value="345600">4 days</option>
-                    <option value="432000">5 days</option>
+                    <option value="172800">2 days (max)</option>
                   </select>
                   <p className="text-xs text-slate-400 mt-1">
                     Grace period after promotion ends
