@@ -4,9 +4,21 @@ const path = require('path');
 // Read the ABI files
 const gettersFacetPath = path.join(__dirname, '../out/GettersFacet.sol/GettersFacet.json');
 const userManagementFacetPath = path.join(__dirname, '../out/UserManagementFacet.sol/UserManagementFacet.json');
+const campaignManagementFacetPath = path.join(__dirname, '../out/CampaignManagementFacet.sol/CampaignManagementFacet.json');
+const applicationManagementFacetPath = path.join(__dirname, '../out/ApplicationManagementFacet.sol/ApplicationManagementFacet.json');
+const paymentManagementFacetPath = path.join(__dirname, '../out/PaymentManagementFacet.sol/PaymentManagementFacet.json');
+const proofManagementFacetPath = path.join(__dirname, '../out/ProofManagementFacet.sol/ProofManagementFacet.json');
+const disputeManagementFacetPath = path.join(__dirname, '../out/DisputeManagementFacet.sol/DisputeManagementFacet.json');
+const selfVerificationFacetPath = path.join(__dirname, '../out/SelfVerificationFacet.sol/SelfVerificationFacet.json');
 
 const gettersFacetABI = JSON.parse(fs.readFileSync(gettersFacetPath, 'utf8')).abi;
 const userManagementFacetABI = JSON.parse(fs.readFileSync(userManagementFacetPath, 'utf8')).abi;
+const campaignManagementFacetABI = JSON.parse(fs.readFileSync(campaignManagementFacetPath, 'utf8')).abi;
+const applicationManagementFacetABI = JSON.parse(fs.readFileSync(applicationManagementFacetPath, 'utf8')).abi;
+const paymentManagementFacetABI = JSON.parse(fs.readFileSync(paymentManagementFacetPath, 'utf8')).abi;
+const proofManagementFacetABI = JSON.parse(fs.readFileSync(proofManagementFacetPath, 'utf8')).abi;
+const disputeManagementFacetABI = JSON.parse(fs.readFileSync(disputeManagementFacetPath, 'utf8')).abi;
+const selfVerificationFacetABI = JSON.parse(fs.readFileSync(selfVerificationFacetPath, 'utf8')).abi;
 
 // Filter the required functions from GettersFacet
 const requiredGetterFunctions = [
@@ -49,10 +61,91 @@ const filteredUserManagementFunctions = userManagementFacetABI.filter(item =>
   item.type === 'event'
 );
 
+// Filter the required functions from CampaignManagementFacet
+const requiredCampaignManagementFunctions = [
+  'createAdBrief',
+  'cancelAdBrief',
+  'completeCampaign',
+  'expireCampaign'
+];
+
+const filteredCampaignManagementFunctions = campaignManagementFacetABI.filter(item => 
+  (item.type === 'function' && requiredCampaignManagementFunctions.includes(item.name)) ||
+  item.type === 'event'
+);
+
+// Filter the required functions from ApplicationManagementFacet
+const requiredApplicationManagementFunctions = [
+  'applyToBrief',
+  'selectInfluencer'
+];
+
+const filteredApplicationManagementFunctions = applicationManagementFacetABI.filter(item => 
+  (item.type === 'function' && requiredApplicationManagementFunctions.includes(item.name)) ||
+  item.type === 'event'
+);
+
+// Filter the required functions from PaymentManagementFacet
+const requiredPaymentManagementFunctions = [
+  'claimPayments',
+  'getPendingPayments',
+  'getTotalPendingAmount'
+];
+
+const filteredPaymentManagementFunctions = paymentManagementFacetABI.filter(item => 
+  (item.type === 'function' && requiredPaymentManagementFunctions.includes(item.name)) ||
+  item.type === 'event'
+);
+
+// Filter the required functions from ProofManagementFacet
+const requiredProofManagementFunctions = [
+  'submitProof',
+  'approveProof',
+  'flagSubmission',
+  'triggerAutoApproval'
+];
+
+const filteredProofManagementFunctions = proofManagementFacetABI.filter(item => 
+  (item.type === 'function' && requiredProofManagementFunctions.includes(item.name)) ||
+  item.type === 'event'
+);
+
+// Filter the required functions from DisputeManagementFacet
+const requiredDisputeManagementFunctions = [
+  'raiseDispute',
+  'resolveDispute',
+  'expireDispute',
+  'getDisputeTimestamp',
+  'hasPendingDisputes',
+  'getPendingDisputeCount'
+];
+
+const filteredDisputeManagementFunctions = disputeManagementFacetABI.filter(item => 
+  (item.type === 'function' && requiredDisputeManagementFunctions.includes(item.name)) ||
+  item.type === 'event'
+);
+
+// Filter the required functions from SelfVerificationFacet
+const requiredSelfVerificationFunctions = [
+  'verifySelfProof',
+  'isInfluencerVerified'
+];
+
+const filteredSelfVerificationFunctions = selfVerificationFacetABI.filter(item => 
+  (item.type === 'function' && requiredSelfVerificationFunctions.includes(item.name)) ||
+  item.type === 'event'
+);
+
 // Combine the ABIs
 const combinedABI = [
   ...filteredGettersFunctions,
-  ...filteredUserManagementFunctions
+  ...filteredUserManagementFunctions,
+  ...filteredCampaignManagementFunctions,
+  ...filteredApplicationManagementFunctions,
+  ...filteredPaymentManagementFunctions,
+  ...filteredProofManagementFunctions,
+  ...filteredDisputeManagementFunctions,
+  ...filteredSelfVerificationFunctions
 ];
 
 // Sort functions alphabetically for easier lookup
