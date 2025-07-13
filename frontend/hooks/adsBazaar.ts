@@ -92,7 +92,7 @@ function formatBriefData(
       business: rawData.business as `0x${string}`,
       name: rawData.name as string,
       description: rawData.description as string,
-      requirements: "", // Not included in struct, setting empty
+      requirements: rawData.requirements as string,
       budget: Number(formatEther(rawData.budget as bigint)),
       status: Number(rawData.status) as CampaignStatus,
       promotionDuration: Number(rawData.promotionDuration),
@@ -103,7 +103,7 @@ function formatBriefData(
       maxInfluencers: Number(rawData.maxInfluencers),
       selectedInfluencersCount: Number(rawData.selectedInfluencersCount),
       targetAudience: Number(rawData.targetAudience) as TargetAudience,
-      creationTime: 0, // Not included in struct, setting to 0
+      creationTime: Number(rawData.creationTime),
       selectionDeadline: Number(rawData.selectionDeadline),
       applicationCount,
 

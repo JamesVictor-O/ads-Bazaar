@@ -173,6 +173,11 @@
               "internalType": "string"
             },
             {
+              "name": "requirements",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
               "name": "budget",
               "type": "uint256",
               "internalType": "uint256"
@@ -221,6 +226,11 @@
               "name": "targetAudience",
               "type": "uint8",
               "internalType": "enum LibAdsBazaar.TargetAudience"
+            },
+            {
+              "name": "creationTime",
+              "type": "uint256",
+              "internalType": "uint256"
             },
             {
               "name": "selectionDeadline",

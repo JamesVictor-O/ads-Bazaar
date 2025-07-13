@@ -779,10 +779,15 @@ export default function Marketplace() {
                     <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
                       <div className="flex items-center text-slate-400 mb-1">
                         <Target className="w-4 h-4 mr-1" />
-                        <span>Pay/Spot</span>
+                        <span>Payment</span>
                       </div>
                       <div className="font-semibold text-white">
                         {campaign.progressInfo.budgetPerSpot.toFixed(0)} cUSD
+                      </div>
+                      <div className="text-slate-400 text-xs">
+                        {campaign.selectedInfluencersCount > 0
+                          ? "per influencer"
+                          : "per spot"}
                       </div>
                     </div>
                   </div>
