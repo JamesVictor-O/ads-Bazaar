@@ -77,34 +77,34 @@ function useHandleTransaction() {
  */
 function formatBriefData(
   briefId: `0x${string}`,
-  rawData: any[],
+  rawData: any,
   applicationCount: number = 0
 ): Brief | null {
   try {
-    if (!Array.isArray(rawData) || rawData.length < 17) {
+    if (!rawData || typeof rawData !== 'object') {
       console.error("Invalid brief data format:", rawData);
       return null;
     }
 
-    // Convert bigint values to numbers and extract data
+    // Extract data from struct format
     const brief: Brief = {
       id: briefId,
-      business: rawData[1] as `0x${string}`,
-      name: rawData[2] as string,
-      description: rawData[3] as string,
-      requirements: rawData[4] as string,
-      budget: Number(formatEther(rawData[5] as bigint)),
-      status: Number(rawData[6]) as CampaignStatus,
-      promotionDuration: Number(rawData[7]),
-      promotionStartTime: Number(rawData[8]),
-      promotionEndTime: Number(rawData[9]),
-      proofSubmissionDeadline: Number(rawData[10]),
-      verificationDeadline: Number(rawData[11]),
-      maxInfluencers: Number(rawData[12]),
-      selectedInfluencersCount: Number(rawData[13]),
-      targetAudience: Number(rawData[14]) as TargetAudience,
-      creationTime: Number(rawData[15]),
-      selectionDeadline: Number(rawData[16]),
+      business: rawData.business as `0x${string}`,
+      name: rawData.name as string,
+      description: rawData.description as string,
+      requirements: "", // Not included in struct, setting empty
+      budget: Number(formatEther(rawData.budget as bigint)),
+      status: Number(rawData.status) as CampaignStatus,
+      promotionDuration: Number(rawData.promotionDuration),
+      promotionStartTime: Number(rawData.promotionStartTime),
+      promotionEndTime: Number(rawData.promotionEndTime),
+      proofSubmissionDeadline: Number(rawData.proofSubmissionDeadline),
+      verificationDeadline: Number(rawData.verificationDeadline),
+      maxInfluencers: Number(rawData.maxInfluencers),
+      selectedInfluencersCount: Number(rawData.selectedInfluencersCount),
+      targetAudience: Number(rawData.targetAudience) as TargetAudience,
+      creationTime: 0, // Not included in struct, setting to 0
+      selectionDeadline: Number(rawData.selectionDeadline),
       applicationCount,
 
       // Computed properties (will be set below)
@@ -217,19 +217,21 @@ export function useGetAllBriefs() {
               const briefData = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
-                functionName: "briefs",
+                functionName: "getAdBrief",
                 args: [id],
               });
 
-              // Fetch application count for this brief
-              const applicationCount = await publicClient.readContract({
+              // Fetch applications to get count
+              const applicationsData = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
-                functionName: "briefApplicationCounts",
+                functionName: "getBriefApplications",
                 args: [id],
               });
+              
+              const applicationCount = applicationsData ? (applicationsData as any).influencers.length : 0;
 
-              if (Array.isArray(briefData)) {
+              if (briefData) {
                 return formatBriefData(id, briefData, Number(applicationCount));
               }
               return null;
@@ -308,19 +310,21 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
               const result = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
-                functionName: "briefs",
+                functionName: "getAdBrief",
                 args: [id],
               });
 
-              // Also fetch application count
-              const applicationCount = await publicClient.readContract({
+              // Also fetch applications to get count
+              const applicationsData = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
-                functionName: "briefApplicationCounts",
+                functionName: "getBriefApplications",
                 args: [id],
               });
+              
+              const applicationCount = applicationsData ? (applicationsData as any).influencers.length : 0;
 
-              if (Array.isArray(result)) {
+              if (result) {
                 return formatBriefData(id, result, Number(applicationCount));
               }
               return null;
