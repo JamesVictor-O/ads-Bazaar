@@ -83,10 +83,12 @@ const BrandDashboard = () => {
   );
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [expandedBriefId, setExpandedBriefId] = useState<string | null>(null);
-  
+
   // New state for expandable descriptions
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
-  
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(
+    new Set()
+  );
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -101,9 +103,11 @@ const BrandDashboard = () => {
   });
 
   const { userProfile, refetchProfile } = useUserProfile();
-  const { briefs: fetchedBriefs, isLoading, refetch: refetchBriefs } = useGetBusinessBriefs(
-    address as `0x${string}`
-  );
+  const {
+    briefs: fetchedBriefs,
+    isLoading,
+    refetch: refetchBriefs,
+  } = useGetBusinessBriefs(address as `0x${string}`);
   const briefs = useMemo(
     () => (address ? fetchedBriefs : []),
     [address, fetchedBriefs]
@@ -149,7 +153,7 @@ const BrandDashboard = () => {
 
   // Function to toggle description expansion
   const toggleDescription = (briefId: string) => {
-    setExpandedDescriptions(prev => {
+    setExpandedDescriptions((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(briefId)) {
         newSet.delete(briefId);
@@ -174,7 +178,7 @@ const BrandDashboard = () => {
   // Track transactions when hash becomes available
   useEffect(() => {
     if (createHash) {
-      console.log('DIVVI: Hash available from create campaign:', createHash);
+      console.log("DIVVI: Hash available from create campaign:", createHash);
       trackTransaction(createHash);
     }
   }, [createHash, trackTransaction]);
@@ -188,67 +192,70 @@ const BrandDashboard = () => {
 
   useEffect(() => {
     if (completeHash) {
-      console.log('DIVVI: Hash available from complete campaign:', completeHash);
+      console.log(
+        "DIVVI: Hash available from complete campaign:",
+        completeHash
+      );
       trackTransaction(completeHash);
     }
   }, [completeHash, trackTransaction]);
 
   useEffect(() => {
     if (cancelHash) {
-      console.log('DIVVI: Hash available from cancel campaign:', cancelHash);
+      console.log("DIVVI: Hash available from cancel campaign:", cancelHash);
       trackTransaction(cancelHash);
     }
   }, [cancelHash, trackTransaction]);
 
   useEffect(() => {
     if (expireHash) {
-      console.log('DIVVI: Hash available from expire campaign:', expireHash);
+      console.log("DIVVI: Hash available from expire campaign:", expireHash);
       trackTransaction(expireHash);
     }
   }, [expireHash, trackTransaction]);
 
   // Computed dashboard data
   const dashboardData = useMemo(() => {
-  if (!briefs) return null;
+    if (!briefs) return null;
 
-  const activeBriefs = briefs.filter(
-    (brief) =>
-      brief.status === CampaignStatus.OPEN ||
-      brief.status === CampaignStatus.ASSIGNED
-  );
-  const completedBriefs = briefs.filter(
-    (brief) => brief.status === CampaignStatus.COMPLETED
-  );
-  const totalBudget = briefs.reduce((sum, brief) => sum + brief.budget, 0);
-  const totalInfluencers = briefs.reduce(
-    (sum, brief) => sum + brief.selectedInfluencersCount,
-    0
-  );
+    const activeBriefs = briefs.filter(
+      (brief) =>
+        brief.status === CampaignStatus.OPEN ||
+        brief.status === CampaignStatus.ASSIGNED
+    );
+    const completedBriefs = briefs.filter(
+      (brief) => brief.status === CampaignStatus.COMPLETED
+    );
+    const totalBudget = briefs.reduce((sum, brief) => sum + brief.budget, 0);
+    const totalInfluencers = briefs.reduce(
+      (sum, brief) => sum + brief.selectedInfluencersCount,
+      0
+    );
 
-  const urgentActions = briefs
-    .filter((brief) => isActionUrgent(brief))
-    .map((brief) => ({
-      campaignId: brief.id,
-      campaignName: brief.name,
-      action: brief.statusInfo.nextAction || "Action needed",
-      priority: getActionPriority(brief),
-      dueDate: brief.timingInfo.currentDeadline,
-      warning: brief.statusInfo.warning,
-    }));
+    const urgentActions = briefs
+      .filter((brief) => isActionUrgent(brief))
+      .map((brief) => ({
+        campaignId: brief.id,
+        campaignName: brief.name,
+        action: brief.statusInfo.nextAction || "Action needed",
+        priority: getActionPriority(brief),
+        dueDate: brief.timingInfo.currentDeadline,
+        warning: brief.statusInfo.warning,
+      }));
 
-  return {
-    activeBriefs,
-    completedBriefs,
-    totalBudget,
-    totalInfluencers,
-    urgentActions: urgentActions || [],
-  };
-}, [briefs]);
+    return {
+      activeBriefs,
+      completedBriefs,
+      totalBudget,
+      totalInfluencers,
+      urgentActions: urgentActions || [],
+    };
+  }, [briefs]);
 
   useEffect(() => {
     if (isCreateSuccess) {
       toast.success("Campaign created successfully!");
-      setShowCreateModal(false);
+      // Modal will close automatically, just reset form and refetch
       setFormData({
         name: "",
         description: "",
@@ -292,7 +299,13 @@ const BrandDashboard = () => {
         }`
       );
     }
-  }, [isCompleteSuccess, isCompleteError, completeError, refetchApplications, refetchBriefs]);
+  }, [
+    isCompleteSuccess,
+    isCompleteError,
+    completeError,
+    refetchApplications,
+    refetchBriefs,
+  ]);
 
   useEffect(() => {
     if (isCancelSuccess) {
@@ -370,8 +383,10 @@ const BrandDashboard = () => {
     );
   };
 
-  const handleCreateCampaign = async (referralTag?: `0x${string}`): Promise<string> => {
-    console.log('DIVVI: Creating campaign with referral tag:', referralTag);
+  const handleCreateCampaign = async (
+    referralTag?: `0x${string}`
+  ): Promise<string> => {
+    console.log("DIVVI: Creating campaign with referral tag:", referralTag);
 
     if (!isFormValid()) {
       toast.error("Please fill in all required fields correctly");
@@ -392,7 +407,7 @@ const BrandDashboard = () => {
         Number(formData.verificationPeriod),
         referralTag
       );
-      console.log('DIVVI: Create campaign result:', result);
+      console.log("DIVVI: Create campaign result:", result);
       // If createBrief returns a string (e.g., campaign ID), return it
       return typeof result === "string" ? result : "";
     } catch (error) {
@@ -408,12 +423,18 @@ const BrandDashboard = () => {
     }
   };
 
-  const handleReleaseFunds = async (briefId: string, referralTag?: `0x${string}`) => {
-    console.log('DIVVI: Releasing funds with referral tag:', referralTag);
+  const handleReleaseFunds = async (
+    briefId: string,
+    referralTag?: `0x${string}`
+  ) => {
+    console.log("DIVVI: Releasing funds with referral tag:", referralTag);
 
     try {
-      const result = await completeCampaign(briefId as `0x${string}`, referralTag);
-      console.log('DIVVI: Release funds result:', result);
+      const result = await completeCampaign(
+        briefId as `0x${string}`,
+        referralTag
+      );
+      console.log("DIVVI: Release funds result:", result);
       return result;
     } catch (error) {
       console.error("Error releasing funds:", error);
@@ -427,15 +448,18 @@ const BrandDashboard = () => {
   };
 
   const handleCancelCampaign = async (briefId: string) => {
-    console.log('DIVVI: Cancelling campaign for briefId:', briefId);
+    console.log("DIVVI: Cancelling campaign for briefId:", briefId);
 
     try {
       // Generate Divvi referral tag
       const referralTag = generateDivviReferralTag();
-      console.log('DIVVI: About to cancel campaign with referral tag:', referralTag);
+      console.log(
+        "DIVVI: About to cancel campaign with referral tag:",
+        referralTag
+      );
 
       const result = await cancelBrief(briefId as `0x${string}`, referralTag);
-      console.log('DIVVI: Cancel campaign result:', result);
+      console.log("DIVVI: Cancel campaign result:", result);
       return result;
     } catch (error) {
       console.error("Error canceling campaign:", error);
@@ -449,15 +473,21 @@ const BrandDashboard = () => {
   };
 
   const handleExpireCampaign = async (briefId: string) => {
-    console.log('DIVVI: Expiring campaign for briefId:', briefId);
+    console.log("DIVVI: Expiring campaign for briefId:", briefId);
 
     try {
       // Generate Divvi referral tag
       const referralTag = generateDivviReferralTag();
-      console.log('DIVVI: About to expire campaign with referral tag:', referralTag);
+      console.log(
+        "DIVVI: About to expire campaign with referral tag:",
+        referralTag
+      );
 
-      const result = await expireCampaign(briefId as `0x${string}`, referralTag);
-      console.log('DIVVI: Expire campaign result:', result);
+      const result = await expireCampaign(
+        briefId as `0x${string}`,
+        referralTag
+      );
+      console.log("DIVVI: Expire campaign result:", result);
       return result;
     } catch (error) {
       console.error("Error expiring campaign:", error);
@@ -568,7 +598,7 @@ const BrandDashboard = () => {
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 mb-2 md:mb-3">
                 <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white">
-                  Hi,{" "}
+                  Welcome,{" "}
                   <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
                     {userProfile?.username || "Brand"}
                   </span>
@@ -842,8 +872,12 @@ const BrandDashboard = () => {
                 const isUrgent = isActionUrgent(brief);
                 const priority = getActionPriority(brief);
                 const isExpanded = expandedBriefId === brief.id;
-                const isDescriptionExpanded = expandedDescriptions.has(brief.id);
-                const showExpandButton = shouldShowExpandButton(brief.description);
+                const isDescriptionExpanded = expandedDescriptions.has(
+                  brief.id
+                );
+                const showExpandButton = shouldShowExpandButton(
+                  brief.description
+                );
 
                 return (
                   <motion.div
@@ -918,12 +952,11 @@ const BrandDashboard = () => {
                           {/* Expandable Description */}
                           <div className="mb-3 md:mb-6">
                             <div className="text-slate-300 text-sm md:text-lg leading-relaxed">
-                              {isDescriptionExpanded 
-                                ? brief.description 
-                                : getTruncatedDescription(brief.description)
-                              }
+                              {isDescriptionExpanded
+                                ? brief.description
+                                : getTruncatedDescription(brief.description)}
                             </div>
-                            
+
                             {showExpandButton && (
                               <motion.button
                                 onClick={() => toggleDescription(brief.id)}
@@ -931,9 +964,15 @@ const BrandDashboard = () => {
                                 whileTap={{ scale: 0.95 }}
                               >
                                 <FileText className="w-3 h-3 md:w-4 md:h-4" />
-                                <span>{isDescriptionExpanded ? "Show less" : "Show more"}</span>
+                                <span>
+                                  {isDescriptionExpanded
+                                    ? "Show less"
+                                    : "Show more"}
+                                </span>
                                 <motion.div
-                                  animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
+                                  animate={{
+                                    rotate: isDescriptionExpanded ? 180 : 0,
+                                  }}
                                   transition={{ duration: 0.2 }}
                                 >
                                   <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
@@ -997,30 +1036,36 @@ const BrandDashboard = () => {
 
                       {/* Next Action Alert */}
                       {brief.statusInfo.nextAction && (
-                      <div className={`p-3 md:p-6 rounded-xl md:rounded-2xl border mb-4 md:mb-6 ${
-                        isUrgent
-                          ? "bg-orange-500/5 border-orange-500/20"
-                          : "bg-blue-500/5 border-blue-500/20"
-                      }`}>
-                        <div className="flex items-center gap-2 md:gap-4">
-                          <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
-                            isUrgent ? "bg-orange-400" : "bg-blue-400"
-                          }`}></div>
-                          <span className="text-slate-200 font-medium text-sm md:text-lg">
-                            {brief.statusInfo.nextAction}
-                          </span>
-                        </div>
-                        {brief.statusInfo.warning && (
-                          <div className="flex items-center gap-2 md:gap-3 mt-2 md:mt-3">
-                            <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
-                            <span className="text-orange-400 text-sm md:text-base">
-                      
-                              {brief.statusInfo.warning.replace(/auto.?approval/gi, 'campaign completion')}
+                        <div
+                          className={`p-3 md:p-6 rounded-xl md:rounded-2xl border mb-4 md:mb-6 ${
+                            isUrgent
+                              ? "bg-orange-500/5 border-orange-500/20"
+                              : "bg-blue-500/5 border-blue-500/20"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 md:gap-4">
+                            <div
+                              className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
+                                isUrgent ? "bg-orange-400" : "bg-blue-400"
+                              }`}
+                            ></div>
+                            <span className="text-slate-200 font-medium text-sm md:text-lg">
+                              {brief.statusInfo.nextAction}
                             </span>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          {brief.statusInfo.warning && (
+                            <div className="flex items-center gap-2 md:gap-3 mt-2 md:mt-3">
+                              <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
+                              <span className="text-orange-400 text-sm md:text-base">
+                                {brief.statusInfo.warning.replace(
+                                  /auto.?approval/gi,
+                                  "campaign completion"
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Budget & Progress */}
                       <div className="flex items-center justify-between pt-4 md:pt-6 border-t border-slate-700/30">
@@ -1298,8 +1343,9 @@ const BrandDashboard = () => {
             </div>
 
             <p className="text-slate-300 mb-6 md:mb-8 leading-relaxed text-sm md:text-base">
-              Are you sure you want to expire this campaign? The remaining budget will be
-              refunded to your wallet. This action cannot be undone.
+              Are you sure you want to expire this campaign? The remaining
+              budget will be refunded to your wallet. This action cannot be
+              undone.
             </p>
 
             <div className="flex gap-3 md:gap-4">
@@ -1346,6 +1392,9 @@ const BrandDashboard = () => {
           isFormValid={isFormValid()}
           onCreateCampaign={handleCreateCampaign}
           onClose={() => setShowCreateModal(false)}
+          isCreateSuccess={isCreateSuccess}
+          isCreateError={isCreateError}
+          createError={createError}
         />
       )}
 

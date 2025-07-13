@@ -16,7 +16,7 @@ import { toast } from "react-hot-toast";
 import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
-import { useDivviIntegration } from "@/hooks/useDivviIntegration"; 
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
 interface FormData {
   name: string;
@@ -39,6 +39,9 @@ interface CreateCampaignModalProps {
   onCreateCampaign: (referralTag?: `0x${string}`) => Promise<string>;
   onClose: () => void;
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
+  isCreateSuccess?: boolean;
+  isCreateError?: boolean;
+  createError?: Error | null;
 }
 
 // Transaction phases for better UX
@@ -52,6 +55,9 @@ function CreateCampaignModal({
   onCreateCampaign,
   onClose,
   guardedAction,
+  isCreateSuccess = false,
+  isCreateError = false,
+  createError = null,
 }: CreateCampaignModalProps) {
   const { isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
@@ -76,6 +82,26 @@ function CreateCampaignModal({
     }
   }, [isCreatingBrief, transactionPhase]);
 
+  // Handle success and error states from parent component
+  useEffect(() => {
+    if (isCreateSuccess) {
+      setTransactionPhase("success");
+      // Close modal after showing success message
+      setTimeout(() => {
+        onClose();
+        setTransactionPhase("idle");
+      }, 2000);
+    }
+
+    if (isCreateError) {
+      setTransactionPhase("error");
+      // Reset error state after showing error message
+      setTimeout(() => {
+        setTransactionPhase("idle");
+      }, 3000);
+    }
+  }, [isCreateSuccess, isCreateError, onClose]);
+
   const handleCreateCampaign = async () => {
     if (!guardedAction) {
       toast.error("Network guard not available. Please refresh and try again.");
@@ -94,7 +120,10 @@ function CreateCampaignModal({
 
       // Generate Divvi referral tag to append to transaction calldata
       const referralTag = generateDivviReferralTag(); // ADD THIS LINE
-      console.log('DIVVI: About to create campaign with referral tag:', referralTag); // ADD THIS LINE
+      console.log(
+        "DIVVI: About to create campaign with referral tag:",
+        referralTag
+      ); // ADD THIS LINE
 
       // Update requirements in formData before calling onCreateCampaign
       setFormData({ ...formData, requirements: requirements });
@@ -132,6 +161,7 @@ function CreateCampaignModal({
         return {
           title: "Transaction Failed",
           description:
+            createError?.message ||
             "There was an error creating your campaign. Please try again.",
           icon: <AlertTriangle className="w-5 h-5 text-red-400" />,
           bgColor: "bg-red-500/10 border-red-500/20",
@@ -151,21 +181,21 @@ function CreateCampaignModal({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
+      className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 md:p-4 overflow-y-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
       <motion.div
-        className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl w-full max-w-[95vw] sm:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto"
+        className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl w-full max-w-[95vw] sm:max-w-2xl mx-auto max-h-[90vh] md:overflow-y-auto"
         initial={{ scale: 0.95, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-700/50 sticky top-0 bg-slate-800/95 z-10">
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-700/50 sticky top-0 bg-slate-800/95 z-10 mb-2">
           <h2 className="text-lg sm:text-2xl font-bold text-white">
             Create New Campaign
           </h2>
@@ -370,8 +400,8 @@ function CreateCampaignModal({
                   <option value="259200">3 days</option>
                   <option value="345600">4 days</option>
                   <option value="432000">5 days</option>
-                  <option value="518400">6 days</option>
-                  <option value="604800">7 days</option>
+                  <option value="604800">6 days</option>
+                  <option value="691200">7 days</option>
                   <option value="691200">8 days</option>
                   <option value="777600">9 days</option>
                   <option value="864000">10 days</option>
@@ -408,7 +438,6 @@ function CreateCampaignModal({
                   <option value="10">Entertainment</option>
                   <option value="11">Sports</option>
                   <option value="12">Lifestyle</option>
-                  
                 </select>
               </div>
             </div>
@@ -419,7 +448,7 @@ function CreateCampaignModal({
                 <Clock className="w-4 h-4 mr-2" />
                 Campaign Timing Configuration
               </h4>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Application Period */}
                 <div>
