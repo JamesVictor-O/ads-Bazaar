@@ -29,6 +29,17 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { isConnected: wagmiConnected } = useAccount();
   const { userProfile, isLoadingProfile } = useUserProfile();
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('HeroSection userProfile state:', {
+      userProfile,
+      isLoadingProfile,
+      isRegistered: userProfile?.isRegistered,
+      isBusiness: userProfile?.isBusiness,
+      isInfluencer: userProfile?.isInfluencer
+    });
+  }, [userProfile, isLoadingProfile]);
   const router = useRouter();
 
   useEffect(() => {

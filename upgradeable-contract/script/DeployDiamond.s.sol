@@ -253,7 +253,7 @@ contract DeployDiamond is Script {
     }
     
     function getGettersSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](17);
+        selectors = new bytes4[](20);
         selectors[0] = GettersFacet.getInfluencerProfile.selector;
         selectors[1] = GettersFacet.getAdBrief.selector;
         selectors[2] = GettersFacet.getAllBriefs.selector;
@@ -271,6 +271,9 @@ contract DeployDiamond is Script {
         selectors[14] = GettersFacet.getOwner.selector;
         selectors[15] = GettersFacet.getCUSD.selector;
         selectors[16] = GettersFacet.getPlatformFeePercentage.selector;
+        selectors[17] = GettersFacet.isUsernameAvailable.selector;
+        selectors[18] = GettersFacet.getUserByUsername.selector;
+        selectors[19] = GettersFacet.getUserUsername.selector;
     }
     
     function getSelfVerificationSelectors() internal pure returns (bytes4[] memory selectors) {

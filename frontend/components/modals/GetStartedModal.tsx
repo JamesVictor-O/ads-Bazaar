@@ -43,7 +43,7 @@ const GetStartedModal = ({
 }: GetStartedModalProps) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({ userType: "" });
   const [showNextStep, setShowNextStep] = useState(false);
-  const { isAvailable, isLoadingAvailability, shouldShowAvailability } = useIsUsernameAvailable(userDetails.username);
+  const { isAvailable, isLoadingAvailability, availabilityError } = useIsUsernameAvailable(userDetails.username);
 
   const router = useRouter();
   const { isConnected } = useAccount();
@@ -67,14 +67,22 @@ const GetStartedModal = ({
       toast.success("Registration completed successfully!");
       
       // Refetch user profile to update registration status
-      refetchProfile();
+      console.log('Registration successful, refetching profile...');
+      refetchProfile().then(() => {
+        console.log('Profile refetch completed');
+      }).catch((error) => {
+        console.error('Profile refetch failed:', error);
+      });
       
-      onClose();
-      router.push(
-        userDetails.userType === "influencer"
-          ? "/influencersDashboard"
-          : "/brandsDashBoard"
-      );
+      // Add a small delay to ensure the transaction is confirmed
+      setTimeout(() => {
+        onClose();
+        router.push(
+          userDetails.userType === "influencer"
+            ? "/influencersDashboard"
+            : "/brandsDashBoard"
+        );
+      }, 1000);
     }
   }, [isSuccess, userDetails.userType, router, onClose, refetchProfile]);
 
@@ -137,7 +145,6 @@ const GetStartedModal = ({
     const usernameValid = userDetails.username && 
                          userDetails.username.length >= 3 && 
                          userDetails.username.length <= 20 &&
-                         shouldShowAvailability &&
                          isAvailable === true && 
                          !isLoadingAvailability;
     
@@ -319,16 +326,18 @@ const GetStartedModal = ({
                   <p className="text-xs text-slate-400 mt-1">
                     3-20 characters. Letters, numbers, underscore, and dash allowed.
                   </p>
-                  {shouldShowAvailability && (
+                  {userDetails.username && userDetails.username.length >= 3 && (
                     <div className="text-xs mt-1">
-                      {isLoadingAvailability ? (
+                      {availabilityError ? (
+                        <span className="text-red-400">Error checking availability. Please try again.</span>
+                      ) : isLoadingAvailability ? (
                         <span className="text-slate-400">Checking availability...</span>
                       ) : isAvailable === true ? (
                         <span className="text-emerald-400">✓ Username available</span>
                       ) : isAvailable === false ? (
                         <span className="text-red-400">✗ Username already taken</span>
                       ) : (
-                        <span className="text-slate-400">Enter a username to check availability</span>
+                        <span className="text-slate-400">Checking...</span>
                       )}
                     </div>
                   )}

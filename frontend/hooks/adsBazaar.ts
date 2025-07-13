@@ -387,7 +387,12 @@ export function useUserProfile(userAddress?: Address) {
   const userProfile = useMemo(() => {
     if (!data) return null;
 
-    return {
+    // Debug logging
+    console.log('Raw getUsers data:', data);
+    console.log('Data type:', typeof data);
+    console.log('Data as array:', Array.isArray(data));
+
+    const profile = {
       isRegistered: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[0],
       isBusiness: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[1],
       isInfluencer: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[2],
@@ -397,6 +402,9 @@ export function useUserProfile(userAddress?: Address) {
       completedCampaigns: Number((data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[6]),
       totalEscrowed: Number((data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[7]),
     };
+
+    console.log('Parsed userProfile:', profile);
+    return profile;
   }, [data]);
 
   return {
@@ -647,20 +655,30 @@ export function useIsUsernameAvailable(username?: string) {
     args: [username],
     query: {
       enabled: !!username && username.length >= 3,
+      retry: 2,
+      retryDelay: 1000,
+      staleTime: 30000, // 30 seconds
     },
   });
 
-  // Handle the case where query is disabled (username too short or empty)
-  // In this case, we should not show availability status
-  const shouldShowAvailability = !!username && username.length >= 3;
-  const isAvailable = shouldShowAvailability ? (data as boolean) : undefined;
+  // Debug logging
+  useEffect(() => {
+    if (username && username.length >= 3) {
+      console.log('Username availability check:', {
+        username,
+        isLoading,
+        data,
+        error: error?.message,
+        contractAddress: CONTRACT_ADDRESS
+      });
+    }
+  }, [username, isLoading, data, error]);
 
   return {
-    isAvailable,
+    isAvailable: data as boolean | undefined,
     isLoadingAvailability: isLoading,
     availabilityError: error,
     refetchAvailability: refetch,
-    shouldShowAvailability,
   };
 }
 
