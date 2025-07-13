@@ -106,6 +106,7 @@ function formatBriefData(
       creationTime: Number(rawData.creationTime),
       selectionDeadline: Number(rawData.selectionDeadline),
       applicationCount,
+      selectionGracePeriod: Number(rawData.selectionGracePeriod),
 
       // Computed properties (will be set below)
       statusInfo: {} as any,
@@ -783,6 +784,7 @@ export function useCreateAdBrief() {
     applicationPeriod: number;
     proofSubmissionGracePeriod: number;
     verificationPeriod: number;
+    selectionGracePeriod: number;
     dataSuffix?: `0x${string}`;
   } | null>(null);
 
@@ -814,6 +816,7 @@ export function useCreateAdBrief() {
             BigInt(briefData.applicationPeriod),
             BigInt(briefData.proofSubmissionGracePeriod),
             BigInt(briefData.verificationPeriod),
+            BigInt(briefData.selectionGracePeriod),
           ],
           dataSuffix: briefData.dataSuffix,
         });
@@ -843,6 +846,7 @@ export function useCreateAdBrief() {
     applicationPeriod: number,
     proofSubmissionGracePeriod: number,
     verificationPeriod: number,
+    selectionGracePeriod: number,
     dataSuffix?: `0x${string}`
   ) => {
     console.log('DIVVI: Creating brief with dataSuffix:', dataSuffix);
@@ -863,6 +867,7 @@ export function useCreateAdBrief() {
         applicationPeriod,
         proofSubmissionGracePeriod,
         verificationPeriod,
+        selectionGracePeriod,
         dataSuffix,
       });
 
@@ -1593,5 +1598,68 @@ export function useExpireCampaign() {
     isError: tx.isError,
     error: tx.error,
     hash: tx.hash,
+  };
+}
+
+// Start campaign with partial selection
+export function useStartCampaignWithPartialSelection() {
+  const tx = useHandleTransaction();
+  const { address } = useAccount();
+
+  const startCampaignWithPartialSelection = async (
+    briefId: string,
+    dataSuffix?: `0x${string}`
+  ) => {
+    if (!address) return;
+
+    try {
+      tx.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: "startCampaignWithPartialSelection",
+        args: [briefId],
+        dataSuffix: dataSuffix,
+      });
+    } catch (error) {
+      console.error("Error starting campaign with partial selection:", error);
+      throw error;
+    }
+  };
+
+  return {
+    startCampaignWithPartialSelection,
+    ...tx,
+  };
+}
+
+// Cancel campaign with compensation
+export function useCancelCampaignWithCompensation() {
+  const tx = useHandleTransaction();
+  const { address } = useAccount();
+
+  const cancelCampaignWithCompensation = async (
+    briefId: string,
+    compensationPerInfluencer: string,
+    dataSuffix?: `0x${string}`
+  ) => {
+    if (!address) return;
+
+    try {
+      tx.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: "cancelCampaignWithCompensation",
+        args: [briefId, parseUnits(compensationPerInfluencer, 18)],
+        dataSuffix: dataSuffix,
+      });
+    } catch (error) {
+      console.error("Error cancelling campaign with compensation:", error);
+      throw error;
+    }
+  };
+
+  return {
+    cancelCampaignWithCompensation,
+    ...tx,
   };
 }

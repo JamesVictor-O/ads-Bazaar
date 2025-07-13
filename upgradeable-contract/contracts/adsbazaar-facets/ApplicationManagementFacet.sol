@@ -49,7 +49,7 @@ contract ApplicationManagementFacet {
         LibAdsBazaar.AdBrief storage brief = ds.briefs[_briefId];
         require(brief.business == msg.sender, "Not the brief owner");
         require(brief.status == LibAdsBazaar.CampaignStatus.OPEN, "Brief not in open status");
-        require(block.timestamp <= brief.selectionDeadline + LibAdsBazaar.SELECTION_GRACE_PERIOD, "Selection period has ended");
+        require(block.timestamp <= brief.selectionDeadline + brief.selectionGracePeriod, "Selection period has ended");
         require(brief.selectedInfluencersCount < brief.maxInfluencers, "Max influencers already selected");
         require(_applicationIndex < ds.applications[_briefId].length, "Invalid application index");
         

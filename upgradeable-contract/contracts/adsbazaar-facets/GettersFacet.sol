@@ -26,6 +26,7 @@ contract GettersFacet {
         uint256 applicationPeriod;
         uint256 proofSubmissionGracePeriod;
         uint256 verificationPeriod;
+        uint256 selectionGracePeriod;
     }
     
     struct ApplicationData {
@@ -66,7 +67,8 @@ contract GettersFacet {
             selectionDeadline: brief.selectionDeadline,
             applicationPeriod: brief.applicationPeriod,
             proofSubmissionGracePeriod: brief.proofSubmissionGracePeriod,
-            verificationPeriod: brief.verificationPeriod
+            verificationPeriod: brief.verificationPeriod,
+            selectionGracePeriod: brief.selectionGracePeriod
         });
     }
 

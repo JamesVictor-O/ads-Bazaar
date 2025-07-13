@@ -17,7 +17,8 @@ contract CampaignManagementFacet {
         uint8 _targetAudience,
         uint256 _applicationPeriod,
         uint256 _proofSubmissionGracePeriod,
-        uint256 _verificationPeriod
+        uint256 _verificationPeriod,
+        uint256 _selectionGracePeriod
     ) external {
         LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
         require(ds.users[msg.sender].isBusiness, "Not registered as business");
@@ -29,6 +30,7 @@ contract CampaignManagementFacet {
         require(_applicationPeriod >= 1 days && _applicationPeriod <= LibAdsBazaar.MAX_APPLICATION_PERIOD, "Application period must be between 1 day and 14 days");
         require(_proofSubmissionGracePeriod >= 1 days && _proofSubmissionGracePeriod <= LibAdsBazaar.MAX_PROOF_GRACE_PERIOD, "Proof submission grace period must be between 1 day and 2 days");
         require(_verificationPeriod >= 1 days && _verificationPeriod <= LibAdsBazaar.MAX_VERIFICATION_PERIOD, "Verification period must be between 1 day and 5 days");
+        require(_selectionGracePeriod >= 1 hours && _selectionGracePeriod <= LibAdsBazaar.MAX_SELECTION_GRACE_PERIOD, "Selection grace period must be between 1 hour and 2 days");
         
         // Transfer tokens from business to contract
         require(IERC20(ds.cUSD).transferFrom(msg.sender, address(this), _budget), "Token transfer failed");
@@ -76,7 +78,8 @@ contract CampaignManagementFacet {
             selectionDeadline: selectionDeadline,
             applicationPeriod: _applicationPeriod,
             proofSubmissionGracePeriod: _proofSubmissionGracePeriod,
-            verificationPeriod: _verificationPeriod
+            verificationPeriod: _verificationPeriod,
+            selectionGracePeriod: _selectionGracePeriod
         });
         
         // Add to business briefs
@@ -118,7 +121,7 @@ contract CampaignManagementFacet {
         
         LibAdsBazaar.AdBrief storage brief = ds.briefs[_briefId];
         require(brief.status == LibAdsBazaar.CampaignStatus.OPEN, "Campaign is not open");
-        require(block.timestamp > brief.selectionDeadline + LibAdsBazaar.SELECTION_GRACE_PERIOD, "Grace period still active");
+        require(block.timestamp > brief.selectionDeadline + brief.selectionGracePeriod, "Grace period still active");
         
         brief.status = LibAdsBazaar.CampaignStatus.EXPIRED;
         
@@ -134,6 +137,110 @@ contract CampaignManagementFacet {
         
         emit LibAdsBazaar.BriefExpired(_briefId);
         emit LibAdsBazaar.BudgetRefunded(_briefId, brief.business, brief.budget);
+    }
+
+    function startCampaignWithPartialSelection(bytes32 _briefId) external {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        require(ds.briefs[_briefId].business != address(0), "Brief does not exist");
+        
+        LibAdsBazaar.AdBrief storage brief = ds.briefs[_briefId];
+        require(brief.business == msg.sender, "Not the brief owner");
+        require(brief.status == LibAdsBazaar.CampaignStatus.OPEN, "Brief not in open status");
+        require(brief.selectedInfluencersCount > 0, "No influencers selected");
+        require(brief.selectedInfluencersCount < brief.maxInfluencers, "All slots already filled");
+        require(block.timestamp > brief.selectionDeadline, "Application period still active");
+        require(block.timestamp <= brief.selectionDeadline + brief.selectionGracePeriod, "Grace period has ended");
+        
+        // Calculate unused budget and refund
+        uint256 budgetPerInfluencer = brief.budget / brief.maxInfluencers;
+        uint256 unselectedCount = brief.maxInfluencers - brief.selectedInfluencersCount;
+        uint256 refundAmount = budgetPerInfluencer * unselectedCount;
+        uint256 actualBudget = brief.budget - refundAmount;
+        
+        // Update brief
+        brief.status = LibAdsBazaar.CampaignStatus.ASSIGNED;
+        brief.budget = actualBudget;
+        brief.maxInfluencers = brief.selectedInfluencersCount; // Update max to actual selected
+        
+        // Set campaign timing
+        brief.promotionStartTime = block.timestamp;
+        brief.promotionEndTime = brief.promotionStartTime + brief.promotionDuration;
+        brief.proofSubmissionDeadline = brief.promotionEndTime + brief.proofSubmissionGracePeriod;
+        brief.verificationDeadline = brief.proofSubmissionDeadline + brief.verificationPeriod;
+        
+        // Update business's total escrowed amount
+        ds.users[msg.sender].totalEscrowed -= refundAmount;
+        LibAdsBazaar.updateBusinessStatus(msg.sender);
+        
+        // Update total escrow amount
+        ds.totalEscrowAmount -= refundAmount;
+        
+        // Refund unused budget
+        if (refundAmount > 0) {
+            require(IERC20(ds.cUSD).transfer(brief.business, refundAmount), "Refund failed");
+            emit LibAdsBazaar.BudgetRefunded(_briefId, brief.business, refundAmount);
+        }
+        
+        emit LibAdsBazaar.PromotionStarted(
+            _briefId, 
+            brief.promotionStartTime, 
+            brief.promotionEndTime,
+            brief.proofSubmissionDeadline,
+            brief.verificationDeadline
+        );
+    }
+
+    function cancelCampaignWithCompensation(bytes32 _briefId, uint256 _compensationPerInfluencer) external {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        require(ds.briefs[_briefId].business != address(0), "Brief does not exist");
+        
+        LibAdsBazaar.AdBrief storage brief = ds.briefs[_briefId];
+        require(brief.business == msg.sender, "Not the brief owner");
+        require(brief.status == LibAdsBazaar.CampaignStatus.OPEN, "Brief not in open status");
+        require(brief.selectedInfluencersCount > 0, "No influencers to compensate");
+        require(block.timestamp > brief.selectionDeadline, "Application period still active");
+        require(block.timestamp <= brief.selectionDeadline + brief.selectionGracePeriod, "Grace period has ended");
+        
+        // Validate compensation amount (max 10% of budget per influencer for wasted time)
+        uint256 maxCompensation = (brief.budget * 10) / (100 * brief.selectedInfluencersCount);
+        require(_compensationPerInfluencer <= maxCompensation, "Compensation too high");
+        
+        uint256 totalCompensation = _compensationPerInfluencer * brief.selectedInfluencersCount;
+        uint256 refundToBusiness = brief.budget - totalCompensation;
+        
+        brief.status = LibAdsBazaar.CampaignStatus.CANCELLED;
+        
+        // Update business's total escrowed amount
+        ds.users[msg.sender].totalEscrowed -= brief.budget;
+        LibAdsBazaar.updateBusinessStatus(msg.sender);
+        
+        // Update total escrow amount
+        ds.totalEscrowAmount -= brief.budget;
+        
+        // Pay compensation to selected influencers
+        LibAdsBazaar.InfluencerApplication[] storage applications = ds.applications[_briefId];
+        for (uint256 i = 0; i < applications.length; i++) {
+            if (applications[i].isSelected && _compensationPerInfluencer > 0) {
+                // Add to pending payments for selected influencers
+                ds.influencerPendingPayments[applications[i].influencer].push(
+                    LibAdsBazaar.PendingPayment({
+                        briefId: _briefId,
+                        amount: _compensationPerInfluencer,
+                        isApproved: true
+                    })
+                );
+            }
+        }
+        
+        // Refund remaining budget to business
+        if (refundToBusiness > 0) {
+            require(IERC20(ds.cUSD).transfer(brief.business, refundToBusiness), "Refund failed");
+        }
+        
+        emit LibAdsBazaar.BriefCancelled(_briefId);
+        if (refundToBusiness > 0) {
+            emit LibAdsBazaar.BudgetRefunded(_briefId, brief.business, refundToBusiness);
+        }
     }
 
     function completeCampaign(bytes32 _briefId) external {

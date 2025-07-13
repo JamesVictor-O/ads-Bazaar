@@ -62,6 +62,8 @@ import {
   useGetBusinessBriefs,
   useCancelAdBrief,
   useExpireCampaign,
+  useStartCampaignWithPartialSelection,
+  useCancelCampaignWithCompensation,
 } from "../../hooks/adsBazaar";
 
 const BrandDashboard = () => {
@@ -89,6 +91,11 @@ const BrandDashboard = () => {
     new Set()
   );
 
+  // State for partial campaign management
+  const [showStartPartialConfirm, setShowStartPartialConfirm] = useState<string | null>(null);
+  const [showCancelWithCompensationModal, setShowCancelWithCompensationModal] = useState<string | null>(null);
+  const [compensationAmount, setCompensationAmount] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -100,6 +107,7 @@ const BrandDashboard = () => {
     applicationPeriod: "432000", // 5 days default
     proofSubmissionGracePeriod: "172800", // 2 days default (max)
     verificationPeriod: "259200", // 3 days default
+    selectionGracePeriod: "86400", // 1 day default
   });
 
   const { userProfile, refetchProfile } = useUserProfile();
@@ -150,6 +158,24 @@ const BrandDashboard = () => {
     error: expireError,
     hash: expireHash,
   } = useExpireCampaign();
+
+  const {
+    startCampaignWithPartialSelection,
+    isPending: isStartingPartialCampaign,
+    isSuccess: isStartPartialSuccess,
+    isError: isStartPartialError,
+    error: startPartialError,
+    hash: startPartialHash,
+  } = useStartCampaignWithPartialSelection();
+
+  const {
+    cancelCampaignWithCompensation,
+    isPending: isCancelingWithCompensation,
+    isSuccess: isCancelWithCompensationSuccess,
+    isError: isCancelWithCompensationError,
+    error: cancelWithCompensationError,
+    hash: cancelWithCompensationHash,
+  } = useCancelCampaignWithCompensation();
 
   // Function to toggle description expansion
   const toggleDescription = (briefId: string) => {
@@ -267,6 +293,7 @@ const BrandDashboard = () => {
         applicationPeriod: "432000", // 5 days default
         proofSubmissionGracePeriod: "172800", // 2 days default (max)
         verificationPeriod: "259200", // 3 days default
+        selectionGracePeriod: "86400", // 1 day default
       });
       // Refetch the campaigns to show the new one immediately
       setTimeout(() => {
@@ -405,6 +432,7 @@ const BrandDashboard = () => {
         Number(formData.applicationPeriod),
         Number(formData.proofSubmissionGracePeriod),
         Number(formData.verificationPeriod),
+        Number(formData.selectionGracePeriod),
         referralTag
       );
       console.log("DIVVI: Create campaign result:", result);
@@ -505,6 +533,62 @@ const BrandDashboard = () => {
       brief.status === CampaignStatus.OPEN &&
       brief.selectedInfluencersCount === 0
     );
+  };
+
+  // Check if campaign can be started with partial selection
+  const canStartPartialCampaign = (brief: Brief): boolean => {
+    const now = Date.now() / 1000;
+    const selectionDeadline = brief.selectionDeadline;
+    const gracePeriod = brief.selectionGracePeriod || 86400; // Default 1 day
+    
+    return (
+      brief.status === CampaignStatus.OPEN &&
+      brief.selectedInfluencersCount > 0 &&
+      brief.selectedInfluencersCount < brief.maxInfluencers &&
+      now > selectionDeadline &&
+      now <= selectionDeadline + gracePeriod
+    );
+  };
+
+  // Check if campaign can be cancelled with compensation
+  const canCancelWithCompensation = (brief: Brief): boolean => {
+    const now = Date.now() / 1000;
+    const selectionDeadline = brief.selectionDeadline;
+    const gracePeriod = brief.selectionGracePeriod || 86400; // Default 1 day
+    
+    return (
+      brief.status === CampaignStatus.OPEN &&
+      brief.selectedInfluencersCount > 0 &&
+      now > selectionDeadline &&
+      now <= selectionDeadline + gracePeriod
+    );
+  };
+
+  const handleStartPartialCampaign = async (briefId: string) => {
+    try {
+      const referralTag = generateDivviReferralTag();
+      await startCampaignWithPartialSelection(briefId as `0x${string}`, referralTag);
+      toast.success("Campaign started with partial selection!");
+      setShowStartPartialConfirm(null);
+      setTimeout(() => refetchBriefs(), 1000);
+    } catch (error) {
+      console.error("Error starting partial campaign:", error);
+      toast.error("Failed to start campaign with partial selection");
+    }
+  };
+
+  const handleCancelWithCompensation = async (briefId: string, compensation: string) => {
+    try {
+      const referralTag = generateDivviReferralTag();
+      await cancelCampaignWithCompensation(briefId as `0x${string}`, compensation, referralTag);
+      toast.success("Campaign cancelled with compensation!");
+      setShowCancelWithCompensationModal(null);
+      setCompensationAmount("");
+      setTimeout(() => refetchBriefs(), 1000);
+    } catch (error) {
+      console.error("Error cancelling with compensation:", error);
+      toast.error("Failed to cancel campaign with compensation");
+    }
   };
 
   const handleCreateCampaignClick = () => {
@@ -1229,6 +1313,40 @@ const BrandDashboard = () => {
                           </motion.button>
                         )}
 
+                        {/* Start Partial Campaign Button */}
+                        {canStartPartialCampaign(brief) && (
+                          <motion.button
+                            onClick={() => setShowStartPartialConfirm(brief.id)}
+                            disabled={isStartingPartialCampaign}
+                            className="px-2.5 py-2.5 md:px-4 md:py-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg md:rounded-xl border border-emerald-500/30 hover:border-emerald-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 md:gap-2"
+                            whileTap={{ scale: 0.95 }}
+                            title="Start with Partial Selection"
+                          >
+                            {isStartingPartialCampaign ? (
+                              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                            ) : (
+                              <Zap className="w-4 h-4 md:w-5 md:h-5" />
+                            )}
+                          </motion.button>
+                        )}
+
+                        {/* Cancel with Compensation Button */}
+                        {canCancelWithCompensation(brief) && (
+                          <motion.button
+                            onClick={() => setShowCancelWithCompensationModal(brief.id)}
+                            disabled={isCancelingWithCompensation}
+                            className="px-2.5 py-2.5 md:px-4 md:py-4 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg md:rounded-xl border border-amber-500/30 hover:border-amber-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 md:gap-2"
+                            whileTap={{ scale: 0.95 }}
+                            title="Cancel with Compensation"
+                          >
+                            {isCancelingWithCompensation ? (
+                              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                            ) : (
+                              <Ban className="w-4 h-4 md:w-5 md:h-5" />
+                            )}
+                          </motion.button>
+                        )}
+
                         <motion.button
                           className="p-2.5 md:p-4 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg md:rounded-xl transition-all"
                           whileTap={{ scale: 0.95 }}
@@ -1376,6 +1494,164 @@ const BrandDashboard = () => {
                     <Clock className="w-4 h-4 md:w-5 md:h-5" />
                     <span className="hidden sm:inline">Expire Campaign</span>
                     <span className="sm:hidden">Expire</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Start Partial Campaign Confirmation Modal */}
+      {showStartPartialConfirm && (
+        <motion.div
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl md:rounded-2xl p-4 md:p-8 max-w-md mx-auto shadow-2xl shadow-emerald-500/10 w-full"
+            initial={{ scale: 0.95, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.95, y: 20 }}
+          >
+            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+              <div className="p-2 md:p-3 bg-emerald-500/10 rounded-xl md:rounded-2xl border border-emerald-500/20">
+                <Zap className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white">
+                  Start with Partial Selection
+                </h3>
+                <p className="text-sm md:text-base text-slate-400">
+                  Proceed with selected influencers
+                </p>
+              </div>
+            </div>
+
+            <p className="text-slate-300 mb-6 md:mb-8 leading-relaxed text-sm md:text-base">
+              Start the campaign with the currently selected influencers. Unused budget will be refunded automatically.
+            </p>
+
+            <div className="flex gap-3 md:gap-4">
+              <button
+                onClick={() => setShowStartPartialConfirm(null)}
+                disabled={isStartingPartialCampaign}
+                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 font-medium text-slate-300 bg-slate-700/50 rounded-lg md:rounded-xl border border-slate-600/50 hover:bg-slate-700 transition-all disabled:opacity-50 text-sm md:text-base"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (showStartPartialConfirm) {
+                    handleStartPartialCampaign(showStartPartialConfirm);
+                  }
+                }}
+                disabled={isStartingPartialCampaign}
+                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg md:rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm md:text-base"
+              >
+                {isStartingPartialCampaign ? (
+                  <>
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                    <span className="hidden sm:inline">Starting...</span>
+                    <span className="sm:hidden">...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 md:w-5 md:h-5" />
+                    <span className="hidden sm:inline">Start Campaign</span>
+                    <span className="sm:hidden">Start</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Cancel with Compensation Modal */}
+      {showCancelWithCompensationModal && (
+        <motion.div
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl md:rounded-2xl p-4 md:p-8 max-w-md mx-auto shadow-2xl shadow-amber-500/10 w-full"
+            initial={{ scale: 0.95, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.95, y: 20 }}
+          >
+            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+              <div className="p-2 md:p-3 bg-amber-500/10 rounded-xl md:rounded-2xl border border-amber-500/20">
+                <Ban className="w-6 h-6 md:w-8 md:h-8 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-white">
+                  Cancel with Compensation
+                </h3>
+                <p className="text-sm md:text-base text-slate-400">
+                  Compensate selected influencers
+                </p>
+              </div>
+            </div>
+
+            <p className="text-slate-300 mb-4 leading-relaxed text-sm md:text-base">
+              Cancel the campaign and provide compensation to selected influencers for their time.
+            </p>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Compensation per Influencer (cUSD)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={compensationAmount}
+                onChange={(e) => setCompensationAmount(e.target.value)}
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all duration-200 text-sm"
+                placeholder="Enter compensation amount"
+                disabled={isCancelingWithCompensation}
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                Maximum 10% of budget per selected influencer
+              </p>
+            </div>
+
+            <div className="flex gap-3 md:gap-4">
+              <button
+                onClick={() => {
+                  setShowCancelWithCompensationModal(null);
+                  setCompensationAmount("");
+                }}
+                disabled={isCancelingWithCompensation}
+                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 font-medium text-slate-300 bg-slate-700/50 rounded-lg md:rounded-xl border border-slate-600/50 hover:bg-slate-700 transition-all disabled:opacity-50 text-sm md:text-base"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (showCancelWithCompensationModal && compensationAmount) {
+                    handleCancelWithCompensation(showCancelWithCompensationModal, compensationAmount);
+                  }
+                }}
+                disabled={isCancelingWithCompensation || !compensationAmount}
+                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 font-medium text-white bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg md:rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm md:text-base"
+              >
+                {isCancelingWithCompensation ? (
+                  <>
+                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+                    <span className="hidden sm:inline">Processing...</span>
+                    <span className="sm:hidden">...</span>
+                  </>
+                ) : (
+                  <>
+                    <Ban className="w-4 h-4 md:w-5 md:h-5" />
+                    <span className="hidden sm:inline">Cancel & Compensate</span>
+                    <span className="sm:hidden">Confirm</span>
                   </>
                 )}
               </button>

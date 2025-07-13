@@ -103,6 +103,11 @@
         "name": "_verificationPeriod",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "_selectionGracePeriod",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -247,6 +252,11 @@
           },
           {
             "name": "verificationPeriod",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "selectionGracePeriod",
             "type": "uint256",
             "internalType": "uint256"
           }
@@ -1414,6 +1424,43 @@
       },
       {
         "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PromotionStarted",
+    "inputs": [
+      {
+        "name": "briefId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "startTime",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "endTime",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "proofDeadline",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "verificationDeadline",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
