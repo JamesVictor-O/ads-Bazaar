@@ -26,6 +26,7 @@ import { SelfAppBuilder, SelfApp } from "@selfxyz/qrcode";
 import SelfQRcodeWrapper from "@selfxyz/qrcode";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { UserDisplay } from "@/components/ui/UserDisplay";
 import { motion, AnimatePresence } from "framer-motion";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
@@ -486,10 +487,7 @@ function SelfVerification({ guardedAction }: SelfVerificationProps) {
 
                   <div className="space-y-2 text-xs text-slate-400 mb-6">
                     <p>
-                      Wallet:{" "}
-                      {`${address.substring(0, 8)}...${address.substring(
-                        address.length - 6
-                      )}`}
+                      User: <UserDisplay address={address} className="text-emerald-400" />
                     </p>
                     <p>Network: {currentNetwork.name}</p>
                   </div>

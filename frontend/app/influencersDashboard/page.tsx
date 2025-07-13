@@ -535,7 +535,7 @@ export default function InfluencerDashboard() {
                   <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white flex items-center gap-2 md:gap-3">
                     Hi,{" "}
                     <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
-                      {username || displayName || "Influencer"}
+                      {userProfile?.username || username || displayName || "Influencer"}
                     </span>
                   </h1>
 

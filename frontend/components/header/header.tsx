@@ -146,7 +146,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                     <User size={16} className="text-white" />
                   </div>
                   <span className="text-slate-200 font-medium hidden md:block">
-                    {truncateAddress(address)}
+                    {userProfile?.username ? `@${userProfile.username}` : truncateAddress(address)}
                   </span>
                   <ChevronDown size={16} className="text-slate-400" />
                 </button>
@@ -159,7 +159,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                         <div className="flex items-center space-x-2">
                           <span className="text-green-400 text-xs">●</span>
                           <span className="text-slate-200 font-medium text-sm">
-                            {truncateAddress(address)}
+                            {userProfile?.username ? `@${userProfile.username}` : truncateAddress(address)}
                           </span>
                         </div>
                         <button
@@ -250,7 +250,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                         <div className="flex items-center space-x-2">
                           <span className="text-green-400 text-xs">●</span>
                           <span className="text-slate-200 font-medium text-sm">
-                            {truncateAddress(address)}
+                            {userProfile?.username ? `@${userProfile.username}` : truncateAddress(address)}
                           </span>
                         </div>
                         <button
@@ -343,7 +343,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                           className="flex items-center"
                         >
                           <span className="text-white font-medium text-sm sm:text-base">
-                            {truncateAddress(account.address)}
+                            {userProfile?.username ? `@${userProfile.username}` : truncateAddress(account.address)}
                           </span>
                         </button>
                       ) : (

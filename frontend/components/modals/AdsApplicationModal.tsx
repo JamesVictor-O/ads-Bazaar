@@ -19,7 +19,8 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useDivviIntegration } from '@/hooks/useDivviIntegration'
+import { useDivviIntegration } from '@/hooks/useDivviIntegration';
+import { UserDisplay } from "@/components/ui/UserDisplay";
 
 interface ApplyModalProps {
   showApplyModal: boolean;

@@ -568,7 +568,10 @@ const BrandDashboard = () => {
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-4 mb-2 md:mb-3">
                 <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white">
-                  Brand Dashboard
+                  Hi,{" "}
+                  <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
+                    {userProfile?.username || "Brand"}
+                  </span>
                 </h1>
                 {/* Business Status Badge */}
                 {userProfile?.status !== undefined && (

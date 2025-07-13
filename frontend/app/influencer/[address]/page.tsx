@@ -35,6 +35,7 @@ import { getUserStatusLabel, formatNumber } from "@/utils/format";
 import Image from "next/image";
 import Link from "next/link";
 import type { FarcasterProfile } from "@/lib/neynar";
+import { UserDisplay } from "@/components/ui/UserDisplay";
 
 // Helper hook to get FID from address
 function useFidFromAddress(address: string) {
@@ -1058,10 +1059,8 @@ export default function EnhancedInfluencerProfile() {
 
               {/* Address */}
               <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="font-mono bg-slate-800/60 px-3 py-1.5 rounded-lg text-sm text-slate-300 border border-slate-700/50">
-                  {`${(profileAddress as string).slice(0, 6)}...${(
-                    profileAddress as string
-                  ).slice(-4)}`}
+                <span className="bg-slate-800/60 px-3 py-1.5 rounded-lg text-sm text-slate-300 border border-slate-700/50">
+                  <UserDisplay address={profileAddress as string} className="text-emerald-400" />
                 </span>
                 <button
                   onClick={() =>
