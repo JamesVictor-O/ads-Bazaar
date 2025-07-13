@@ -384,6 +384,18 @@ export function useUserProfile(userAddress?: Address) {
     },
   });
 
+  // Debug the contract call
+  useEffect(() => {
+    console.log('useUserProfile debug:', {
+      targetAddress,
+      contractAddress: CONTRACT_ADDRESS,
+      data,
+      error: error?.message,
+      isLoading,
+      enabled: !!targetAddress
+    });
+  }, [targetAddress, data, error, isLoading]);
+
   const userProfile = useMemo(() => {
     if (!data) return null;
 
@@ -392,15 +404,27 @@ export function useUserProfile(userAddress?: Address) {
     console.log('Data type:', typeof data);
     console.log('Data as array:', Array.isArray(data));
 
+    // The contract returns a struct object, not a tuple array
+    const structData = data as {
+      isRegistered: boolean;
+      isBusiness: boolean;
+      isInfluencer: boolean;
+      status: number;
+      username: string;
+      profileData: string;
+      completedCampaigns: bigint;
+      totalEscrowed: bigint;
+    };
+
     const profile = {
-      isRegistered: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[0],
-      isBusiness: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[1],
-      isInfluencer: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[2],
-      status: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[3],
-      username: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[4],
-      profileData: (data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[5],
-      completedCampaigns: Number((data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[6]),
-      totalEscrowed: Number((data as [boolean, boolean, boolean, number, string, string, bigint, bigint])[7]),
+      isRegistered: structData.isRegistered,
+      isBusiness: structData.isBusiness,
+      isInfluencer: structData.isInfluencer,
+      status: structData.status,
+      username: structData.username,
+      profileData: structData.profileData,
+      completedCampaigns: Number(structData.completedCampaigns),
+      totalEscrowed: Number(structData.totalEscrowed),
     };
 
     console.log('Parsed userProfile:', profile);
