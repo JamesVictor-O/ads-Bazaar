@@ -535,7 +535,10 @@ export default function InfluencerDashboard() {
                   <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white flex items-center gap-2 md:gap-3">
                     Hi,{" "}
                     <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
-                      {userProfile?.username || username || displayName || "Influencer"}
+                      {userProfile?.username ||
+                        username ||
+                        displayName ||
+                        "Influencer"}
                     </span>
                   </h1>
 
@@ -623,7 +626,8 @@ export default function InfluencerDashboard() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.4 }}
                 >
-                Edit Profile <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
+                  Edit Profile{" "}
+                  <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
                 </motion.button>
               </Link>
             </div>
@@ -637,7 +641,7 @@ export default function InfluencerDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, delay: 0.3 }}
         >
-          <div className="flex md:items-center flex-col md:flex-row justify-between">
+          <div className="flex flex-col md:flex-col justify-between">
             <div className="flex items-center gap-3 md:gap-4">
               <div
                 className={`p-2 hidden md:block md:p-3 rounded-lg md:rounded-xl border ${
@@ -663,9 +667,38 @@ export default function InfluencerDashboard() {
                     : " Boost Your Profile with Self Verification"}
                 </p>
                 <p className="text-slate-400 text-xs md:text-sm">
-                  {isVerified
-                    ? "You have access to premium campaigns and higher rates"
-                    : "Get verified to increase your credibility, unlock premium campaigns, and earn up to 30% more! Verified creators get priority access to exclusive opportunities."}
+                  {isVerified ? (
+                    <>
+                      You have access to{" "}
+                      <span className="text-blue-400 font-semibold">
+                        premium campaigns
+                      </span>{" "}
+                      and{" "}
+                      <span className="text-blue-400 font-semibold">
+                        higher rates
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Get verified to increase your{" "}
+                      <span className="text-blue-400 font-semibold">
+                        credibility
+                      </span>
+                      , unlock{" "}
+                      <span className="text-blue-400 font-semibold">
+                        premium campaigns
+                      </span>
+                      , and earn up to{" "}
+                      <span className="text-blue-400 font-semibold">
+                        30% more
+                      </span>
+                      ! Verified creators get priority access to{" "}
+                      <span className="text-blue-400 font-semibold">
+                        exclusive opportunities
+                      </span>
+                      .
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -673,7 +706,7 @@ export default function InfluencerDashboard() {
             {!isVerified && (
               <Link href="/selfVerification">
                 <motion.button
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 my-2 text-white rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base"
+                  className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 my-2 text-white rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base mt-3"
                   whileTap={{ scale: 0.95 }}
                 >
                   <span className="">Get Verified Now</span>
@@ -681,46 +714,6 @@ export default function InfluencerDashboard() {
                 </motion.button>
               </Link>
             )}
-          </div>
-
-          {/* Verification Benefits Bar */}
-          <div className="mt-3 md:mt-4 flex flex-wrap gap-2 md:gap-3 text-xs md:text-sm">
-            <span
-              className={`px-2 py-1 rounded-full ${
-                isVerified
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-slate-700/50 text-slate-500"
-              }`}
-            >
-              {isVerified ? "✓" : "○"} Premium Campaigns
-            </span>
-            <span
-              className={`px-2 py-1 rounded-full ${
-                isVerified
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-slate-700/50 text-slate-500"
-              }`}
-            >
-              {isVerified ? "✓" : "○"} 30% Higher Rates
-            </span>
-            <span
-              className={`px-2 py-1 rounded-full ${
-                isVerified
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-slate-700/50 text-slate-500"
-              }`}
-            >
-              {isVerified ? "✓" : "○"} Priority Support
-            </span>
-            <span
-              className={`px-2 py-1 rounded-full ${
-                isVerified
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : "bg-slate-700/50 text-slate-500"
-              }`}
-            >
-              {isVerified ? "✓" : "○"} Exclusive Access
-            </span>
           </div>
         </motion.div>
 
@@ -983,7 +976,11 @@ export default function InfluencerDashboard() {
                                 {briefData.brief.name}
                               </h3>
                               <p className="text-slate-400 font-medium text-sm md:text-base">
-                                by <UserDisplay address={briefData.brief.business} className="text-emerald-400" />
+                                by{" "}
+                                <UserDisplay
+                                  address={briefData.brief.business}
+                                  className="text-emerald-400"
+                                />
                               </p>
                             </div>
 
