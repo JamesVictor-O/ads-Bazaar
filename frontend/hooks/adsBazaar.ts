@@ -650,11 +650,17 @@ export function useIsUsernameAvailable(username?: string) {
     },
   });
 
+  // Handle the case where query is disabled (username too short or empty)
+  // In this case, we should not show availability status
+  const shouldShowAvailability = !!username && username.length >= 3;
+  const isAvailable = shouldShowAvailability ? (data as boolean) : undefined;
+
   return {
-    isAvailable: data as boolean | undefined,
+    isAvailable,
     isLoadingAvailability: isLoading,
     availabilityError: error,
     refetchAvailability: refetch,
+    shouldShowAvailability,
   };
 }
 

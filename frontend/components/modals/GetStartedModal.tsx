@@ -43,7 +43,7 @@ const GetStartedModal = ({
 }: GetStartedModalProps) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({ userType: "" });
   const [showNextStep, setShowNextStep] = useState(false);
-  const { isAvailable, isLoadingAvailability } = useIsUsernameAvailable(userDetails.username);
+  const { isAvailable, isLoadingAvailability, shouldShowAvailability } = useIsUsernameAvailable(userDetails.username);
 
   const router = useRouter();
   const { isConnected } = useAccount();
@@ -137,7 +137,9 @@ const GetStartedModal = ({
     const usernameValid = userDetails.username && 
                          userDetails.username.length >= 3 && 
                          userDetails.username.length <= 20 &&
-                         isAvailable && !isLoadingAvailability;
+                         shouldShowAvailability &&
+                         isAvailable === true && 
+                         !isLoadingAvailability;
     
     if (userDetails.userType === "influencer") {
       return usernameValid && !!userDetails.niche;
@@ -317,14 +319,16 @@ const GetStartedModal = ({
                   <p className="text-xs text-slate-400 mt-1">
                     3-20 characters. Letters, numbers, underscore, and dash allowed.
                   </p>
-                  {userDetails.username && userDetails.username.length >= 3 && (
+                  {shouldShowAvailability && (
                     <div className="text-xs mt-1">
                       {isLoadingAvailability ? (
                         <span className="text-slate-400">Checking availability...</span>
-                      ) : isAvailable ? (
+                      ) : isAvailable === true ? (
                         <span className="text-emerald-400">✓ Username available</span>
-                      ) : (
+                      ) : isAvailable === false ? (
                         <span className="text-red-400">✗ Username already taken</span>
+                      ) : (
+                        <span className="text-slate-400">Enter a username to check availability</span>
                       )}
                     </div>
                   )}
