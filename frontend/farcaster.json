@@ -1,0 +1,9 @@
+{
+  "name": "AdsBazaar",
+  "version": "1.0.0",
+  "iconUrl": "https://ads-bazaar.vercel.app/adsBazaar-logo.png",
+  "splashImageUrl": "https://ads-bazaar.vercel.app/adsBazaar-logo.png",
+  "splashBackgroundColor": "#ffffff",
+  "homeUrl": "https://ads-bazaar.vercel.app",
+  "webhookUrl": "https://ads-bazaar.vercel.app/api/farcaster/webhook"
+}
