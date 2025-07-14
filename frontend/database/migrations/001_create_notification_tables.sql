@@ -22,6 +22,9 @@ CREATE TABLE notification_preferences (
   payment_notifications BOOLEAN DEFAULT true,
   dispute_alerts BOOLEAN DEFAULT true,
   deadline_reminders BOOLEAN DEFAULT true,
+  proof_status_updates BOOLEAN DEFAULT true,
+  proof_submitted BOOLEAN DEFAULT true,
+  campaign_cancelled BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   FOREIGN KEY (fid) REFERENCES notification_tokens(fid) ON DELETE CASCADE

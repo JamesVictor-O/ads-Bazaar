@@ -132,6 +132,12 @@ export class NotificationService {
         return preferences.dispute_alerts;
       case 'deadline_reminder':
         return preferences.deadline_reminders;
+      case 'proof_status_update':
+        return preferences.proof_status_updates;
+      case 'proof_submitted':
+        return preferences.proof_submitted;
+      case 'campaign_cancelled':
+        return preferences.campaign_cancelled;
       default:
         return true;
     }
@@ -226,6 +232,56 @@ export class AdsBazaarNotifications {
       targetUrl: deadlineDetails.targetUrl,
       data: deadlineDetails
     });
+  }
+
+  /**
+   * Send proof status update notification to influencer
+   */
+  async notifyProofStatusUpdate(influencerFid: number, proofDetails: any): Promise<void> {
+    const isApproved = proofDetails.isApproved;
+    const title = isApproved ? '✅ Content Approved!' : '❌ Content Needs Revision';
+    const body = isApproved 
+      ? `Your content for "${proofDetails.campaignTitle}" has been approved. Payment will be processed soon.`
+      : `Your content for "${proofDetails.campaignTitle}" needs revision. Please check the feedback and resubmit.`;
+    
+    await this.notificationService.sendNotificationToUser({
+      fid: influencerFid,
+      type: 'proof_status_update',
+      title,
+      body,
+      targetUrl: `https://ads-bazaar.vercel.app/influencersDashboard?campaign=${proofDetails.briefId}`,
+      data: proofDetails
+    });
+  }
+
+  /**
+   * Send proof submitted notification to brand
+   */
+  async notifyProofSubmitted(brandFid: number, submissionDetails: any): Promise<void> {
+    await this.notificationService.sendNotificationToUser({
+      fid: brandFid,
+      type: 'proof_submitted',
+      title: 'New Content Submitted',
+      body: `${submissionDetails.influencerName} has submitted content for "${submissionDetails.campaignTitle}". Review required.`,
+      targetUrl: `https://ads-bazaar.vercel.app/brandsDashBoard?campaign=${submissionDetails.briefId}`,
+      data: submissionDetails
+    });
+  }
+
+  /**
+   * Send campaign cancelled notification
+   */
+  async notifyCampaignCancelled(userFids: number[], cancellationDetails: any): Promise<void> {
+    const notifications = userFids.map(fid => ({
+      fid,
+      type: 'campaign_cancelled',
+      title: 'Campaign Cancelled',
+      body: `Campaign "${cancellationDetails.campaignTitle}" has been cancelled${cancellationDetails.reason ? '. Reason: ' + cancellationDetails.reason : '.'}`,
+      targetUrl: `https://ads-bazaar.vercel.app/marketplace`,
+      data: cancellationDetails
+    }));
+    
+    await this.notificationService.sendNotificationToUsers(notifications);
   }
 }
 

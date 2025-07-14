@@ -46,6 +46,24 @@ export function NotificationSettings({ onClose }: NotificationSettingsProps) {
       label: 'Deadline Reminders',
       description: 'Reminders for campaign deadlines and submissions',
       enabled: true
+    },
+    {
+      id: 'proof_status_updates',
+      label: 'Content Status Updates',
+      description: 'When your submitted content is approved or needs revision',
+      enabled: true
+    },
+    {
+      id: 'proof_submitted',
+      label: 'Content Submissions',
+      description: 'When influencers submit content for your campaigns',
+      enabled: true
+    },
+    {
+      id: 'campaign_cancelled',
+      label: 'Campaign Cancellations',
+      description: 'When campaigns you applied to are cancelled',
+      enabled: true
     }
   ]);
 
@@ -184,6 +202,9 @@ export function NotificationSettings({ onClose }: NotificationSettingsProps) {
               <p>• Campaign opportunities: When matching campaigns are created</p>
               <p>• Application updates: When you're selected or applications change</p>
               <p>• Payment notifications: When payments are approved or ready</p>
+              <p>• Content status updates: When your submitted content is reviewed</p>
+              <p>• Content submissions: When influencers submit work (brands only)</p>
+              <p>• Campaign cancellations: When campaigns are cancelled</p>
               <p>• Dispute alerts: When disputes are raised or resolved</p>
               <p>• Deadline reminders: 24 hours and 1 hour before deadlines</p>
             </div>
