@@ -4,21 +4,33 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brief } from '@/types';
-import { useReadContract } from 'wagmi';
+import { useReadContract, useAccount } from 'wagmi';
 import { adsBazaarAbi } from '@/contracts/adsBazaar';
 import CampaignCard from '@/components/CampaignCard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Users, Zap, Shield, ArrowRight } from 'lucide-react';
+import { useUserProfile } from '@/hooks/adsBazaar';
+import GetStartedModal from '@/components/modals/GetStartedModal';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export default function CampaignSharePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [campaign, setCampaign] = useState<Brief | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showGetStarted, setShowGetStarted] = useState(false);
+
+  // Wallet and user state
+  const { address, isConnected } = useAccount();
+  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
 
   // Extract campaign ID from URL parameters
   const campaignId = searchParams.get('campaignId');
   const castHash = searchParams.get('castHash');
   const castFid = searchParams.get('castFid');
+
+  // Determine user state
+  const isRegistered = userProfile?.isRegistered || false;
+  const canApply = isConnected && isRegistered && userProfile?.isInfluencer;
 
   // Read campaign data from contract
   const { data: campaignData, isLoading: contractLoading } = useReadContract({
@@ -56,6 +68,24 @@ export default function CampaignSharePage() {
   }, [campaignData, contractLoading, campaignId]);
 
   const handleApplyToCampaign = () => {
+    if (!isConnected) {
+      // User needs to connect wallet first
+      return;
+    }
+    
+    if (!isRegistered) {
+      // User needs to register first
+      setShowGetStarted(true);
+      return;
+    }
+
+    if (!userProfile?.isInfluencer) {
+      // User is registered as business, redirect to become influencer
+      router.push('/marketplace');
+      return;
+    }
+
+    // User is ready to apply
     if (campaignId) {
       router.push(`/marketplace?highlight=${campaignId}`);
     }
@@ -63,6 +93,10 @@ export default function CampaignSharePage() {
 
   const handleViewMarketplace = () => {
     router.push('/marketplace');
+  };
+
+  const handleGetStarted = () => {
+    setShowGetStarted(true);
   };
 
   if (loading || contractLoading) {
@@ -122,21 +156,84 @@ export default function CampaignSharePage() {
           />
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Dynamic based on user state */}
         <div className="flex justify-center gap-4">
-          <button
-            onClick={handleApplyToCampaign}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
-          >
-            Apply to Campaign
-          </button>
-          <button
-            onClick={handleViewMarketplace}
-            className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-8 py-3 rounded-lg font-medium transition-colors"
-          >
-            Browse More Campaigns
-          </button>
+          {!isConnected ? (
+            <div className="flex flex-col items-center gap-4">
+              <ConnectButton />
+              <p className="text-sm text-gray-600">Connect your wallet to apply to this campaign</p>
+            </div>
+          ) : !isRegistered ? (
+            <div className="flex flex-col items-center gap-4">
+              <button
+                onClick={handleGetStarted}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <ArrowRight className="h-4 w-4" />
+                Join Ads-Bazaar to Apply
+              </button>
+              <p className="text-sm text-gray-600">Create your influencer profile to start earning</p>
+            </div>
+          ) : !userProfile?.isInfluencer ? (
+            <div className="flex flex-col items-center gap-4">
+              <button
+                onClick={handleViewMarketplace}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+              >
+                Switch to Influencer Mode
+              </button>
+              <p className="text-sm text-gray-600">You're registered as a business. Switch to influencer to apply.</p>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={handleApplyToCampaign}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <ArrowRight className="h-4 w-4" />
+                Apply to Campaign
+              </button>
+              <button
+                onClick={handleViewMarketplace}
+                className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-8 py-3 rounded-lg font-medium transition-colors"
+              >
+                Browse More Campaigns
+              </button>
+            </>
+          )}
         </div>
+
+        {/* Benefits Section for New Users */}
+        {!isConnected || !isRegistered ? (
+          <div className="mt-12 bg-white rounded-xl shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
+              Why Join Ads-Bazaar?
+            </h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Zap className="h-6 w-6 text-emerald-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Instant Payments</h3>
+                <p className="text-gray-600 text-sm">Get paid immediately via smart contracts. No waiting for payments.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Secure & Transparent</h3>
+                <p className="text-gray-600 text-sm">All transactions on blockchain. No disputes, full transparency.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-6 w-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Quality Brands</h3>
+                <p className="text-gray-600 text-sm">Work with verified businesses and build your influence.</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Share Info */}
         <div className="text-center mt-8 text-sm text-gray-500">
@@ -144,6 +241,14 @@ export default function CampaignSharePage() {
           <p>Join Ads-Bazaar to connect with businesses and earn from your influence!</p>
         </div>
       </div>
+
+      {/* Registration Modal */}
+      {showGetStarted && (
+        <GetStartedModal 
+          isOpen={showGetStarted}
+          onClose={() => setShowGetStarted(false)}
+        />
+      )}
     </div>
   );
 }
