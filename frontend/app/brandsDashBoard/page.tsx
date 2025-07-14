@@ -42,6 +42,7 @@ import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { format } from "date-fns";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
   getStatusColor,
@@ -1278,6 +1279,12 @@ const BrandDashboard = () => {
                         >
                           Submissions
                         </motion.button>
+
+                        {/* Share Campaign Button */}
+                        <ShareCampaignButton 
+                          campaign={brief}
+                          className="flex-shrink-0"
+                        />
 
                         {/* Expire Campaign Button */}
                         {brief.statusInfo.canExpire && (
