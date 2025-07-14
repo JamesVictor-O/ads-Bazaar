@@ -21,6 +21,7 @@ import {
 import { motion } from "framer-motion";
 import { useDivviIntegration } from '@/hooks/useDivviIntegration';
 import { UserDisplay } from "@/components/ui/UserDisplay";
+import { formatCurrency } from "@/utils/format";
 
 interface ApplyModalProps {
   showApplyModal: boolean;
@@ -31,6 +32,7 @@ interface ApplyModalProps {
     business: string;
     description: string;
     budget: number;
+    maxInfluencers: number;
     requirements?: string;
   } | null;
   applicationMessage: string;
@@ -338,8 +340,7 @@ function ApplyModal({
                   <div>
                     <p className="text-xs text-slate-400">Business</p>
                     <p className="text-base sm:text-lg font-medium text-white truncate">
-                      {selectedBrief.business.slice(0, 10)}...
-                      {selectedBrief.business.slice(-6)}
+                      <UserDisplay address={selectedBrief.business} className="text-emerald-400" />
                     </p>
                   </div>
                 </div>
@@ -367,9 +368,12 @@ function ApplyModal({
                     <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-400">Total Budget</p>
+                    <p className="text-xs text-slate-400">Your Earnings</p>
                     <p className="text-base sm:text-lg font-medium text-emerald-400">
-                      {selectedBrief.budget.toLocaleString()} cUSD
+                      {formatCurrency(selectedBrief.budget / selectedBrief.maxInfluencers)}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Total budget: {formatCurrency(selectedBrief.budget)} for {selectedBrief.maxInfluencers} {selectedBrief.maxInfluencers === 1 ? 'spot' : 'spots'}
                     </p>
                   </div>
                 </div>

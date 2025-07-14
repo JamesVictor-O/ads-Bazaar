@@ -52,31 +52,32 @@ interface RawApplicationData {
 /**
  * Formats raw brief data from contract to frontend Brief type
  */
-function formatBriefData(briefId: string, rawData: any[]): Brief | null {
+function formatBriefData(briefId: string, rawData: any): Brief | null {
   try {
-    if (!Array.isArray(rawData) || rawData.length < 17) {
+    console.log(`[DEBUG] formatBriefData called for ${briefId}:`, rawData);
+    if (!rawData || typeof rawData !== 'object') {
       console.error("Invalid brief data format:", rawData);
       return null;
     }
 
     const brief: Brief = {
       id: briefId as `0x${string}`,
-      business: rawData[1] as `0x${string}`,
-      name: rawData[2] as string,
-      description: rawData[3] as string,
-      requirements: rawData[4] as string,
-      budget: Number(formatEther(rawData[5] as bigint)),
-      status: Number(rawData[6]) as CampaignStatus,
-      promotionDuration: Number(rawData[7]),
-      promotionStartTime: Number(rawData[8]),
-      promotionEndTime: Number(rawData[9]),
-      proofSubmissionDeadline: Number(rawData[10]),
-      verificationDeadline: Number(rawData[11]),
-      maxInfluencers: Number(rawData[12]),
-      selectedInfluencersCount: Number(rawData[13]),
-      targetAudience: Number(rawData[14]) as TargetAudience,
-      creationTime: Number(rawData[15]),
-      selectionDeadline: Number(rawData[16]),
+      business: rawData.business as `0x${string}`,
+      name: rawData.name as string,
+      description: rawData.description as string,
+      requirements: rawData.requirements as string || "",
+      budget: Number(formatEther(rawData.budget as bigint)),
+      status: Number(rawData.status) as CampaignStatus,
+      promotionDuration: Number(rawData.promotionDuration),
+      promotionStartTime: Number(rawData.promotionStartTime),
+      promotionEndTime: Number(rawData.promotionEndTime),
+      proofSubmissionDeadline: Number(rawData.proofSubmissionDeadline),
+      verificationDeadline: Number(rawData.verificationDeadline),
+      maxInfluencers: Number(rawData.maxInfluencers),
+      selectedInfluencersCount: Number(rawData.selectedInfluencersCount),
+      targetAudience: Number(rawData.targetAudience) as TargetAudience,
+      creationTime: Number(rawData.creationTime),
+      selectionDeadline: Number(rawData.selectionDeadline),
       applicationCount: 0, // Will be filled if available
 
       // Computed properties (will be set below)
@@ -156,6 +157,12 @@ export const useInfluencerDashboard = () => {
   const { address: influencerAddress } = useAccount();
   const publicClient = usePublicClient();
 
+  console.log('[DEBUG] useInfluencerDashboard hook initialized:', {
+    influencerAddress,
+    publicClient: !!publicClient,
+    dashboardDataInitial: dashboardData
+  });
+
   // Fetch influencer's applied brief IDs
   const {
     data: briefIdsResult,
@@ -171,9 +178,23 @@ export const useInfluencerDashboard = () => {
         args: [influencerAddress],
       },
     ],
+    query: {
+      enabled: !!influencerAddress,
+    },
+  });
+
+  console.log('[DEBUG] Contract query state:', {
+    isLoadingBriefIds,
+    briefIdsError: briefIdsError?.message,
+    briefIdsResult,
+    influencerAddress,
+    contractAddress: CONTRACT_ADDRESS
   });
 
   const briefIds = briefIdsResult?.[0]?.result as string[] | undefined;
+  
+  console.log('[DEBUG] Brief IDs result:', briefIdsResult);
+  console.log('[DEBUG] Extracted brief IDs:', briefIds);
 
   // Fetch detailed data for each brief
   const fetchDashboardData = useCallback(
@@ -190,16 +211,20 @@ export const useInfluencerDashboard = () => {
       setDashboardData((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
+        console.log(`[DEBUG] fetchDashboardData called with ${ids.length} IDs:`, ids);
         const results = await Promise.all(
           ids.map(async (briefId) => {
             try {
+              console.log(`[DEBUG] Fetching brief ${briefId}...`);
               // Fetch brief details
               const briefData = await publicClient.readContract({
                 address: CONTRACT_ADDRESS,
                 abi: ABI.abi,
-                functionName: "briefs",
+                functionName: "getAdBrief",
                 args: [briefId],
               });
+
+              console.log(`[DEBUG] Brief data for ${briefId}:`, briefData);
 
               // Fetch application data for this brief
               const applicationData = (await publicClient.readContract({
@@ -209,7 +234,9 @@ export const useInfluencerDashboard = () => {
                 args: [briefId],
               })) as RawApplicationData;
 
-              if (Array.isArray(briefData)) {
+              console.log(`[DEBUG] Application data for ${briefId}:`, applicationData);
+
+              if (briefData) {
                 const formattedBrief = formatBriefData(briefId, briefData);
                 if (formattedBrief) {
                   const formattedApplication = formatApplicationData(
@@ -239,11 +266,16 @@ export const useInfluencerDashboard = () => {
           (result): result is NonNullable<typeof result> => result !== null
         );
 
+        console.log(`[DEBUG] Valid results count: ${validResults.length}`, validResults);
+
         // Separate applied and assigned briefs
         const appliedBriefs = validResults;
         const assignedBriefs = validResults.filter(
           (result) => result.application.isSelected
         );
+
+        console.log(`[DEBUG] Applied briefs: ${appliedBriefs.length}`, appliedBriefs);
+        console.log(`[DEBUG] Assigned briefs: ${assignedBriefs.length}`, assignedBriefs);
 
         setDashboardData({
           appliedBriefs,
@@ -268,7 +300,16 @@ export const useInfluencerDashboard = () => {
 
   // Effect to fetch data when brief IDs change
   useEffect(() => {
+    console.log('[DEBUG] useEffect triggered with:', {
+      influencerAddress,
+      isLoadingBriefIds,
+      briefIdsError,
+      briefIds,
+      briefIdsLength: briefIds?.length
+    });
+
     if (!influencerAddress) {
+      console.log('[DEBUG] No influencer address, setting error');
       setDashboardData((prev) => ({
         ...prev,
         isLoading: false,
@@ -278,11 +319,13 @@ export const useInfluencerDashboard = () => {
     }
 
     if (isLoadingBriefIds) {
+      console.log('[DEBUG] Still loading brief IDs');
       setDashboardData((prev) => ({ ...prev, isLoading: true }));
       return;
     }
 
     if (briefIdsError) {
+      console.log('[DEBUG] Error loading brief IDs:', briefIdsError);
       setDashboardData((prev) => ({
         ...prev,
         isLoading: false,
@@ -293,6 +336,7 @@ export const useInfluencerDashboard = () => {
 
     if (briefIds && Array.isArray(briefIds)) {
       if (briefIds.length === 0) {
+        console.log('[DEBUG] No brief IDs found, setting empty state');
         setDashboardData({
           appliedBriefs: [],
           assignedBriefs: [],
@@ -300,8 +344,11 @@ export const useInfluencerDashboard = () => {
           error: null,
         });
       } else {
+        console.log('[DEBUG] Found brief IDs, fetching dashboard data:', briefIds);
         fetchDashboardData(briefIds);
       }
+    } else {
+      console.log('[DEBUG] briefIds is not an array or is undefined:', briefIds);
     }
   }, [
     influencerAddress,
@@ -312,11 +359,23 @@ export const useInfluencerDashboard = () => {
   ]);
 
   const refetch = useCallback(() => {
-    // Add a small delay to prevent aggressive re-fetching
+    // Add a longer delay to account for blockchain propagation
     setTimeout(() => {
       refetchBriefIds();
-    }, 100);
+    }, 2000);
   }, [refetchBriefIds]);
+
+  // Listen for global dashboard refresh events
+  useEffect(() => {
+    const handleDashboardRefresh = () => {
+      refetch();
+    };
+
+    window.addEventListener('dashboardRefresh', handleDashboardRefresh);
+    return () => {
+      window.removeEventListener('dashboardRefresh', handleDashboardRefresh);
+    };
+  }, [refetch]);
 
   return { ...dashboardData, refetch };
 };

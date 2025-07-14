@@ -28,6 +28,7 @@ import {
   Eye,
   ChevronDown,
   FileText,
+  RefreshCw,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useProfile } from "@farcaster/auth-kit";
@@ -56,7 +57,6 @@ import {
 import {
   getUserStatusColor,
   getUserStatusLabel,
-  truncateAddress,
 } from "@/utils/format";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 
@@ -130,6 +130,7 @@ export default function InfluencerDashboard() {
   const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
     useInfluencerDashboard();
 
+
   // Fetch pending payments data
   const { totalPendingAmount, isLoadingTotalAmount } =
     useTotalPendingAmount(address);
@@ -173,7 +174,6 @@ export default function InfluencerDashboard() {
   // Track transaction when hash becomes available
   useEffect(() => {
     if (submitHash) {
-      console.log("DIVVI: Hash available from submit proof:", submitHash);
       trackTransaction(submitHash);
     }
   }, [submitHash, trackTransaction]);
@@ -258,7 +258,7 @@ export default function InfluencerDashboard() {
         .map((brief) => ({
           id: brief.briefId,
           type: "payment" as const,
-          amount: Number(brief.brief.budget) / 1e18,
+          amount: brief.brief.progressInfo.budgetPerSpot,
           from: brief.brief.business,
           date: format(new Date(), "yyyy-MM-dd"),
           txHash: `${brief.briefId.slice(0, 10)}...${brief.briefId.slice(-6)}`,
@@ -272,8 +272,6 @@ export default function InfluencerDashboard() {
     briefId: string,
     referralTag?: `0x${string}`
   ): Promise<void> => {
-    console.log("DIVVI: Submitting proof with referral tag:", referralTag);
-
     if (!postLink) {
       toast.error("Please enter a post link");
       return;
@@ -291,7 +289,6 @@ export default function InfluencerDashboard() {
         postLink,
         referralTag
       );
-      console.log("DIVVI: Submit proof result:", result);
       if (result?.hash) {
         setTxStatus({
           stage: "confirming",
@@ -366,31 +363,43 @@ export default function InfluencerDashboard() {
   };
 
   const getFilteredCampaigns = () => {
-    if (!appliedBriefs) return [];
+    if (!appliedBriefs) {
+      return [];
+    }
 
-    return appliedBriefs.filter((briefData) => {
-      const appInfo = computeApplicationInfo(
-        briefData.application,
-        briefData.brief
-      );
+    if (!Array.isArray(appliedBriefs)) {
+      return [];
+    }
 
-      switch (filter) {
-        case "active":
-          return (
-            briefData.brief.status === CampaignStatus.OPEN ||
-            briefData.brief.status === CampaignStatus.ASSIGNED
-          );
-        case "completed":
-          return (
-            briefData.brief.status === CampaignStatus.COMPLETED ||
-            briefData.application.hasClaimed
-          );
-        case "urgent":
-          return appInfo.canSubmitProof || appInfo.canClaim || appInfo.warning;
-        default:
-          return true;
+    const filtered = appliedBriefs.filter((briefData) => {
+      try {
+        const appInfo = computeApplicationInfo(
+          briefData.application,
+          briefData.brief
+        );
+
+        switch (filter) {
+          case "active":
+            return (
+              briefData.brief.status === CampaignStatus.OPEN ||
+              briefData.brief.status === CampaignStatus.ASSIGNED
+            );
+          case "completed":
+            return (
+              briefData.brief.status === CampaignStatus.COMPLETED ||
+              briefData.application.hasClaimed
+            );
+          case "urgent":
+            return appInfo.canSubmitProof || appInfo.canClaim || appInfo.warning;
+          default:
+            return true;
+        }
+      } catch {
+        return false;
       }
     });
+
+    return filtered;
   };
 
   const filteredCampaigns = getFilteredCampaigns();
@@ -753,7 +762,7 @@ export default function InfluencerDashboard() {
 
         {/* Filter Tabs */}
         <div className="mb-6 md:mb-8">
-          <div className="flex flex-wrap gap-2 md:gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {[
               {
                 key: "all",
@@ -807,6 +816,20 @@ export default function InfluencerDashboard() {
                 )}
               </motion.button>
             ))}
+            
+            {/* Refresh Button */}
+            <motion.button
+              onClick={() => {
+                refetch();
+                toast.success("Refreshing campaign data...");
+              }}
+              className="px-3 py-2 md:px-4 md:py-3 rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-800 hover:text-slate-300 ml-auto"
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              title="Refresh campaigns"
+            >
+              <RefreshCw className="w-4 h-4 md:w-5 md:h-5" />
+            </motion.button>
           </div>
         </div>
 
@@ -920,7 +943,7 @@ export default function InfluencerDashboard() {
                 </p>
               </div>
             </div>
-          ) : !filteredCampaigns || filteredCampaigns.length === 0 ? (
+          ) : (!filteredCampaigns || filteredCampaigns.length === 0) ? (
             <div className="text-center py-12 md:py-20">
               <Briefcase className="w-12 h-12 md:w-16 md:h-16 text-slate-600 mx-auto mb-4 md:mb-6" />
               <h3 className="text-lg md:text-2xl font-semibold text-white mb-2 md:mb-3">
@@ -940,7 +963,7 @@ export default function InfluencerDashboard() {
                   briefData.brief
                 );
                 const isExpanded = expandedBriefId === briefData.briefId;
-                const budget = briefData.brief.budget;
+                const budget = briefData.brief.progressInfo.budgetPerSpot;
                 const hasProof = !!briefData.application.proofLink;
                 const isDescriptionExpanded = expandedDescriptions.has(
                   briefData.briefId
