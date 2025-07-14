@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, easeInOut } from "framer-motion";
 import {
   ArrowRight,
-  CheckCircle,
   DollarSign,
   Shield,
   Star,
@@ -18,6 +17,7 @@ import { useUserProfile } from "../../hooks/adsBazaar";
 import { usePlatformStats } from "../../hooks/usePlatformStats";
 import { formatNumber } from "@/utils/format";
 import Link from "next/link";
+import Image from "next/image";
 
 interface HeroSectionProps {
   setIsModalOpen: (isOpen: boolean) => void;
@@ -29,15 +29,15 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { isConnected: wagmiConnected } = useAccount();
   const { userProfile, isLoadingProfile } = useUserProfile();
-  
+
   // Debug logging
   useEffect(() => {
-    console.log('HeroSection userProfile state:', {
+    console.log("HeroSection userProfile state:", {
       userProfile,
       isLoadingProfile,
       isRegistered: userProfile?.isRegistered,
       isBusiness: userProfile?.isBusiness,
-      isInfluencer: userProfile?.isInfluencer
+      isInfluencer: userProfile?.isInfluencer,
     });
   }, [userProfile, isLoadingProfile]);
   const router = useRouter();
@@ -208,7 +208,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   };
 
   return (
-    <section className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 md:bg-gradient-to-br md:from-slate-900 md:via-slate-800 md:to-emerald-900 px-4 sm:px-6 lg:px-16 pt-24 sm:pt-40 lg:pt-24 pb-20 sm:pb-12 lg:pb-16 overflow-hidden">
+    <section className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 md:bg-gradient-to-br md:from-slate-900 md:via-slate-800 md:to-emerald-900 px-4 sm:px-6 lg:px-16 pt-24 sm:pt-40 lg:pt-2 pb-20 sm:pb-12 lg:pb-16 overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 md:hidden">
         <div
@@ -264,8 +264,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               </span>
             </motion.div>
 
-            
-
             <motion.h1
               className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight"
               variants={itemVariants}
@@ -277,8 +275,9 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                 Your Influence
                 <br />
                 <span className="text-lg block mt-2 bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                  <span className="text-emerald-400 animate-pulse">Where Every Post Pays</span>{" "}
-                  
+                  <span className="text-emerald-400 animate-pulse">
+                    Where Every Post Pays
+                  </span>{" "}
                 </span>
               </span>
               <span className="hidden md:block">
@@ -299,8 +298,8 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               variants={itemVariants}
             >
               <span className="md:hidden">
-                Your audience is your asset.
-                Time to cash in with brands that value your influence.
+                Your audience is your asset. Time to cash in with brands that
+                value your influence.
               </span>
               <span className="hidden md:block">
                 The trusted marketplace where verified creators help brands
@@ -377,77 +376,22 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
         </div>
 
         {/* Right Content - Campaign Card (Desktop Only) */}
-        <div className="hidden md:block w-full lg:w-1/3 mt-10 lg:mt-0">
-          <div className="relative w-full max-w-sm sm:max-w-md mx-auto">
-            <div className="absolute -top-6 -left-6 w-48 h-48 md:w-64 md:h-64 bg-emerald-500/10 rounded-full filter blur-3xl"></div>
-            <div className="absolute -bottom-10 -right-10 w-48 h-48 md:w-64 md:h-64 bg-indigo-500/10 rounded-full filter blur-3xl"></div>
-            <div className="bg-white dark:bg-slate-800 border border-slate-700/50 rounded-2xl shadow-xl overflow-hidden z-10 relative">
-              <div className="bg-gradient-to-r from-slate-700 to-slate-800 p-4 sm:p-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg sm:text-xl font-bold text-white">
-                    Featured Campaigns
-                  </h3>
-                  <span className="text-emerald-400 text-xs sm:text-sm font-medium">
-                    For Influencers
-                  </span>
-                </div>
-              </div>
-              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                <div className="bg-slate-100 dark:bg-slate-700/40 rounded-xl p-4 sm:p-6 hover:shadow-md transition">
-                  <div className="flex justify-between items-start mb-3 sm:mb-4">
-                    <div>
-                      <span className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded">
-                        PREMIUM
-                      </span>
-                      <h3 className="text-base sm:text-lg font-semibold mt-2 text-slate-800 dark:text-slate-100">
-                        Tech Product Launch
-                      </h3>
-                    </div>
-                    <span className="text-emerald-500 font-bold text-sm sm:text-base">
-                      1,500 cUSD
-                    </span>
-                  </div>
-                  <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
-                    <div className="flex items-center text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                      <CheckCircle
-                        size={14}
-                        className="text-emerald-500 mr-2 flex-shrink-0"
-                      />
-                      <span>10+ influencers needed</span>
-                    </div>
-                    <div className="flex items-center text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                      <CheckCircle
-                        size={14}
-                        className="text-emerald-500 mr-2 flex-shrink-0"
-                      />
-                      <span>Tech audience focus</span>
-                    </div>
-                  </div>
-                  <button className="w-full bg-emerald-500 text-white py-2 px-4 rounded-lg hover:bg-emerald-600 transition flex items-center justify-center text-sm sm:text-base">
-                    Apply Now
-                  </button>
-                </div>
-                <div className="bg-slate-100 dark:bg-slate-700/40 rounded-xl p-4 sm:p-6 opacity-70">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="bg-slate-500 text-white text-xs font-bold px-2 py-1 rounded">
-                        NEW
-                      </span>
-                      <h3 className="text-base sm:text-lg font-semibold mt-2 text-slate-800 dark:text-slate-100">
-                        Fashion Brand Promo
-                      </h3>
-                    </div>
-                    <span className="text-emerald-500 font-bold text-sm sm:text-base">
-                      800 cUSD
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="hidden md:block w-full lg:w-1/3 mt-10 lg:mt-0 ">
+          <div className="relative w-full rounded-full  shadow-lg">
+            <Image
+              src="/side2.png"
+              alt="Campaign Card"
+              width={600}
+              height={300}
+              className="w-full"
+            />
+            <Image src={"/twitter.png"} width={500} height={400} alt="X" className="w-24 h-24 absolute top-60 left-6"/>
+            <Image src={"/tiktok.png"} width={500} height={400} alt="X" className="w-24 h-24 absolute top-60 right-4"/>
+            <Image src={"/facebook.png"} width={500} height={400} alt="X" className="w-24 h-24 absolute bottom-8 right-60"/>
           </div>
         </div>
       </motion.div>
-      
+
       {/* Platform Statistics */}
       <motion.div
         className="mt-16 md:mt-24"
