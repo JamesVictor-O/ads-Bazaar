@@ -7,11 +7,11 @@ library LibAdsBazaar {
     bytes32 constant ADSBAZAAR_STORAGE_POSITION = keccak256("adsbazaar.storage");
     
     // Timing constants (only keep non-configurable ones)
-    uint256 constant SELECTION_GRACE_PERIOD = 1 hours;
     uint256 constant DISPUTE_RESOLUTION_DEADLINE = 2 days;
     uint256 constant MAX_VERIFICATION_PERIOD = 5 days; // Maximum allowed verification period
     uint256 constant MAX_APPLICATION_PERIOD = 14 days; // Maximum application period
     uint256 constant MAX_PROOF_GRACE_PERIOD = 2 days; // Maximum proof submission grace period
+    uint256 constant MAX_SELECTION_GRACE_PERIOD = 2 days; // Maximum selection grace period
 
     enum UserStatus {
         NEW_COMER,
@@ -76,6 +76,7 @@ library LibAdsBazaar {
         uint256 applicationPeriod;        // How long applications are open
         uint256 proofSubmissionGracePeriod; // Grace period for proof submission
         uint256 verificationPeriod;       // Verification period (max 5 days)
+        uint256 selectionGracePeriod;     // Grace period for influencer selection (max 2 days)
     }
 
     struct InfluencerApplication {

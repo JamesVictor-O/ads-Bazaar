@@ -10,6 +10,7 @@ contract GettersFacet {
         address business;
         string name; 
         string description;
+        string requirements;
         uint256 budget;
         LibAdsBazaar.CampaignStatus status;
         uint256 promotionDuration;
@@ -20,10 +21,12 @@ contract GettersFacet {
         uint256 maxInfluencers;
         uint256 selectedInfluencersCount;
         LibAdsBazaar.TargetAudience targetAudience;
+        uint256 creationTime;
         uint256 selectionDeadline;
         uint256 applicationPeriod;
         uint256 proofSubmissionGracePeriod;
         uint256 verificationPeriod;
+        uint256 selectionGracePeriod;
     }
     
     struct ApplicationData {
@@ -49,6 +52,7 @@ contract GettersFacet {
             business: brief.business,
             name: brief.name,
             description: brief.description,
+            requirements: brief.requirements,
             budget: brief.budget,
             status: brief.status,
             promotionDuration: brief.promotionDuration,
@@ -59,10 +63,12 @@ contract GettersFacet {
             maxInfluencers: brief.maxInfluencers,
             selectedInfluencersCount: brief.selectedInfluencersCount,
             targetAudience: brief.targetAudience,
+            creationTime: brief.creationTime,
             selectionDeadline: brief.selectionDeadline,
             applicationPeriod: brief.applicationPeriod,
             proofSubmissionGracePeriod: brief.proofSubmissionGracePeriod,
-            verificationPeriod: brief.verificationPeriod
+            verificationPeriod: brief.verificationPeriod,
+            selectionGracePeriod: brief.selectionGracePeriod
         });
     }
 

@@ -212,11 +212,13 @@ contract DeployDiamond is Script {
     }
     
     function getCampaignManagementSelectors() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](4);
+        selectors = new bytes4[](6);
         selectors[0] = CampaignManagementFacet.createAdBrief.selector;
         selectors[1] = CampaignManagementFacet.cancelAdBrief.selector;
         selectors[2] = CampaignManagementFacet.expireCampaign.selector;
         selectors[3] = CampaignManagementFacet.completeCampaign.selector;
+        selectors[4] = CampaignManagementFacet.startCampaignWithPartialSelection.selector;
+        selectors[5] = CampaignManagementFacet.cancelCampaignWithCompensation.selector;
     }
     
     function getApplicationManagementSelectors() internal pure returns (bytes4[] memory selectors) {
