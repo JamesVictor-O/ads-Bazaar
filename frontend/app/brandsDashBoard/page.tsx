@@ -42,6 +42,7 @@ import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { format } from "date-fns";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { NotificationButton } from "@/components/NotificationButton";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
   getStatusColor,
@@ -791,6 +792,20 @@ const BrandDashboard = () => {
                     </>
                   )}
                 </motion.button>
+
+                {/* Notification Button */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.5 }}
+                >
+                  <NotificationButton
+                    onNotificationEnabled={() => {
+                      toast.success("Notifications enabled! You'll get updates about applications, submissions, and deadlines.");
+                    }}
+                    className="text-sm md:text-base"
+                  />
+                </motion.div>
               </div>
             </div>
           </div>
