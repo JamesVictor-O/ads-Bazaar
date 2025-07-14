@@ -1,4 +1,7 @@
 import { getNotificationToken, getUserPreferences, saveNotificationHistory } from './database';
+import { notificationRateLimiter } from './notification-rate-limiter';
+import { notificationRetryQueue } from './notification-retry-queue';
+import { notificationAnalytics } from './notification-analytics';
 
 export interface NotificationPayload {
   notificationId: string;
@@ -34,6 +37,17 @@ export class NotificationService {
    */
   async sendNotificationToUser(notification: NotificationData): Promise<boolean> {
     try {
+      // Check rate limit first
+      const rateLimitResult = await notificationRateLimiter.checkRateLimit(
+        notification.fid,
+        notification.type
+      );
+      
+      if (!rateLimitResult.allowed) {
+        console.log(`Notification rate limited for FID: ${notification.fid}, reason: ${rateLimitResult.reason}`);
+        return false;
+      }
+
       // Get user's notification token
       const tokenData = await getNotificationToken(notification.fid);
       if (!tokenData) {
@@ -57,15 +71,31 @@ export class NotificationService {
         tokens: [tokenData.notification_token]
       }, tokenData.notification_url);
       
-      // Save to history
-      await saveNotificationHistory({
-        fid: notification.fid,
-        notification_type: notification.type,
-        title: notification.title,
-        body: notification.body,
-        target_url: notification.targetUrl,
-        notification_data: notification.data
-      });
+      if (success) {
+        // Save to history on success
+        await saveNotificationHistory({
+          fid: notification.fid,
+          notification_type: notification.type,
+          title: notification.title,
+          body: notification.body,
+          target_url: notification.targetUrl,
+          notification_data: notification.data
+        });
+        
+        // Track successful send
+        await notificationAnalytics.trackSent(notification.fid, notification.type, notification.data);
+        await notificationAnalytics.trackDelivered(notification.fid, notification.type, notification.data);
+      } else {
+        // Track failed send
+        await notificationAnalytics.trackFailed(notification.fid, notification.type, 'Failed to send notification', notification.data);
+        
+        // Add to retry queue on failure
+        await notificationRetryQueue.addToRetryQueue(
+          notification,
+          'Failed to send notification',
+          0
+        );
+      }
       
       return success;
     } catch (error) {
@@ -77,16 +107,34 @@ export class NotificationService {
   /**
    * Send notification to multiple users
    */
-  async sendNotificationToUsers(notifications: NotificationData[]): Promise<{ success: number; failed: number }> {
+  async sendNotificationToUsers(notifications: NotificationData[]): Promise<{ success: number; failed: number; rateLimited: number }> {
+    // Check rate limits for batch sending
+    const fids = notifications.map(n => n.fid);
+    const notificationType = notifications[0]?.type || 'unknown';
+    
+    const rateLimitResult = await notificationRateLimiter.checkBatchRateLimit(fids, notificationType);
+    
+    // Filter out rate-limited users
+    const allowedNotifications = notifications.filter(n => 
+      rateLimitResult.allowed.includes(n.fid)
+    );
+    
+    // Send notifications to allowed users
     const results = await Promise.all(
-      notifications.map(notification => this.sendNotificationToUser(notification))
+      allowedNotifications.map(notification => this.sendNotificationToUser(notification))
     );
     
     const success = results.filter(Boolean).length;
     const failed = results.length - success;
+    const rateLimited = rateLimitResult.rejected.length;
     
-    console.log(`Batch notification results: ${success} successful, ${failed} failed`);
-    return { success, failed };
+    console.log(`Batch notification results: ${success} successful, ${failed} failed, ${rateLimited} rate limited`);
+    
+    if (rateLimited > 0) {
+      console.log('Rate limited users:', rateLimitResult.rejected, 'Reasons:', rateLimitResult.reasons);
+    }
+    
+    return { success, failed, rateLimited };
   }
   
   /**
@@ -138,6 +186,14 @@ export class NotificationService {
         return preferences.proof_submitted;
       case 'campaign_cancelled':
         return preferences.campaign_cancelled;
+      case 'auto_approval_alert':
+        return preferences.auto_approval_alert;
+      case 'campaign_expiry_warning':
+        return preferences.campaign_expiry_warning;
+      case 'insufficient_applications':
+        return preferences.insufficient_applications;
+      case 'budget_refund':
+        return preferences.budget_refund;
       default:
         return true;
     }
@@ -282,6 +338,66 @@ export class AdsBazaarNotifications {
     }));
     
     await this.notificationService.sendNotificationToUsers(notifications);
+  }
+
+  /**
+   * Send auto-approval alert notification to influencer
+   */
+  async notifyAutoApprovalAlert(influencerFid: number, paymentDetails: any): Promise<void> {
+    await this.notificationService.sendNotificationToUser({
+      fid: influencerFid,
+      type: 'auto_approval_alert',
+      title: '⏰ Payment Auto-Approved',
+      body: `Your payment of $${paymentDetails.amount} cUSD for "${paymentDetails.campaignTitle}" has been automatically approved after the review deadline.`,
+      targetUrl: `https://ads-bazaar.vercel.app/influencersDashboard?payment=${paymentDetails.briefId}`,
+      data: paymentDetails
+    });
+  }
+
+  /**
+   * Send campaign expiry warning to brand
+   */
+  async notifyCampaignExpiryWarning(brandFid: number, campaignDetails: any): Promise<void> {
+    const timeLeft = campaignDetails.hoursUntilExpiry > 1 
+      ? `${campaignDetails.hoursUntilExpiry} hours` 
+      : `${campaignDetails.minutesUntilExpiry} minutes`;
+    
+    await this.notificationService.sendNotificationToUser({
+      fid: brandFid,
+      type: 'campaign_expiry_warning',
+      title: '⏰ Campaign Expiring Soon',
+      body: `Your campaign "${campaignDetails.campaignTitle}" expires in ${timeLeft}. Review applications before the deadline.`,
+      targetUrl: `https://ads-bazaar.vercel.app/brandsDashBoard?campaign=${campaignDetails.briefId}`,
+      data: campaignDetails
+    });
+  }
+
+  /**
+   * Send insufficient applications alert to brand
+   */
+  async notifyInsufficientApplications(brandFid: number, campaignDetails: any): Promise<void> {
+    await this.notificationService.sendNotificationToUser({
+      fid: brandFid,
+      type: 'insufficient_applications',
+      title: '📊 Low Application Count',
+      body: `Your campaign "${campaignDetails.campaignTitle}" has only ${campaignDetails.applicationCount} applications. You may want to create a new campaign with different requirements.`,
+      targetUrl: `https://ads-bazaar.vercel.app/brandsDashBoard?campaign=${campaignDetails.briefId}`,
+      data: campaignDetails
+    });
+  }
+
+  /**
+   * Send budget refund notification to brand
+   */
+  async notifyBudgetRefund(brandFid: number, refundDetails: any): Promise<void> {
+    await this.notificationService.sendNotificationToUser({
+      fid: brandFid,
+      type: 'budget_refund',
+      title: '💰 Budget Refunded',
+      body: `$${refundDetails.amount} cUSD has been refunded for cancelled campaign "${refundDetails.campaignTitle}".`,
+      targetUrl: `https://ads-bazaar.vercel.app/brandsDashBoard`,
+      data: refundDetails
+    });
   }
 }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database';
+import { notificationAnalytics } from '@/lib/notification-analytics';
 
 export async function POST(
   request: NextRequest,
@@ -30,6 +31,15 @@ export async function POST(
         success: false, 
         error: error.message 
       }, { status: 500 });
+    }
+
+    // Track click analytics
+    if (data) {
+      await notificationAnalytics.trackClicked(
+        data.fid,
+        data.notification_type,
+        { notification_id: notificationId }
+      );
     }
 
     return NextResponse.json({
