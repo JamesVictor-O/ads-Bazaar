@@ -24,7 +24,7 @@ import { NetworkStatus } from "@/components/NetworkStatus";
 import { useAccount, usePublicClient } from "wagmi";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { format } from "date-fns";
-import { truncateAddress } from "@/utils/format";
+import { truncateAddress, formatCurrency } from "@/utils/format";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { motion } from "framer-motion";
 import {
@@ -779,10 +779,15 @@ export default function Marketplace() {
                     <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
                       <div className="flex items-center text-slate-400 mb-1">
                         <Target className="w-4 h-4 mr-1" />
-                        <span>Pay/Spot</span>
+                        <span>Payment</span>
                       </div>
                       <div className="font-semibold text-white">
-                        {campaign.progressInfo.budgetPerSpot.toFixed(0)} cUSD
+                        {formatCurrency(campaign.progressInfo.budgetPerSpot)}
+                      </div>
+                      <div className="text-slate-400 text-xs">
+                        {campaign.selectedInfluencersCount > 0
+                          ? "per influencer"
+                          : "per spot"}
                       </div>
                     </div>
                   </div>
@@ -840,6 +845,7 @@ export default function Marketplace() {
                   description: selectedCampaign.description,
                   business: selectedCampaign.business,
                   budget: selectedCampaign.budget,
+                  maxInfluencers: selectedCampaign.maxInfluencers,
                   requirements:
                     selectedCampaign.requirements || "No specific requirements",
                 }
@@ -850,6 +856,10 @@ export default function Marketplace() {
           onSuccess={() => {
             // Immediately refresh application status on success
             refreshApplicationStatus();
+            // Trigger dashboard refresh with delay for blockchain propagation
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('dashboardRefresh'));
+            }, 2000);
           }}
         />
       )}

@@ -83,6 +83,7 @@ export interface Brief {
   creationTime: number;
   selectionDeadline: number;
   applicationCount: number;
+  selectionGracePeriod: number;
 
   // Computed properties
   statusInfo: CampaignStatusInfo;

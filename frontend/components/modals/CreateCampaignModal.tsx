@@ -29,6 +29,7 @@ interface FormData {
   applicationPeriod: string;
   proofSubmissionGracePeriod: string;
   verificationPeriod: string;
+  selectionGracePeriod: string;
 }
 
 interface CreateCampaignModalProps {
@@ -449,7 +450,7 @@ function CreateCampaignModal({
                 Campaign Timing Configuration
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {/* Application Period */}
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">
@@ -528,6 +529,35 @@ function CreateCampaignModal({
                   </select>
                   <p className="text-xs text-slate-400 mt-1">
                     Time to review submissions
+                  </p>
+                </div>
+
+                {/* Selection Grace Period */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Selection Grace Period
+                  </label>
+                  <select
+                    value={formData.selectionGracePeriod}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        selectionGracePeriod: e.target.value,
+                      })
+                    }
+                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
+                    disabled={isTransactionInProgress}
+                  >
+                    <option value="3600">1 hour</option>
+                    <option value="7200">2 hours</option>
+                    <option value="14400">4 hours</option>
+                    <option value="28800">8 hours</option>
+                    <option value="43200">12 hours</option>
+                    <option value="86400">1 day</option>
+                    <option value="172800">2 days (max)</option>
+                  </select>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Grace period for selecting influencers
                   </p>
                 </div>
               </div>
