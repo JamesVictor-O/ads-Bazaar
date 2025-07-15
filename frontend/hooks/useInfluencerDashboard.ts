@@ -79,6 +79,7 @@ function formatBriefData(briefId: string, rawData: any): Brief | null {
       creationTime: Number(rawData.creationTime),
       selectionDeadline: Number(rawData.selectionDeadline),
       applicationCount: 0, // Will be filled if available
+      selectionGracePeriod: Number(rawData.selectionGracePeriod || 86400), // Default 1 day
 
       // Computed properties (will be set below)
       statusInfo: {} as any,

@@ -42,6 +42,7 @@ import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { format } from "date-fns";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { NotificationButton } from "@/components/NotificationButton";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
@@ -163,19 +164,11 @@ const BrandDashboard = () => {
   const {
     startCampaignWithPartialSelection,
     isPending: isStartingPartialCampaign,
-    isSuccess: isStartPartialSuccess,
-    isError: isStartPartialError,
-    error: startPartialError,
-    hash: startPartialHash,
   } = useStartCampaignWithPartialSelection();
 
   const {
     cancelCampaignWithCompensation,
     isPending: isCancelingWithCompensation,
-    isSuccess: isCancelWithCompensationSuccess,
-    isError: isCancelWithCompensationError,
-    error: cancelWithCompensationError,
-    hash: cancelWithCompensationHash,
   } = useCancelCampaignWithCompensation();
 
   // Function to toggle description expansion
@@ -1293,6 +1286,12 @@ const BrandDashboard = () => {
                         >
                           Submissions
                         </motion.button>
+
+                        {/* Share Campaign Button */}
+                        <ShareCampaignButton 
+                          campaign={brief}
+                          className="flex-shrink-0"
+                        />
 
                         {/* Expire Campaign Button */}
                         {brief.statusInfo.canExpire && (
