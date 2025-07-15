@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Share, ExternalLink, Copy, Check } from 'lucide-react';
 import { Brief } from '@/types';
-import { formatCurrency, getTargetAudienceLabel } from '@/utils/campaignUtils';
+import { formatCurrency } from '@/utils/format';
+import { getAudienceLabel } from '@/utils/format';
 
 interface ShareCampaignButtonProps {
   campaign: Brief;
@@ -16,8 +17,8 @@ export default function ShareCampaignButton({ campaign, className = '' }: ShareC
   const [showDropdown, setShowDropdown] = useState(false);
 
   const generateShareText = () => {
-    const paymentPerInfluencer = campaign.budget / BigInt(campaign.maxInfluencers);
-    return `🚀 New ${getTargetAudienceLabel(campaign.targetAudience)} campaign on @ads-bazaar!
+    const paymentPerInfluencer = campaign.budget / campaign.maxInfluencers;
+    return `🚀 New ${getAudienceLabel(campaign.targetAudience)} campaign on @ads-bazaar!
 
 📝 ${campaign.name}
 💰 ${formatCurrency(paymentPerInfluencer)} per influencer

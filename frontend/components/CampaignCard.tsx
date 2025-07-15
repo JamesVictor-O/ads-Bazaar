@@ -1,11 +1,12 @@
 'use client';
 
-import { Brief } from '@/types';
+import { Brief, CampaignStatus } from '@/types';
 import { motion } from 'framer-motion';
 import { Clock, Users, DollarSign, Target, Calendar, ArrowRight } from 'lucide-react';
-import { formatCurrency, formatTimeRemaining, getPhaseColor, getTargetAudienceLabel } from '@/utils/campaignUtils';
-import { computeCampaignStatusInfo, computeCampaignTimingInfo } from '@/utils/campaignUtils';
-import UserDisplay from './UserDisplay';
+import { formatCurrency, formatTimeRemaining, getPhaseColor } from '@/utils/format';
+import { getAudienceLabel } from '@/utils/format';
+import { computeCampaignTimingInfo } from '@/utils/campaignUtils';
+import { UserDisplay } from '@/components/ui/UserDisplay';
 
 interface CampaignCardProps {
   brief: Brief;
@@ -20,9 +21,8 @@ export default function CampaignCard({
   showFullDetails = false,
   className = '' 
 }: CampaignCardProps) {
-  const statusInfo = computeCampaignStatusInfo(brief);
   const timingInfo = computeCampaignTimingInfo(brief);
-  const paymentPerInfluencer = brief.budget / BigInt(brief.maxInfluencers);
+  const paymentPerInfluencer = brief.budget / brief.maxInfluencers;
 
   return (
     <motion.div
@@ -36,14 +36,14 @@ export default function CampaignCard({
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h3 className="text-xl font-bold text-gray-900 mb-2">{brief.name}</h3>
-            <UserDisplay address={brief.business} showAddress={false} />
+            <UserDisplay address={brief.business} showFullAddress={false} />
           </div>
           <div className="flex flex-col gap-2">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPhaseColor(statusInfo.phase)}`}>
-              {statusInfo.phase}
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPhaseColor(timingInfo.phase)}`}>
+              {timingInfo.phase}
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {getTargetAudienceLabel(brief.targetAudience)}
+              {getAudienceLabel(brief.targetAudience)}
             </span>
           </div>
         </div>
@@ -78,7 +78,7 @@ export default function CampaignCard({
             <div>
               <p className="text-xs text-gray-500">Spots</p>
               <p className="font-semibold text-gray-900">
-                {Number(brief.currentApplicants)}/{brief.maxInfluencers}
+                {Number(brief.applicationCount)}/{brief.maxInfluencers}
               </p>
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function CampaignCard({
             <Clock className="h-4 w-4 text-orange-600" />
             <div>
               <p className="text-xs text-gray-500">Deadline</p>
-              <p className="font-semibold text-gray-900">{formatTimeRemaining(brief.applicationDeadline)}</p>
+              <p className="font-semibold text-gray-900">{timingInfo.timeRemaining ? formatTimeRemaining(timingInfo.timeRemaining) : 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -95,13 +95,13 @@ export default function CampaignCard({
         <div className="mb-4">
           <div className="flex justify-between text-xs text-gray-500 mb-1">
             <span>Applications Progress</span>
-            <span>{Number(brief.currentApplicants)}/{brief.maxInfluencers} filled</span>
+            <span>{Number(brief.applicationCount)}/{brief.maxInfluencers} filled</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
               className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
               style={{ 
-                width: `${Math.min((Number(brief.currentApplicants) / brief.maxInfluencers) * 100, 100)}%` 
+                width: `${Math.min((Number(brief.applicationCount) / brief.maxInfluencers) * 100, 100)}%` 
               }}
             />
           </div>
@@ -127,16 +127,16 @@ export default function CampaignCard({
           <div>
             <span className="text-gray-500">Created:</span>
             <span className="ml-2 font-medium">
-              {new Date(Number(brief.createdAt) * 1000).toLocaleDateString()}
+              {new Date(Number(brief.creationTime) * 1000).toLocaleDateString()}
             </span>
           </div>
         </div>
 
         {/* Status Banner */}
-        {statusInfo.isUrgent && (
+        {timingInfo.isUrgent && (
           <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
             <p className="text-orange-800 text-sm font-medium">
-              ⏰ {statusInfo.urgencyMessage}
+              ⏰ Urgent: Deadline approaching
             </p>
           </div>
         )}
@@ -147,16 +147,16 @@ export default function CampaignCard({
         <div className="px-6 pb-6">
           <button
             onClick={onApply}
-            disabled={!brief.isActive || Number(brief.currentApplicants) >= brief.maxInfluencers}
+            disabled={brief.status !== CampaignStatus.OPEN || Number(brief.applicationCount) >= brief.maxInfluencers}
             className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-              brief.isActive && Number(brief.currentApplicants) < brief.maxInfluencers
+              brief.status === CampaignStatus.OPEN && Number(brief.applicationCount) < brief.maxInfluencers
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {Number(brief.currentApplicants) >= brief.maxInfluencers ? (
+            {Number(brief.applicationCount) >= brief.maxInfluencers ? (
               'Campaign Full'
-            ) : !brief.isActive ? (
+            ) : brief.status !== CampaignStatus.OPEN ? (
               'Campaign Inactive'
             ) : (
               <>

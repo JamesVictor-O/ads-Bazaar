@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Brief } from '@/types';
+import { Brief, CampaignStatus, TargetAudience } from '@/types';
 import { useReadContract, useAccount } from 'wagmi';
 import { adsBazaarAbi } from '@/contracts/adsBazaar';
 import CampaignCard from '@/components/CampaignCard';
@@ -21,7 +21,7 @@ export default function CampaignSharePage() {
 
   // Wallet and user state
   const { address, isConnected } = useAccount();
-  const { data: userProfile, isLoading: profileLoading } = useUserProfile();
+  const { userProfile, isLoadingProfile: profileLoading } = useUserProfile();
 
   // Extract campaign ID from URL parameters
   const campaignId = searchParams.get('campaignId');
@@ -38,29 +38,37 @@ export default function CampaignSharePage() {
     abi: adsBazaarAbi,
     functionName: 'getAdBrief',
     args: campaignId ? [BigInt(campaignId)] : undefined,
-  });
+  }) as { data: any, isLoading: boolean };
 
   useEffect(() => {
     if (campaignData && !contractLoading) {
       // Transform contract data to Brief format
-      const briefData = {
-        id: BigInt(campaignId || '0'),
+      const briefData: Brief = {
+        id: (campaignId || '0') as `0x${string}`,
+        business: campaignData.business as `0x${string}`,
         name: campaignData.name,
         description: campaignData.description,
         requirements: campaignData.requirements,
-        budget: campaignData.budget,
-        maxInfluencers: campaignData.maxInfluencers,
-        targetAudience: campaignData.targetAudience,
-        applicationDeadline: campaignData.applicationDeadline,
-        promotionDuration: campaignData.promotionDuration,
-        proofSubmissionGracePeriod: campaignData.proofSubmissionGracePeriod,
-        verificationPeriod: campaignData.verificationPeriod,
-        selectionGracePeriod: campaignData.selectionGracePeriod,
-        createdAt: campaignData.createdAt,
-        business: campaignData.business,
-        isActive: campaignData.isActive,
-        currentApplicants: campaignData.currentApplicants,
-      } as Brief;
+        budget: Number(campaignData.budget),
+        status: Number(campaignData.status) as CampaignStatus,
+        promotionDuration: Number(campaignData.promotionDuration),
+        promotionStartTime: Number(campaignData.promotionStartTime || 0),
+        promotionEndTime: Number(campaignData.promotionEndTime || 0),
+        proofSubmissionDeadline: Number(campaignData.proofSubmissionDeadline || 0),
+        verificationDeadline: Number(campaignData.verificationDeadline || 0),
+        maxInfluencers: Number(campaignData.maxInfluencers),
+        selectedInfluencersCount: Number(campaignData.selectedInfluencersCount || 0),
+        targetAudience: Number(campaignData.targetAudience) as TargetAudience,
+        creationTime: Number(campaignData.createdAt || Date.now() / 1000),
+        selectionDeadline: Number(campaignData.selectionDeadline || 0),
+        applicationCount: Number(campaignData.currentApplicants || 0),
+        selectionGracePeriod: Number(campaignData.selectionGracePeriod || 86400),
+        
+        // Computed properties - will be set by utility functions
+        statusInfo: {} as any,
+        timingInfo: {} as any,
+        progressInfo: {} as any,
+      };
 
       setCampaign(briefData);
       setLoading(false);
@@ -204,7 +212,7 @@ export default function CampaignSharePage() {
         </div>
 
         {/* Benefits Section for New Users */}
-        {!isConnected || !isRegistered ? (
+        {(!isConnected || !isRegistered) && (
           <div className="mt-12 bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
               Why Join Ads-Bazaar?
