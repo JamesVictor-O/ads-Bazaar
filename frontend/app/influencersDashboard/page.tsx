@@ -59,6 +59,7 @@ import {
   getUserStatusLabel,
 } from "@/utils/format";
 import { UserDisplay } from "@/components/ui/UserDisplay";
+import { NotificationButton } from "@/components/NotificationButton";
 
 // Define precise interfaces
 interface ApplicationWithBrief {
@@ -639,6 +640,19 @@ export default function InfluencerDashboard() {
                   <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
                 </motion.button>
               </Link>
+
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
+              >
+                <NotificationButton
+                  onNotificationEnabled={() => {
+                    toast.success("Notifications enabled! You'll get updates about campaigns and payments.");
+                  }}
+                  className="text-sm md:text-base"
+                />
+              </motion.div>
             </div>
           </div>
         </motion.div>
