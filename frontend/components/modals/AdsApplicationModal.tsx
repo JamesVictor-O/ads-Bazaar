@@ -19,7 +19,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useDivviIntegration } from '@/hooks/useDivviIntegration';
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { formatCurrency } from "@/utils/format";
 
@@ -51,14 +51,20 @@ function ApplyModal({
   onSuccess,
 }: ApplyModalProps) {
   const [isClient, setIsClient] = useState(false);
-  const { applyToBrief, isPending, isSuccess, error, hash: ApplyHash } = useApplyToBrief();
+  const {
+    applyToBrief,
+    isPending,
+    isSuccess,
+    error,
+    hash: ApplyHash,
+  } = useApplyToBrief();
   const { isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
 
-   const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
+  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
 
   useEffect(() => {
     setIsClient(true);
@@ -66,7 +72,7 @@ function ApplyModal({
 
   useEffect(() => {
     if (ApplyHash) {
-      console.log('DIVVI: Hash available from application:', ApplyHash);
+      console.log("DIVVI: Hash available from application:", ApplyHash);
       trackTransaction(ApplyHash);
     }
   }, [ApplyHash, trackTransaction]);
@@ -84,22 +90,23 @@ function ApplyModal({
 
       // Immediately clear form and trigger success callback
       setApplicationMessage("");
-      
+
       // Call success callback to refresh data
       if (onSuccess) {
         onSuccess();
       }
 
-      // Auto-close after a short delay to show success message
-      const timeoutId = setTimeout(() => {
-        setTransactionPhase("idle");
-        setShowApplyModal(false);
-      }, 1500);
-
-      // Cleanup timeout if component unmounts or effect runs again
-      return () => clearTimeout(timeoutId);
+      // Immediately close the modal
+      setTransactionPhase("idle");
+      setShowApplyModal(false);
     }
-  }, [isSuccess, transactionPhase, setShowApplyModal, setApplicationMessage, onSuccess]);
+  }, [
+    isSuccess,
+    transactionPhase,
+    setShowApplyModal,
+    setApplicationMessage,
+    onSuccess,
+  ]);
 
   useEffect(() => {
     if (error) {
@@ -151,12 +158,15 @@ function ApplyModal({
     setTransactionPhase("idle");
 
     await guardedAction(async () => {
-       // Generate Divvi referral tag to append to transaction calldata
+      // Generate Divvi referral tag to append to transaction calldata
       const referralTag = generateDivviReferralTag();
-      console.log('DIVVI: About to apply to brief with referral tag:', referralTag);
+      console.log(
+        "DIVVI: About to apply to brief with referral tag:",
+        referralTag
+      );
 
       try {
-        applyToBrief(selectedBrief.id, applicationMessage, referralTag)
+        applyToBrief(selectedBrief.id, applicationMessage, referralTag);
       } catch (err) {
         console.error("Application failed:", err);
         throw err;
@@ -340,7 +350,10 @@ function ApplyModal({
                   <div>
                     <p className="text-xs text-slate-400">Business</p>
                     <p className="text-base sm:text-lg font-medium text-white truncate">
-                      <UserDisplay address={selectedBrief.business} className="text-emerald-400" />
+                      <UserDisplay
+                        address={selectedBrief.business}
+                        className="text-emerald-400"
+                      />
                     </p>
                   </div>
                 </div>
@@ -370,10 +383,14 @@ function ApplyModal({
                   <div>
                     <p className="text-xs text-slate-400">Your Earnings</p>
                     <p className="text-base sm:text-lg font-medium text-emerald-400">
-                      {formatCurrency(selectedBrief.budget / selectedBrief.maxInfluencers)}
+                      {formatCurrency(
+                        selectedBrief.budget / selectedBrief.maxInfluencers
+                      )}
                     </p>
                     <p className="text-xs text-slate-400">
-                      Total budget: {formatCurrency(selectedBrief.budget)} for {selectedBrief.maxInfluencers} {selectedBrief.maxInfluencers === 1 ? 'spot' : 'spots'}
+                      Total budget: {formatCurrency(selectedBrief.budget)} for{" "}
+                      {selectedBrief.maxInfluencers}{" "}
+                      {selectedBrief.maxInfluencers === 1 ? "spot" : "spots"}
                     </p>
                   </div>
                 </div>
