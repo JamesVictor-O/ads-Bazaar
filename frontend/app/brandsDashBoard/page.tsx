@@ -164,19 +164,11 @@ const BrandDashboard = () => {
   const {
     startCampaignWithPartialSelection,
     isPending: isStartingPartialCampaign,
-    isSuccess: isStartPartialSuccess,
-    isError: isStartPartialError,
-    error: startPartialError,
-    hash: startPartialHash,
   } = useStartCampaignWithPartialSelection();
 
   const {
     cancelCampaignWithCompensation,
     isPending: isCancelingWithCompensation,
-    isSuccess: isCancelWithCompensationSuccess,
-    isError: isCancelWithCompensationError,
-    error: cancelWithCompensationError,
-    hash: cancelWithCompensationHash,
   } = useCancelCampaignWithCompensation();
 
   // Function to toggle description expansion

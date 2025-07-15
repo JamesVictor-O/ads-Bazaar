@@ -5,10 +5,11 @@ import { useEffect, useState } from 'react';
 import { Brief } from '@/types';
 import { useReadContract, useAccount } from 'wagmi';
 import { adsBazaarAbi } from '@/contracts/adsBazaar';
-import { Loader2, Users, Zap, Shield, ArrowRight, ExternalLink } from 'lucide-react';
+import { Loader2, Users, Zap, Shield, ArrowRight, ExternalLink, DollarSign } from 'lucide-react';
 import { useUserProfile } from '@/hooks/adsBazaar';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { formatCurrency, getTargetAudienceLabel } from '@/utils/campaignUtils';
+import { formatCurrency } from '@/utils/format';
+import { getAudienceLabel } from '@/utils/format';
 
 export default function MiniAppCampaignPage() {
   const searchParams = useSearchParams();
@@ -33,7 +34,7 @@ export default function MiniAppCampaignPage() {
     abi: adsBazaarAbi,
     functionName: 'getAdBrief',
     args: campaignId ? [BigInt(campaignId)] : undefined,
-  });
+  }) as { data: any, isLoading: boolean };
 
   useEffect(() => {
     if (campaignData && !contractLoading) {
@@ -54,7 +55,7 @@ export default function MiniAppCampaignPage() {
         createdAt: campaignData.createdAt,
         business: campaignData.business,
         isActive: campaignData.isActive,
-        currentApplicants: campaignData.currentApplicants,
+        applicationCount: campaignData.applicationCount,
       } as any; // Type assertion for mini app context
 
       setCampaign(briefData);
@@ -102,7 +103,7 @@ export default function MiniAppCampaignPage() {
     );
   }
 
-  const paymentPerInfluencer = campaign.budget / BigInt(campaign.maxInfluencers);
+  const paymentPerInfluencer = campaign.budget / campaign.maxInfluencers;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 p-4">
@@ -113,7 +114,7 @@ export default function MiniAppCampaignPage() {
             {campaign.name}
           </h1>
           <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-            {getTargetAudienceLabel(campaign.targetAudience)}
+            {getAudienceLabel(campaign.targetAudience)}
           </span>
           {castHash && (
             <p className="text-xs text-emerald-600 mt-2">
@@ -142,7 +143,7 @@ export default function MiniAppCampaignPage() {
               <Users className="h-5 w-5 text-blue-600 mx-auto mb-1" />
               <p className="text-xs text-gray-500">Spots Left</p>
               <p className="font-bold text-blue-600">
-                {campaign.maxInfluencers - Number(campaign.currentApplicants)}
+                {campaign.maxInfluencers - Number(campaign.applicationCount)}
               </p>
             </div>
           </div>
@@ -153,12 +154,12 @@ export default function MiniAppCampaignPage() {
               <div 
                 className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
                 style={{ 
-                  width: `${Math.min((Number(campaign.currentApplicants) / campaign.maxInfluencers) * 100, 100)}%` 
+                  width: `${Math.min((Number(campaign.applicationCount) / campaign.maxInfluencers) * 100, 100)}%` 
                 }}
               />
             </div>
             <p className="text-xs text-gray-500">
-              {Number(campaign.currentApplicants)}/{campaign.maxInfluencers} spots filled
+              {Number(campaign.applicationCount)}/{campaign.maxInfluencers} spots filled
             </p>
           </div>
         </div>
