@@ -66,23 +66,40 @@ const GetStartedModal = ({
     if (isSuccess) {
       toast.success("Registration completed successfully!");
       
+      // Show a transitioning toast message
+      toast.loading("Setting up your dashboard...", {
+        duration: 2500,
+        id: 'dashboard-setup'
+      });
+      
       // Refetch user profile to update registration status
       console.log('Registration successful, refetching profile...');
       refetchProfile().then(() => {
         console.log('Profile refetch completed');
+        
+        // Give a bit more time for the blockchain data to propagate
+        setTimeout(() => {
+          toast.dismiss('dashboard-setup');
+          onClose();
+          router.push(
+            userDetails.userType === "influencer"
+              ? "/influencersDashboard"
+              : "/brandsDashBoard"
+          );
+        }, 2000);
       }).catch((error) => {
         console.error('Profile refetch failed:', error);
+        toast.dismiss('dashboard-setup');
+        // Still redirect even if refetch fails, the dashboard will handle loading
+        setTimeout(() => {
+          onClose();
+          router.push(
+            userDetails.userType === "influencer"
+              ? "/influencersDashboard"
+              : "/brandsDashBoard"
+          );
+        }, 1500);
       });
-      
-      // Add a small delay to ensure the transaction is confirmed
-      setTimeout(() => {
-        onClose();
-        router.push(
-          userDetails.userType === "influencer"
-            ? "/influencersDashboard"
-            : "/brandsDashBoard"
-        );
-      }, 1000);
     }
   }, [isSuccess, userDetails.userType, router, onClose, refetchProfile]);
 

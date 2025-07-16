@@ -14,10 +14,10 @@ import {
   ExternalLink,
   AlertCircle,
   Shield,
-  CheckSquare,
   Sparkles,
   User,
   Timer,
+  Clock,
   Star,
   Award,
   Zap,
@@ -55,7 +55,6 @@ import {
   getPhaseLabel,
 } from "@/utils/campaignUtils";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
-import { UserDisplay } from "@/components/ui/UserDisplay";
 import { NotificationButton } from "@/components/NotificationButton";
 
 // Define precise interfaces
