@@ -96,7 +96,6 @@ const BrandDashboard = () => {
   // State for partial campaign management
   const [showStartPartialConfirm, setShowStartPartialConfirm] = useState<string | null>(null);
   const [showCancelWithCompensationModal, setShowCancelWithCompensationModal] = useState<string | null>(null);
-  const [compensationAmount, setCompensationAmount] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -533,14 +532,12 @@ const BrandDashboard = () => {
   const canStartPartialCampaign = (brief: Brief): boolean => {
     const now = Date.now() / 1000;
     const selectionDeadline = brief.selectionDeadline;
-    const gracePeriod = brief.selectionGracePeriod || 86400; // Default 1 day
     
     return (
       brief.status === CampaignStatus.OPEN &&
       brief.selectedInfluencersCount > 0 &&
       brief.selectedInfluencersCount < brief.maxInfluencers &&
-      now > selectionDeadline &&
-      now <= selectionDeadline + gracePeriod
+      now > selectionDeadline
     );
   };
 
@@ -548,13 +545,11 @@ const BrandDashboard = () => {
   const canCancelWithCompensation = (brief: Brief): boolean => {
     const now = Date.now() / 1000;
     const selectionDeadline = brief.selectionDeadline;
-    const gracePeriod = brief.selectionGracePeriod || 86400; // Default 1 day
     
     return (
       brief.status === CampaignStatus.OPEN &&
       brief.selectedInfluencersCount > 0 &&
-      now > selectionDeadline &&
-      now <= selectionDeadline + gracePeriod
+      now > selectionDeadline
     );
   };
 
@@ -571,13 +566,18 @@ const BrandDashboard = () => {
     }
   };
 
-  const handleCancelWithCompensation = async (briefId: string, compensation: string) => {
+  const handleCancelWithCompensation = async (briefId: string) => {
     try {
+      const brief = briefs.find(b => b.id === briefId);
+      if (!brief) return;
+      
+      // Calculate 10% of budget divided equally among selected influencers
+      const compensationPerInfluencer = (Number(brief.budget) * 0.1 / brief.selectedInfluencersCount).toFixed(2);
+      
       const referralTag = generateDivviReferralTag();
-      await cancelCampaignWithCompensation(briefId as `0x${string}`, compensation, referralTag);
+      await cancelCampaignWithCompensation(briefId as `0x${string}`, compensationPerInfluencer, referralTag);
       toast.success("Campaign cancelled with compensation!");
       setShowCancelWithCompensationModal(null);
-      setCompensationAmount("");
       setTimeout(() => refetchBriefs(), 1000);
     } catch (error) {
       console.error("Error cancelling with compensation:", error);
@@ -1613,33 +1613,50 @@ const BrandDashboard = () => {
             </div>
 
             <p className="text-slate-300 mb-4 leading-relaxed text-sm md:text-base">
-              Cancel the campaign and provide compensation to selected influencers for their time.
+              Cancel the campaign and provide fair compensation to selected influencers for their time.
             </p>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Compensation per Influencer (cUSD)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={compensationAmount}
-                onChange={(e) => setCompensationAmount(e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all duration-200 text-sm"
-                placeholder="Enter compensation amount"
-                disabled={isCancelingWithCompensation}
-              />
-              <p className="text-xs text-slate-400 mt-1">
-                Maximum 10% of budget per selected influencer
-              </p>
-            </div>
+            {showCancelWithCompensationModal && (() => {
+              const brief = briefs.find(b => b.id === showCancelWithCompensationModal);
+              if (!brief) return null;
+              
+              const totalCompensation = Number(brief.budget) * 0.1;
+              const compensationPerInfluencer = totalCompensation / brief.selectedInfluencersCount;
+              const remainingRefund = Number(brief.budget) - totalCompensation;
+              
+              return (
+                <div className="mb-6 bg-slate-900/50 border border-slate-700/50 rounded-xl p-4">
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Compensation Breakdown</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Total Budget:</span>
+                      <span className="text-white">{Number(brief.budget).toFixed(2)} cUSD</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Selected Influencers:</span>
+                      <span className="text-white">{brief.selectedInfluencersCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Compensation per Influencer:</span>
+                      <span className="text-amber-400 font-medium">{compensationPerInfluencer.toFixed(2)} cUSD</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Total Compensation (10%):</span>
+                      <span className="text-amber-400 font-medium">{totalCompensation.toFixed(2)} cUSD</span>
+                    </div>
+                    <div className="flex justify-between border-t border-slate-700/50 pt-2">
+                      <span className="text-slate-400">Refund to You:</span>
+                      <span className="text-emerald-400 font-medium">{remainingRefund.toFixed(2)} cUSD</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="flex gap-3 md:gap-4">
               <button
                 onClick={() => {
                   setShowCancelWithCompensationModal(null);
-                  setCompensationAmount("");
                 }}
                 disabled={isCancelingWithCompensation}
                 className="flex-1 px-4 py-2.5 md:px-6 md:py-3 font-medium text-slate-300 bg-slate-700/50 rounded-lg md:rounded-xl border border-slate-600/50 hover:bg-slate-700 transition-all disabled:opacity-50 text-sm md:text-base"
@@ -1648,11 +1665,11 @@ const BrandDashboard = () => {
               </button>
               <button
                 onClick={() => {
-                  if (showCancelWithCompensationModal && compensationAmount) {
-                    handleCancelWithCompensation(showCancelWithCompensationModal, compensationAmount);
+                  if (showCancelWithCompensationModal) {
+                    handleCancelWithCompensation(showCancelWithCompensationModal);
                   }
                 }}
-                disabled={isCancelingWithCompensation || !compensationAmount}
+                disabled={isCancelingWithCompensation}
                 className="flex-1 px-4 py-2.5 md:px-6 md:py-3 font-medium text-white bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg md:rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm md:text-base"
               >
                 {isCancelingWithCompensation ? (
