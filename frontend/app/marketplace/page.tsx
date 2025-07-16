@@ -17,6 +17,7 @@ import {
   ArrowRight,
   ChevronDown,
   FileText,
+   SlidersHorizontal
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
@@ -73,6 +74,7 @@ export default function Marketplace() {
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const { userProfile, isLoadingProfile } = useUserProfile();
+  const [showFilters, setShowFilters] = useState(false);
 
   const publicClient = usePublicClient();
 
@@ -146,13 +148,13 @@ export default function Marketplace() {
         })) as string[];
 
         if (!appliedBriefIds || appliedBriefIds.length === 0) {
-          console.log("No applications found for this influencer");
+          
           setUserApplications({});
           setApplicationStatuses([]);
           return;
         }
 
-        console.log(`Found ${appliedBriefIds.length} applied campaigns`);
+
 
         // Step 2: Fetch current application data for each brief
         const updatedApplications: {
@@ -190,9 +192,7 @@ export default function Marketplace() {
                   ? "assigned"
                   : "applied";
 
-                console.log(
-                  `Updated application for campaign ${briefId}: ${updatedApplications[briefId]}`
-                );
+               
               }
             }
           } catch (error) {
@@ -205,12 +205,6 @@ export default function Marketplace() {
 
         // Step 3: Update state with fresh data
         setUserApplications(updatedApplications);
-
-        console.log(
-          `Refresh complete: ${
-            Object.keys(updatedApplications).length
-          } applications updated`
-        );
       } catch (error) {
         console.error("Error refreshing application status:", error);
       } finally {
@@ -478,45 +472,72 @@ export default function Marketplace() {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex md:items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            {/* Header Content */}
             <div className="flex items-center md:items-start justify-center flex-col">
-              <h2 className="text-2xl md:text-3xl  font-bold text-white">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">
                 Campaign Marketplace
               </h2>
-              <p className="text-lg text-slate-400 md:text-center  mt-2">
+              <p className="text-lg text-slate-400 text-center mt-2">
                 Discover active campaigns that match your influencer profile
-                {isRefreshing && (
-                  <span className="ml-2 inline-flex items-center text-emerald-400">
-                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                    Refreshing...
-                  </span>
-                )}
               </p>
             </div>
 
-            {/* Quick Stats */}
+            {/* Quick Stats - Mobile Optimized */}
             {isConnected && userProfile?.isInfluencer && (
-              <div className="text-right text-sm text-slate-400">
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-emerald-400">
+              <div className="flex  justify-center md:justify-end">
+                {/* Mobile: Stacked layout */}
+                <div className="flex flex-row gap-2 sm:hidden">
+                  <div className="flex items-center justify-center gap-2 bg-slate-800/40 backdrop-blur-sm rounded-full px-3 py-2 border border-slate-700/50">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span className="text-base font-bold text-emerald-400">
                       {
                         Object.values(userApplications).filter(
                           (s) => s === "applied"
                         ).length
                       }
-                    </div>
-                    <div className="text-xs">Applied</div>
+                    </span>
+                    <span className="text-xs text-slate-400">Applied</span>
                   </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-blue-400">
+                  <div className="flex items-center justify-center gap-2 bg-slate-800/40 backdrop-blur-sm rounded-full px-3 py-2 border border-slate-700/50">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    <span className="text-base font-bold text-blue-400">
                       {
                         Object.values(userApplications).filter(
                           (s) => s === "assigned"
                         ).length
                       }
-                    </div>
-                    <div className="text-xs">Assigned</div>
+                    </span>
+                    <span className="text-xs text-slate-400">Assigned</span>
+                  </div>
+                </div>
+
+                {/* Desktop/Tablet: Horizontal layout */}
+                <div className="hidden sm:inline-flex items-center gap-4 bg-slate-800/40 backdrop-blur-sm rounded-full px-4 py-2 border border-slate-700/50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span className="text-lg font-bold text-emerald-400">
+                      {
+                        Object.values(userApplications).filter(
+                          (s) => s === "applied"
+                        ).length
+                      }
+                    </span>
+                    <span className="text-xs text-slate-400">Applied</span>
+                  </div>
+
+                  <div className="w-px h-4 bg-slate-600"></div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    <span className="text-lg font-bold text-blue-400">
+                      {
+                        Object.values(userApplications).filter(
+                          (s) => s === "assigned"
+                        ).length
+                      }
+                    </span>
+                    <span className="text-xs text-slate-400">Assigned</span>
                   </div>
                 </div>
               </div>
@@ -525,10 +546,12 @@ export default function Marketplace() {
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 mb-8 ">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-grow">
-              <div className="relative">
+        <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-3 mb-8">
+          {/* Mobile-First Layout */}
+          <div className="flex flex-col gap-3">
+            {/* Search Bar + Filter Toggle */}
+            <div className="flex gap-3">
+              <div className="flex-grow relative">
                 <Search
                   size={18}
                   className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
@@ -541,12 +564,22 @@ export default function Marketplace() {
                   placeholder="Search campaigns..."
                 />
               </div>
+
+              {/* Mobile Filter Toggle */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="lg:hidden flex items-center justify-center w-12 h-12 bg-slate-900/50 border border-slate-600/50 rounded-xl hover:bg-slate-800/70 transition-colors duration-200"
+              >
+                <SlidersHorizontal size={18} className="text-slate-400" />
+              </button>
             </div>
-            <div className="flex flex-col lg:flex-row gap-4">
+
+            {/* Desktop Filters - Always Visible */}
+            <div className="hidden lg:flex gap-4">
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full lg:w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
+                className="w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
               >
                 <option>All Categories</option>
                 {Object.entries(AUDIENCE_LABELS).map(([value, label]) => (
@@ -555,10 +588,11 @@ export default function Marketplace() {
                   </option>
                 ))}
               </select>
+
               <select
                 value={budgetFilter}
                 onChange={(e) => setBudgetFilter(e.target.value)}
-                className="w-full lg:w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
+                className="w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
               >
                 <option>Budget: Any</option>
                 <option>Under 500 cUSD</option>
@@ -566,15 +600,76 @@ export default function Marketplace() {
                 <option>1000-2000 cUSD</option>
                 <option>2000+ cUSD</option>
               </select>
+
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full lg:w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
+                className="w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
               >
                 <option>Active Only</option>
                 <option>All Campaigns</option>
               </select>
             </div>
+
+            {/* Mobile Filters - Collapsible */}
+            {showFilters && (
+              <div className="lg:hidden flex flex-col gap-3 pt-2 border-t border-slate-700/50">
+                {/* Filter Chips Style */}
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex-1 min-w-0">
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="w-full pl-3 pr-8 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
+                    >
+                      <option>All Categories</option>
+                      {Object.entries(AUDIENCE_LABELS).map(([value, label]) => (
+                        <option key={value} value={label}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <select
+                      value={budgetFilter}
+                      onChange={(e) => setBudgetFilter(e.target.value)}
+                      className="w-full pl-3 pr-8 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
+                    >
+                      <option>Any Budget</option>
+                      <option>Under 500</option>
+                      <option>500-1000</option>
+                      <option>1000-2000</option>
+                      <option>2000+</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="flex-1 pl-3 pr-8 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
+                  >
+                    <option>Active Only</option>
+                    <option>All Campaigns</option>
+                  </select>
+
+                  {/* Clear Filters Button */}
+                  <button
+                    onClick={() => {
+                      setCategoryFilter("All Categories");
+                      setBudgetFilter("Budget: Any");
+                      setStatusFilter("Active Only");
+                    }}
+                    className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg text-sm text-slate-300 transition-colors duration-200"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -592,228 +687,170 @@ export default function Marketplace() {
 
             return (
               <motion.div
-                key={campaign.id}
-                className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5 }}
-              >
-                {/* Enhanced Header with Status Indicators */}
-                <div className="p-5 border-b border-slate-700/50">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(
-                          category
-                        )}`}
-                      >
-                        {category}
-                      </span>
-
-                      {/* Phase indicator */}
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPhaseColor(
-                          campaign.timingInfo.phase
-                        )}`}
-                      >
-                        {getPhaseLabel(campaign.timingInfo.phase)}
-                      </span>
-
-                      {/* New badge */}
-                      {campaign.timingInfo.isNew && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          New
-                        </span>
-                      )}
-
-                      {/* Urgent badge */}
-                      {campaign.timingInfo.isUrgent && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
-                          <Timer className="w-3 h-3 mr-1" />
-                          Urgent
-                        </span>
-                      )}
-
-                      {/* User status badge */}
-                      {userApplicationStatus && (
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
-                            userApplicationStatus === "assigned"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                              : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                          }`}
-                        >
-                          {userApplicationStatus === "assigned" ? (
-                            <>
-                              <Star className="w-3 h-3 mr-1" />
-                              Assigned
-                            </>
-                          ) : (
-                            <>
-                              <Check className="w-3 h-3 mr-1" />
-                              Applied
-                            </>
-                          )}
-                        </span>
-                      )}
-                    </div>
-
-                    <span className="inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      <DollarSign className="w-4 h-4 mr-1" />
-                      {campaign.budget.toLocaleString()}
-                    </span>
+              key={campaign.id}
+              className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden hover:bg-slate-800/70 transition-all duration-200 group"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {/* Streamlined Header */}
+              <div className="p-4 pb-0">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-white mb-1 line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                      {campaign.name}
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      by <UserDisplay address={campaign.business} className="text-emerald-400" />
+                    </p>
                   </div>
-
-                  <h3 className="text-lg font-semibold text-white mt-3 line-clamp-2">
-                    {campaign.name}
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    by <UserDisplay address={campaign.business} className="text-emerald-400" />
-                  </p>
-
-                  {/* Creation date and timing info */}
-                  <div className="flex items-center justify-between mt-2 text-xs text-slate-500">
-                    <span>
-                      Created{" "}
-                      {format(new Date(campaign.creationTime * 1000), "MMM d")}
-                    </span>
-                    {campaign.timingInfo.currentDeadline &&
-                      campaign.timingInfo.timeRemaining && (
-                        <span
-                          className={
-                            campaign.timingInfo.isUrgent
-                              ? "text-orange-400"
-                              : ""
-                          }
-                        >
-                          {formatTimeRemaining(
-                            campaign.timingInfo.timeRemaining
-                          )}{" "}
-                          left
-                        </span>
-                      )}
+                  
+                  <div className="flex items-center gap-3 ml-4">
+                    {/* Status Badge */}
+                    {userApplicationStatus && (
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        userApplicationStatus === "assigned"
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-blue-500/10 text-blue-400"
+                      }`}>
+                        {userApplicationStatus === "assigned" ? (
+                          <><Star className="w-3 h-3" />Assigned</>
+                        ) : (
+                          <><Check className="w-3 h-3" />Applied</>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Budget */}
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-white">
+                        ${campaign.budget.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        ${formatCurrency(campaign.progressInfo.budgetPerSpot)} per spot
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Campaign details */}
-                <div className="p-5">
-                  {/* Expandable Description */}
-                  <div className="mb-4">
-                    <div className="text-sm text-slate-300">
-                      {isDescriptionExpanded
-                        ? campaign.description
-                        : getTruncatedDescription(campaign.description)}
-                    </div>
-
-                    {showExpandButton && (
-                      <motion.button
-                        onClick={() => toggleDescription(campaign.id)}
-                        className="mt-2 flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <FileText className="w-3 h-3" />
-                        <span>
-                          {isDescriptionExpanded ? "Show less" : "Show more"}
-                        </span>
-                        <motion.div
-                          animate={{ rotate: isDescriptionExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ChevronDown className="w-3 h-3" />
-                        </motion.div>
-                      </motion.button>
-                    )}
+            
+                {/* Category and Phase Tags */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`px-2 py-1 rounded-md text-xs font-medium ${getCategoryColor(category)}`}>
+                    {category}
+                  </span>
+                  <span className={`px-2 py-1 rounded-md text-xs font-medium ${getPhaseColor(campaign.timingInfo.phase)}`}>
+                    {getPhaseLabel(campaign.timingInfo.phase)}
+                  </span>
+                  
+                  {/* Conditional badges */}
+                  {campaign.timingInfo.isNew && (
+                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                      New
+                    </span>
+                  )}
+                  {campaign.timingInfo.isUrgent && (
+                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-orange-500/20 text-orange-400">
+                      Urgent
+                    </span>
+                  )}
+                  
+                  {/* Time remaining */}
+                  {campaign.timingInfo.timeRemaining && (
+                    <span className="ml-auto text-xs text-slate-400">
+                      {formatTimeRemaining(campaign.timingInfo.timeRemaining)} left
+                    </span>
+                  )}
+                </div>
+              </div>
+            
+              {/* Description */}
+              <div className="px-4 pb-3">
+                <div className="text-sm text-slate-300 leading-relaxed">
+                  {isDescriptionExpanded
+                    ? campaign.description
+                    : getTruncatedDescription(campaign.description)}
+                </div>
+                
+                {showExpandButton && (
+                  <button
+                    onClick={() => toggleDescription(campaign.id)}
+                    className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    {isDescriptionExpanded ? "Show less" : "Show more"}
+                  </button>
+                )}
+              </div>
+            
+              {/* Next Action Alert */}
+              {campaign.statusInfo.nextAction && (
+                <div className="mx-4 mb-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-emerald-400">
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
+                    {campaign.statusInfo.nextAction}
                   </div>
-
-                  {/* Status and next action */}
-                  {campaign.statusInfo.nextAction && (
-                    <div className="mb-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                        <span className="text-sm text-slate-300">
-                          {campaign.statusInfo.nextAction}
-                        </span>
-                      </div>
-                      {campaign.statusInfo.warning && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <AlertTriangle className="w-3 h-3 text-orange-400" />
-                          <span className="text-xs text-orange-400">
-                            {campaign.statusInfo.warning}
-                          </span>
-                        </div>
-                      )}
+                  {campaign.statusInfo.warning && (
+                    <div className="flex items-center gap-2 mt-2 text-xs text-orange-400">
+                      <AlertTriangle className="w-3 h-3" />
+                      {campaign.statusInfo.warning}
                     </div>
                   )}
-
-                  {/* Enhanced stats grid */}
-                  <div className="grid grid-cols-2 gap-3 text-xs mb-4">
-                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                      <div className="flex items-center text-slate-400 mb-1">
-                        <Users className="w-4 h-4 mr-1" />
-                        <span>Spots</span>
-                      </div>
-                      <div className="font-semibold text-white">
-                        {campaign.selectedInfluencersCount}/
-                        {campaign.maxInfluencers}
-                      </div>
-                      <div className="w-full bg-slate-700/50 rounded-full h-1.5 mt-1">
-                        <div
-                          className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-1.5 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${campaign.progressInfo.spotsFilledPercentage}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                      <div className="flex items-center text-slate-400 mb-1">
-                        <Award className="w-4 h-4 mr-1" />
-                        <span>Applications</span>
-                      </div>
-                      <div className="font-semibold text-white">
-                        {campaign.applicationCount}
-                      </div>
-                    </div>
-                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                      <div className="flex items-center text-slate-400 mb-1">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        <span>Duration</span>
-                      </div>
-                      <div className="font-semibold text-white">
-                        {Math.ceil(campaign.promotionDuration / 86400)} days
-                      </div>
-                    </div>
-                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                      <div className="flex items-center text-slate-400 mb-1">
-                        <Target className="w-4 h-4 mr-1" />
-                        <span>Payment</span>
-                      </div>
-                      <div className="font-semibold text-white">
-                        {formatCurrency(campaign.progressInfo.budgetPerSpot)}
-                      </div>
-                      <div className="text-slate-400 text-xs">
-                        {campaign.selectedInfluencersCount > 0
-                          ? "per influencer"
-                          : "per spot"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Apply button */}
-                  <button
-                    onClick={buttonState.onClick}
-                    className={getButtonStyles(buttonState.variant)}
-                    disabled={buttonState.disabled}
-                  >
-                    {buttonState.icon && buttonState.icon}
-                    {buttonState.text}
-                    {!buttonState.disabled && !buttonState.icon && (
-                      <ArrowRight className="w-4 h-4 ml-1" />
-                    )}
-                  </button>
                 </div>
-              </motion.div>
+              )}
+            
+              {/* Stats Grid - Simplified */}
+              <div className="px-4 pb-3">
+                <div className="grid grid-cols-4 gap-3 text-center">
+                  <div className="py-2">
+                    <div className="text-sm font-semibold text-white">
+                      {campaign.selectedInfluencersCount}/{campaign.maxInfluencers}
+                    </div>
+                    <div className="text-xs text-slate-400">Spots</div>
+                  </div>
+                  <div className="py-2">
+                    <div className="text-sm font-semibold text-white">
+                      {campaign.applicationCount}
+                    </div>
+                    <div className="text-xs text-slate-400">Applications</div>
+                  </div>
+                  <div className="py-2">
+                    <div className="text-sm font-semibold text-white">
+                      {Math.ceil(campaign.promotionDuration / 86400)}
+                    </div>
+                    <div className="text-xs text-slate-400">Days</div>
+                  </div>
+                  <div className="py-2">
+                    <div className="text-sm font-semibold text-emerald-400">
+                      {campaign.progressInfo.spotsFilledPercentage}%
+                    </div>
+                    <div className="text-xs text-slate-400">Filled</div>
+                  </div>
+                </div>
+              </div>
+            
+              {/* Progress Bar */}
+              <div className="px-4 pb-3">
+                <div className="w-full bg-slate-700/50 rounded-full h-1">
+                  <div
+                    className="bg-emerald-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${campaign.progressInfo.spotsFilledPercentage}%` }}
+                  />
+                </div>
+              </div>
+            
+              {/* Action Button */}
+              <div className="p-4 pt-0">
+                <button
+                  onClick={buttonState.onClick}
+                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${getButtonStyles(buttonState.variant)}`}
+                  disabled={buttonState.disabled}
+                >
+                  {buttonState.icon && buttonState.icon}
+                  {buttonState.text}
+                  {!buttonState.disabled && !buttonState.icon && (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </motion.div>
             );
           })}
 
@@ -866,7 +903,7 @@ export default function Marketplace() {
             refreshApplicationStatus();
             // Trigger dashboard refresh with delay for blockchain propagation
             setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('dashboardRefresh'));
+              window.dispatchEvent(new CustomEvent("dashboardRefresh"));
             }, 2000);
           }}
         />
