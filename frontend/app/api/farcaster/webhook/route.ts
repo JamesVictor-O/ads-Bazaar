@@ -8,11 +8,14 @@ export async function POST(request: NextRequest) {
     const headers = Object.fromEntries(request.headers.entries());
     
     // Parse and verify the webhook event
-    const event = await parseWebhookEvent(body, headers as any);
+    const eventResult = await parseWebhookEvent(body, headers as any);
     
-    console.log('Farcaster webhook event received:', event);
+    console.log('Farcaster webhook event received:', eventResult);
     
-    switch (event.type) {
+    // Extract event from result
+    const event = (eventResult as any).event || eventResult;
+    
+    switch (event?.type) {
       case 'miniapp.add':
         await handleMiniAppAdd(event);
         break;
@@ -26,7 +29,7 @@ export async function POST(request: NextRequest) {
         await handleMiniAppDisable(event);
         break;
       default:
-        console.log('Unhandled event type:', event.type);
+        console.log('Unhandled event type:', event?.type);
     }
     
     return NextResponse.json({ success: true });
