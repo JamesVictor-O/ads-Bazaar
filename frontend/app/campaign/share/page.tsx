@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brief, CampaignStatus, TargetAudience } from '@/types';
 import { useReadContract, useAccount } from 'wagmi';
@@ -12,7 +12,7 @@ import { useUserProfile } from '@/hooks/adsBazaar';
 import GetStartedModal from '@/components/modals/GetStartedModal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
-export default function CampaignSharePage() {
+function CampaignShareContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [campaign, setCampaign] = useState<Brief | null>(null);
@@ -258,5 +258,24 @@ export default function CampaignSharePage() {
         />
       )}
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-emerald-600" />
+        <p className="text-gray-600">Loading campaign...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function CampaignSharePage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <CampaignShareContent />
+    </Suspense>
   );
 }

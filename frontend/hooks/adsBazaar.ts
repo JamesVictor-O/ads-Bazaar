@@ -594,7 +594,7 @@ export function useTotalPendingAmount(influencerAddress?: Address) {
 // Register user
 export function useRegisterUser() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const register = async (
     isBusiness: boolean,
@@ -616,7 +616,9 @@ export function useRegisterUser() {
         abi: ABI.abi,
         functionName: "registerUser",
         args: [isBusiness, isInfluencer, username, profileData],
-        dataSuffix: dataSuffix, // This appends referral tag to transaction calldata
+        dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
 
       console.log('DIVVI: writeContract called, waiting for hash...');
@@ -737,7 +739,7 @@ export function useGetInfluencerProfile(influencerAddress?: Address) {
 // Update influencer profile
 export function useUpdateInfluencerProfile() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const updateProfile = async (profileData: string) => {
     if (!address) {
@@ -750,6 +752,8 @@ export function useUpdateInfluencerProfile() {
         abi: ABI.abi,
         functionName: "updateInfluencerProfile",
         args: [profileData],
+        account: address,
+        chain,
       });
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -771,7 +775,7 @@ export function useCreateAdBrief() {
     data: approveTxHash,
     error: approveError,
   } = useWriteContract();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
   const [isApproving, setIsApproving] = useState(false);
   const [briefData, setBriefData] = useState<{
     name: string;
@@ -819,6 +823,8 @@ export function useCreateAdBrief() {
             BigInt(briefData.selectionGracePeriod),
           ],
           dataSuffix: briefData.dataSuffix,
+          account: address,
+          chain,
         });
         console.log('DIVVI: Brief creation writeContract called, waiting for hash...');
       } catch (error) {
@@ -879,6 +885,8 @@ export function useCreateAdBrief() {
         functionName: "approve",
         args: [CONTRACT_ADDRESS, parseUnits(budget, 18)],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       console.log('DIVVI: Approval transaction submitted');
     } catch (error) {
@@ -906,7 +914,7 @@ export function useCreateAdBrief() {
 // Apply to brief
 export function useApplyToBrief() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const applyToBrief = async (
     briefId: string,
@@ -924,6 +932,8 @@ export function useApplyToBrief() {
         functionName: "applyToBrief",
         args: [briefId, message],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
     } catch (error) {
       console.error("Error applying to brief:", error);
@@ -940,7 +950,7 @@ export function useApplyToBrief() {
 // Select influencer
 export function useSelectInfluencer() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const selectInfluencer = async (
     briefId: Bytes32,
@@ -958,6 +968,8 @@ export function useSelectInfluencer() {
         functionName: "selectInfluencer",
         args: [briefId, applicationIndex],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       console.log('DIVVI: Select influencer transaction submitted:', result);
       return result;
@@ -976,7 +988,7 @@ export function useSelectInfluencer() {
 // Complete campaign
 export function useCompleteCampaign() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const completeCampaign = async (briefId: Bytes32, dataSuffix?: `0x${string}`) => {
     console.log('DIVVI: Completing campaign with dataSuffix:', dataSuffix);
@@ -993,6 +1005,8 @@ export function useCompleteCampaign() {
         functionName: "completeCampaign",
         args: [briefId],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       console.log('DIVVI: Complete campaign transaction submitted:', result);
       return result;
@@ -1022,7 +1036,7 @@ export function useCompleteCampaign() {
 export function useCancelAdBrief() {
   const { writeContract, hash, isPending, isSuccess, isError, error } =
     useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
   const { isCorrectChain, ensureNetwork } = useEnsureNetwork();
 
   const cancelBrief = async (briefId: Bytes32, dataSuffix?: `0x${string}`) => {
@@ -1045,6 +1059,8 @@ export function useCancelAdBrief() {
         functionName: "cancelAdBrief",
         args: [briefId],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       console.log('DIVVI: Cancel brief transaction submitted:', result);
       return result;
@@ -1068,7 +1084,7 @@ export function useCancelAdBrief() {
 export function useSubmitProof() {
   const { writeContract, hash, isPending, isSuccess, isError, error } =
     useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const submitProof = async (briefId: string, proofLink: string, dataSuffix?: `0x${string}`) => {
     console.log('DIVVI: Submitting proof with dataSuffix:', dataSuffix);
@@ -1085,6 +1101,8 @@ export function useSubmitProof() {
         functionName: "submitProof",
         args: [briefId, proofLink],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       
       console.log('DIVVI: Submit proof transaction submitted:', result);
@@ -1129,7 +1147,7 @@ export function useSubmitProof() {
 // Claim payments
 export function useClaimPayments() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const claimPayments = async (dataSuffix?: `0x${string}`) => {
     console.log('DIVVI: Claiming payments with dataSuffix:', dataSuffix);
@@ -1148,6 +1166,8 @@ export function useClaimPayments() {
         functionName: "claimPayments",
         args: [],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
 
       console.log('DIVVI: Payment claim transaction submitted:', result);
@@ -1394,7 +1414,7 @@ export function usePendingDisputeCount(briefId: `0x${string}`) {
 // Hook to expire a dispute
 export function useExpireDispute() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const expireDispute = async (
     briefId: `0x${string}`,
@@ -1408,6 +1428,8 @@ export function useExpireDispute() {
         abi: ABI.abi,
         functionName: "expireDispute",
         args: [briefId, influencer],
+        account: address,
+        chain,
       });
     } catch (error) {
       console.error("Error expiring dispute:", error);
@@ -1422,7 +1444,7 @@ export function useExpireDispute() {
 
 export function useTriggerAutoApproval() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const triggerAutoApproval = async (briefId: `0x${string}`, dataSuffix?: `0x${string}`) => {
     console.log('DIVVI: Triggering auto-approval with dataSuffix:', dataSuffix);
@@ -1439,6 +1461,8 @@ export function useTriggerAutoApproval() {
         functionName: "triggerAutoApproval",
         args: [briefId],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       console.log('DIVVI: Auto-approval transaction submitted:', result);
       return result;
@@ -1469,7 +1493,7 @@ export function useTriggerAutoApproval() {
 
 export function useVerifySelfProof() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const verifySelfProof = async (proof: any, publicSignals: string[], dataSuffix?: `0x${string}`) => {
     console.log('DIVVI: Verifying Self proof with dataSuffix:', dataSuffix);
@@ -1507,6 +1531,8 @@ export function useVerifySelfProof() {
         functionName: "verifySelfProof", 
         args: [formattedProof],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
 
       console.log('DIVVI: Self proof verification transaction submitted:', result);
@@ -1544,7 +1570,7 @@ export function useVerifySelfProof() {
 
 export function useExpireCampaign() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
   const { isCorrectChain, ensureNetwork } = useEnsureNetwork();
 
   const expireCampaign = async (briefId: Bytes32, dataSuffix?: `0x${string}`) => {
@@ -1567,6 +1593,8 @@ export function useExpireCampaign() {
         functionName: "expireCampaign",
         args: [briefId],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       console.log('DIVVI: Expire campaign transaction submitted:', result);
       return result;
@@ -1604,7 +1632,7 @@ export function useExpireCampaign() {
 // Start campaign with partial selection
 export function useStartCampaignWithPartialSelection() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const startCampaignWithPartialSelection = async (
     briefId: string,
@@ -1619,6 +1647,8 @@ export function useStartCampaignWithPartialSelection() {
         functionName: "startCampaignWithPartialSelection",
         args: [briefId],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
     } catch (error) {
       console.error("Error starting campaign with partial selection:", error);
@@ -1635,7 +1665,7 @@ export function useStartCampaignWithPartialSelection() {
 // Cancel campaign with compensation
 export function useCancelCampaignWithCompensation() {
   const tx = useHandleTransaction();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
 
   const cancelCampaignWithCompensation = async (
     briefId: string,
@@ -1651,6 +1681,8 @@ export function useCancelCampaignWithCompensation() {
         functionName: "cancelCampaignWithCompensation",
         args: [briefId, parseUnits(compensationPerInfluencer, 18)],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
     } catch (error) {
       console.error("Error cancelling campaign with compensation:", error);

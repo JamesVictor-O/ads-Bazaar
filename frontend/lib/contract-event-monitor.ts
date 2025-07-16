@@ -1,7 +1,7 @@
 import { createPublicClient, http } from 'viem';
 import { adsBazaarNotifications } from './notification-service';
 import { getCurrentNetworkConfig } from './networks';
-import ABI from './AdsBazaar.json';
+const ABI = require('./AdsBazaar.json');
 
 import { CONTRACT_ADDRESS } from './contracts';
 
@@ -15,18 +15,18 @@ const publicClient = createPublicClient({
 interface EventMonitorConfig {
   startBlock?: bigint;
   pollInterval?: number;
-  maxBlockRange?: number;
+  maxBlockRange?: bigint;
 }
 
 export class ContractEventMonitor {
   private isMonitoring = false;
   private pollInterval: number;
-  private maxBlockRange: number;
+  private maxBlockRange: bigint;
   private lastProcessedBlock: bigint;
 
   constructor(config: EventMonitorConfig = {}) {
     this.pollInterval = config.pollInterval || 10000; // 10 seconds
-    this.maxBlockRange = config.maxBlockRange || 1000; // 1000 blocks
+    this.maxBlockRange = config.maxBlockRange || BigInt(1000); // 1000 blocks
     this.lastProcessedBlock = config.startBlock || BigInt(0);
   }
 

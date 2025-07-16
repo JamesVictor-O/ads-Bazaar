@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useReadContracts, useAccount, usePublicClient } from "wagmi";
+import { useReadContract, useAccount, usePublicClient } from "wagmi";
 import { formatEther } from "viem";
 import {
   Brief,
@@ -170,15 +170,11 @@ export const useInfluencerDashboard = () => {
     isLoading: isLoadingBriefIds,
     error: briefIdsError,
     refetch: refetchBriefIds,
-  } = useReadContracts({
-    contracts: [
-      {
-        address: CONTRACT_ADDRESS as Address,
-        abi: ABI.abi,
-        functionName: "getInfluencerApplications",
-        args: [influencerAddress],
-      },
-    ],
+  } = useReadContract({
+    address: CONTRACT_ADDRESS as Address,
+    abi: ABI.abi,
+    functionName: "getInfluencerApplications",
+    args: [influencerAddress],
     query: {
       enabled: !!influencerAddress,
     },

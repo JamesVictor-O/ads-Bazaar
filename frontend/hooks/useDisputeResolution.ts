@@ -13,7 +13,7 @@ import { toast } from "react-hot-toast";
 // Hook for flagging submissions
 export function useFlagSubmission() {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
   const [isSuccess, setIsSuccess] = useState(false);
 
   const { isLoading: isConfirming, isSuccess: txSuccess } =
@@ -49,6 +49,8 @@ export function useFlagSubmission() {
         functionName: "flagSubmission",
         args: [briefId, influencer, reason],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       console.log('DIVVI: Flag submission transaction submitted:', result);
       return result;
@@ -70,7 +72,7 @@ export function useFlagSubmission() {
 // Hook for resolving disputes
 export function useResolveDispute() {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
   const [isSuccess, setIsSuccess] = useState(false);
 
   const { isLoading: isConfirming, isSuccess: txSuccess } =
@@ -105,6 +107,8 @@ export function useResolveDispute() {
         functionName: "resolveDispute",
         args: [briefId, influencer, isValid],
         dataSuffix: dataSuffix,
+        account: address,
+        chain,
       });
       console.log('DIVVI: Resolve dispute transaction submitted:', result);
       return result;

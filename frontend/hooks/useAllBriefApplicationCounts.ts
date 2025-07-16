@@ -12,12 +12,12 @@ export const useAllBriefApplicationCounts = (briefs: Brief[]) => {
 
   const contracts = briefIds.map((briefId) => ({
     address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: ABI.abi as any,
-    functionName: "briefApplicationCounts",
+    abi: ABI.abi,
+    functionName: "briefApplicationCounts" as const,
     args: [briefId],
-  }));
+  } as const));
 
-  const { data, isLoading, error, refetch } = useReadContracts({
+  const { data, isLoading, error, refetch } = (useReadContracts as any)({
     contracts,
     query: {
       enabled: briefIds.length > 0,

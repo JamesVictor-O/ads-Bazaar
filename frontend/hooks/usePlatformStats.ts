@@ -3,7 +3,7 @@ import { CONTRACT_ADDRESS } from "../lib/contracts";
 import ABI from "../lib/AdsBazaar.json";
 
 export function usePlatformStats() {
-  const { data, isLoading, error, refetch } = useReadContracts({
+  const { data, isLoading, error, refetch } = (useReadContracts as any)({
     contracts: [
       {
         address: CONTRACT_ADDRESS,
