@@ -111,7 +111,7 @@ const BrandDashboard = () => {
     selectionGracePeriod: "86400", // 1 day default
   });
 
-  const { userProfile, refetchProfile } = useUserProfile();
+  const { userProfile, isLoadingProfile, refetchProfile } = useUserProfile();
   const {
     briefs: fetchedBriefs,
     isLoading,
@@ -597,6 +597,28 @@ const BrandDashboard = () => {
     }
     setShowCreateModal(true);
   };
+
+  // Show loading state while profile is being fetched
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <motion.div
+          className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl md:rounded-2xl p-6 md:p-8 max-w-sm w-full text-center"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-emerald-500 mx-auto mb-4 md:mb-6"></div>
+          <h2 className="text-lg md:text-xl font-semibold text-white mb-2 md:mb-3">
+            Loading Profile...
+          </h2>
+          <p className="text-slate-400 text-sm md:text-base">
+            Please wait while we fetch your account information.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (!userProfile?.isRegistered || !userProfile?.isBusiness) {
     return (
