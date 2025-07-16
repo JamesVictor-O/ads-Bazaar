@@ -4,9 +4,10 @@ import { notificationAnalytics } from '@/lib/notification-analytics';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const notificationId = parseInt(params.id);
+  const resolvedParams = await params;
+  const notificationId = parseInt(resolvedParams.id);
 
   if (!notificationId || isNaN(notificationId)) {
     return NextResponse.json({ 
