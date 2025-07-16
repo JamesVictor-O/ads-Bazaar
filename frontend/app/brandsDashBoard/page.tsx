@@ -94,8 +94,11 @@ const BrandDashboard = () => {
   );
 
   // State for partial campaign management
-  const [showStartPartialConfirm, setShowStartPartialConfirm] = useState<string | null>(null);
-  const [showCancelWithCompensationModal, setShowCancelWithCompensationModal] = useState<string | null>(null);
+  const [showStartPartialConfirm, setShowStartPartialConfirm] = useState<
+    string | null
+  >(null);
+  const [showCancelWithCompensationModal, setShowCancelWithCompensationModal] =
+    useState<string | null>(null);
   const [compensationAmount, setCompensationAmount] = useState("");
 
   const [formData, setFormData] = useState({
@@ -534,7 +537,7 @@ const BrandDashboard = () => {
     const now = Date.now() / 1000;
     const selectionDeadline = brief.selectionDeadline;
     const gracePeriod = brief.selectionGracePeriod || 86400; // Default 1 day
-    
+
     return (
       brief.status === CampaignStatus.OPEN &&
       brief.selectedInfluencersCount > 0 &&
@@ -549,7 +552,7 @@ const BrandDashboard = () => {
     const now = Date.now() / 1000;
     const selectionDeadline = brief.selectionDeadline;
     const gracePeriod = brief.selectionGracePeriod || 86400; // Default 1 day
-    
+
     return (
       brief.status === CampaignStatus.OPEN &&
       brief.selectedInfluencersCount > 0 &&
@@ -561,7 +564,10 @@ const BrandDashboard = () => {
   const handleStartPartialCampaign = async (briefId: string) => {
     try {
       const referralTag = generateDivviReferralTag();
-      await startCampaignWithPartialSelection(briefId as `0x${string}`, referralTag);
+      await startCampaignWithPartialSelection(
+        briefId as `0x${string}`,
+        referralTag
+      );
       toast.success("Campaign started with partial selection!");
       setShowStartPartialConfirm(null);
       setTimeout(() => refetchBriefs(), 1000);
@@ -571,10 +577,17 @@ const BrandDashboard = () => {
     }
   };
 
-  const handleCancelWithCompensation = async (briefId: string, compensation: string) => {
+  const handleCancelWithCompensation = async (
+    briefId: string,
+    compensation: string
+  ) => {
     try {
       const referralTag = generateDivviReferralTag();
-      await cancelCampaignWithCompensation(briefId as `0x${string}`, compensation, referralTag);
+      await cancelCampaignWithCompensation(
+        briefId as `0x${string}`,
+        compensation,
+        referralTag
+      );
       toast.success("Campaign cancelled with compensation!");
       setShowCancelWithCompensationModal(null);
       setCompensationAmount("");
@@ -794,7 +807,9 @@ const BrandDashboard = () => {
                 >
                   <NotificationButton
                     onNotificationEnabled={() => {
-                      toast.success("Notifications enabled! You'll get updates about applications, submissions, and deadlines.");
+                      toast.success(
+                        "Notifications enabled! You'll get updates about applications, submissions, and deadlines."
+                      );
                     }}
                     className="text-sm md:text-base"
                   />
@@ -974,181 +989,163 @@ const BrandDashboard = () => {
                 return (
                   <motion.div
                     key={brief.id}
-                    className="bg-white/5 backdrop-blur-sm border border-slate-700/50 rounded-xl md:rounded-2xl overflow-hidden hover:bg-white/10 transition-all duration-300 hover:border-slate-600/50"
+                    className="group relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden hover:border-slate-600/50 transition-all duration-300"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
                     whileHover={{ y: -2 }}
                   >
-                    {/* Header */}
-                    <div className="p-4 md:p-8">
-                      <div className="flex items-start gap-3 md:gap-6 mb-4 md:mb-6">
-                        <div className="p-2 md:p-4 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-lg md:rounded-2xl border border-emerald-500/30">
-                          <Target className="w-5 h-5 md:w-8 md:h-8 text-emerald-400" />
-                        </div>
+                    {/* Status indicator line */}
+                    <div
+                      className={`absolute top-0 left-0 right-0 h-1 ${
+                        brief.status === CampaignStatus.CANCELLED
+                          ? "bg-red-500"
+                          : isUrgent
+                          ? "bg-orange-500"
+                          : "bg-emerald-500"
+                      }`}
+                    />
+
+                    {/* Main Content */}
+                    <div className="relative p-4 space-y-4">
+                      {/* Header Section */}
+                      <div className="flex items-start gap-3">
+                       
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 md:gap-6 mb-3 md:mb-4">
-                            <h3 className="text-lg md:text-2xl font-bold text-white leading-tight">
-                              {brief.name}
-                            </h3>
+                          {/* Title and Status Row */}
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-bold text-white leading-tight mb-1 group-hover:text-emerald-100 transition-colors line-clamp-2">
+                                {brief.name}
+                              </h3>
+                              <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <Calendar className="w-3 h-3" />
+                                <span>
+                                  {format(
+                                    new Date(brief.creationTime * 1000),
+                                    "MMM d"
+                                  )}
+                                </span>
+                              </div>
+                            </div>
 
-                            <div className="flex items-center gap-1 md:gap-3 flex-shrink-0 flex-wrap">
-                              {/* Status badge */}
-                              <span
-                                className={`px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full border ${getStatusColor(
+                            {/* Status Badges - Mobile Optimized */}
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {/* Main Status */}
+                              <div
+                                className={`px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(
                                   brief.status
                                 )}`}
                               >
                                 {brief.status === CampaignStatus.CANCELLED && (
-                                  <Ban className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
+                                  <Ban className="w-3 h-3 mr-1 inline" />
                                 )}
-                                <span className="hidden sm:inline">
-                                  {brief.statusInfo.statusLabel}
-                                </span>
-                                <span className="sm:hidden">
+                                <span>
                                   {brief.statusInfo.statusLabel.slice(0, 6)}
                                 </span>
-                              </span>
+                              </div>
 
-                              {/* Phase badge - hide on very small screens */}
-                              <span
-                                className={`hidden sm:inline-flex px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full border ${getPhaseColor(
-                                  brief.timingInfo.phase
-                                )}`}
-                              >
-                                {getPhaseLabel(brief.timingInfo.phase)}
-                              </span>
-
-                              {/* Priority badge */}
+                              {/* Priority Badge */}
                               {isUrgent && (
-                                <span
-                                  className={`px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full animate-pulse ${
+                                <div
+                                  className={`flex items-center px-2 py-1 text-xs font-semibold rounded-full border ${
                                     priority === "high"
-                                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                                      ? "bg-red-500/20 text-red-300 border-red-500/40"
                                       : priority === "medium"
-                                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                                      : "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                                      ? "bg-orange-500/20 text-orange-300 border-orange-500/40"
+                                      : "bg-yellow-500/20 text-yellow-300 border-yellow-500/40"
                                   }`}
                                 >
-                                  <Zap className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">
-                                    {priority.toUpperCase()}
-                                  </span>
-                                  <span className="sm:hidden">!</span>
-                                </span>
+                                  <Zap className="w-3 h-3 mr-1 animate-pulse" />
+                                  <span>!</span>
+                                </div>
                               )}
                             </div>
                           </div>
 
-                          {/* Expandable Description */}
-                          <div className="mb-3 md:mb-6">
-                            <div className="text-slate-300 text-sm md:text-lg leading-relaxed">
+                          {/* Description Section */}
+                          <div className="mb-3">
+                            <p className="text-slate-300 text-sm leading-relaxed line-clamp-2">
                               {isDescriptionExpanded
                                 ? brief.description
                                 : getTruncatedDescription(brief.description)}
-                            </div>
-
+                            </p>
                             {showExpandButton && (
                               <motion.button
                                 onClick={() => toggleDescription(brief.id)}
-                                className="mt-2 flex items-center gap-1 text-xs md:text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
                                 whileTap={{ scale: 0.95 }}
                               >
-                                <FileText className="w-3 h-3 md:w-4 md:h-4" />
-                                <span>
-                                  {isDescriptionExpanded
-                                    ? "Show less"
-                                    : "Show more"}
-                                </span>
+                                <FileText className="w-3 h-3" />
+                                {isDescriptionExpanded
+                                  ? "Show less"
+                                  : "Show more"}
                                 <motion.div
                                   animate={{
                                     rotate: isDescriptionExpanded ? 180 : 0,
                                   }}
                                   transition={{ duration: 0.2 }}
                                 >
-                                  <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
+                                  <ChevronDown className="w-3 h-3" />
                                 </motion.div>
                               </motion.button>
                             )}
                           </div>
 
-                          {/* Metrics Row */}
-                          <div className="flex items-center gap-3 md:gap-8 text-slate-400 text-xs md:text-sm">
-                            <div className="flex items-center gap-1 md:gap-2">
-                              <Calendar className="w-3 h-3 md:w-5 md:h-5" />
-                              <span className="hidden sm:inline">
-                                Created{" "}
-                                {format(
-                                  new Date(brief.creationTime * 1000),
-                                  "MMM d, yyyy"
-                                )}
-                              </span>
-                              <span className="sm:hidden">
-                                {format(
-                                  new Date(brief.creationTime * 1000),
-                                  "MMM d"
-                                )}
-                              </span>
-                            </div>
+                          {/* Metrics Row - Mobile Optimized */}
+                          <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
                             {brief.timingInfo.currentDeadline &&
                               brief.timingInfo.timeRemaining && (
-                                <div className="flex items-center gap-1 md:gap-2">
-                                  <Clock className="w-3 h-3 md:w-5 md:h-5" />
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3 h-3" />
                                   <span
                                     className={
                                       brief.timingInfo.isUrgent
-                                        ? "text-orange-400"
+                                        ? "text-orange-300 font-medium"
                                         : ""
                                     }
                                   >
                                     {formatTimeRemaining(
                                       brief.timingInfo.timeRemaining
-                                    )}{" "}
-                                    <span className="hidden sm:inline">
-                                      left
-                                    </span>
+                                    )}
                                   </span>
                                 </div>
                               )}
-                            <div className="flex items-center gap-1 md:gap-2">
-                              <Users className="w-3 h-3 md:w-5 md:h-5" />
+                            <div className="flex items-center gap-1.5">
+                              <Users className="w-3 h-3" />
                               <span>
                                 {brief.selectedInfluencersCount}/
                                 {brief.maxInfluencers}
-                                <span className="hidden sm:inline">
-                                  {" "}
-                                  influencers
-                                </span>
                               </span>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Next Action Alert */}
+                      {/* Next Action Alert - Mobile Optimized */}
                       {brief.statusInfo.nextAction && (
                         <div
-                          className={`p-3 md:p-6 rounded-xl md:rounded-2xl border mb-4 md:mb-6 ${
+                          className={`relative p-3 rounded-lg border ${
                             isUrgent
-                              ? "bg-orange-500/5 border-orange-500/20"
-                              : "bg-blue-500/5 border-blue-500/20"
+                              ? "bg-orange-500/10 border-orange-500/30"
+                              : "bg-blue-500/10 border-blue-500/30"
                           }`}
                         >
-                          <div className="flex items-center gap-2 md:gap-4">
+                          <div className="flex items-center gap-2">
                             <div
-                              className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${
+                              className={`w-2 h-2 rounded-full ${
                                 isUrgent ? "bg-orange-400" : "bg-blue-400"
                               }`}
-                            ></div>
-                            <span className="text-slate-200 font-medium text-sm md:text-lg">
+                            />
+                            <span className="text-white font-semibold text-sm">
                               {brief.statusInfo.nextAction}
                             </span>
                           </div>
                           {brief.statusInfo.warning && (
-                            <div className="flex items-center gap-2 md:gap-3 mt-2 md:mt-3">
-                              <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-400" />
-                              <span className="text-orange-400 text-sm md:text-base">
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/10">
+                              <AlertTriangle className="w-3 h-3 text-orange-400" />
+                              <span className="text-orange-300 text-xs">
                                 {brief.statusInfo.warning.replace(
                                   /auto.?approval/gi,
                                   "campaign completion"
@@ -1159,13 +1156,13 @@ const BrandDashboard = () => {
                         </div>
                       )}
 
-                      {/* Budget & Progress */}
-                      <div className="flex items-center justify-between pt-4 md:pt-6 border-t border-slate-700/30">
-                        <div>
-                          <div className="text-xl md:text-3xl font-bold text-white mb-1 md:mb-2">
+                      {/* Budget & Progress Section - Mobile Optimized */}
+                      <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
+                        <div className="space-y-1">
+                          <div className="text-lg font-bold text-white">
                             {formatCurrency(brief.budget)}
                           </div>
-                          <div className="text-slate-400 text-xs md:text-sm">
+                          <div className="text-slate-400 text-xs">
                             {brief.selectedInfluencersCount > 0
                               ? `${formatCurrency(
                                   brief.progressInfo.budgetPerSpot
@@ -1176,45 +1173,47 @@ const BrandDashboard = () => {
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <div className="text-slate-400 mb-2 md:mb-3 text-xs md:text-sm">
-                            Progress: {brief.progressInfo.spotsFilledPercentage}
-                            %
+                        <div className="text-right space-y-1.5">
+                          <div className="text-slate-400 text-xs">
+                            <span className="text-white font-semibold">
+                              {brief.progressInfo.spotsFilledPercentage}%
+                            </span>{" "}
+                            filled
                           </div>
-                          <div className="w-24 md:w-40 h-2 md:h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                          <div className="w-20 h-1.5 bg-slate-600/50 rounded-full overflow-hidden">
                             <motion.div
-                              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                              className="h-full bg-emerald-500"
                               initial={{ width: 0 }}
                               animate={{
                                 width: `${brief.progressInfo.spotsFilledPercentage}%`,
                               }}
-                              transition={{ duration: 1, delay: 0.5 }}
+                              transition={{ duration: 1.2, delay: 0.5 }}
                             />
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Expandable Requirements Section */}
-                    <div className="border-t border-slate-700/30">
+                    {/* Expandable Requirements Section - Mobile Optimized */}
+                    <div className="border-t border-slate-700/30 bg-slate-900/20">
                       <motion.button
                         onClick={() =>
                           setExpandedBriefId(isExpanded ? null : brief.id)
                         }
-                        className="w-full p-3 md:p-6 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-                        whileTap={{ scale: 0.995 }}
+                        className="w-full p-3 flex items-center justify-between text-left hover:bg-white/5 transition-all duration-300 group/button"
+                        whileTap={{ scale: 0.998 }}
                       >
-                        <div className="flex items-center gap-2 md:gap-4">
-                          <CheckSquare className="w-4 h-4 md:w-6 md:h-6 text-slate-400" />
-                          <span className="text-slate-300 font-medium text-sm md:text-lg">
-                            Campaign Requirements
+                        <div className="flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-slate-400 group-hover/button:text-emerald-400 transition-colors" />
+                          <span className="text-slate-300 font-semibold text-sm group-hover/button:text-white transition-colors">
+                            Requirements
                           </span>
                         </div>
                         <motion.div
                           animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
+                          transition={{ duration: 0.3 }}
                         >
-                          <ChevronDown className="w-4 h-4 md:w-6 md:h-6 text-slate-400" />
+                          <ChevronDown className="w-4 h-4 text-slate-400 group-hover/button:text-emerald-400 transition-colors" />
                         </motion.div>
                       </motion.button>
 
@@ -1224,149 +1223,159 @@ const BrandDashboard = () => {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.4 }}
                             className="overflow-hidden"
                           >
-                            <div className="px-4 pb-4 md:px-8 md:pb-8">
-                              <p className="text-slate-200 leading-relaxed bg-slate-800/30 p-3 md:p-6 rounded-xl md:rounded-2xl border border-slate-700/50 text-sm md:text-lg">
-                                {brief.requirements ||
-                                  "No specific requirements"}
-                              </p>
+                            <div className="px-4 pb-4">
+                              <div className="bg-slate-700/30 p-3 rounded-lg border border-slate-600/50">
+                                <p className="text-slate-200 leading-relaxed text-sm">
+                                  {brief.requirements ||
+                                    "No specific requirements"}
+                                </p>
+                              </div>
                             </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="p-4 pt-0 md:p-8 md:pt-0">
-                      <div className="flex gap-2 md:gap-4">
-                        <motion.button
-                          onClick={() => {
-                            setSelectedBrief(brief);
-                            setShowApplicationsModal(true);
-                          }}
-                          disabled={brief.status === CampaignStatus.CANCELLED}
-                          className={`relative flex-1 font-medium py-2.5 px-3 md:py-4 md:px-6 rounded-lg md:rounded-xl border transition-all text-sm md:text-base ${
-                            brief.status === CampaignStatus.CANCELLED
-                              ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
-                              : "bg-slate-700/50 hover:bg-slate-700 text-white border-slate-600/50 hover:border-slate-500"
-                          }`}
-                          whileTap={
-                            brief.status !== CampaignStatus.CANCELLED
-                              ? { scale: 0.95 }
-                              : {}
-                          }
-                        >
-                          Applications
-                          {applications.length > 0 &&
-                            brief.status !== CampaignStatus.CANCELLED && (
-                              <span className="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-emerald-500 text-white text-xs rounded-full h-4 w-4 md:h-6 md:w-6 flex items-center justify-center font-bold shadow-sm">
-                                {applications.length}
-                              </span>
-                            )}
-                        </motion.button>
-
-                        <motion.button
-                          onClick={() => {
-                            setSelectedBrief(brief);
-                            setShowSubmissionsModal(true);
-                          }}
-                          disabled={brief.status === CampaignStatus.CANCELLED}
-                          className={`flex-1 font-medium py-2.5 px-3 md:py-4 md:px-6 rounded-lg md:rounded-xl border transition-all text-sm md:text-base ${
-                            brief.status === CampaignStatus.CANCELLED
-                              ? "bg-slate-600/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
-                              : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/50"
-                          }`}
-                          whileTap={
-                            brief.status !== CampaignStatus.CANCELLED
-                              ? { scale: 0.95 }
-                              : {}
-                          }
-                        >
-                          Submissions
-                        </motion.button>
-
-                        {/* Share Campaign Button */}
-                        <ShareCampaignButton 
-                          campaign={brief}
-                          className="flex-shrink-0"
-                        />
-
-                        {/* Expire Campaign Button */}
-                        {brief.statusInfo.canExpire && (
+                    {/* Action Buttons - Mobile Optimized */}
+                    <div className="p-3 pt-0">
+                      <div className="flex flex-col gap-2">
+                        {/* Primary Actions */}
+                        <div className="flex gap-2">
                           <motion.button
-                            onClick={() => setShowExpireConfirm(brief.id)}
-                            disabled={isExpiringBrief}
-                            className="px-2.5 py-2.5 md:px-4 md:py-4 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 rounded-lg md:rounded-xl border border-orange-500/30 hover:border-orange-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 md:gap-2"
-                            whileTap={{ scale: 0.95 }}
-                            title="Expire Campaign"
+                            onClick={() => {
+                              setSelectedBrief(brief);
+                              setShowApplicationsModal(true);
+                            }}
+                            disabled={brief.status === CampaignStatus.CANCELLED}
+                            className={`relative flex-1 font-semibold py-2.5 px-3 rounded-lg border transition-all duration-300 text-sm ${
+                              brief.status === CampaignStatus.CANCELLED
+                                ? "bg-slate-700/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
+                                : "bg-slate-700/50 hover:bg-slate-700 text-white border-slate-600/50 hover:border-slate-500"
+                            }`}
+                            whileTap={
+                              brief.status !== CampaignStatus.CANCELLED
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                           >
-                            {isExpiringBrief ? (
-                              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-                            ) : (
-                              <Clock className="w-4 h-4 md:w-5 md:h-5" />
-                            )}
+                            Applications
+                            {applications.length > 0 &&
+                              brief.status !== CampaignStatus.CANCELLED && (
+                                <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                                  {applications.length}
+                                </span>
+                              )}
                           </motion.button>
-                        )}
 
-                        {/* Cancel Campaign Button */}
-                        {canCancelCampaign(brief) && (
                           <motion.button
-                            onClick={() => setShowCancelConfirm(brief.id)}
-                            disabled={isCancelingBrief}
-                            className="px-2.5 py-2.5 md:px-4 md:py-4 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg md:rounded-xl border border-red-500/30 hover:border-red-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 md:gap-2"
-                            whileTap={{ scale: 0.95 }}
-                            title="Cancel Campaign"
+                            onClick={() => {
+                              setSelectedBrief(brief);
+                              setShowSubmissionsModal(true);
+                            }}
+                            disabled={brief.status === CampaignStatus.CANCELLED}
+                            className={`flex-1 font-semibold py-2.5 px-3 rounded-lg border transition-all duration-300 text-sm ${
+                              brief.status === CampaignStatus.CANCELLED
+                                ? "bg-slate-700/30 text-slate-500 border-slate-600/30 cursor-not-allowed"
+                                : "bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border-emerald-500/40 hover:border-emerald-500/60"
+                            }`}
+                            whileTap={
+                              brief.status !== CampaignStatus.CANCELLED
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                           >
-                            {isCancelingBrief ? (
-                              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
-                            )}
+                            Submissions
                           </motion.button>
-                        )}
+                        </div>
 
-                        {/* Start Partial Campaign Button */}
-                        {canStartPartialCampaign(brief) && (
+                        {/* Secondary Actions - Mobile Optimized */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-1">
+                            <ShareCampaignButton
+                              campaign={brief}
+                              className="flex-shrink-0"
+                            />
+
+                            {/* Action Buttons */}
+                            {brief.statusInfo.canExpire && (
+                              <motion.button
+                                onClick={() => setShowExpireConfirm(brief.id)}
+                                disabled={isExpiringBrief}
+                                className="p-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 rounded-lg border border-orange-500/40 hover:border-orange-500/60 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                whileTap={{ scale: 0.95 }}
+                                title="Expire Campaign"
+                              >
+                                {isExpiringBrief ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Clock className="w-4 h-4" />
+                                )}
+                              </motion.button>
+                            )}
+
+                            {canCancelCampaign(brief) && (
+                              <motion.button
+                                onClick={() => setShowCancelConfirm(brief.id)}
+                                disabled={isCancelingBrief}
+                                className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-300 rounded-lg border border-red-500/40 hover:border-red-500/60 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                whileTap={{ scale: 0.95 }}
+                                title="Cancel Campaign"
+                              >
+                                {isCancelingBrief ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </motion.button>
+                            )}
+
+                            {canStartPartialCampaign(brief) && (
+                              <motion.button
+                                onClick={() =>
+                                  setShowStartPartialConfirm(brief.id)
+                                }
+                                disabled={isStartingPartialCampaign}
+                                className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 rounded-lg border border-emerald-500/40 hover:border-emerald-500/60 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                whileTap={{ scale: 0.95 }}
+                                title="Start with Partial Selection"
+                              >
+                                {isStartingPartialCampaign ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Zap className="w-4 h-4" />
+                                )}
+                              </motion.button>
+                            )}
+
+                            {canCancelWithCompensation(brief) && (
+                              <motion.button
+                                onClick={() =>
+                                  setShowCancelWithCompensationModal(brief.id)
+                                }
+                                disabled={isCancelingWithCompensation}
+                                className="p-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 rounded-lg border border-amber-500/40 hover:border-amber-500/60 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                whileTap={{ scale: 0.95 }}
+                                title="Cancel with Compensation"
+                              >
+                                {isCancelingWithCompensation ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Ban className="w-4 h-4" />
+                                )}
+                              </motion.button>
+                            )}
+                          </div>
+
                           <motion.button
-                            onClick={() => setShowStartPartialConfirm(brief.id)}
-                            disabled={isStartingPartialCampaign}
-                            className="px-2.5 py-2.5 md:px-4 md:py-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg md:rounded-xl border border-emerald-500/30 hover:border-emerald-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 md:gap-2"
+                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-300"
                             whileTap={{ scale: 0.95 }}
-                            title="Start with Partial Selection"
                           >
-                            {isStartingPartialCampaign ? (
-                              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-                            ) : (
-                              <Zap className="w-4 h-4 md:w-5 md:h-5" />
-                            )}
+                            <MoreVertical className="w-4 h-4" />
                           </motion.button>
-                        )}
-
-                        {/* Cancel with Compensation Button */}
-                        {canCancelWithCompensation(brief) && (
-                          <motion.button
-                            onClick={() => setShowCancelWithCompensationModal(brief.id)}
-                            disabled={isCancelingWithCompensation}
-                            className="px-2.5 py-2.5 md:px-4 md:py-4 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg md:rounded-xl border border-amber-500/30 hover:border-amber-500/50 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 md:gap-2"
-                            whileTap={{ scale: 0.95 }}
-                            title="Cancel with Compensation"
-                          >
-                            {isCancelingWithCompensation ? (
-                              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-                            ) : (
-                              <Ban className="w-4 h-4 md:w-5 md:h-5" />
-                            )}
-                          </motion.button>
-                        )}
-
-                        <motion.button
-                          className="p-2.5 md:p-4 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg md:rounded-xl transition-all"
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <MoreVertical className="w-4 h-4 md:w-5 md:h-5" />
-                        </motion.button>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -1545,7 +1554,8 @@ const BrandDashboard = () => {
             </div>
 
             <p className="text-slate-300 mb-6 md:mb-8 leading-relaxed text-sm md:text-base">
-              Start the campaign with the currently selected influencers. Unused budget will be refunded automatically.
+              Start the campaign with the currently selected influencers. Unused
+              budget will be refunded automatically.
             </p>
 
             <div className="flex gap-3 md:gap-4">
@@ -1613,7 +1623,8 @@ const BrandDashboard = () => {
             </div>
 
             <p className="text-slate-300 mb-4 leading-relaxed text-sm md:text-base">
-              Cancel the campaign and provide compensation to selected influencers for their time.
+              Cancel the campaign and provide compensation to selected
+              influencers for their time.
             </p>
 
             <div className="mb-6">
@@ -1649,7 +1660,10 @@ const BrandDashboard = () => {
               <button
                 onClick={() => {
                   if (showCancelWithCompensationModal && compensationAmount) {
-                    handleCancelWithCompensation(showCancelWithCompensationModal, compensationAmount);
+                    handleCancelWithCompensation(
+                      showCancelWithCompensationModal,
+                      compensationAmount
+                    );
                   }
                 }}
                 disabled={isCancelingWithCompensation || !compensationAmount}
@@ -1664,7 +1678,9 @@ const BrandDashboard = () => {
                 ) : (
                   <>
                     <Ban className="w-4 h-4 md:w-5 md:h-5" />
-                    <span className="hidden sm:inline">Cancel & Compensate</span>
+                    <span className="hidden sm:inline">
+                      Cancel & Compensate
+                    </span>
                     <span className="sm:hidden">Confirm</span>
                   </>
                 )}

@@ -54,10 +54,7 @@ import {
   formatTimeRemaining,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
-import {
-  getUserStatusColor,
-  getUserStatusLabel,
-} from "@/utils/format";
+import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { NotificationButton } from "@/components/NotificationButton";
 
@@ -130,7 +127,6 @@ export default function InfluencerDashboard() {
   const { isVerified } = useIsInfluencerVerified();
   const { appliedBriefs, assignedBriefs, isLoading, error, refetch } =
     useInfluencerDashboard();
-
 
   // Fetch pending payments data
   const { totalPendingAmount, isLoadingTotalAmount } =
@@ -391,7 +387,9 @@ export default function InfluencerDashboard() {
               briefData.application.hasClaimed
             );
           case "urgent":
-            return appInfo.canSubmitProof || appInfo.canClaim || appInfo.warning;
+            return (
+              appInfo.canSubmitProof || appInfo.canClaim || appInfo.warning
+            );
           default:
             return true;
         }
@@ -648,7 +646,9 @@ export default function InfluencerDashboard() {
               >
                 <NotificationButton
                   onNotificationEnabled={() => {
-                    toast.success("Notifications enabled! You'll get updates about campaigns and payments.");
+                    toast.success(
+                      "Notifications enabled! You'll get updates about campaigns and payments."
+                    );
                   }}
                   className="text-sm md:text-base"
                 />
@@ -830,7 +830,7 @@ export default function InfluencerDashboard() {
                 )}
               </motion.button>
             ))}
-            
+
             {/* Refresh Button */}
             <motion.button
               onClick={() => {
@@ -848,7 +848,7 @@ export default function InfluencerDashboard() {
         </div>
 
         {/* Enhanced Stats Grid with Verification Status */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10">
           {[
             {
               icon: Briefcase,
@@ -879,24 +879,27 @@ export default function InfluencerDashboard() {
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
-              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-3 md:p-6 transition-all duration-200 shadow-sm relative"
-              initial={{ opacity: 0, y: 10 }}
+              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-3 md:p-4 transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-slate-700/20 hover:border-slate-600/50 hover:-translate-y-1 group relative overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: 0.05 * index }}
+              transition={{ duration: 0.3, delay: 0.05 * index }}
             >
-              <div className="flex items-center justify-between mb-2 md:mb-4">
+              {/* Subtle animated background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-700/10 via-transparent to-slate-800/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+              <div className="flex items-start justify-between mb-2 md:mb-3 relative z-10">
                 <div
-                  className={`p-2 md:p-3 bg-${stat.color}/10 rounded-lg md:rounded-xl border border-${stat.color}/20`}
+                  className={`p-2 md:p-2.5 bg-${stat.color}/10 rounded-lg md:rounded-xl border border-${stat.color}/20 group-hover:bg-${stat.color}/15 transition-all duration-300 group-hover:scale-105`}
                 >
                   <stat.icon
-                    className={`w-4 h-4 md:w-6 md:h-6 text-${stat.color}`}
+                    className={`w-4 h-4 md:w-5 md:h-5 text-${stat.color}`}
                   />
                 </div>
                 {stat.hasClaimable && !stat.isLoading && (
                   <motion.button
                     onClick={handleOpenClaimModal}
-                    className="p-1.5 md:p-2 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30"
-                    whileHover={{ scale: 1.05 }}
+                    className="p-1.5 md:p-2 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-200"
+                    whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     title="Claim rewards"
                   >
@@ -904,21 +907,29 @@ export default function InfluencerDashboard() {
                   </motion.button>
                 )}
               </div>
-              <p className="text-lg md:text-2xl font-bold text-white mb-0.5 md:mb-1">
-                {stat.isLoading ? (
-                  <span className="animate-pulse">...</span>
-                ) : (
-                  stat.value
-                )}
-              </p>
-              <p className="text-slate-400 text-xs md:text-base">
-                {stat.label}
-              </p>
+
+              <div className="relative z-10 mb-3 md:mb-4">
+                <p className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-0.5 md:mb-1 group-hover:text-white/90 transition-colors leading-tight">
+                  {stat.isLoading ? (
+                    <span className="animate-pulse flex items-center gap-1">
+                      ...
+                      <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce" />
+                    </span>
+                  ) : (
+                    stat.value
+                  )}
+                </p>
+                <p
+                  className={`text-slate-400 text-xs md:text-sm font-medium group-hover:text-${stat.color} transition-colors`}
+                >
+                  {stat.label}
+                </p>
+              </div>
 
               {stat.hasClaimable && !stat.isLoading && (
                 <motion.button
                   onClick={handleOpenClaimModal}
-                  className="w-full mt-2 md:mt-4 py-1.5 md:py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg md:rounded-xl flex items-center justify-center gap-1.5 md:gap-2 font-medium text-sm md:text-base"
+                  className="w-full py-2 md:py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg md:rounded-xl flex items-center justify-center gap-1.5 md:gap-2 font-medium text-sm md:text-base shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all duration-200 relative z-10"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -957,7 +968,7 @@ export default function InfluencerDashboard() {
                 </p>
               </div>
             </div>
-          ) : (!filteredCampaigns || filteredCampaigns.length === 0) ? (
+          ) : !filteredCampaigns || filteredCampaigns.length === 0 ? (
             <div className="text-center py-12 md:py-20">
               <Briefcase className="w-12 h-12 md:w-16 md:h-16 text-slate-600 mx-auto mb-4 md:mb-6" />
               <h3 className="text-lg md:text-2xl font-semibold text-white mb-2 md:mb-3">
@@ -992,368 +1003,255 @@ export default function InfluencerDashboard() {
 
                 return (
                   <motion.div
-                    key={briefData.briefId}
-                    className="bg-white/5 backdrop-blur-sm border border-slate-700/50 rounded-xl md:rounded-2xl overflow-hidden hover:bg-white/10 transition-all duration-300 hover:border-slate-600/50"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    whileHover={{ y: -2 }}
-                  >
-                    {/* Header */}
-                    <div className="p-4 md:p-8">
-                      <div className="flex items-start gap-3 md:gap-6 mb-4 md:mb-6">
-                        <div className="p-2 md:p-4 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-lg md:rounded-2xl border border-blue-500/30">
-                          <Briefcase className="w-5 h-5 md:w-8 md:h-8 text-blue-400" />
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 md:gap-6 mb-3 md:mb-4">
-                            <div>
-                              <h3 className="text-lg md:text-2xl font-bold text-white leading-tight mb-1 md:mb-2">
-                                {briefData.brief.name}
-                              </h3>
-                              <p className="text-slate-400 font-medium text-sm md:text-base">
-                                by{" "}
-                                <UserDisplay
-                                  address={briefData.brief.business}
-                                  className="text-emerald-400"
-                                />
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-1 md:gap-3 flex-shrink-0 flex-wrap">
-                              {briefData.application.isSelected && (
-                                <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                                  <Star className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">
-                                    Selected
-                                  </span>
-                                  <span className="sm:hidden">✓</span>
-                                </span>
-                              )}
-
-                              {/* Campaign phase indicator */}
-                              <span
-                                className={`px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full border ${getPhaseColor(
-                                  briefData.brief.timingInfo.phase
-                                )}`}
-                              >
-                                <span className="hidden sm:inline">
-                                  {getPhaseLabel(
-                                    briefData.brief.timingInfo.phase
-                                  )}
-                                </span>
-                                <span className="sm:hidden">
-                                  {briefData.brief.timingInfo.phase}
-                                </span>
-                              </span>
-
-                              {/* Urgent indicator */}
-                              {(appInfo.canSubmitProof ||
-                                appInfo.canClaim ||
-                                appInfo.warning) && (
-                                <span className="px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 animate-pulse">
-                                  <Zap className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2 inline" />
-                                  <span className="hidden sm:inline">
-                                    Action
-                                  </span>
-                                  <span className="sm:hidden">!</span>
-                                </span>
-                              )}
-                            </div>
+                  key={briefData.briefId}
+                  className="bg-white/5 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-white/10 transition-all duration-300 hover:border-slate-600/50 overflow-hidden"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ y: -1 }}
+                >
+                  {/* Main Content */}
+                  <div className="p-4 sm:p-6">
+                    {/* Header Section */}
+                    <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
+                      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
+                        <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 line-clamp-2 pr-2 sm:pr-0">
+                              {briefData.brief.name}
+                            </h3>
+                            <p className="text-sm text-slate-400">
+                              by <span className="font-medium text-emerald-400">{briefData.brief.business}</span>
+                            </p>
                           </div>
-
-                          {/* Expandable Description */}
-                          <div className="mb-4 md:mb-6">
-                            <div className="text-slate-300 text-sm md:text-lg leading-relaxed">
-                              {isDescriptionExpanded
-                                ? briefData.brief.description
-                                : getTruncatedDescription(
-                                    briefData.brief.description
-                                  )}
-                            </div>
-
-                            {showExpandButton && (
-                              <motion.button
-                                onClick={() =>
-                                  toggleDescription(briefData.briefId)
-                                }
-                                className="mt-2 flex items-center gap-1 text-xs md:text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                <FileText className="w-3 h-3 md:w-4 md:h-4" />
-                                <span>
-                                  {isDescriptionExpanded
-                                    ? "Show less"
-                                    : "Show more"}
-                                </span>
-                                <motion.div
-                                  animate={{
-                                    rotate: isDescriptionExpanded ? 180 : 0,
-                                  }}
-                                  transition={{ duration: 0.2 }}
-                                >
-                                  <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
-                                </motion.div>
-                              </motion.button>
+                          
+                          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0">
+                            {briefData.application.isSelected && (
+                              <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                <Star className="w-3 h-3 mr-1" />
+                                Selected
+                              </span>
                             )}
-                          </div>
-
-                          {/* Metrics Row */}
-                          <div className="flex items-center gap-3 md:gap-8 text-slate-400 text-xs md:text-sm">
-                            <div className="flex items-center gap-1 md:gap-2">
-                              <Calendar className="w-3 h-3 md:w-5 md:h-5" />
-                              <span className="hidden sm:inline">
-                                {new Date(
-                                  briefData.brief.creationTime * 1000
-                                ).toLocaleDateString()}
+                            
+                            <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getPhaseColor(briefData.brief.timingInfo.phase)}`}>
+                              {getPhaseLabel(briefData.brief.timingInfo.phase)}
+                            </span>
+                            
+                            {(appInfo.canSubmitProof || appInfo.canClaim || appInfo.warning) && (
+                              <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                <Zap className="w-3 h-3 mr-1" />
+                                Action
                               </span>
-                              <span className="sm:hidden">
-                                {new Date(
-                                  briefData.brief.creationTime * 1000
-                                ).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1 md:gap-2">
-                              <DollarSign className="w-3 h-3 md:w-5 md:h-5" />
-                              <span>{budget.toFixed(0)} cUSD</span>
-                            </div>
-
-                            {briefData.brief.timingInfo.timeRemaining && (
-                              <div className="flex items-center gap-1 md:gap-2">
-                                <Timer className="w-3 h-3 md:w-5 md:h-5" />
-                                <span
-                                  className={
-                                    briefData.brief.timingInfo.isUrgent
-                                      ? "text-orange-400"
-                                      : ""
-                                  }
-                                >
-                                  {formatTimeRemaining(
-                                    briefData.brief.timingInfo.timeRemaining
-                                  )}{" "}
-                                  <span className="hidden sm:inline">left</span>
-                                </span>
-                              </div>
                             )}
                           </div>
                         </div>
                       </div>
-
-                      {/* Action Needed Alert - Use appInfo for proper messaging */}
-                      {(canSubmitProof || canClaim || appInfo.warning) && (
-                        <div className="p-3 md:p-6 rounded-xl md:rounded-2xl border bg-orange-500/5 border-orange-500/20 mb-4 md:mb-6">
-                          <div className="flex items-center gap-3 md:gap-4">
-                            <Zap className="w-5 h-5 md:w-6 md:h-6 text-orange-400" />
-                            <div>
-                              <p className="text-orange-300 font-medium text-sm md:text-lg">
-                                {canSubmitProof
-                                  ? "Ready to submit your content"
-                                  : canClaim
-                                  ? "Payment ready to claim"
-                                  : appInfo.nextAction}
-                              </p>
-                              <p className="text-orange-400/70 text-xs md:text-sm">
-                                {appInfo.warning ||
-                                  (canSubmitProof
-                                    ? "Upload your promotional content for review"
-                                    : canClaim
-                                    ? "Claim your earnings now"
-                                    : "")}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Proof Status */}
-                      {briefData.application.isSelected && (
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-6 mb-4 md:mb-6">
-                          <div className="flex items-center gap-2 md:gap-3">
-                            <div
-                              className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
-                                briefData.application.isApproved
-                                  ? "bg-emerald-400"
-                                  : hasProof
-                                  ? "bg-amber-400"
-                                  : "bg-slate-500"
-                              }`}
-                            ></div>
-                            <span className="text-slate-300 font-medium text-sm md:text-base">
-                              {briefData.application.isApproved
-                                ? "Content Approved"
-                                : hasProof
-                                ? "Under Review"
-                                : appInfo.nextAction || "Awaiting Content"}
-                            </span>
-                          </div>
-
-                          {briefData.application.hasClaimed && (
-                            <div className="flex items-center gap-2 md:gap-3">
-                              <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" />
-                              <span className="text-emerald-400 font-medium text-sm md:text-base">
-                                Payment Claimed
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                    </div>
+                
+                    {/* Description */}
+                    <div className="mb-4 sm:mb-6">
+                      <p className="text-slate-300 leading-relaxed text-sm sm:text-base">
+                        {isDescriptionExpanded
+                          ? briefData.brief.description
+                          : getTruncatedDescription(briefData.brief.description)}
+                      </p>
+                      
+                      {showExpandButton && (
+                        <button
+                          onClick={() => toggleDescription(briefData.briefId)}
+                          className="mt-2 inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 font-medium touch-manipulation"
+                        >
+                          <FileText className="w-4 h-4" />
+                          {isDescriptionExpanded ? "Show less" : "Show more"}
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
+                        </button>
                       )}
                     </div>
-
-                    {/* Expandable Requirements */}
-                    <div className="border-t border-slate-700/30">
-                      <motion.button
-                        onClick={() =>
-                          setExpandedBriefId(
-                            isExpanded ? null : briefData.briefId
-                          )
-                        }
-                        className="w-full p-3 md:p-6 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-                        whileTap={{ scale: 0.995 }}
-                      >
-                        <div className="flex items-center gap-2 md:gap-4">
-                          <CheckSquare className="w-4 h-4 md:w-6 md:h-6 text-slate-400" />
-                          <span className="text-slate-300 font-medium text-sm md:text-lg">
-                            Requirements & Actions
+                
+                    {/* Action Alert */}
+                    {(canSubmitProof || canClaim || appInfo.warning) && (
+                      <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-orange-300">
+                              {canSubmitProof
+                                ? "Ready to submit your content"
+                                : canClaim
+                                ? "Payment ready to claim"
+                                : appInfo.nextAction}
+                            </p>
+                            <p className="text-xs sm:text-sm text-orange-400/70 mt-1">
+                              {appInfo.warning ||
+                                (canSubmitProof
+                                  ? "Upload your promotional content for review"
+                                  : canClaim
+                                  ? "Claim your earnings now"
+                                  : "")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                
+                    {/* Status Row */}
+                    {briefData.application.isSelected && (
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-4 sm:mb-6">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${
+                            briefData.application.isApproved
+                              ? "bg-emerald-400"
+                              : hasProof
+                              ? "bg-amber-400"
+                              : "bg-slate-500"
+                          }`} />
+                          <span className="text-sm font-medium text-slate-300">
+                            {briefData.application.isApproved
+                              ? "Content Approved"
+                              : hasProof
+                              ? "Under Review"
+                              : appInfo.nextAction || "Awaiting Content"}
                           </span>
                         </div>
+                        
+                        {briefData.application.hasClaimed && (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-400" />
+                            <span className="text-sm font-medium text-emerald-400">
+                              Payment Claimed
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                
+                    {/* Metrics */}
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-6 text-sm text-slate-400 mb-4 sm:mb-6">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span className="whitespace-nowrap">{new Date(briefData.brief.creationTime * 1000).toLocaleDateString()}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        <span className="font-medium whitespace-nowrap">{budget.toFixed(0)} cUSD</span>
+                      </div>
+                      
+                      {briefData.brief.timingInfo.timeRemaining && (
+                        <div className="flex items-center gap-2">
+                          <Timer className="w-4 h-4" />
+                          <span className={`whitespace-nowrap ${briefData.brief.timingInfo.isUrgent ? "text-orange-400 font-medium" : ""}`}>
+                            {formatTimeRemaining(briefData.brief.timingInfo.timeRemaining)} left
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                
+                  {/* Expandable Section */}
+                  <div className="border-t border-slate-700/30">
+                    <button
+                      onClick={() => setExpandedBriefId(isExpanded ? null : briefData.briefId)}
+                      className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors touch-manipulation"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-slate-400" />
+                        <span className="font-medium text-slate-300 text-sm sm:text-base">Requirements & Actions</span>
+                      </div>
+                      <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                
+                    <AnimatePresence>
+                      {isExpanded && (
                         <motion.div
-                          animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
                         >
-                          <ChevronDown className="w-4 h-4 md:w-6 md:h-6 text-slate-400" />
-                        </motion.div>
-                      </motion.button>
-
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="px-4 pb-4 md:px-8 md:pb-8">
-                              <div className="bg-slate-800/30 p-3 md:p-6 rounded-xl md:rounded-2xl border border-slate-700/50 mb-4 md:mb-6">
-                                <h4 className="text-slate-300 font-semibold mb-2 md:mb-3 text-sm md:text-lg">
-                                  Campaign Requirements:
-                                </h4>
-                                <p className="text-slate-200 leading-relaxed text-sm md:text-base">
-                                  {briefData.brief.requirements}
-                                </p>
+                          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                            {/* Requirements */}
+                            <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-3 sm:p-4 mb-4">
+                              <h4 className="font-semibold text-slate-300 mb-2 text-sm sm:text-base">Campaign Requirements:</h4>
+                              <p className="text-slate-200 leading-relaxed text-sm sm:text-base">{briefData.brief.requirements}</p>
+                            </div>
+                
+                            {/* Timeline Info */}
+                            {briefData.application.isSelected && (
+                              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 sm:p-4 mb-4">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-blue-400" />
+                                  <p className="text-sm font-medium text-blue-400">{appInfo.nextAction}</p>
+                                </div>
                               </div>
-
-                              {/* Campaign Timeline for Selected Influencers */}
-                              {briefData.application.isSelected && (
-                                <div className="bg-slate-800/30 p-3 md:p-4 rounded-xl border border-slate-700/50 mb-4 md:mb-6">
-                                  <div className="space-y-2 text-xs md:text-sm">
-                                    <div className="mt-3 p-2 bg-blue-500/10 rounded border border-blue-500/20">
-                                      <p className="text-blue-400 text-xs md:text-sm">
-                                        ⏰ {appInfo.nextAction}
-                                      </p>
-                                    </div>
-                                  </div>
+                            )}
+                
+                            {/* Action Buttons */}
+                            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                              {hasProof && (
+                                <a
+                                  href={briefData.application.proofLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg border border-blue-500/30 transition-colors font-medium touch-manipulation text-sm sm:text-base"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  View Submission
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                
+                              {canSubmitProof && (
+                                <button
+                                  onClick={() => handleSubmitProofClick(briefData, hasProof)}
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 transition-colors font-medium touch-manipulation text-sm sm:text-base"
+                                  disabled={isSubmittingProof}
+                                >
+                                  {hasProof ? (
+                                    <>
+                                      <Edit3 className="w-4 h-4" />
+                                      Update Content
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-4 h-4" />
+                                      Submit Content
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                
+                              {briefData.application.isSelected && !canSubmitProof && !briefData.application.isApproved && (
+                                <div className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-amber-600/10 text-amber-400 rounded-lg border border-amber-500/20 text-sm sm:text-base">
+                                  <Timer className="w-4 h-4" />
+                                  <span className="font-medium text-center">
+                                    {appInfo.nextAction || "Campaign not ready for submissions yet"}
+                                  </span>
                                 </div>
                               )}
-
-                              {/* Action Buttons */}
-                              <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
-                                {hasProof && (
-                                  <motion.a
-                                    href={briefData.application.proofLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg md:rounded-xl border border-blue-500/30 transition-all font-medium text-sm md:text-base"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                  >
-                                    <Eye className="w-4 h-4 md:w-5 md:h-5" />
-                                    <span className="hidden sm:inline">
-                                      View Submission
-                                    </span>
-                                    <span className="sm:hidden">View</span>
-                                    <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
-                                  </motion.a>
-                                )}
-
-                                {/* Submit/Update button - now properly controlled by timing */}
-                                {canSubmitProof && (
-                                  <motion.button
-                                    onClick={() =>
-                                      handleSubmitProofClick(
-                                        briefData,
-                                        hasProof
-                                      )
-                                    }
-                                    className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg md:rounded-xl border border-emerald-500/30 transition-all font-medium text-sm md:text-base"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    disabled={isSubmittingProof}
-                                  >
-                                    {hasProof ? (
-                                      <>
-                                        <Edit3 className="w-4 h-4 md:w-5 md:h-5" />
-                                        <span className="hidden sm:inline">
-                                          Update Content
-                                        </span>
-                                        <span className="sm:hidden">
-                                          Update
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Upload className="w-4 h-4 md:w-5 md:h-5" />
-                                        <span className="hidden sm:inline">
-                                          Submit Content
-                                        </span>
-                                        <span className="sm:hidden">
-                                          Submit
-                                        </span>
-                                      </>
-                                    )}
-                                  </motion.button>
-                                )}
-
-                                {/* Timing message when can't submit yet */}
-                                {briefData.application.isSelected &&
-                                  !canSubmitProof &&
-                                  !briefData.application.isApproved && (
-                                    <div className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-amber-600/10 text-amber-400 rounded-lg md:rounded-xl border border-amber-500/20 text-sm md:text-base">
-                                      <Timer className="w-4 h-4 md:w-5 md:h-5" />
-                                      <span className="text-xs md:text-sm">
-                                        {appInfo.nextAction ||
-                                          "Campaign not ready for submissions yet"}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                {canClaim && (
-                                  <motion.button
-                                    onClick={handleOpenClaimModal}
-                                    className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg md:rounded-xl transition-all font-medium shadow-lg shadow-emerald-500/20 text-sm md:text-base"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                  >
-                                    <DollarSign className="w-4 h-4 md:w-5 md:h-5" />
-                                    <span className="hidden sm:inline">
-                                      Claim {budget.toFixed(0)} cUSD
-                                    </span>
-                                    <span className="sm:hidden">Claim</span>
-                                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-                                  </motion.button>
-                                )}
-                              </div>
+                
+                              {canClaim && (
+                                <button
+                                  onClick={handleOpenClaimModal}
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg transition-colors font-medium shadow-lg shadow-emerald-500/20 touch-manipulation text-sm sm:text-base"
+                                >
+                                  <DollarSign className="w-4 h-4" />
+                                  Claim {budget.toFixed(0)} cUSD
+                                  <ArrowRight className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
                 );
               })}
             </div>
