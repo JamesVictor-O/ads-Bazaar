@@ -577,8 +577,6 @@ const BrandDashboard = () => {
       
       const referralTag = generateDivviReferralTag();
       await cancelCampaignWithCompensation(briefId as `0x${string}`, compensationPerInfluencer, referralTag);
-      );
->>>>>>> origin/main
       toast.success("Campaign cancelled with compensation!");
       setShowCancelWithCompensationModal(null);
       setTimeout(() => refetchBriefs(), 1000);
