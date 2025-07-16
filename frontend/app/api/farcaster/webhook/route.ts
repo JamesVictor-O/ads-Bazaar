@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const headers = Object.fromEntries(request.headers.entries());
     
     // Parse and verify the webhook event
-    const event = parseWebhookEvent(body, headers);
+    const event = await parseWebhookEvent(body, headers as any);
     
     console.log('Farcaster webhook event received:', event);
     
