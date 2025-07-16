@@ -94,10 +94,8 @@ export default function Marketplace() {
   // Filter campaigns based on status filter
   const activeBriefs = allBriefs.filter((brief) => {
     if (statusFilter === "Active Only") {
-      return (
-        brief.status === CampaignStatus.OPEN ||
-        brief.status === CampaignStatus.ASSIGNED
-      );
+      // Only show OPEN campaigns that accept applications
+      return brief.status === CampaignStatus.OPEN;
     }
     return true; // Show all if "All Campaigns" is selected
   });
@@ -355,10 +353,20 @@ export default function Marketplace() {
     }
 
     if (!statusInfo.canApply) {
+      // For campaigns that can't be applied to, show appropriate status
+      let displayText = statusMap[campaign.status];
+      
+      // Override for completed/finished campaigns
+      if (campaign.status === 2) { // CampaignStatus.COMPLETED
+        displayText = "Completed";
+      } else if (campaign.status === 1 && timingInfo.hasExpired) { // ASSIGNED but expired
+        displayText = "Completed";
+      } else if (timingInfo.hasExpired) {
+        displayText = "Deadline Passed";
+      }
+      
       return {
-        text: timingInfo.hasExpired
-          ? "Deadline Passed"
-          : statusMap[campaign.status],
+        text: displayText,
         disabled: true,
         onClick: () => {},
         variant: "closed",

@@ -16,7 +16,7 @@ import {
   Pause,
   Clock3,
 } from "lucide-react";
-import { Brief, Application, DisputeStatus } from "@/types/index";
+import { Brief, Application, DisputeStatus, CampaignStatus } from "@/types/index";
 import { Hex } from "viem";
 import DisputeModal from "./DisputeModal";
 import { motion } from "framer-motion";
@@ -111,7 +111,7 @@ export const SubmissionsModal = ({
       : { hasPending: false, pendingCount: 0 };
   }, [selectedBrief, selectedApplications, currentTime]);
   const canAutoApprove = selectedBrief
-    ? currentTime > selectedBrief.verificationDeadline
+    ? selectedBrief.status === CampaignStatus.ASSIGNED && currentTime > selectedBrief.verificationDeadline
     : false;
 
   //  Enhanced logic to check for actual submissions 

@@ -22,7 +22,7 @@ export function computeCampaignStatusInfo(
 ): CampaignStatusInfo {
   const timingInfo = computeCampaignTimingInfo(brief, currentTime);
   const expirationInfo = canExpireCampaign(brief, currentTime);
-  const stuckInfo = isCampaignStuck(brief, currentTime);
+  const decisionInfo = isCampaignAwaitingDecision(brief, currentTime);
 
   let canApply = false;
   let canSelect = false;
@@ -41,40 +41,41 @@ export function computeCampaignStatusInfo(
       canCancel = brief.selectedInfluencersCount === 0;
       canExpire = expirationInfo.canExpire;
 
-      // Handle stuck campaigns
-      if (stuckInfo.isStuck) {
-        warning = `Campaign stuck: ${stuckInfo.reason}`;
+      // Handle campaigns past deadline with selected influencers
+      if (decisionInfo.isAwaitingDecision) {
+        warning = `Action required: ${decisionInfo.reason}`;
         
         if (expirationInfo.canExpire) {
-          nextAction = "Campaign can be expired - funds will be refunded";
+          nextAction = "Decision required - start campaign or cancel with compensation";
         } else if (expirationInfo.timeUntilExpirable) {
-          const minutesLeft = Math.floor(expirationInfo.timeUntilExpirable / 60);
-          nextAction = `${minutesLeft} minutes until campaign can be expired`;
+          const timeRemaining = getTimeRemaining(Math.floor(Date.now() / 1000) + expirationInfo.timeUntilExpirable);
+          const formattedTime = formatTimeRemaining(timeRemaining);
+          nextAction = `Decision deadline in ${formattedTime} - start campaign or cancel with compensation`;
         }
       } else if (currentTime > brief.selectionDeadline) {
-        // Past deadline but not stuck (probably no selections yet)
+        // Past deadline but no influencers selected
         if (expirationInfo.canExpire) {
-          nextAction = "Campaign can be expired - no influencers selected";
-          warning = "Selection deadline passed";
+          nextAction = "Campaign can be closed - no influencers were selected";
+          warning = "Application deadline passed";
         } else {
-          nextAction = "Grace period active - select influencers or campaign will expire";
-          warning = "Selection deadline passed - limited time remaining";
+          nextAction = "Limited time to close campaign - no influencers selected";
+          warning = "Application deadline passed";
         }
       } else if (timingInfo.isUrgent) {
-        warning = "Application deadline approaching!";
+        warning = "Application deadline approaching soon";
         if (brief.selectedInfluencersCount === 0) {
-          nextAction = "No applications yet";
+          nextAction = "No applications received yet";
         } else if (brief.selectedInfluencersCount < brief.maxInfluencers) {
-          nextAction = `${brief.selectedInfluencersCount}/${brief.maxInfluencers} selected - need ${brief.maxInfluencers - brief.selectedInfluencersCount} more`;
+          nextAction = `${brief.selectedInfluencersCount}/${brief.maxInfluencers} influencers selected - ${brief.maxInfluencers - brief.selectedInfluencersCount} spots remaining`;
         }
       } else {
         // Normal open campaign logic
         if (brief.selectedInfluencersCount === 0) {
-          nextAction = "Waiting for applications";
+          nextAction = "Accepting applications from influencers";
         } else if (brief.selectedInfluencersCount < brief.maxInfluencers) {
-          nextAction = `${brief.selectedInfluencersCount}/${brief.maxInfluencers} selected - select ${brief.maxInfluencers - brief.selectedInfluencersCount} more to start`;
+          nextAction = `${brief.selectedInfluencersCount}/${brief.maxInfluencers} influencers selected - ${brief.maxInfluencers - brief.selectedInfluencersCount} spots remaining`;
         } else {
-          nextAction = "All spots filled - campaign will start soon";
+          nextAction = "All positions filled - campaign ready to start";
         }
       }
       break;
@@ -85,34 +86,34 @@ export function computeCampaignStatusInfo(
       canComplete = currentTime >= brief.proofSubmissionDeadline;
 
       if (timingInfo.phase === CampaignPhase.PREPARATION) {
-        nextAction = "Campaign starts soon";
+        nextAction = "Campaign starting soon - influencers preparing content";
       } else if (timingInfo.phase === CampaignPhase.PROMOTION) {
-        nextAction = "Campaign active - influencers promoting";
+        nextAction = "Campaign live - influencers creating and posting content";
       } else if (timingInfo.phase === CampaignPhase.PROOF_SUBMISSION) {
-        nextAction = "Awaiting proof submissions";
+        nextAction = "Waiting for influencers to submit their posts";
         if (timingInfo.isUrgent) {
-          warning = "Proof submission deadline approaching!";
+          warning = "Submission deadline approaching soon";
         }
       } else if (timingInfo.phase === CampaignPhase.VERIFICATION) {
-        nextAction = "Review submissions and complete campaign";
+        nextAction = "Review influencer submissions and finalize campaign";
         if (timingInfo.isUrgent) {
-          warning = "Campaign ready for completion";
+          warning = "Ready for final review and completion";
         } else {
-          warning = "Review period - check all submissions";
+          warning = "Review period active - check all submissions";
         }
       }
       break;
 
     case CampaignStatus.COMPLETED:
-      nextAction = "Campaign completed";
+      nextAction = "Campaign successfully completed";
       break;
 
     case CampaignStatus.CANCELLED:
-      nextAction = "Campaign was cancelled";
+      nextAction = "Campaign was cancelled by the business";
       break;
 
     case CampaignStatus.EXPIRED:
-      nextAction = "Campaign expired - funds were refunded";
+      nextAction = "Campaign closed due to deadline - funds refunded";
       break;
   }
 
@@ -146,7 +147,7 @@ export function computeCampaignTimingInfo(
   let nextPhase: CampaignPhase | undefined;
   let nextPhaseTime: number | undefined;
 
-  const SELECTION_GRACE_PERIOD = 1 * 60 * 60; // 1 hour
+  const SELECTION_GRACE_PERIOD = 24 * 60 * 60; // 1 day
   const gracePeriodEnd = brief.selectionDeadline + SELECTION_GRACE_PERIOD;
 
   // Determine current phase with grace period awareness
@@ -375,7 +376,7 @@ export function computeApplicationInfo(
       const timeRemaining = getTimeRemaining(brief.verificationDeadline);
       nextAction = `Under review - decision ${formatDetailedTimeRemaining(timeRemaining)} (${formatDate(brief.verificationDeadline)})`;
     } else {
-      nextAction = "Awaiting proof review";
+      nextAction = "Submission under review by business";
     }
   }
 
@@ -388,12 +389,12 @@ export function computeApplicationInfo(
     paymentStatus = PaymentStatus.READY_TO_CLAIM;
     canClaim = true;
     if (!nextAction) {
-      nextAction = "Claim your payment";
+      nextAction = "Payment ready - claim your earnings";
     }
   } else {
     paymentStatus = PaymentStatus.CLAIMED;
     if (!nextAction) {
-      nextAction = "Payment claimed";
+      nextAction = "Payment successfully claimed";
     }
   }
 
@@ -583,13 +584,13 @@ export function getPaymentStatusColor(status: PaymentStatus): string {
 export function isActionUrgent(brief: Brief): boolean {
   const timingInfo = computeCampaignTimingInfo(brief);
   const statusInfo = computeCampaignStatusInfo(brief);
-  const stuckInfo = isCampaignStuck(brief);
+  const decisionInfo = isCampaignAwaitingDecision(brief);
   const expirationInfo = canExpireCampaign(brief);
 
   return (
     timingInfo.isUrgent ||
     statusInfo.warning !== undefined ||
-    stuckInfo.isStuck ||
+    decisionInfo.isAwaitingDecision ||
     expirationInfo.canExpire ||
     (timingInfo.phase === CampaignPhase.VERIFICATION &&
       timingInfo.timeRemaining !== undefined &&
@@ -703,39 +704,46 @@ export function canExpireCampaign(
     };
   }
 
-  const SELECTION_GRACE_PERIOD = 1 * 60 * 60; // 1 hour
-  const expirationTime = brief.selectionDeadline + SELECTION_GRACE_PERIOD;
-  
-  if (currentTime > expirationTime) {
+  // Can only expire if NO influencers have been selected
+  // This prevents businesses from abandoning selected influencers without compensation
+  if (brief.selectedInfluencersCount > 0) {
+    return {
+      canExpire: false,
+      reason: "Cannot expire campaign with selected influencers - must start partial or cancel with compensation",
+    };
+  }
+
+  // For campaigns with no selections, can expire after selection deadline
+  if (currentTime > brief.selectionDeadline) {
     return {
       canExpire: true,
-      reason: "Grace period has ended",
+      reason: "No influencers selected and deadline passed",
     };
   }
 
   return {
     canExpire: false,
-    reason: "Still within grace period",
-    timeUntilExpirable: expirationTime - currentTime,
+    reason: "Selection deadline not yet reached",
+    timeUntilExpirable: brief.selectionDeadline - currentTime,
   };
 }
 
 /**
- * Enhanced function to check if campaign is stuck (partial selection past deadline)
+ * Enhanced function to check if campaign requires business decision (past deadline with selections)
  */
-export function isCampaignStuck(
+export function isCampaignAwaitingDecision(
   brief: Brief,
   currentTime: number = Date.now() / 1000
 ): {
-  isStuck: boolean;
+  isAwaitingDecision: boolean;
   reason?: string;
-  stuckDuration?: number;
+  timePastDeadline?: number;
 } {
   if (brief.status !== CampaignStatus.OPEN) {
-    return { isStuck: false };
+    return { isAwaitingDecision: false };
   }
 
-  // Campaign is stuck if:
+  // Campaign awaits decision if:
   // 1. Past selection deadline
   // 2. Has some influencers selected but not all
   // 3. Still in OPEN status
@@ -745,20 +753,20 @@ export function isCampaignStuck(
 
   if (isPastDeadline && hasPartialSelection) {
     return {
-      isStuck: true,
+      isAwaitingDecision: true,
       reason: `${brief.selectedInfluencersCount}/${brief.maxInfluencers} influencers selected`,
-      stuckDuration: currentTime - brief.selectionDeadline,
+      timePastDeadline: currentTime - brief.selectionDeadline,
     };
   }
 
   if (isPastDeadline && brief.selectedInfluencersCount === 0) {
     return {
-      isStuck: true,
+      isAwaitingDecision: true,
       reason: "No influencers selected",
-      stuckDuration: currentTime - brief.selectionDeadline,
+      timePastDeadline: currentTime - brief.selectionDeadline,
     };
   }
 
-  return { isStuck: false };
+  return { isAwaitingDecision: false };
 }
 

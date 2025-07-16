@@ -504,6 +504,121 @@ const EducationPage = () => {
               </p>
             </div>
 
+            {/* How AdsBazaar Works */}
+            <div className="bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 mb-8">
+              <h3 className="text-2xl font-bold text-white mb-6 text-center">
+                How AdsBazaar Works
+              </h3>
+              <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Campaign Lifecycle */}
+                <div>
+                  <h4 className="text-lg font-semibold text-emerald-400 mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    Campaign Lifecycle
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">1</div>
+                      <div>
+                        <p className="text-slate-300 font-medium">Campaign Creation</p>
+                        <p className="text-slate-400 text-sm">Businesses create campaigns with requirements, budget, and timeline</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">2</div>
+                      <div>
+                        <p className="text-slate-300 font-medium">Application Period</p>
+                        <p className="text-slate-400 text-sm">Influencers browse and apply to campaigns that match their audience</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">3</div>
+                      <div>
+                        <p className="text-slate-300 font-medium">Selection & Assignment</p>
+                        <p className="text-slate-400 text-sm">Businesses review applications and select their preferred influencers</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">4</div>
+                      <div>
+                        <p className="text-slate-300 font-medium">Content Creation</p>
+                        <p className="text-slate-400 text-sm">Selected influencers create and publish content according to guidelines</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">5</div>
+                      <div>
+                        <p className="text-slate-300 font-medium">Proof & Review</p>
+                        <p className="text-slate-400 text-sm">Influencers submit proof links, businesses review and approve content</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">6</div>
+                      <div>
+                        <p className="text-slate-300 font-medium">Payment & Completion</p>
+                        <p className="text-slate-400 text-sm">Approved influencers claim their cryptocurrency payments automatically</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Features */}
+                <div>
+                  <h4 className="text-lg font-semibold text-blue-400 mb-4 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5" />
+                    Key Features & Protections
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="border border-slate-700/50 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Shield className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-slate-300 font-medium">Smart Contract Security</p>
+                          <p className="text-slate-400 text-sm">All payments and agreements are secured by blockchain smart contracts. No middleman can hold or steal funds.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border border-slate-700/50 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Scale className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-slate-300 font-medium">Fair Decision System</p>
+                          <p className="text-slate-400 text-sm">Businesses must decide within deadlines: start campaigns with selected influencers or cancel with fair compensation.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border border-slate-700/50 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Clock className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-slate-300 font-medium">Automatic Payments</p>
+                          <p className="text-slate-400 text-sm">If businesses don't review submissions on time, payments are automatically released to influencers.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border border-slate-700/50 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Flag className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-slate-300 font-medium">Dispute Resolution</p>
+                          <p className="text-slate-400 text-sm">Built-in dispute system with time limits ensures fair resolution of any conflicts between parties.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="border border-slate-700/50 rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Globe className="w-5 h-5 text-pink-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-slate-300 font-medium">Transparency</p>
+                          <p className="text-slate-400 text-sm">All campaign progress, payments, and decisions are recorded on the blockchain for complete transparency.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Quick Start Cards */}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/70 transition-all">

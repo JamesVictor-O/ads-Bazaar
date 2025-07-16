@@ -548,13 +548,8 @@ function CreateCampaignModal({
                     className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
                     disabled={isTransactionInProgress}
                   >
-                    <option value="3600">1 hour</option>
-                    <option value="7200">2 hours</option>
-                    <option value="14400">4 hours</option>
-                    <option value="28800">8 hours</option>
-                    <option value="43200">12 hours</option>
-                    <option value="86400">1 day</option>
-                    <option value="172800">2 days (max)</option>
+                    <option value="86400">1d</option>
+                    <option value="172800">2d (max)</option>
                   </select>
                   <p className="text-xs text-slate-400 mt-1">
                     Grace period for selecting influencers
