@@ -1,10 +1,16 @@
-import { publicClient } from '@/lib/wagmi';
-import { parseEventLogs } from 'viem';
+import { createPublicClient, http } from 'viem';
 import { adsBazaarNotifications } from './notification-service';
-import { AdsBazaarABI } from '@/lib/AdsBazaar.json';
+import { getCurrentNetworkConfig } from './networks';
+import ABI from './AdsBazaar.json';
 
-// Contract address - update this with your actual contract address
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+import { CONTRACT_ADDRESS } from './contracts';
+
+// Create public client
+const currentNetwork = getCurrentNetworkConfig();
+const publicClient = createPublicClient({
+  chain: currentNetwork.chain,
+  transport: http(currentNetwork.rpcUrl),
+});
 
 interface EventMonitorConfig {
   startBlock?: bigint;
@@ -20,8 +26,8 @@ export class ContractEventMonitor {
 
   constructor(config: EventMonitorConfig = {}) {
     this.pollInterval = config.pollInterval || 10000; // 10 seconds
-    this.maxBlockRange = config.maxBlockRange || 1000n; // 1000 blocks
-    this.lastProcessedBlock = config.startBlock || 0n;
+    this.maxBlockRange = config.maxBlockRange || 1000; // 1000 blocks
+    this.lastProcessedBlock = config.startBlock || BigInt(0);
   }
 
   async startMonitoring() {
@@ -34,12 +40,12 @@ export class ContractEventMonitor {
     console.log('Starting contract event monitoring...');
 
     // Get current block if no start block specified
-    if (this.lastProcessedBlock === 0n) {
+    if (this.lastProcessedBlock === BigInt(0)) {
       try {
         this.lastProcessedBlock = await publicClient.getBlockNumber();
       } catch (error) {
         console.error('Error getting current block number:', error);
-        this.lastProcessedBlock = 0n;
+        this.lastProcessedBlock = BigInt(0);
       }
     }
 
@@ -66,7 +72,7 @@ export class ContractEventMonitor {
   private async processNewEvents() {
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      const fromBlock = this.lastProcessedBlock + 1n;
+      const fromBlock = this.lastProcessedBlock + BigInt(1);
       
       if (fromBlock > currentBlock) {
         return; // No new blocks
