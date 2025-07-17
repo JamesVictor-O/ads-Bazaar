@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProfile } from '@farcaster/auth-kit';
+import sdk from '@farcaster/frame-sdk';
 
 interface NotificationButtonProps {
   onNotificationEnabled?: () => void;
@@ -11,10 +12,27 @@ interface NotificationButtonProps {
 export function NotificationButton({ onNotificationEnabled, className = '' }: NotificationButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [isInMiniApp, setIsInMiniApp] = useState(false);
   const { isAuthenticated, profile } = useProfile();
 
+  // Check if we're in a Farcaster Mini App context
+  useEffect(() => {
+    const checkMiniAppContext = async () => {
+      try {
+        const context = await sdk.context;
+        setIsInMiniApp(!!context?.client?.clientFid);
+      } catch (error) {
+        console.error('Error checking Mini App context:', error);
+        setIsInMiniApp(false);
+      }
+    };
+    
+    checkMiniAppContext();
+  }, []);
+
   const handleEnableNotifications = async () => {
-    if (!isAuthenticated || !profile) {
+    // In Mini App context, we don't need traditional auth-kit authentication
+    if (!isInMiniApp && (!isAuthenticated || !profile)) {
       alert('Please sign in with Farcaster first');
       return;
     }
@@ -42,7 +60,8 @@ export function NotificationButton({ onNotificationEnabled, className = '' }: No
     }
   };
 
-  if (!isAuthenticated) {
+  // Show button if authenticated OR in Mini App context
+  if (!isAuthenticated && !isInMiniApp) {
     return null;
   }
 
