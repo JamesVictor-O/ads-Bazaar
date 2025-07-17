@@ -5,6 +5,8 @@ import { Share, Twitter, Facebook, Copy, Check } from "lucide-react";
 import { Brief } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
+import sdk from '@farcaster/frame-sdk';
+import { CURRENT_NETWORK } from '@/lib/networks';
 
 interface ShareCampaignButtonProps {
   campaign: Brief;
@@ -25,10 +27,35 @@ const ShareCampaignButton = ({
   const [dropdownPosition, setDropdownPosition] = useState<"up" | "down">(
     "down"
   );
+  const [isInMiniApp, setIsInMiniApp] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
 
-  const shareUrl = `${window.location.origin}/campaign/${campaign.id}`;
-  const shareText = `Check out this amazing campaign: ${campaign.name}`;
+  // Check if we're in a Farcaster Mini App context
+  useEffect(() => {
+    const checkMiniAppContext = async () => {
+      try {
+        const context = await sdk.context;
+        setIsInMiniApp(!!context?.client?.clientFid);
+      } catch (error) {
+        console.error('Error checking Mini App context:', error);
+        setIsInMiniApp(false);
+      }
+    };
+    
+    checkMiniAppContext();
+  }, []);
+
+  // Generate appropriate URL based on context
+  const shareUrl = isInMiniApp 
+    ? `https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar/mini-app/campaign?campaignId=${campaign.id}`
+    : `${window.location.origin}/campaign/${campaign.id}`;
+  const shareText = `Check out this amazing campaign: ${campaign.name}
+
+💰 Earn cryptocurrency on ${CURRENT_NETWORK.name}
+🌐 Secure blockchain payments in cUSD
+⚡ Fast, transparent transactions
+
+Apply now and get paid directly to your wallet!`;
 
   // Check available space and set dropdown position
   useEffect(() => {
@@ -51,9 +78,16 @@ const ShareCampaignButton = ({
 
   // Farcaster share handler
   const handleFarcasterShare = () => {
-    const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(
-      `Check out this campaign: ${campaign.name}\n${window.location.origin}/campaign/${campaign.id}`
-    )}`;
+    const farcasterMessage = `🚀 New campaign opportunity: ${campaign.name}
+
+💰 Earn cryptocurrency on ${CURRENT_NETWORK.name}
+🌐 Secure smart contract payments in cUSD
+⚡ Fast, transparent blockchain transactions
+
+Apply now and get paid directly to your wallet! 👇
+${shareUrl}`;
+    
+    const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(farcasterMessage)}`;
     window.open(farcasterUrl, "_blank");
     setShowDropdown(false);
   };
