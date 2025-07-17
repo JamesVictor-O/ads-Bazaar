@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useProfile } from '@farcaster/auth-kit';
 import sdk from '@farcaster/frame-sdk';
-import { NotificationSuccessModal } from './modals/NotificationSuccessModal';
+// import { NotificationSuccessModal } from './modals/NotificationSuccessModal';
 import { useAccount } from 'wagmi';
-import { useUserProfile } from '@/hooks/adsBazaar';
+// import { useUserProfile } from '../hooks/adsBazaar';
 
 interface NotificationButtonProps {
   onNotificationEnabled?: () => void;
@@ -16,10 +16,10 @@ export function NotificationButton({ onNotificationEnabled, className = '' }: No
   const [isLoading, setIsLoading] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
   const [isInMiniApp, setIsInMiniApp] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // const [showSuccessModal, setShowSuccessModal] = useState(false);
   const { isAuthenticated, profile } = useProfile();
   const { address } = useAccount();
-  const { data: userProfile } = useUserProfile(address as `0x${string}`);
+  // const { data: userProfile } = useUserProfile(address as `0x${string}`);
 
   // Check if we're in a Farcaster Mini App context
   useEffect(() => {
@@ -51,9 +51,9 @@ export function NotificationButton({ onNotificationEnabled, className = '' }: No
 
   // Determine user type based on profile data
   const getUserType = (): 'influencer' | 'brand' | 'unknown' => {
-    if (!userProfile?.isRegistered) return 'unknown';
-    if (userProfile?.isBusiness) return 'brand';
-    if (userProfile?.isInfluencer) return 'influencer';
+    // if (!userProfile?.isRegistered) return 'unknown';
+    // if (userProfile?.isBusiness) return 'brand';
+    // if (userProfile?.isInfluencer) return 'influencer';
     return 'unknown';
   };
 
@@ -80,8 +80,8 @@ export function NotificationButton({ onNotificationEnabled, className = '' }: No
         
         onNotificationEnabled?.();
         
-        // Show success modal
-        setShowSuccessModal(true);
+        // Show success message
+        alert('Notifications enabled! You\'ll now receive updates about campaigns, applications, and payments.');
       } else if (typeof window !== 'undefined' && window.farcaster) {
         // Use regular Farcaster SDK for web app
         await window.farcaster.addMiniApp();
@@ -95,8 +95,8 @@ export function NotificationButton({ onNotificationEnabled, className = '' }: No
         
         onNotificationEnabled?.();
         
-        // Show success modal
-        setShowSuccessModal(true);
+        // Show success message
+        alert('Notifications enabled! You\'ll now receive updates about campaigns, applications, and payments.');
       } else {
         // Fallback for when not in Farcaster client
         alert('Please open this app in a Farcaster client to enable notifications');
@@ -147,11 +147,11 @@ export function NotificationButton({ onNotificationEnabled, className = '' }: No
         )}
       </button>
 
-      <NotificationSuccessModal
+      {/* <NotificationSuccessModal
         isOpen={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
         userType={getUserType()}
-      />
+      /> */}
     </>
   );
 }
