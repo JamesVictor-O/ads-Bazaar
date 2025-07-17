@@ -40,8 +40,16 @@ export function NotificationButton({ onNotificationEnabled, className = '' }: No
     setIsLoading(true);
     
     try {
-      // Use the Farcaster SDK to add the Mini App
-      if (typeof window !== 'undefined' && window.farcaster) {
+      if (isInMiniApp) {
+        // Use Frame SDK for Mini App context
+        await sdk.actions.addFrame();
+        setIsEnabled(true);
+        onNotificationEnabled?.();
+        
+        // Show success message
+        alert('Notifications enabled! You\'ll now receive updates about campaigns, applications, and payments.');
+      } else if (typeof window !== 'undefined' && window.farcaster) {
+        // Use regular Farcaster SDK for web app
         await window.farcaster.addMiniApp();
         setIsEnabled(true);
         onNotificationEnabled?.();
