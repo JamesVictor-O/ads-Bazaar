@@ -210,11 +210,11 @@ const EducationPage = () => {
             details: [
               "Acquire cUSD (Celo Dollar) cryptocurrency",
               "Transfer funds to your connected wallet",
-              "Keep extra for platform fees (0.5%)",
+              "Keep extra for platform fees (1%)",
               "Monitor wallet balance regularly",
             ],
             tips: [
-              "Budget includes 0.5% platform fee",
+              "Budget includes 1% platform fee",
               "Keep some extra celo for gas fees",
             ],
             icon: DollarSign,
@@ -348,7 +348,7 @@ const EducationPage = () => {
         "Business funds are escrowed when campaign is created",
         "Payments released only after proof approval",
         "Auto-approval protects influencer interests",
-        "Platform fee (0.5%) deducted automatically",
+        "Platform fee (1%) deducted automatically",
       ],
     },
     {

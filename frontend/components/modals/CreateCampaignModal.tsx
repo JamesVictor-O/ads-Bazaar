@@ -570,15 +570,15 @@ function CreateCampaignModal({
                     <span className="text-white">{formData.budget} cUSD</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Platform Fee (0.5%):</span>
+                    <span>Platform Fee (1%):</span>
                     <span>
-                      {(Number(formData.budget) * 0.005).toFixed(2)} cUSD
+                      {(Number(formData.budget) * 0.01).toFixed(2)} cUSD
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-slate-700/50 pt-1">
                     <span>Influencer Payout:</span>
                     <span className="text-emerald-400">
-                      {(Number(formData.budget) * 0.995).toFixed(2)} cUSD
+                      {(Number(formData.budget) * 0.99).toFixed(2)} cUSD
                     </span>
                   </div>
                 </div>

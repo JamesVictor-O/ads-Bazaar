@@ -772,55 +772,58 @@ const BrandDashboard = () => {
                   </div>
                 </div>
 
-                {/* Create Campaign Button */}
-                <motion.button
-                  onClick={handleCreateCampaignClick}
-                  disabled={!isConnected || !isCorrectChain}
-                  className={`flex items-center justify-center gap-2 px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-semibold transition-all duration-200 shadow-lg text-sm md:text-base ${
-                    !isConnected || !isCorrectChain
-                      ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
-                      : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/20"
-                  }`}
-                  whileTap={
-                    isConnected && isCorrectChain ? { scale: 0.95 } : {}
-                  }
-                >
-                  {!isConnected ? (
-                    <>
-                      <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
-                      <span className="hidden sm:inline">Connect Wallet</span>
-                      <span className="sm:hidden">Connect</span>
-                    </>
-                  ) : !isCorrectChain ? (
-                    <>
-                      <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
-                      <span className="hidden sm:inline">Wrong Network</span>
-                      <span className="sm:hidden">Wrong Net</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-90 transition-transform duration-200" />
-                      <span className="hidden sm:inline">New Campaign</span>
-                      <span className="sm:hidden">New</span>
-                    </>
-                  )}
-                </motion.button>
+                {/* Buttons Group */}
+                <div className="flex gap-2 md:gap-3 flex-shrink-0">
+                  {/* Create Campaign Button */}
+                  <motion.button
+                    onClick={handleCreateCampaignClick}
+                    disabled={!isConnected || !isCorrectChain}
+                    className={`flex items-center justify-center gap-2 px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-semibold transition-all duration-200 shadow-lg text-sm md:text-base ${
+                      !isConnected || !isCorrectChain
+                        ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                        : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/20"
+                    }`}
+                    whileTap={
+                      isConnected && isCorrectChain ? { scale: 0.95 } : {}
+                    }
+                  >
+                    {!isConnected ? (
+                      <>
+                        <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
+                        <span className="hidden sm:inline">Connect Wallet</span>
+                        <span className="sm:hidden">Connect</span>
+                      </>
+                    ) : !isCorrectChain ? (
+                      <>
+                        <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
+                        <span className="hidden sm:inline">Wrong Network</span>
+                        <span className="sm:hidden">Wrong Net</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-90 transition-transform duration-200" />
+                        <span className="hidden sm:inline">New Campaign</span>
+                        <span className="sm:hidden">New</span>
+                      </>
+                    )}
+                  </motion.button>
 
-                {/* Notification Button */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.5 }}
-                >
-                  <NotificationButton
-                    onNotificationEnabled={() => {
-                      toast.success(
-                        "Notifications enabled! You'll get updates about applications, submissions, and deadlines."
-                      );
-                    }}
-                    className="text-sm md:text-base"
-                  />
-                </motion.div>
+                  {/* Notification Button */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.5 }}
+                  >
+                    <NotificationButton
+                      onNotificationEnabled={() => {
+                        toast.success(
+                          "Notifications enabled! You'll get updates about applications, submissions, and deadlines."
+                        );
+                      }}
+                      className="text-sm md:text-base"
+                    />
+                  </motion.div>
+                </div>
               </div>
             </div>
           </div>

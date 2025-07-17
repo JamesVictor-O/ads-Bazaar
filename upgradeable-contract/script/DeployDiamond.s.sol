@@ -174,7 +174,7 @@ contract DeployDiamond is Script {
             AdsBazaarInit.init.selector,
             deployer,
             cUSD,
-            5, // 0.5% platform fee
+            1, // 1% platform fee
             identityHub,
             scope,
             attestationIds
