@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { ApplicationsModalProps } from "@/types/index";
 import {
   Loader2,
-  ExternalLink,
   Check,
   XCircle,
   Award,
@@ -15,6 +14,7 @@ import {
   Eye,
   FileText,
   Clock,
+  ArrowRight,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
@@ -305,12 +305,10 @@ const ApplicationsModal = ({
                             <Link
                               href={`/influencer/${application.influencer}`}
                               className="text-sm font-medium text-emerald-400 hover:text-emerald-300 inline-flex items-center transition-colors duration-200"
-                              target="_blank"
-                              rel="noopener noreferrer"
                             >
                               {application.influencerProfile?.name ||
                                 <UserDisplay address={application.influencer} />}
-                              <ExternalLink className="w-4 h-4 ml-1" />
+                              <ArrowRight className="w-4 h-4 ml-1" />
                             </Link>
                             <p className="text-xs text-slate-400 mt-1">
                               Applied{" "}

@@ -15,6 +15,7 @@ import {
   Scale,
   Pause,
   Clock3,
+  ArrowRight,
 } from "lucide-react";
 import { Brief, Application, DisputeStatus, CampaignStatus } from "@/types/index";
 import { Hex } from "viem";
@@ -451,9 +452,13 @@ export const SubmissionsModal = ({
                               <p className="text-sm sm:text-base font-medium text-white mb-0.5 sm:mb-1">
                                 Influencer #{index + 1}
                               </p>
-                              <p className="text-xs sm:text-sm text-slate-400 font-mono truncate">
-                                <UserDisplay address={submission.influencer} />
-                              </p>
+                              <Link
+                                href={`/influencer/${submission.influencer}`}
+                                className="text-xs sm:text-sm text-emerald-400 hover:text-emerald-300 transition-colors duration-200 font-medium truncate inline-flex items-center gap-1"
+                              >
+                                {submission.influencerProfile?.name || <UserDisplay address={submission.influencer} />}
+                                <ArrowRight className="w-3 h-3 flex-shrink-0" />
+                              </Link>
                             </div>
                           </div>
                           <span
