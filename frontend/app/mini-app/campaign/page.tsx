@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { Brief } from '@/types';
 import { useReadContract, useAccount } from 'wagmi';
 import { adsBazaarAbi } from '@/contracts/adsBazaar';
@@ -11,7 +11,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { formatCurrency } from '@/utils/format';
 import { getAudienceLabel } from '@/utils/format';
 
-export default function MiniAppCampaignPage() {
+function MiniAppCampaignContent() {
   const searchParams = useSearchParams();
   const [campaign, setCampaign] = useState<Brief | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,12 +65,16 @@ export default function MiniAppCampaignPage() {
 
   const openFullApp = () => {
     const fullAppUrl = `https://ads-bazaar.vercel.app/campaign/share?campaignId=${campaignId}`;
-    window.open(fullAppUrl, '_blank');
+    if (typeof window !== 'undefined') {
+      window.open(fullAppUrl, '_blank');
+    }
   };
 
   const openMarketplace = () => {
     const marketplaceUrl = `https://ads-bazaar.vercel.app/marketplace${campaignId ? `?highlight=${campaignId}` : ''}`;
-    window.open(marketplaceUrl, '_blank');
+    if (typeof window !== 'undefined') {
+      window.open(marketplaceUrl, '_blank');
+    }
   };
 
   if (loading || contractLoading || isLoadingProfile) {
@@ -244,5 +248,24 @@ export default function MiniAppCampaignPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center p-4">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-emerald-600" />
+        <p className="text-gray-600">Loading campaign...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function MiniAppCampaignPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <MiniAppCampaignContent />
+    </Suspense>
   );
 }
