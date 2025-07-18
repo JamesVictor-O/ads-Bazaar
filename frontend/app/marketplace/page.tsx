@@ -197,7 +197,7 @@ export default function Marketplace() {
 
               if (influencerIndex !== -1) {
                 const isSelected = applicationData.isSelected[influencerIndex];
-                const status = isSelected ? "assigned" : "applied";
+                const status: "applied" | "assigned" = isSelected ? "assigned" : "applied";
                 console.log(`Brief ${briefId}: ${status}`);
                 return { briefId, status };
               }

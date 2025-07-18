@@ -304,7 +304,7 @@ const BrandDashboard = () => {
       };
       
       // Use standardized success handler
-      createBrandDashboardSuccessHandler([resetForm, refetchBriefs])();
+      createBrandDashboardSuccessHandler([resetForm, () => refetchBriefs()])();
     }
 
     if (isCreateError) {
@@ -320,8 +320,8 @@ const BrandDashboard = () => {
       
       // Use standardized success handler
       createBrandDashboardSuccessHandler([
-        refetchApplications,
-        refetchBriefs,
+        () => refetchApplications(),
+        () => refetchBriefs(),
         () => setShowSubmissionsModal(false)
       ])();
     }
@@ -348,7 +348,7 @@ const BrandDashboard = () => {
       // Use standardized success handler
       createBrandDashboardSuccessHandler([
         () => setShowCancelConfirm(null),
-        refetchBriefs
+        () => refetchBriefs()
       ])();
     }
 
@@ -367,7 +367,7 @@ const BrandDashboard = () => {
       // Use standardized success handler
       createBrandDashboardSuccessHandler([
         () => setShowExpireConfirm(null),
-        refetchBriefs
+        () => refetchBriefs()
       ])();
     }
 

@@ -231,8 +231,8 @@ export default function InfluencerDashboard() {
       
       // Use standardized success handler
       createInfluencerDashboardSuccessHandler([
-        refetch,
-        refetchPayments,
+        () => refetch(),
+        () => refetchPayments(),
         () => {
           setShowSubmitModal(false);
           setPostLink("");
