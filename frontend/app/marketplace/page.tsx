@@ -17,7 +17,8 @@ import {
   ArrowRight,
   ChevronDown,
   FileText,
-   SlidersHorizontal
+  SlidersHorizontal,
+  Clock
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
@@ -29,6 +30,7 @@ import { format } from "date-fns";
 import { truncateAddress, formatCurrency } from "@/utils/format";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   Brief,
   CampaignStatus,
@@ -55,6 +57,7 @@ const statusMap = {
 };
 
 export default function Marketplace() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [categoryFilter, setCategoryFilter] =
     useState<string>("All Categories");
@@ -706,6 +709,7 @@ export default function Marketplace() {
                 brief={campaign}
                 onApply={buttonState.onClick}
                 clickable={true}
+                theme="dark"
                 className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70"
               />
             );
