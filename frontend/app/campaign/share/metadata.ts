@@ -13,9 +13,10 @@ const client = createPublicClient({
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: { campaignId?: string };
+  searchParams: Promise<{ campaignId?: string }>;
 }): Promise<Metadata> {
-  const campaignId = searchParams.campaignId;
+  const resolvedSearchParams = await searchParams;
+  const campaignId = resolvedSearchParams.campaignId;
   
   if (!campaignId) {
     return {
