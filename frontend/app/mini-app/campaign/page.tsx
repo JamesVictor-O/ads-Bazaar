@@ -10,6 +10,7 @@ import { useUserProfile } from '@/hooks/adsBazaar';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { formatCurrency } from '@/utils/format';
 import { getAudienceLabel } from '@/utils/format';
+export { generateMetadata } from './metadata';
 
 function MiniAppCampaignContent() {
   const searchParams = useSearchParams();
@@ -29,39 +30,60 @@ function MiniAppCampaignContent() {
   const canApply = isConnected && isRegistered && userProfile?.isInfluencer;
 
   // Read campaign data from contract
-  const { data: campaignData, isLoading: contractLoading } = useReadContract({
+  const { data: campaignData, isLoading: contractLoading, error: contractError } = useReadContract({
     address: process.env.NEXT_PUBLIC_ADS_BAZAAR_ADDRESS as `0x${string}`,
     abi: adsBazaarAbi,
     functionName: 'getAdBrief',
     args: campaignId ? [BigInt(campaignId)] : undefined,
-  }) as { data: any, isLoading: boolean };
+    query: {
+      enabled: !!campaignId,
+      retry: 2,
+      retryDelay: 1000,
+    },
+  }) as { data: any, isLoading: boolean, error: any };
 
   useEffect(() => {
-    if (campaignData && !contractLoading) {
-      // Transform contract data to Brief format
-      const briefData = {
-        id: BigInt(campaignId || '0'),
-        name: campaignData.name,
-        description: campaignData.description,
-        requirements: campaignData.requirements,
-        budget: campaignData.budget,
-        maxInfluencers: campaignData.maxInfluencers,
-        targetAudience: campaignData.targetAudience,
-        applicationDeadline: campaignData.applicationDeadline,
-        promotionDuration: campaignData.promotionDuration,
-        proofSubmissionGracePeriod: campaignData.proofSubmissionGracePeriod,
-        verificationPeriod: campaignData.verificationPeriod,
-        selectionGracePeriod: campaignData.selectionGracePeriod,
-        createdAt: campaignData.createdAt,
-        business: campaignData.business,
-        isActive: campaignData.isActive,
-        applicationCount: campaignData.applicationCount,
-      } as any; // Type assertion for mini app context
-
-      setCampaign(briefData);
+    if (!campaignId) {
       setLoading(false);
+      return;
     }
-  }, [campaignData, contractLoading, campaignId]);
+
+    if (contractError) {
+      console.error('Contract error:', contractError);
+      setLoading(false);
+      return;
+    }
+
+    if (campaignData && !contractLoading) {
+      try {
+        // Transform contract data to Brief format
+        const briefData = {
+          id: BigInt(campaignId || '0'),
+          name: campaignData.name,
+          description: campaignData.description,
+          requirements: campaignData.requirements,
+          budget: campaignData.budget,
+          maxInfluencers: campaignData.maxInfluencers,
+          targetAudience: campaignData.targetAudience,
+          applicationDeadline: campaignData.applicationDeadline,
+          promotionDuration: campaignData.promotionDuration,
+          proofSubmissionGracePeriod: campaignData.proofSubmissionGracePeriod,
+          verificationPeriod: campaignData.verificationPeriod,
+          selectionGracePeriod: campaignData.selectionGracePeriod,
+          createdAt: campaignData.createdAt,
+          business: campaignData.business,
+          isActive: campaignData.isActive,
+          applicationCount: campaignData.applicationCount,
+        } as any; // Type assertion for mini app context
+
+        setCampaign(briefData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error processing campaign data:', error);
+        setLoading(false);
+      }
+    }
+  }, [campaignData, contractLoading, campaignId, contractError]);
 
   const openFullApp = () => {
     const fullAppUrl = `https://ads-bazaar.vercel.app/campaign/share?campaignId=${campaignId}`;

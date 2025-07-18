@@ -11,6 +11,7 @@ import { Loader2, Users, Zap, Shield, ArrowRight } from 'lucide-react';
 import { useUserProfile } from '@/hooks/adsBazaar';
 import GetStartedModal from '@/components/modals/GetStartedModal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+export { generateMetadata } from './metadata';
 
 function CampaignShareContent() {
   const searchParams = useSearchParams();
@@ -33,47 +34,68 @@ function CampaignShareContent() {
   const canApply = isConnected && isRegistered && userProfile?.isInfluencer;
 
   // Read campaign data from contract
-  const { data: campaignData, isLoading: contractLoading } = useReadContract({
+  const { data: campaignData, isLoading: contractLoading, error: contractError } = useReadContract({
     address: process.env.NEXT_PUBLIC_ADS_BAZAAR_ADDRESS as `0x${string}`,
     abi: adsBazaarAbi,
     functionName: 'getAdBrief',
     args: campaignId ? [BigInt(campaignId)] : undefined,
-  }) as { data: any, isLoading: boolean };
+    query: {
+      enabled: !!campaignId,
+      retry: 2,
+      retryDelay: 1000,
+    },
+  }) as { data: any, isLoading: boolean, error: any };
 
   useEffect(() => {
-    if (campaignData && !contractLoading) {
-      // Transform contract data to Brief format
-      const briefData: Brief = {
-        id: (campaignId || '0') as `0x${string}`,
-        business: campaignData.business as `0x${string}`,
-        name: campaignData.name,
-        description: campaignData.description,
-        requirements: campaignData.requirements,
-        budget: Number(campaignData.budget),
-        status: Number(campaignData.status) as CampaignStatus,
-        promotionDuration: Number(campaignData.promotionDuration),
-        promotionStartTime: Number(campaignData.promotionStartTime || 0),
-        promotionEndTime: Number(campaignData.promotionEndTime || 0),
-        proofSubmissionDeadline: Number(campaignData.proofSubmissionDeadline || 0),
-        verificationDeadline: Number(campaignData.verificationDeadline || 0),
-        maxInfluencers: Number(campaignData.maxInfluencers),
-        selectedInfluencersCount: Number(campaignData.selectedInfluencersCount || 0),
-        targetAudience: Number(campaignData.targetAudience) as TargetAudience,
-        creationTime: Number(campaignData.createdAt || Date.now() / 1000),
-        selectionDeadline: Number(campaignData.selectionDeadline || 0),
-        applicationCount: Number(campaignData.currentApplicants || 0),
-        selectionGracePeriod: Number(campaignData.selectionGracePeriod || 86400),
-        
-        // Computed properties - will be set by utility functions
-        statusInfo: {} as any,
-        timingInfo: {} as any,
-        progressInfo: {} as any,
-      };
-
-      setCampaign(briefData);
+    if (!campaignId) {
       setLoading(false);
+      return;
     }
-  }, [campaignData, contractLoading, campaignId]);
+
+    if (contractError) {
+      console.error('Contract error:', contractError);
+      setLoading(false);
+      return;
+    }
+
+    if (campaignData && !contractLoading) {
+      try {
+        // Transform contract data to Brief format
+        const briefData: Brief = {
+          id: (campaignId || '0') as `0x${string}`,
+          business: campaignData.business as `0x${string}`,
+          name: campaignData.name,
+          description: campaignData.description,
+          requirements: campaignData.requirements,
+          budget: Number(campaignData.budget),
+          status: Number(campaignData.status) as CampaignStatus,
+          promotionDuration: Number(campaignData.promotionDuration),
+          promotionStartTime: Number(campaignData.promotionStartTime || 0),
+          promotionEndTime: Number(campaignData.promotionEndTime || 0),
+          proofSubmissionDeadline: Number(campaignData.proofSubmissionDeadline || 0),
+          verificationDeadline: Number(campaignData.verificationDeadline || 0),
+          maxInfluencers: Number(campaignData.maxInfluencers),
+          selectedInfluencersCount: Number(campaignData.selectedInfluencersCount || 0),
+          targetAudience: Number(campaignData.targetAudience) as TargetAudience,
+          creationTime: Number(campaignData.createdAt || Date.now() / 1000),
+          selectionDeadline: Number(campaignData.selectionDeadline || 0),
+          applicationCount: Number(campaignData.currentApplicants || 0),
+          selectionGracePeriod: Number(campaignData.selectionGracePeriod || 86400),
+          
+          // Computed properties - will be set by utility functions
+          statusInfo: {} as any,
+          timingInfo: {} as any,
+          progressInfo: {} as any,
+        };
+
+        setCampaign(briefData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error processing campaign data:', error);
+        setLoading(false);
+      }
+    }
+  }, [campaignData, contractLoading, campaignId, contractError]);
 
   const handleApplyToCampaign = () => {
     if (!isConnected) {

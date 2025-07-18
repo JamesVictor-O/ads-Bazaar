@@ -84,10 +84,9 @@ Apply now and get paid directly to your wallet!`;
 🌐 Secure smart contract payments in cUSD
 ⚡ Fast, transparent blockchain transactions
 
-Apply now and get paid directly to your wallet! 👇
-${shareUrl}`;
+Apply now and get paid directly to your wallet! 👇`;
     
-    const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(farcasterMessage)}`;
+    const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(farcasterMessage)}&embeds[]=${encodeURIComponent(shareUrl)}`;
     window.open(farcasterUrl, "_blank");
     setShowDropdown(false);
   };
