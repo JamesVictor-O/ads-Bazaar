@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import {
   Search,
   Target,
@@ -54,7 +54,7 @@ const statusMap = {
   4: "Expired",
 };
 
-export default function Marketplace() {
+function MarketplaceContent() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [categoryFilter, setCategoryFilter] =
     useState<string>("All Categories");
@@ -1025,5 +1025,43 @@ export default function Marketplace() {
         />
       )}
     </div>
+  );
+}
+
+function MarketplaceLoading() {
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-slate-900">
+      <div className="text-center">
+        <svg
+          className="animate-spin h-12 w-12 text-emerald-500 mx-auto"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
+          />
+        </svg>
+        <p className="mt-4 text-slate-400">Loading marketplace...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function Marketplace() {
+  return (
+    <Suspense fallback={<MarketplaceLoading />}>
+      <MarketplaceContent />
+    </Suspense>
   );
 }
