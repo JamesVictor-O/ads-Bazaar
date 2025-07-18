@@ -109,8 +109,8 @@ function CampaignDetailContent() {
     }
 
     if (!userProfile?.isInfluencer) {
-      // User is registered as business, redirect to become influencer
-      router.push('/marketplace');
+      // User is registered as business, redirect to marketplace with highlighting
+      router.push(`/marketplace?highlight=${campaignId}&from=share`);
       return;
     }
 
@@ -119,7 +119,7 @@ function CampaignDetailContent() {
   };
 
   const handleViewMarketplace = () => {
-    router.push('/marketplace');
+    router.push(`/marketplace?highlight=${campaignId}&from=share`);
   };
 
   const handleGetStarted = () => {
@@ -135,7 +135,7 @@ function CampaignDetailContent() {
   };
 
   const handleBackToMarketplace = () => {
-    router.push('/marketplace');
+    router.push(`/marketplace?highlight=${campaignId}&from=share`);
   };
 
   if (loading || contractLoading || isLoadingProfile) {

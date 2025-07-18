@@ -85,14 +85,14 @@ function MiniAppCampaignContent() {
   }, [campaignData, contractLoading, campaignId, contractError]);
 
   const openFullApp = () => {
-    const fullAppUrl = `https://ads-bazaar.vercel.app/campaign/${campaignId}`;
+    const fullAppUrl = `https://ads-bazaar.vercel.app/marketplace?highlight=${campaignId}&from=share`;
     if (typeof window !== 'undefined') {
       window.open(fullAppUrl, '_blank');
     }
   };
 
   const openMarketplace = () => {
-    const marketplaceUrl = `https://ads-bazaar.vercel.app/campaign/${campaignId}`;
+    const marketplaceUrl = `https://ads-bazaar.vercel.app/marketplace?highlight=${campaignId}&from=share`;
     if (typeof window !== 'undefined') {
       window.open(marketplaceUrl, '_blank');
     }

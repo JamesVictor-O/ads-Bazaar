@@ -109,19 +109,19 @@ function CampaignShareContent() {
     }
 
     if (!userProfile?.isInfluencer) {
-      // User is registered as business, redirect to become influencer
-      router.push('/marketplace');
+      // User is registered as business, redirect to marketplace with highlighting
+      router.push(`/marketplace?highlight=${campaignId}&from=share`);
       return;
     }
 
-    // User is ready to apply - redirect to dedicated campaign page
+    // User is ready to apply - redirect to marketplace with highlighting
     if (campaignId) {
-      router.push(`/campaign/${campaignId}`);
+      router.push(`/marketplace?highlight=${campaignId}&from=share`);
     }
   };
 
   const handleViewMarketplace = () => {
-    router.push('/marketplace');
+    router.push(`/marketplace?highlight=${campaignId}&from=share`);
   };
 
   const handleGetStarted = () => {
@@ -130,9 +130,9 @@ function CampaignShareContent() {
 
   const handleRegistrationSuccess = () => {
     setShowGetStarted(false);
-    // After successful registration, redirect to the campaign detail page
+    // After successful registration, redirect to marketplace with highlighting
     if (campaignId) {
-      router.push(`/campaign/${campaignId}`);
+      router.push(`/marketplace?highlight=${campaignId}&from=share`);
     }
   };
 

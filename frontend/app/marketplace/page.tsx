@@ -28,6 +28,8 @@ import { format } from "date-fns";
 import { truncateAddress, formatCurrency } from "@/utils/format";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { toast } from "react-hot-toast";
 import {
   Brief,
   CampaignStatus,
@@ -70,6 +72,12 @@ export default function Marketplace() {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(
     new Set()
   );
+
+  // Campaign highlighting state
+  const searchParams = useSearchParams();
+  const highlightCampaignId = searchParams.get('highlight');
+  const fromShare = searchParams.get('from') === 'share';
+  const [hasShownHighlightToast, setHasShownHighlightToast] = useState(false);
 
   const { address, isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
@@ -245,6 +253,35 @@ export default function Marketplace() {
       refreshApplicationStatus();
     }
   }, [isConnected, userProfile?.isInfluencer, address, publicClient]);
+
+  // Handle campaign highlighting toast and auto-scroll
+  useEffect(() => {
+    if (fromShare && highlightCampaignId && !hasShownHighlightToast && !isLoading) {
+      toast.success("Here's the campaign you were interested in!", {
+        duration: 5000,
+        icon: '🎯',
+        style: {
+          background: '#1f2937',
+          color: '#ffffff',
+          border: '1px solid #10b981',
+        },
+      });
+      setHasShownHighlightToast(true);
+
+      // Auto-scroll to highlighted campaign after a short delay
+      const scrollTimer = setTimeout(() => {
+        const campaignElement = document.getElementById(`campaign-${highlightCampaignId}`);
+        if (campaignElement) {
+          campaignElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }, 1000);
+
+      return () => clearTimeout(scrollTimer);
+    }
+  }, [fromShare, highlightCampaignId, hasShownHighlightToast, isLoading]);
 
   if (isLoading) {
     return (
@@ -740,13 +777,37 @@ export default function Marketplace() {
               campaign.description
             );
 
+            // Check if this campaign should be highlighted
+            const isHighlighted = highlightCampaignId === campaign.id;
+
             return (
               <motion.div
               key={campaign.id}
-              className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden hover:bg-slate-800/70 transition-all duration-200 group"
+              id={`campaign-${campaign.id}`}
+              className={`${
+                isHighlighted 
+                  ? "bg-slate-800/70 border-emerald-500 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-500/20" 
+                  : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70"
+              } border rounded-xl overflow-hidden transition-all duration-200 group relative`}
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                scale: isHighlighted ? 1.02 : 1
+              }}
+              transition={{ duration: 0.3, delay: isHighlighted ? 0.2 : 0 }}
             >
+              {/* Featured Badge */}
+              {isHighlighted && (
+                <motion.div 
+                  className="absolute -top-2 -right-2 z-10 bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ delay: 0.5, duration: 0.3, ease: "easeOut" }}
+                >
+                  Featured
+                </motion.div>
+              )}
               {/* Streamlined Header */}
               <div className="p-4 pb-0">
                 <div className="flex items-start justify-between mb-3">
