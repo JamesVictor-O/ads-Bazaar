@@ -281,6 +281,7 @@ export default function Marketplace() {
     const status = userApplications[campaign.id];
     const { statusInfo, timingInfo } = campaign;
 
+    // For influencers who have already applied
     if (status === "applied") {
       return {
         text: "Applied",
@@ -300,6 +301,7 @@ export default function Marketplace() {
       };
     }
 
+    // Connection and network checks
     if (!isConnected) {
       return {
         text: "Connect Wallet",
@@ -327,6 +329,8 @@ export default function Marketplace() {
         icon: <Loader2 className="w-4 h-4 mr-1 animate-spin" />,
       };
     }
+
+    // Registration check
     if (!userProfile?.isRegistered) {
       return {
         text: "Register as Influencer",
@@ -335,8 +339,11 @@ export default function Marketplace() {
         variant: "register",
       };
     }
+
+    // Business users
     if (userProfile.isBusiness) {
       if (campaign.business.toLowerCase() === address?.toLowerCase()) {
+        // Campaign owner viewing their own campaign
         return {
           text: "Your Campaign",
           disabled: true,
@@ -344,6 +351,7 @@ export default function Marketplace() {
           variant: "own",
         };
       }
+      // Other business users - show appropriate status
       return {
         text: "Business Account",
         disabled: true,
@@ -352,27 +360,70 @@ export default function Marketplace() {
       };
     }
 
+    // Campaign status checks for influencers
     if (!statusInfo.canApply) {
-      // For campaigns that can't be applied to, show appropriate status
-      let displayText = statusMap[campaign.status];
+      // Detailed status messages based on campaign phase and status
+      let displayText = "Not Available";
+      let variant = "closed";
       
-      // Override for completed/finished campaigns
-      if (campaign.status === 2) { // CampaignStatus.COMPLETED
-        displayText = "Completed";
-      } else if (campaign.status === 1 && timingInfo.hasExpired) { // ASSIGNED but expired
-        displayText = "Completed";
-      } else if (timingInfo.hasExpired) {
-        displayText = "Deadline Passed";
+      switch (campaign.status) {
+        case CampaignStatus.COMPLETED:
+          displayText = "Campaign Completed";
+          break;
+        case CampaignStatus.CANCELLED:
+          displayText = "Campaign Cancelled";
+          break;
+        case CampaignStatus.EXPIRED:
+          displayText = "Campaign Expired";
+          break;
+        case CampaignStatus.ASSIGNED:
+          if (timingInfo.hasExpired) {
+            displayText = "Campaign Finished";
+          } else {
+            displayText = "Influencers Selected";
+          }
+          break;
+        case CampaignStatus.OPEN:
+          // Campaign is open but can't apply - check why
+          if (campaign.progressInfo.isFullyBooked) {
+            displayText = "Campaign Full";
+          } else if (timingInfo.hasExpired) {
+            displayText = "Application Deadline Passed";
+          } else if (timingInfo.phase === "preparation") {
+            displayText = "Preparation Phase";
+          } else if (timingInfo.phase === "promotion") {
+            displayText = "Promotion Active";
+          } else if (timingInfo.phase === "proof_submission") {
+            displayText = "Proof Submission Phase";
+          } else if (timingInfo.phase === "verification") {
+            displayText = "Verification Phase";
+          } else {
+            displayText = "Not Accepting Applications";
+          }
+          break;
+        default:
+          displayText = statusMap[campaign.status] || "Not Available";
       }
       
       return {
         text: displayText,
         disabled: true,
         onClick: () => {},
+        variant: variant,
+      };
+    }
+
+    // Campaign is open and can accept applications
+    if (campaign.progressInfo.isFullyBooked) {
+      return {
+        text: "Campaign Full",
+        disabled: true,
+        onClick: () => {},
         variant: "closed",
       };
     }
 
+    // Available for application
     return {
       text: timingInfo.isUrgent ? "Apply Now - Urgent!" : "Apply Now",
       disabled: false,
@@ -404,6 +455,10 @@ export default function Marketplace() {
         return `${baseStyles} bg-amber-500/10 text-amber-400 border border-amber-500/20 cursor-not-allowed`;
       case "loading":
         return `${baseStyles} bg-slate-600/50 text-slate-400 cursor-not-allowed`;
+      case "own":
+        return `${baseStyles} bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-not-allowed`;
+      case "closed":
+        return `${baseStyles} bg-slate-500/10 text-slate-400 border border-slate-500/20 cursor-not-allowed`;
       default:
         return `${baseStyles} bg-slate-500/10 text-slate-400 border border-slate-500/20 cursor-not-allowed`;
     }
