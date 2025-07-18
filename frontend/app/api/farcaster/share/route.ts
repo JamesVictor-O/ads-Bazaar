@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const miniAppUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://ads-bazaar.vercel.app'}/mini-app/campaign?campaignId=${campaignId}`;
     
     // Generate web app fallback URL
-    const fallbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://ads-bazaar.vercel.app'}/campaign/share?campaignId=${campaignId}`;
+    const fallbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://ads-bazaar.vercel.app'}/campaign/${campaignId}`;
     
     // Generate Farcaster cast text
     const generatedCastText = castText || generateCastText(campaignId, fallbackUrl);

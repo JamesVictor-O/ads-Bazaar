@@ -24,6 +24,7 @@ interface GetStartedModalProps {
   isOpen?: boolean;
   onClose?: () => void;
   guardedAction?: (action: () => Promise<void>) => Promise<void>;
+  onSuccess?: () => void;
 }
 
 type UserType = "influencer" | "advertiser";
@@ -40,6 +41,7 @@ const GetStartedModal = ({
   isOpen = true,
   onClose = () => {},
   guardedAction,
+  onSuccess,
 }: GetStartedModalProps) => {
   const [userDetails, setUserDetails] = useState<UserDetails>({ userType: "" });
   const [showNextStep, setShowNextStep] = useState(false);
@@ -81,11 +83,18 @@ const GetStartedModal = ({
         setTimeout(() => {
           toast.dismiss('dashboard-setup');
           onClose();
-          router.push(
-            userDetails.userType === "influencer"
-              ? "/influencersDashboard"
-              : "/brandsDashBoard"
-          );
+          
+          if (onSuccess) {
+            // Custom success handler provided
+            onSuccess();
+          } else {
+            // Default behavior - redirect to dashboard
+            router.push(
+              userDetails.userType === "influencer"
+                ? "/influencersDashboard"
+                : "/brandsDashBoard"
+            );
+          }
         }, 2000);
       }).catch((error) => {
         console.error('Profile refetch failed:', error);
@@ -93,15 +102,22 @@ const GetStartedModal = ({
         // Still redirect even if refetch fails, the dashboard will handle loading
         setTimeout(() => {
           onClose();
-          router.push(
-            userDetails.userType === "influencer"
-              ? "/influencersDashboard"
-              : "/brandsDashBoard"
-          );
+          
+          if (onSuccess) {
+            // Custom success handler provided
+            onSuccess();
+          } else {
+            // Default behavior - redirect to dashboard
+            router.push(
+              userDetails.userType === "influencer"
+                ? "/influencersDashboard"
+                : "/brandsDashBoard"
+            );
+          }
         }, 1500);
       });
     }
-  }, [isSuccess, userDetails.userType, router, onClose, refetchProfile]);
+  }, [isSuccess, userDetails.userType, router, onClose, refetchProfile, onSuccess]);
 
   // Track transaction when hash becomes available
   useEffect(() => {

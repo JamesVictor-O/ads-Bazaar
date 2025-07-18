@@ -22,6 +22,7 @@ import {
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
+import CampaignCard from "@/components/CampaignCard";
 import { useAccount, usePublicClient } from "wagmi";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { format } from "date-fns";
@@ -43,6 +44,7 @@ import { Address } from "viem";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import ABI from "@/lib/AdsBazaar.json";
 import { ApplicationStatus } from "@/types";
+import { createMarketplaceSuccessHandler } from "@/utils/transactionUtils";
 
 const statusMap = {
   0: "Open",
@@ -126,11 +128,17 @@ export default function Marketplace() {
 
   // Function to refresh application status
   const refreshApplicationStatus = useCallback(
-    async (influencerAddress?: string) => {
+    async (influencerAddress?: string, forceRefresh: boolean = false) => {
       const targetAddress = influencerAddress || address;
 
       if (!publicClient || !targetAddress) {
         console.warn("Cannot refresh: missing client or address");
+        return;
+      }
+
+      // Prevent multiple concurrent refreshes unless forced
+      if (isRefreshing && !forceRefresh) {
+        console.log("Refresh already in progress, skipping...");
         return;
       }
 
@@ -148,20 +156,21 @@ export default function Marketplace() {
         })) as string[];
 
         if (!appliedBriefIds || appliedBriefIds.length === 0) {
-          
+          console.log("No applications found, clearing state");
           setUserApplications({});
           setApplicationStatuses([]);
           return;
         }
 
-
+        console.log(`Found ${appliedBriefIds.length} applied brief IDs:`, appliedBriefIds);
 
         // Step 2: Fetch current application data for each brief
         const updatedApplications: {
           [briefId: string]: "applied" | "assigned";
         } = {};
 
-        for (const briefId of appliedBriefIds) {
+        // Process applications in parallel for faster refresh
+        const applicationPromises = appliedBriefIds.map(async (briefId) => {
           try {
             // Get application details
             const applicationData = (await publicClient.readContract({
@@ -188,30 +197,43 @@ export default function Marketplace() {
 
               if (influencerIndex !== -1) {
                 const isSelected = applicationData.isSelected[influencerIndex];
-                updatedApplications[briefId] = isSelected
-                  ? "assigned"
-                  : "applied";
-
-               
+                const status = isSelected ? "assigned" : "applied";
+                console.log(`Brief ${briefId}: ${status}`);
+                return { briefId, status };
               }
             }
+            return null;
           } catch (error) {
-            console.error(
-              `Error fetching application for brief ${briefId}:`,
-              error
-            );
+            console.error(`Error fetching application for brief ${briefId}:`, error);
+            return null;
           }
-        }
+        });
 
-        // Step 3: Update state with fresh data
+        // Wait for all application data to be fetched
+        const results = await Promise.all(applicationPromises);
+        
+        // Build the updated applications object
+        results.forEach((result) => {
+          if (result) {
+            updatedApplications[result.briefId] = result.status;
+          }
+        });
+
+        console.log("Updated application status:", updatedApplications);
+
+        // Step 3: Update state with fresh data immediately
         setUserApplications(updatedApplications);
+        
+        // Force a re-render by updating the state
+        setApplicationStatuses([]); // Clear and reset to trigger updates
+        
       } catch (error) {
         console.error("Error refreshing application status:", error);
       } finally {
         setIsRefreshing(false);
       }
     },
-    [publicClient, address]
+    [publicClient, address, isRefreshing]
   );
 
   useEffect(() => {
@@ -676,181 +698,16 @@ export default function Marketplace() {
         {/* Enhanced Campaign Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCampaigns.map((campaign: Brief) => {
-            const category =
-              AUDIENCE_LABELS[campaign.targetAudience] || "Other";
             const buttonState = getButtonState(campaign);
-            const userApplicationStatus = applicationStatus[campaign.id];
-            const isDescriptionExpanded = expandedDescriptions.has(campaign.id);
-            const showExpandButton = shouldShowExpandButton(
-              campaign.description
-            );
-
+            
             return (
-              <motion.div
-              key={campaign.id}
-              className="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden hover:bg-slate-800/70 transition-all duration-200 group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              {/* Streamlined Header */}
-              <div className="p-4 pb-0">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-white mb-1 line-clamp-1 group-hover:text-emerald-400 transition-colors">
-                      {campaign.name}
-                    </h3>
-                    <p className="text-sm text-slate-400">
-                      by <UserDisplay address={campaign.business} className="text-emerald-400" />
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 ml-4">
-                    {/* Status Badge */}
-                    {userApplicationStatus && (
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                        userApplicationStatus === "assigned"
-                          ? "bg-emerald-500/10 text-emerald-400"
-                          : "bg-blue-500/10 text-blue-400"
-                      }`}>
-                        {userApplicationStatus === "assigned" ? (
-                          <><Star className="w-3 h-3" />Assigned</>
-                        ) : (
-                          <><Check className="w-3 h-3" />Applied</>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Budget */}
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-white">
-                        ${campaign.budget.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        ${formatCurrency(campaign.progressInfo.budgetPerSpot)} per spot
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            
-                {/* Category and Phase Tags */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`px-2 py-1 rounded-md text-xs font-medium ${getCategoryColor(category)}`}>
-                    {category}
-                  </span>
-                  <span className={`px-2 py-1 rounded-md text-xs font-medium ${getPhaseColor(campaign.timingInfo.phase)}`}>
-                    {getPhaseLabel(campaign.timingInfo.phase)}
-                  </span>
-                  
-                  {/* Conditional badges */}
-                  {campaign.timingInfo.isNew && (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-emerald-500/20 text-emerald-400">
-                      New
-                    </span>
-                  )}
-                  {campaign.timingInfo.isUrgent && (
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-orange-500/20 text-orange-400">
-                      Urgent
-                    </span>
-                  )}
-                  
-                  {/* Time remaining */}
-                  {campaign.timingInfo.timeRemaining && (
-                    <span className="ml-auto text-xs text-slate-400">
-                      {formatTimeRemaining(campaign.timingInfo.timeRemaining)} left
-                    </span>
-                  )}
-                </div>
-              </div>
-            
-              {/* Description */}
-              <div className="px-4 pb-3">
-                <div className="text-sm text-slate-300 leading-relaxed">
-                  {isDescriptionExpanded
-                    ? campaign.description
-                    : getTruncatedDescription(campaign.description)}
-                </div>
-                
-                {showExpandButton && (
-                  <button
-                    onClick={() => toggleDescription(campaign.id)}
-                    className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-                  >
-                    {isDescriptionExpanded ? "Show less" : "Show more"}
-                  </button>
-                )}
-              </div>
-            
-              {/* Next Action Alert */}
-              {campaign.statusInfo.nextAction && (
-                <div className="mx-4 mb-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-emerald-400">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
-                    {campaign.statusInfo.nextAction}
-                  </div>
-                  {campaign.statusInfo.warning && (
-                    <div className="flex items-center gap-2 mt-2 text-xs text-orange-400">
-                      <AlertTriangle className="w-3 h-3" />
-                      {campaign.statusInfo.warning}
-                    </div>
-                  )}
-                </div>
-              )}
-            
-              {/* Stats Grid - Simplified */}
-              <div className="px-4 pb-3">
-                <div className="grid grid-cols-4 gap-3 text-center">
-                  <div className="py-2">
-                    <div className="text-sm font-semibold text-white">
-                      {campaign.selectedInfluencersCount}/{campaign.maxInfluencers}
-                    </div>
-                    <div className="text-xs text-slate-400">Spots</div>
-                  </div>
-                  <div className="py-2">
-                    <div className="text-sm font-semibold text-white">
-                      {campaign.applicationCount}
-                    </div>
-                    <div className="text-xs text-slate-400">Applications</div>
-                  </div>
-                  <div className="py-2">
-                    <div className="text-sm font-semibold text-white">
-                      {Math.ceil(campaign.promotionDuration / 86400)}
-                    </div>
-                    <div className="text-xs text-slate-400">Days</div>
-                  </div>
-                  <div className="py-2">
-                    <div className="text-sm font-semibold text-emerald-400">
-                      {campaign.progressInfo.spotsFilledPercentage}%
-                    </div>
-                    <div className="text-xs text-slate-400">Filled</div>
-                  </div>
-                </div>
-              </div>
-            
-              {/* Progress Bar */}
-              <div className="px-4 pb-3">
-                <div className="w-full bg-slate-700/50 rounded-full h-1">
-                  <div
-                    className="bg-emerald-500 h-1 rounded-full transition-all duration-300"
-                    style={{ width: `${campaign.progressInfo.spotsFilledPercentage}%` }}
-                  />
-                </div>
-              </div>
-            
-              {/* Action Button */}
-              <div className="p-4 pt-0">
-                <button
-                  onClick={buttonState.onClick}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${getButtonStyles(buttonState.variant)}`}
-                  disabled={buttonState.disabled}
-                >
-                  {buttonState.icon && buttonState.icon}
-                  {buttonState.text}
-                  {!buttonState.disabled && !buttonState.icon && (
-                    <ArrowRight className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </motion.div>
+              <CampaignCard
+                key={campaign.id}
+                brief={campaign}
+                onApply={buttonState.onClick}
+                clickable={true}
+                className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70"
+              />
             );
           })}
 
@@ -876,7 +733,8 @@ export default function Marketplace() {
           showApplyModal={showApplyModal}
           setShowApplyModal={(show) => {
             setShowApplyModal(show);
-            if (!show) {
+            // Only refresh on manual close, not on success close
+            if (!show && !isRefreshing) {
               setTimeout(() => {
                 refreshApplicationStatus();
               }, 1000);
@@ -898,14 +756,7 @@ export default function Marketplace() {
           }
           applicationMessage={applicationMessage}
           setApplicationMessage={setApplicationMessage}
-          onSuccess={() => {
-            // Immediately refresh application status on success
-            refreshApplicationStatus();
-            // Trigger dashboard refresh with delay for blockchain propagation
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent("dashboardRefresh"));
-            }, 2000);
-          }}
+          onSuccess={createMarketplaceSuccessHandler(refreshApplicationStatus)}
         />
       )}
     </div>

@@ -131,6 +131,325 @@ export function computeCampaignStatusInfo(
     warning,
   };
 }
+
+/**
+ * Context-aware status messages for different user types
+ */
+export function getContextualStatusMessage(
+  brief: Brief,
+  userType: 'brand' | 'influencer' | 'marketplace',
+  userAddress?: string,
+  currentTime: number = Date.now() / 1000
+): {
+  statusLabel: string;
+  nextAction?: string;
+  warning?: string;
+  hideActions?: boolean;
+} {
+  const timingInfo = computeCampaignTimingInfo(brief, currentTime);
+  const statusInfo = computeCampaignStatusInfo(brief, currentTime);
+  const isOwner = userAddress && brief.business.toLowerCase() === userAddress.toLowerCase();
+
+  // Handle case where no influencers are assigned/selected
+  const hasAssignedInfluencers = brief.selectedInfluencersCount > 0;
+
+  switch (userType) {
+    case 'brand':
+      return getBrandStatusMessage(brief, statusInfo, timingInfo, isOwner, hasAssignedInfluencers);
+    
+    case 'influencer':
+      return getInfluencerStatusMessage(brief, statusInfo, timingInfo);
+    
+    case 'marketplace':
+      return getMarketplaceStatusMessage(brief, statusInfo, timingInfo, hasAssignedInfluencers);
+    
+    default:
+      return {
+        statusLabel: statusInfo.statusLabel,
+        nextAction: statusInfo.nextAction,
+        warning: statusInfo.warning,
+      };
+  }
+}
+
+function getBrandStatusMessage(
+  brief: Brief,
+  statusInfo: CampaignStatusInfo,
+  timingInfo: CampaignTimingInfo,
+  isOwner?: boolean,
+  hasAssignedInfluencers: boolean = true
+): {
+  statusLabel: string;
+  nextAction?: string;
+  warning?: string;
+  hideActions?: boolean;
+} {
+  if (!isOwner) {
+    return {
+      statusLabel: statusInfo.statusLabel,
+      nextAction: "View campaign details",
+    };
+  }
+
+  switch (brief.status) {
+    case CampaignStatus.OPEN:
+      if (!hasAssignedInfluencers) {
+        if (timingInfo.hasExpired) {
+          return {
+            statusLabel: "No Applications Received",
+            nextAction: "Close campaign and get refund",
+            warning: "Application deadline passed with no influencers selected",
+            hideActions: false,
+          };
+        }
+        return {
+          statusLabel: "Waiting for Applications",
+          nextAction: `${formatTimeRemaining(timingInfo.timeRemaining!)} remaining to receive applications`,
+          warning: timingInfo.isUrgent ? "Deadline approaching - promote your campaign" : undefined,
+        };
+      }
+
+      if (brief.selectedInfluencersCount < brief.maxInfluencers) {
+        if (timingInfo.hasExpired) {
+          return {
+            statusLabel: "Decision Required",
+            nextAction: "Start campaign with partial selection or cancel with compensation",
+            warning: `${brief.selectedInfluencersCount}/${brief.maxInfluencers} influencers selected - decide now`,
+          };
+        }
+        return {
+          statusLabel: "Reviewing Applications",
+          nextAction: `${brief.selectedInfluencersCount}/${brief.maxInfluencers} selected - review remaining applications`,
+          warning: timingInfo.isUrgent ? "Selection deadline approaching" : undefined,
+        };
+      }
+
+      return {
+        statusLabel: "Ready to Launch",
+        nextAction: "All influencer spots filled - start your campaign",
+        warning: timingInfo.hasExpired ? "Start campaign or cancel with compensation" : undefined,
+      };
+
+    case CampaignStatus.ASSIGNED:
+      if (timingInfo.phase === CampaignPhase.PREPARATION) {
+        return {
+          statusLabel: "Campaign Starting Soon",
+          nextAction: `Campaign begins ${formatDetailedTimeRemaining(getTimeRemaining(brief.promotionStartTime))}`,
+        };
+      }
+      if (timingInfo.phase === CampaignPhase.PROMOTION) {
+        return {
+          statusLabel: "Campaign Live",
+          nextAction: `Influencers promoting your brand - ends ${formatDetailedTimeRemaining(getTimeRemaining(brief.promotionEndTime))}`,
+        };
+      }
+      if (timingInfo.phase === CampaignPhase.PROOF_SUBMISSION) {
+        return {
+          statusLabel: "Awaiting Submissions",
+          nextAction: `Waiting for influencers to submit proof - deadline ${formatDetailedTimeRemaining(getTimeRemaining(brief.proofSubmissionDeadline))}`,
+          warning: timingInfo.isUrgent ? "Submission deadline approaching" : undefined,
+        };
+      }
+      if (timingInfo.phase === CampaignPhase.VERIFICATION) {
+        return {
+          statusLabel: "Review & Complete",
+          nextAction: "Review influencer submissions and release payments",
+          warning: "Action required - verify submissions and complete campaign",
+        };
+      }
+      break;
+
+    case CampaignStatus.COMPLETED:
+      return {
+        statusLabel: "Campaign Completed",
+        nextAction: "Campaign successfully finished - all payments processed",
+      };
+
+    case CampaignStatus.CANCELLED:
+      return {
+        statusLabel: "Campaign Cancelled",
+        nextAction: "Campaign was cancelled - refunds processed",
+      };
+
+    case CampaignStatus.EXPIRED:
+      return {
+        statusLabel: "Campaign Expired",
+        nextAction: "Campaign closed due to inactivity - funds refunded",
+      };
+  }
+
+  return {
+    statusLabel: statusInfo.statusLabel,
+    nextAction: statusInfo.nextAction,
+    warning: statusInfo.warning,
+  };
+}
+
+function getInfluencerStatusMessage(
+  brief: Brief,
+  statusInfo: CampaignStatusInfo,
+  timingInfo: CampaignTimingInfo
+): {
+  statusLabel: string;
+  nextAction?: string;
+  warning?: string;
+  hideActions?: boolean;
+} {
+  switch (brief.status) {
+    case CampaignStatus.OPEN:
+      if (timingInfo.hasExpired) {
+        return {
+          statusLabel: "Applications Closed",
+          nextAction: "Application deadline has passed",
+          hideActions: true,
+        };
+      }
+      return {
+        statusLabel: "Open for Applications",
+        nextAction: `Apply now - ${formatTimeRemaining(timingInfo.timeRemaining!)} remaining`,
+        warning: timingInfo.isUrgent ? "Deadline approaching - apply soon!" : undefined,
+      };
+
+    case CampaignStatus.ASSIGNED:
+      if (timingInfo.phase === CampaignPhase.PREPARATION) {
+        return {
+          statusLabel: "Starting Soon",
+          nextAction: `Get ready - campaign begins ${formatDetailedTimeRemaining(getTimeRemaining(brief.promotionStartTime))}`,
+        };
+      }
+      if (timingInfo.phase === CampaignPhase.PROMOTION) {
+        return {
+          statusLabel: "Campaign Active",
+          nextAction: "Create and post your content now",
+          warning: timingInfo.isUrgent ? "Campaign ends soon!" : undefined,
+        };
+      }
+      if (timingInfo.phase === CampaignPhase.PROOF_SUBMISSION) {
+        return {
+          statusLabel: "Submit Your Work",
+          nextAction: `Submit proof of your post - deadline ${formatDetailedTimeRemaining(getTimeRemaining(brief.proofSubmissionDeadline))}`,
+          warning: timingInfo.isUrgent ? "Submission deadline approaching!" : undefined,
+        };
+      }
+      if (timingInfo.phase === CampaignPhase.VERIFICATION) {
+        return {
+          statusLabel: "Under Review",
+          nextAction: "Business is reviewing submissions - payment pending approval",
+        };
+      }
+      break;
+
+    case CampaignStatus.COMPLETED:
+      return {
+        statusLabel: "Campaign Completed",
+        nextAction: "Campaign finished - check your dashboard for payment status",
+      };
+
+    case CampaignStatus.CANCELLED:
+      return {
+        statusLabel: "Campaign Cancelled",
+        nextAction: "This campaign was cancelled by the business",
+      };
+
+    case CampaignStatus.EXPIRED:
+      return {
+        statusLabel: "Campaign Expired",
+        nextAction: "Campaign expired due to inactivity",
+      };
+  }
+
+  return {
+    statusLabel: statusInfo.statusLabel,
+    nextAction: statusInfo.nextAction,
+    warning: statusInfo.warning,
+  };
+}
+
+function getMarketplaceStatusMessage(
+  brief: Brief,
+  statusInfo: CampaignStatusInfo,
+  timingInfo: CampaignTimingInfo,
+  hasAssignedInfluencers: boolean = true
+): {
+  statusLabel: string;
+  nextAction?: string;
+  warning?: string;
+  hideActions?: boolean;
+} {
+  switch (brief.status) {
+    case CampaignStatus.OPEN:
+      if (!hasAssignedInfluencers) {
+        if (timingInfo.hasExpired) {
+          return {
+            statusLabel: "Deadline Passed",
+            nextAction: "No longer accepting applications",
+            hideActions: true,
+          };
+        }
+        return {
+          statusLabel: "New Campaign",
+          nextAction: `Be the first to apply - ${formatTimeRemaining(timingInfo.timeRemaining!)} remaining`,
+          warning: timingInfo.isUrgent ? "Apply soon - deadline approaching" : undefined,
+        };
+      }
+
+      if (brief.selectedInfluencersCount >= brief.maxInfluencers) {
+        return {
+          statusLabel: "Fully Booked",
+          nextAction: "All influencer spots have been filled",
+          hideActions: true,
+        };
+      }
+
+      if (timingInfo.hasExpired) {
+        return {
+          statusLabel: "Applications Closed",
+          nextAction: "Application deadline has passed",
+          hideActions: true,
+        };
+      }
+
+      return {
+        statusLabel: "Open for Applications",
+        nextAction: `${brief.maxInfluencers - brief.selectedInfluencersCount} spots remaining - ${formatTimeRemaining(timingInfo.timeRemaining!)} left`,
+        warning: timingInfo.isUrgent ? "Apply soon - deadline approaching" : undefined,
+      };
+
+    case CampaignStatus.ASSIGNED:
+      return {
+        statusLabel: "In Progress",
+        nextAction: "Campaign is currently active with selected influencers",
+        hideActions: true,
+      };
+
+    case CampaignStatus.COMPLETED:
+      return {
+        statusLabel: "Completed",
+        nextAction: "This campaign has been successfully completed",
+        hideActions: true,
+      };
+
+    case CampaignStatus.CANCELLED:
+      return {
+        statusLabel: "Cancelled",
+        nextAction: "This campaign was cancelled",
+        hideActions: true,
+      };
+
+    case CampaignStatus.EXPIRED:
+      return {
+        statusLabel: "Expired",
+        nextAction: "This campaign expired due to inactivity",
+        hideActions: true,
+      };
+  }
+
+  return {
+    statusLabel: statusInfo.statusLabel,
+    nextAction: statusInfo.nextAction,
+    warning: statusInfo.warning,
+  };
+}
 /**
  * Enhanced timing info with grace period awareness
  */

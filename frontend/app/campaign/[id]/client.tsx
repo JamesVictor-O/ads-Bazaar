@@ -1,32 +1,32 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
 import { Brief, CampaignStatus, TargetAudience } from '@/types';
 import { useReadContract, useAccount } from 'wagmi';
 import { adsBazaarAbi } from '@/contracts/adsBazaar';
 import CampaignCard from '@/components/CampaignCard';
-import { Loader2, Users, Zap, Shield, ArrowRight } from 'lucide-react';
+import { Loader2, Users, Zap, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useUserProfile } from '@/hooks/adsBazaar';
 import GetStartedModal from '@/components/modals/GetStartedModal';
+import AdsApplicationModal from '@/components/modals/AdsApplicationModal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
-function CampaignShareContent() {
-  const searchParams = useSearchParams();
+function CampaignDetailContent() {
+  const params = useParams();
   const router = useRouter();
   const [campaign, setCampaign] = useState<Brief | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGetStarted, setShowGetStarted] = useState(false);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [applicationMessage, setApplicationMessage] = useState("");
 
   // Wallet and user state
-  const { address, isConnected } = useAccount();
-  const { userProfile, isLoadingProfile: profileLoading } = useUserProfile();
+  const { isConnected } = useAccount();
+  const { userProfile, isLoadingProfile } = useUserProfile();
 
   // Extract campaign ID from URL parameters
-  const campaignId = searchParams.get('campaignId');
-  const castHash = searchParams.get('castHash');
-  const castFid = searchParams.get('castFid');
+  const campaignId = params.id as string;
 
   // Determine user state
   const isRegistered = userProfile?.isRegistered || false;
@@ -114,10 +114,8 @@ function CampaignShareContent() {
       return;
     }
 
-    // User is ready to apply - redirect to dedicated campaign page
-    if (campaignId) {
-      router.push(`/campaign/${campaignId}`);
-    }
+    // User is ready to apply - show application modal
+    setShowApplicationModal(true);
   };
 
   const handleViewMarketplace = () => {
@@ -130,13 +128,17 @@ function CampaignShareContent() {
 
   const handleRegistrationSuccess = () => {
     setShowGetStarted(false);
-    // After successful registration, redirect to the campaign detail page
-    if (campaignId) {
-      router.push(`/campaign/${campaignId}`);
-    }
+    // After successful registration, automatically try to apply
+    setTimeout(() => {
+      handleApplyToCampaign();
+    }, 1000); // Small delay to allow state updates
   };
 
-  if (loading || contractLoading) {
+  const handleBackToMarketplace = () => {
+    router.push('/marketplace');
+  };
+
+  if (loading || contractLoading || isLoadingProfile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
         <div className="text-center">
@@ -169,19 +171,25 @@ function CampaignShareContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100">
       <div className="container mx-auto px-4 py-8">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={handleBackToMarketplace}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Marketplace
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Shared Campaign from Farcaster
+            Campaign Details
           </h1>
           <p className="text-gray-600">
-            Discover this influencer marketing opportunity
+            Apply to this influencer marketing opportunity
           </p>
-          {castHash && (
-            <p className="text-sm text-emerald-600 mt-2">
-              Shared via cast: {castHash.slice(0, 10)}...
-            </p>
-          )}
         </div>
 
         {/* Campaign Card */}
@@ -228,7 +236,7 @@ function CampaignShareContent() {
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 <ArrowRight className="h-4 w-4" />
-                View Campaign Details
+                Apply to Campaign
               </button>
               <button
                 onClick={handleViewMarketplace}
@@ -271,12 +279,6 @@ function CampaignShareContent() {
             </div>
           </div>
         )}
-
-        {/* Share Info */}
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>This campaign was shared via Farcaster.</p>
-          <p>Join Ads-Bazaar to connect with businesses and earn from your influence!</p>
-        </div>
       </div>
 
       {/* Registration Modal */}
@@ -285,6 +287,25 @@ function CampaignShareContent() {
           isOpen={showGetStarted}
           onClose={() => setShowGetStarted(false)}
           onSuccess={handleRegistrationSuccess}
+        />
+      )}
+
+      {/* Application Modal */}
+      {showApplicationModal && campaign && (
+        <AdsApplicationModal
+          showApplyModal={showApplicationModal}
+          setShowApplyModal={setShowApplicationModal}
+          selectedBrief={{
+            id: campaign.id,
+            title: campaign.name,
+            business: campaign.business,
+            description: campaign.description,
+            budget: campaign.budget,
+            maxInfluencers: campaign.maxInfluencers,
+            requirements: campaign.requirements,
+          }}
+          applicationMessage={applicationMessage}
+          setApplicationMessage={setApplicationMessage}
         />
       )}
     </div>
@@ -302,10 +323,10 @@ function LoadingFallback() {
   );
 }
 
-export default function CampaignSharePage() {
+export default function CampaignDetailClient() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <CampaignShareContent />
+      <CampaignDetailContent />
     </Suspense>
   );
 }

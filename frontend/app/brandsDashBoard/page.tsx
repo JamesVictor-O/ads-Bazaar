@@ -51,6 +51,7 @@ import {
   getActionPriority,
 } from "@/utils/campaignUtils";
 import { CampaignStatus } from "@/types";
+import { createBrandDashboardSuccessHandler } from "@/utils/transactionUtils";
 
 // Import custom hooks
 import {
@@ -206,6 +207,20 @@ const BrandDashboard = () => {
     }
   }, [isConnected, address, refetchProfile]);
 
+  // Listen for global dashboard refresh events
+  useEffect(() => {
+    const handleDashboardRefresh = () => {
+      console.log("Global refresh event received in brand dashboard");
+      refetchBriefs();
+      refetchApplications();
+    };
+
+    window.addEventListener('dashboardRefresh', handleDashboardRefresh);
+    return () => {
+      window.removeEventListener('dashboardRefresh', handleDashboardRefresh);
+    };
+  }, [refetchBriefs, refetchApplications]);
+
   useEffect(() => {
     if (completeHash) {
       console.log(
@@ -271,24 +286,25 @@ const BrandDashboard = () => {
   useEffect(() => {
     if (isCreateSuccess) {
       toast.success("Campaign created successfully!");
-      // Modal will close automatically, just reset form and refetch
-      setFormData({
-        name: "",
-        description: "",
-        requirements: "",
-        budget: "",
-        promotionDuration: "604800",
-        maxInfluencers: "5",
-        targetAudience: "0",
-        applicationPeriod: "432000", // 5 days default
-        proofSubmissionGracePeriod: "172800", // 2 days default (max)
-        verificationPeriod: "259200", // 3 days default
-        selectionGracePeriod: "86400", // 1 day default
-      });
-      // Refetch the campaigns to show the new one immediately
-      setTimeout(() => {
-        refetchBriefs();
-      }, 1000); // Small delay to ensure blockchain transaction is processed
+      // Reset form data
+      const resetForm = () => {
+        setFormData({
+          name: "",
+          description: "",
+          requirements: "",
+          budget: "",
+          promotionDuration: "604800",
+          maxInfluencers: "5",
+          targetAudience: "0",
+          applicationPeriod: "432000", // 5 days default
+          proofSubmissionGracePeriod: "172800", // 2 days default (max)
+          verificationPeriod: "259200", // 3 days default
+          selectionGracePeriod: "86400", // 1 day default
+        });
+      };
+      
+      // Use standardized success handler
+      createBrandDashboardSuccessHandler([resetForm, refetchBriefs])();
     }
 
     if (isCreateError) {
@@ -301,12 +317,13 @@ const BrandDashboard = () => {
   useEffect(() => {
     if (isCompleteSuccess) {
       toast.success("Campaign completed and funds released successfully!");
-      refetchApplications();
-      // Also refetch briefs to update campaign status
-      setTimeout(() => {
-        refetchBriefs();
-      }, 1000);
-      setShowSubmissionsModal(false);
+      
+      // Use standardized success handler
+      createBrandDashboardSuccessHandler([
+        refetchApplications,
+        refetchBriefs,
+        () => setShowSubmissionsModal(false)
+      ])();
     }
 
     if (isCompleteError) {
@@ -327,11 +344,12 @@ const BrandDashboard = () => {
   useEffect(() => {
     if (isCancelSuccess) {
       toast.success("Campaign cancelled successfully!");
-      setShowCancelConfirm(null);
-      // Refetch briefs to remove the cancelled campaign from the list
-      setTimeout(() => {
-        refetchBriefs();
-      }, 1000);
+      
+      // Use standardized success handler
+      createBrandDashboardSuccessHandler([
+        () => setShowCancelConfirm(null),
+        refetchBriefs
+      ])();
     }
 
     if (isCancelError) {
@@ -345,11 +363,12 @@ const BrandDashboard = () => {
   useEffect(() => {
     if (isExpireSuccess) {
       toast.success("Campaign expired successfully!");
-      setShowExpireConfirm(null);
-      // Refetch briefs to update the campaign status
-      setTimeout(() => {
-        refetchBriefs();
-      }, 1000);
+      
+      // Use standardized success handler
+      createBrandDashboardSuccessHandler([
+        () => setShowExpireConfirm(null),
+        refetchBriefs
+      ])();
     }
 
     if (isExpireError) {

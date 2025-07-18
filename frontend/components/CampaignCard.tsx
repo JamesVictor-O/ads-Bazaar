@@ -7,29 +7,51 @@ import { formatCurrency, formatTimeRemaining, getPhaseColor } from '@/utils/form
 import { getAudienceLabel } from '@/utils/format';
 import { computeCampaignTimingInfo } from '@/utils/campaignUtils';
 import { UserDisplay } from '@/components/ui/UserDisplay';
+import { useRouter } from 'next/navigation';
 
 interface CampaignCardProps {
   brief: Brief;
   onApply?: () => void;
   showFullDetails?: boolean;
   className?: string;
+  onClick?: () => void;
+  clickable?: boolean;
 }
 
 export default function CampaignCard({ 
   brief, 
   onApply, 
   showFullDetails = false,
-  className = '' 
+  className = '',
+  onClick,
+  clickable = false
 }: CampaignCardProps) {
+  const router = useRouter();
   const timingInfo = computeCampaignTimingInfo(brief);
   const paymentPerInfluencer = brief.budget / brief.maxInfluencers;
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on the apply button
+    if ((e.target as HTMLElement).closest('button[data-campaign-action]')) {
+      return;
+    }
+    
+    if (onClick) {
+      onClick();
+    } else if (clickable) {
+      router.push(`/campaign/${brief.id}`);
+    }
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 ${className}`}
+      onClick={handleCardClick}
+      className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 ${
+        clickable || onClick ? 'cursor-pointer' : ''
+      } ${className}`}
     >
       {/* Header */}
       <div className="p-6">
@@ -147,6 +169,7 @@ export default function CampaignCard({
         <div className="px-6 pb-6">
           <button
             onClick={onApply}
+            data-campaign-action="apply"
             disabled={brief.status !== CampaignStatus.OPEN || Number(brief.applicationCount) >= brief.maxInfluencers}
             className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
               brief.status === CampaignStatus.OPEN && Number(brief.applicationCount) < brief.maxInfluencers

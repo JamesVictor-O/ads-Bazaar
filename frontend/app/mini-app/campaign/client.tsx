@@ -85,14 +85,14 @@ function MiniAppCampaignContent() {
   }, [campaignData, contractLoading, campaignId, contractError]);
 
   const openFullApp = () => {
-    const fullAppUrl = `https://ads-bazaar.vercel.app/campaign/share?campaignId=${campaignId}`;
+    const fullAppUrl = `https://ads-bazaar.vercel.app/campaign/${campaignId}`;
     if (typeof window !== 'undefined') {
       window.open(fullAppUrl, '_blank');
     }
   };
 
   const openMarketplace = () => {
-    const marketplaceUrl = `https://ads-bazaar.vercel.app/marketplace${campaignId ? `?highlight=${campaignId}` : ''}`;
+    const marketplaceUrl = `https://ads-bazaar.vercel.app/campaign/${campaignId}`;
     if (typeof window !== 'undefined') {
       window.open(marketplaceUrl, '_blank');
     }
@@ -268,6 +268,7 @@ function MiniAppCampaignContent() {
           </div>
         </div>
       </div>
+
     </div>
   );
 }

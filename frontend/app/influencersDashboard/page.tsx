@@ -56,6 +56,7 @@ import {
 } from "@/utils/campaignUtils";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { NotificationButton } from "@/components/NotificationButton";
+import { createInfluencerDashboardSuccessHandler } from "@/utils/transactionUtils";
 
 // Define precise interfaces
 interface ApplicationWithBrief {
@@ -185,6 +186,20 @@ export default function InfluencerDashboard() {
     }
   }, [isConnected, address, refetchProfile]);
 
+  // Listen for global dashboard refresh events
+  useEffect(() => {
+    const handleDashboardRefresh = () => {
+      console.log("Global refresh event received in influencer dashboard");
+      refetch();
+      refetchPayments();
+    };
+
+    window.addEventListener('dashboardRefresh', handleDashboardRefresh);
+    return () => {
+      window.removeEventListener('dashboardRefresh', handleDashboardRefresh);
+    };
+  }, [refetch, refetchPayments]);
+
   useEffect(() => {
     if (
       isSubmittingProof &&
@@ -213,23 +228,28 @@ export default function InfluencerDashboard() {
           ? "Proof updated successfully!"
           : "Post submitted successfully!"
       );
-      // Only refetch once, after a brief delay to ensure transaction is processed
-      setTimeout(() => {
-        refetch();
-        setShowSubmitModal(false);
-        setPostLink("");
-        setTxStatus({ stage: "idle", message: "", hash: undefined });
-        setSelectedCampaign(null);
-        setSelectedTask(null);
-        setIsResubmission(false);
-        setExistingProofLink("");
-      }, 1500);
+      
+      // Use standardized success handler
+      createInfluencerDashboardSuccessHandler([
+        refetch,
+        refetchPayments,
+        () => {
+          setShowSubmitModal(false);
+          setPostLink("");
+          setTxStatus({ stage: "idle", message: "", hash: undefined });
+          setSelectedCampaign(null);
+          setSelectedTask(null);
+          setIsResubmission(false);
+          setExistingProofLink("");
+        }
+      ])();
     }
   }, [
     isSubmittingSuccess,
     txStatus.stage,
     txStatus.hash,
     refetch,
+    refetchPayments,
     isResubmission,
   ]);
 

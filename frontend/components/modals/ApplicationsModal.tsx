@@ -25,6 +25,7 @@ import { Hex } from "viem";
 import { useSelectInfluencer } from "@/hooks/adsBazaar";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { motion } from "framer-motion";
+import { handleTransactionSuccess } from "@/utils/transactionUtils";
 import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 import Link from "next/link";
 
@@ -88,10 +89,25 @@ const ApplicationsModal = ({
       // Mark this index as successfully assigned
       setSuccessfullyAssignedIndices(prev => new Set(prev).add(pendingIndex));
       
-      // Call success callback to refresh data
-      if (onAssignSuccess) {
-        onAssignSuccess();
-      }
+      // Use standardized transaction success handler
+      handleTransactionSuccess({
+        immediateActions: [
+          () => {
+            if (onAssignSuccess) {
+              onAssignSuccess();
+            }
+          }
+        ],
+        delayedActions: [
+          () => {
+            if (onAssignSuccess) {
+              onAssignSuccess();
+            }
+          }
+        ],
+        triggerGlobalRefresh: true,
+        propagationDelay: 2000
+      });
       
       setPendingIndex(null);
       setTransactionPhase("idle");
