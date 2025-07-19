@@ -17,7 +17,8 @@ import {
   ArrowRight,
   ChevronDown,
   FileText,
-   SlidersHorizontal
+  SlidersHorizontal,
+  Share2
 } from "lucide-react";
 import { useGetAllBriefs, useUserProfile } from "@/hooks/adsBazaar";
 import ApplyModal from "@/components/modals/AdsApplicationModal";
@@ -45,6 +46,8 @@ import { Address } from "viem";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import ABI from "@/lib/AdsBazaar.json";
 import { ApplicationStatus } from "@/types";
+import ShareCampaignButton from "@/components/ShareCampaignButton";
+import { useBatchShareCounts } from "@/hooks/useShareTracking";
 
 const statusMap = {
   0: "Open",
@@ -98,6 +101,10 @@ function MarketplaceContent() {
 
   // Fetch all campaigns
   const { briefs: allBriefs, isLoading } = useGetAllBriefs();
+  
+  // Get share counts for all campaigns
+  const campaignIds = allBriefs.map(brief => brief.id);
+  const { shareCounts } = useBatchShareCounts(campaignIds);
 
   // Filter campaigns based on status filter
   const activeBriefs = allBriefs.filter((brief) => {
@@ -986,8 +993,9 @@ function MarketplaceContent() {
                 </div>
               </div>
             
-              {/* Action Button */}
-              <div className="p-4 pt-0">
+              {/* Action Buttons */}
+              <div className="p-4 pt-0 space-y-3">
+                {/* Main Action Button */}
                 <button
                   onClick={buttonState.onClick}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${getButtonStyles(buttonState.variant)}`}
@@ -999,6 +1007,15 @@ function MarketplaceContent() {
                     <ArrowRight className="w-4 h-4" />
                   )}
                 </button>
+                
+                {/* Share Button */}
+                <div className="flex justify-center">
+                  <ShareCampaignButton 
+                    campaign={campaign} 
+                    showCount={true}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-600/50 transition-all text-sm font-medium"
+                  />
+                </div>
               </div>
             </motion.div>
             );
