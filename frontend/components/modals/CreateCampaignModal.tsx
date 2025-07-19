@@ -10,6 +10,9 @@ import {
   Clock,
   Users,
 } from "lucide-react";
+import { CurrencySelector } from "../CurrencySelector";
+import { CurrencyConverter } from "../CurrencyConverter";
+import { SupportedCurrency } from "@/lib/mento-integration";
 import { motion } from "framer-motion";
 import { useAccount } from "wagmi";
 import { toast } from "react-hot-toast";
@@ -17,12 +20,14 @@ import { withNetworkGuard } from "../WithNetworkGuard";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { useDivviIntegration } from "@/hooks/useDivviIntegration";
+import { useMultiCurrencyCampaignCreation, usePreferredCurrency } from "@/hooks/useMultiCurrencyAdsBazaar";
 
 interface FormData {
   name: string;
   description: string;
   requirements: string;
   budget: string;
+  currency: SupportedCurrency;
   maxInfluencers: string;
   promotionDuration: string;
   targetAudience: string;
@@ -65,6 +70,11 @@ function CreateCampaignModal({
   const { generateDivviReferralTag } = useDivviIntegration(); // ADD THIS LINE
   const [transactionPhase, setTransactionPhase] =
     useState<TransactionPhase>("idle");
+  const [showConverter, setShowConverter] = useState(false);
+  
+  // Multi-currency hooks
+  const { createCampaignWithToken, isCreating: isCreatingMultiCurrency } = useMultiCurrencyCampaignCreation();
+  const { preferredCurrency } = usePreferredCurrency(true); // true for business
 
   // Monitor transaction states to update phase
   useEffect(() => {
@@ -327,30 +337,79 @@ function CreateCampaignModal({
               />
             </div>
 
-            {/* Grid Container */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Budget */}
+            {/* Budget and Currency Section */}
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Budget (cUSD)
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={formData.budget}
-                    onChange={(e) =>
-                      setFormData({ ...formData, budget: e.target.value })
-                    }
-                    className="w-full pl-10 pr-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
-                    placeholder="Enter budget amount"
-                    required
-                    aria-required="true"
-                    disabled={isTransactionInProgress}
-                  />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-slate-300">
+                    Campaign Budget
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowConverter(!showConverter)}
+                    className="text-xs text-emerald-400 hover:text-emerald-300"
+                  >
+                    {showConverter ? 'Hide' : 'Show'} Currency Converter
+                  </button>
                 </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Budget Amount Input */}
+                  <div>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={formData.budget}
+                        onChange={(e) =>
+                          setFormData({ ...formData, budget: e.target.value })
+                        }
+                        className="w-full pl-10 pr-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
+                        placeholder="Enter budget amount"
+                        required
+                        aria-required="true"
+                        disabled={isTransactionInProgress}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Currency Selector */}
+                  <div>
+                    <CurrencySelector
+                      selectedCurrency={formData.currency}
+                      onCurrencyChange={(currency) =>
+                        setFormData({ ...formData, currency })
+                      }
+                      amount={formData.budget}
+                      showConverter={false}
+                    />
+                  </div>
+                </div>
+
+                {/* Currency Converter */}
+                {showConverter && formData.budget && formData.currency !== 'cUSD' && (
+                  <div className="mt-4">
+                    <CurrencyConverter
+                      amount={formData.budget}
+                      fromCurrency={formData.currency}
+                      toCurrency="cUSD"
+                      showSwapButton={true}
+                      onSwap={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          currency: prev.currency === 'cUSD' ? 'cEUR' : 'cUSD'
+                        }));
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Grid Container for other fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               </div>
 
               {/* Max Influencers */}

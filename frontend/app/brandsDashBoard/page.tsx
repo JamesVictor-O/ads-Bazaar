@@ -44,6 +44,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { NotificationButton } from "@/components/NotificationButton";
 import { NotificationDebug } from "@/components/NotificationDebug";
+import { MentoFXDemo } from "@/components/MentoFXDemo";
+import { SupportedCurrency } from "@/lib/mento-integration";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
   getStatusColor,
@@ -101,6 +103,7 @@ const BrandDashboard = () => {
     description: "",
     requirements: "",
     budget: "",
+    currency: "cUSD" as SupportedCurrency,
     promotionDuration: "604800", // 7 days in seconds
     maxInfluencers: "5",
     targetAudience: "0",
@@ -963,6 +966,10 @@ const BrandDashboard = () => {
         {process.env.NODE_ENV !== 'production' && (
           <NotificationDebug className="mb-6 md:mb-8" />
         )}
+
+        {/* Mento FX Demo */}
+        <MentoFXDemo />
+        <div className="mb-6 md:mb-8"></div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
