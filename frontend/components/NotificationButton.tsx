@@ -64,43 +64,77 @@ export function NotificationButton({ onNotificationEnabled, className = '' }: No
       return;
     }
 
+    if (!address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
+      let fid: number | null = null;
+      
       if (isInMiniApp) {
         // Use Frame SDK for Mini App context
         await sdk.actions.addFrame();
-        setIsEnabled(true);
         
-        // Save to localStorage
-        if (address) {
-          const storageKey = `notifications_enabled_${address}`;
-          localStorage.setItem(storageKey, 'true');
-        }
-        
-        onNotificationEnabled?.();
-        
-        // Show success message
-        alert('Notifications enabled! You\'ll now receive updates about campaigns, applications, and payments.');
+        // Get FID from Frame SDK context
+        const context = await sdk.context;
+        fid = context?.user?.fid || null;
       } else if (typeof window !== 'undefined' && window.farcaster) {
         // Use regular Farcaster SDK for web app
         await window.farcaster.addMiniApp();
-        setIsEnabled(true);
         
-        // Save to localStorage
-        if (address) {
-          const storageKey = `notifications_enabled_${address}`;
-          localStorage.setItem(storageKey, 'true');
-        }
-        
-        onNotificationEnabled?.();
-        
-        // Show success message
-        alert('Notifications enabled! You\'ll now receive updates about campaigns, applications, and payments.');
+        // Get FID from auth-kit profile
+        fid = profile?.fid || null;
       } else {
         // Fallback for when not in Farcaster client
         alert('Please open this app in a Farcaster client to enable notifications');
+        return;
       }
+
+      if (!fid) {
+        console.error('No FID available');
+        alert('Failed to get Farcaster ID. Please try again.');
+        return;
+      }
+
+      // Register the FID-to-address mapping
+      try {
+        const response = await fetch('/api/notifications/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fid,
+            address,
+            username: profile?.username || null,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to register notification mapping');
+        }
+
+        console.log('Successfully registered FID-to-address mapping:', { fid, address });
+      } catch (registrationError) {
+        console.error('Error registering notification mapping:', registrationError);
+        alert('Failed to register for notifications. Please try again.');
+        return;
+      }
+        
+      setIsEnabled(true);
+      
+      // Save to localStorage
+      const storageKey = `notifications_enabled_${address}`;
+      localStorage.setItem(storageKey, 'true');
+      
+      onNotificationEnabled?.();
+      
+      // Show success message
+      alert('Notifications enabled! You\'ll now receive updates about campaigns, applications, and payments in your Farcaster client.');
     } catch (error) {
       console.error('Error enabling notifications:', error);
       alert('Failed to enable notifications. Please try again.');

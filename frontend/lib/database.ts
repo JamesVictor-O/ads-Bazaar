@@ -55,6 +55,15 @@ export interface NotificationHistory {
   clicked_at?: string;
 }
 
+export interface UserFidMapping {
+  id: number;
+  fid: number;
+  wallet_address: string;
+  username?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Database helper functions
 export async function getNotificationToken(fid: number): Promise<NotificationToken | null> {
   const { data, error } = await supabase
@@ -114,6 +123,70 @@ export async function saveNotificationHistory(notification: Omit<NotificationHis
   
   if (error) {
     console.error('Error saving notification history:', error);
+    return false;
+  }
+  
+  return true;
+}
+
+export async function getFidFromAddress(address: string): Promise<number | null> {
+  const { data, error } = await supabase
+    .from('user_fid_mappings')
+    .select('fid')
+    .eq('wallet_address', address.toLowerCase())
+    .single();
+  
+  if (error) {
+    console.error('Error fetching FID from address:', error);
+    return null;
+  }
+  
+  return data?.fid || null;
+}
+
+export async function getAddressFromFid(fid: number): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('user_fid_mappings')
+    .select('wallet_address')
+    .eq('fid', fid)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching address from FID:', error);
+    return null;
+  }
+  
+  return data?.wallet_address || null;
+}
+
+export async function getUserMapping(fid: number): Promise<UserFidMapping | null> {
+  const { data, error } = await supabase
+    .from('user_fid_mappings')
+    .select('*')
+    .eq('fid', fid)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching user mapping:', error);
+    return null;
+  }
+  
+  return data;
+}
+
+export async function registerUserFidMapping(fid: number, address: string, username?: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('user_fid_mappings')
+    .upsert({
+      fid,
+      wallet_address: address.toLowerCase(),
+      username: username || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  
+  if (error) {
+    console.error('Error registering user FID mapping:', error);
     return false;
   }
   

@@ -1,6 +1,7 @@
 import { createPublicClient, http } from 'viem';
 import { adsBazaarNotifications } from './notification-service';
 import { getCurrentNetworkConfig } from './networks';
+import { getFidFromAddress, supabase } from './database';
 const ABI = require('./AdsBazaar.json');
 
 import { CONTRACT_ADDRESS } from './contracts';
@@ -248,18 +249,23 @@ export class ContractEventMonitor {
   }
 
   private async handleApplicationSubmitted(args: any) {
-    // Get business FID and notify about new application
-    const businessFid = await this.getFidFromAddress(args.business);
-    if (!businessFid) return;
+    // Get business FID from the brief details
+    const businessFid = await this.getBusinessFidFromBriefId(args.briefId);
+    if (!businessFid) {
+      console.log(`No business FID found for brief ${args.briefId}`);
+      return;
+    }
 
+    // Get brief details for campaign info
+    const briefDetails = await this.getBriefDetails(args.briefId);
     const applicantDetails = {
       address: args.influencer,
-      username: 'Influencer' // TODO: Get actual username
+      username: 'Influencer' // TODO: Could enhance to get actual username from FID mapping
     };
 
     const campaignDetails = {
       briefId: args.briefId,
-      title: 'Campaign' // TODO: Get actual campaign title
+      title: briefDetails?.name || 'Campaign'
     };
 
     await adsBazaarNotifications.notifyApplicationReceived(
@@ -271,11 +277,15 @@ export class ContractEventMonitor {
 
   private async handleInfluencerSelected(args: any) {
     const influencerFid = await this.getFidFromAddress(args.influencer);
-    if (!influencerFid) return;
+    if (!influencerFid) {
+      console.log(`No influencer FID found for address ${args.influencer}`);
+      return;
+    }
 
+    const briefDetails = await this.getBriefDetails(args.briefId);
     const campaignDetails = {
       briefId: args.briefId,
-      title: 'Campaign' // TODO: Get actual campaign title
+      title: briefDetails?.name || 'Campaign'
     };
 
     await adsBazaarNotifications.notifyInfluencerSelected(
@@ -322,14 +332,18 @@ export class ContractEventMonitor {
 
   private async handleProofSubmitted(args: any) {
     // Notify brand about new proof submission
-    const businessFid = await this.getFidFromAddress(args.business);
-    if (!businessFid) return;
+    const businessFid = await this.getBusinessFidFromBriefId(args.briefId);
+    if (!businessFid) {
+      console.log(`No business FID found for brief ${args.briefId}`);
+      return;
+    }
 
+    const briefDetails = await this.getBriefDetails(args.briefId);
     const submissionDetails = {
       briefId: args.briefId,
       influencer: args.influencer,
-      influencerName: 'Influencer', // TODO: Get actual name
-      campaignTitle: 'Campaign', // TODO: Get actual campaign title
+      influencerName: 'Influencer', // TODO: Get actual name from FID mapping
+      campaignTitle: briefDetails?.name || 'Campaign',
       proofLink: args.proofLink
     };
 
@@ -381,34 +395,131 @@ export class ContractEventMonitor {
     );
   }
 
-  // Helper methods - these would need to be implemented based on your database schema
+  // Helper methods - implemented for FID lookups and user matching
   private async getFidFromAddress(address: string): Promise<number | null> {
-    // TODO: Implement database lookup to get FID from wallet address
-    // This would query your user table to find the FID associated with the address
-    return null;
+    try {
+      return await getFidFromAddress(address);
+    } catch (error) {
+      console.error('Error getting FID from address:', error);
+      return null;
+    }
   }
 
   private async getMatchingInfluencers(campaignDetails: any): Promise<number[]> {
-    // TODO: Implement logic to find influencers matching the campaign criteria
-    // This would query your database for influencers with matching audience/skills
-    return [];
+    try {
+      // Get all registered influencers with notification tokens enabled
+      const { data: influencers, error } = await supabase
+        .from('user_fid_mappings')
+        .select(`
+          fid,
+          notification_tokens!inner(enabled)
+        `)
+        .eq('notification_tokens.enabled', true);
+
+      if (error) {
+        console.error('Error fetching matching influencers:', error);
+        return [];
+      }
+
+      // For now, return all influencers with notifications enabled
+      // In the future, you could add audience matching logic here
+      return influencers?.map(i => i.fid) || [];
+    } catch (error) {
+      console.error('Error getting matching influencers:', error);
+      return [];
+    }
   }
 
   private async getDisputeResolverFids(): Promise<number[]> {
-    // TODO: Implement database lookup for dispute resolver FIDs
-    return [];
+    try {
+      // Get all users who are registered as dispute resolvers
+      // For now, return empty array - you can implement dispute resolver registration later
+      const { data: resolvers, error } = await supabase
+        .from('dispute_resolvers')
+        .select('fid')
+        .eq('active', true);
+
+      if (error) {
+        console.log('No dispute resolvers table found, returning empty array');
+        return [];
+      }
+
+      return resolvers?.map(r => r.fid) || [];
+    } catch (error) {
+      console.error('Error getting dispute resolver FIDs:', error);
+      return [];
+    }
   }
 
   private async getAppliedInfluencerFids(briefId: string): Promise<number[]> {
-    // TODO: Implement database lookup for influencers who applied to this campaign
-    return [];
+    try {
+      // Get all influencers who applied to this campaign by querying the blockchain
+      const applicationData = await publicClient.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: 'getBriefApplications',
+        args: [briefId],
+      }) as any;
+
+      if (!applicationData?.influencers || !Array.isArray(applicationData.influencers)) {
+        return [];
+      }
+
+      // Convert addresses to FIDs
+      const fids: number[] = [];
+      for (const address of applicationData.influencers) {
+        const fid = await this.getFidFromAddress(address);
+        if (fid) {
+          fids.push(fid);
+        }
+      }
+
+      return fids;
+    } catch (error) {
+      console.error('Error getting applied influencer FIDs:', error);
+      return [];
+    }
+  }
+
+  private async getBriefDetails(briefId: string): Promise<any> {
+    try {
+      const briefData = await publicClient.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: ABI.abi,
+        functionName: 'getAdBrief',
+        args: [briefId],
+      });
+
+      return briefData;
+    } catch (error) {
+      console.error('Error getting brief details:', error);
+      return null;
+    }
+  }
+
+  private async getBusinessFidFromBriefId(briefId: string): Promise<number | null> {
+    try {
+      const briefDetails = await this.getBriefDetails(briefId);
+      if (!briefDetails?.business) {
+        return null;
+      }
+      
+      return await this.getFidFromAddress(briefDetails.business);
+    } catch (error) {
+      console.error('Error getting business FID from brief ID:', error);
+      return null;
+    }
   }
 }
 
 // Export singleton instance
 export const contractEventMonitor = new ContractEventMonitor();
 
-// Auto-start monitoring if in production
-if (process.env.NODE_ENV === 'production') {
-  contractEventMonitor.startMonitoring();
+// Auto-start monitoring in all environments (for testing notifications)
+// You can disable this in development if it causes issues
+if (typeof window === 'undefined') { // Only run on server side
+  // Start monitoring with a delay to ensure database is ready
+  setTimeout(() => {
+    contractEventMonitor.startMonitoring();
+  }, 5000);
 }

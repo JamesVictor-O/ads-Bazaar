@@ -43,6 +43,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { NotificationButton } from "@/components/NotificationButton";
+import { NotificationDebug } from "@/components/NotificationDebug";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
   getStatusColor,
@@ -957,6 +958,11 @@ const BrandDashboard = () => {
               </div>
             </motion.div>
           )}
+
+        {/* Debug Component for Development */}
+        {process.env.NODE_ENV !== 'production' && (
+          <NotificationDebug className="mb-6 md:mb-8" />
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
