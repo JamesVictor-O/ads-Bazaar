@@ -112,7 +112,7 @@ export function SocialMediaCard({ profileData, userAddress, isOwner = false }: S
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white">Social Media</h3>
-              <p className="text-sm text-slate-400">Connect with this influencer</p>
+              <p className="text-sm text-slate-400">Follow this influencer</p>
             </div>
           </div>
           
@@ -122,7 +122,7 @@ export function SocialMediaCard({ profileData, userAddress, isOwner = false }: S
               className="flex items-center gap-2 px-3 py-2 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 rounded-lg text-sm font-medium transition-all"
             >
               <Edit3 className="w-4 h-4" />
-              Edit
+              Update
             </button>
           )}
         </div>
@@ -142,7 +142,7 @@ export function SocialMediaCard({ profileData, userAddress, isOwner = false }: S
                 onClick={() => setShowModal(true)}
                 className="text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors"
               >
-                Add your social media profiles
+                Update your social media profiles
               </button>
             )}
           </div>
