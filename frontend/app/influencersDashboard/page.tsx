@@ -885,36 +885,42 @@ export default function InfluencerDashboard() {
           </div>
         </div>
 
-        {/* Enhanced Stats Grid with Verification Status */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10">
-          {[
-            {
-              icon: Briefcase,
-              value: stats.applied,
-              label: "Applied",
-              color: "blue-400",
-            },
-            {
-              icon: CheckCircle,
-              value: stats.assigned,
-              label: "Selected",
-              color: "emerald-400",
-            },
-            {
-              icon: DollarSign,
-              value: stats.totalEarned.toFixed(2),
-              label: "Earned",
-              color: "purple-400",
-            },
-            {
-              icon: TrendingUp,
-              value: stats.pendingEarnings.toFixed(2),
-              label: "Pending",
-              color: "amber-400",
-              hasClaimable: stats.hasClaimablePayments && isConnected,
-              isLoading: isLoadingTotalAmount || isLoadingPayments,
-            },
-          ].map((stat, index) => (
+        {/* Enhanced Metrics Dashboard */}
+        <div className="space-y-6 md:space-y-8 mb-6 md:mb-10">
+          {/* Main Stats Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {[
+              {
+                icon: Briefcase,
+                value: stats.applied,
+                label: "Applied",
+                color: "blue-400",
+                subtitle: "Total applications",
+              },
+              {
+                icon: CheckCircle,
+                value: stats.assigned,
+                label: "Selected",
+                color: "emerald-400",
+                subtitle: "Campaigns won",
+              },
+              {
+                icon: DollarSign,
+                value: stats.totalEarned.toFixed(2),
+                label: "Earned",
+                color: "purple-400",
+                subtitle: "Total lifetime",
+              },
+              {
+                icon: TrendingUp,
+                value: stats.pendingEarnings.toFixed(2),
+                label: "Pending",
+                color: "amber-400",
+                subtitle: "Awaiting payout",
+                hasClaimable: stats.hasClaimablePayments && isConnected,
+                isLoading: isLoadingTotalAmount || isLoadingPayments,
+              },
+            ].map((stat, index) => (
             <motion.div
               key={stat.label}
               className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-3 md:p-4 transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-slate-700/20 hover:border-slate-600/50 hover:-translate-y-1 group relative overflow-hidden"
@@ -962,6 +968,9 @@ export default function InfluencerDashboard() {
                 >
                   {stat.label}
                 </p>
+                <p className="text-slate-500 text-xs">
+                  {stat.subtitle}
+                </p>
               </div>
 
               {stat.hasClaimable && !stat.isLoading && (
@@ -978,6 +987,164 @@ export default function InfluencerDashboard() {
               )}
             </motion.div>
           ))}
+          </div>
+
+          {/* Performance Analytics */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            {/* Success Rate Card */}
+            <motion.div
+              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-4 md:p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 md:p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                  <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-semibold text-white">Success Rate</h3>
+                  <p className="text-slate-400 text-sm">Campaign win percentage</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300">Selection Rate</span>
+                  <span className="text-emerald-400 font-semibold">
+                    {stats.applied > 0 ? Math.round((stats.assigned / stats.applied) * 100) : 0}%
+                  </span>
+                </div>
+                
+                <div className="w-full bg-slate-700/50 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-2 rounded-full transition-all duration-500"
+                    style={{ 
+                      width: `${stats.applied > 0 ? (stats.assigned / stats.applied) * 100 : 0}%` 
+                    }}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-white">{stats.assigned}</p>
+                    <p className="text-slate-400 text-xs">Won</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-white">{stats.applied - stats.assigned}</p>
+                    <p className="text-slate-400 text-xs">Pending</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Earnings Breakdown */}
+            <motion.div
+              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-4 md:p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.5 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 md:p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                  <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-semibold text-white">Earnings</h3>
+                  <p className="text-slate-400 text-sm">Revenue breakdown</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300">Average per Campaign</span>
+                  <span className="text-purple-400 font-semibold">
+                    {stats.assigned > 0 ? (stats.totalEarned / stats.assigned).toFixed(2) : '0.00'} cUSD
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-700/30 rounded-lg p-3 text-center">
+                    <p className="text-lg font-bold text-emerald-400">{stats.totalEarned.toFixed(2)}</p>
+                    <p className="text-slate-400 text-xs">Total Earned</p>
+                  </div>
+                  <div className="bg-slate-700/30 rounded-lg p-3 text-center">
+                    <p className="text-lg font-bold text-amber-400">{stats.pendingEarnings.toFixed(2)}</p>
+                    <p className="text-slate-400 text-xs">Pending</p>
+                  </div>
+                </div>
+                
+                {/* Lifetime Earnings Progress */}
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-400 text-sm">Lifetime Progress</span>
+                    <span className="text-slate-400 text-sm">{(stats.totalEarned + stats.pendingEarnings).toFixed(2)} cUSD</span>
+                  </div>
+                  <div className="w-full bg-slate-700/50 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-purple-500 to-purple-400 h-2 rounded-full"
+                      style={{ 
+                        width: `${Math.min(((stats.totalEarned + stats.pendingEarnings) / 1000) * 100, 100)}%` 
+                      }}
+                    />
+                  </div>
+                  <p className="text-slate-500 text-xs mt-1">Next milestone: 1,000 cUSD</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Campaign Activity Timeline */}
+          <motion.div
+            className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-4 md:p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.6 }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 md:p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                  <Calendar className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-semibold text-white">Recent Activity</h3>
+                  <p className="text-slate-400 text-sm">Latest campaign milestones</p>
+                </div>
+              </div>
+              <span className="text-slate-400 text-sm">{userProfile?.completedCampaigns} completed</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                <div className="w-8 h-8 mx-auto mb-2 bg-blue-500/20 rounded-full flex items-center justify-center">
+                  <Briefcase className="w-4 h-4 text-blue-400" />
+                </div>
+                <p className="text-lg font-bold text-white">{stats.applied}</p>
+                <p className="text-slate-400 text-sm">Applications</p>
+                <p className="text-blue-400 text-xs mt-1">This month</p>
+              </div>
+              
+              <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                <div className="w-8 h-8 mx-auto mb-2 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                </div>
+                <p className="text-lg font-bold text-white">{userProfile?.completedCampaigns || 0}</p>
+                <p className="text-slate-400 text-sm">Completed</p>
+                <p className="text-emerald-400 text-xs mt-1">All time</p>
+              </div>
+              
+              <div className="bg-slate-700/30 rounded-lg p-4 text-center">
+                <div className="w-8 h-8 mx-auto mb-2 bg-amber-500/20 rounded-full flex items-center justify-center">
+                  <Star className="w-4 h-4 text-amber-400" />
+                </div>
+                <p className="text-lg font-bold text-white">
+                  {userProfile?.status !== undefined ? userProfile.status + 1 : 1}
+                </p>
+                <p className="text-slate-400 text-sm">Creator Level</p>
+                <p className="text-amber-400 text-xs mt-1">Current tier</p>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Enhanced Campaigns List with Resubmission Support */}
