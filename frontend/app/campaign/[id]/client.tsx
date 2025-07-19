@@ -4,13 +4,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { Brief, CampaignStatus, TargetAudience } from '@/types';
 import { useReadContract, useAccount } from 'wagmi';
-import { adsBazaarAbi } from '@/contracts/adsBazaar';
+import ABI from '@/lib/AdsBazaar.json';
 import CampaignCard from '@/components/CampaignCard';
 import { Loader2, Users, Zap, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useUserProfile } from '@/hooks/adsBazaar';
 import GetStartedModal from '@/components/modals/GetStartedModal';
 import AdsApplicationModal from '@/components/modals/AdsApplicationModal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { CONTRACT_ADDRESS } from '@/lib/contracts';
+import { computeCampaignStatusInfo, computeCampaignTimingInfo, computeCampaignProgressInfo } from '@/utils/campaignUtils';
+import { formatEther } from 'viem';
 
 function CampaignDetailContent() {
   const params = useParams();
@@ -34,10 +37,10 @@ function CampaignDetailContent() {
 
   // Read campaign data from contract
   const { data: campaignData, isLoading: contractLoading, error: contractError } = useReadContract({
-    address: process.env.NEXT_PUBLIC_ADS_BAZAAR_ADDRESS as `0x${string}`,
-    abi: adsBazaarAbi,
+    address: CONTRACT_ADDRESS,
+    abi: ABI.abi,
     functionName: 'getAdBrief',
-    args: campaignId ? [BigInt(campaignId)] : undefined,
+    args: campaignId ? [campaignId] : undefined,
     query: {
       enabled: !!campaignId,
       retry: 2,
@@ -65,20 +68,20 @@ function CampaignDetailContent() {
           business: campaignData.business as `0x${string}`,
           name: campaignData.name,
           description: campaignData.description,
-          requirements: campaignData.requirements,
-          budget: Number(campaignData.budget),
+          requirements: campaignData.requirements || '',
+          budget: Number(formatEther(campaignData.budget || BigInt(0))),
           status: Number(campaignData.status) as CampaignStatus,
-          promotionDuration: Number(campaignData.promotionDuration),
+          promotionDuration: Number(campaignData.promotionDuration || 0),
           promotionStartTime: Number(campaignData.promotionStartTime || 0),
           promotionEndTime: Number(campaignData.promotionEndTime || 0),
           proofSubmissionDeadline: Number(campaignData.proofSubmissionDeadline || 0),
           verificationDeadline: Number(campaignData.verificationDeadline || 0),
-          maxInfluencers: Number(campaignData.maxInfluencers),
+          maxInfluencers: Number(campaignData.maxInfluencers || 0),
           selectedInfluencersCount: Number(campaignData.selectedInfluencersCount || 0),
-          targetAudience: Number(campaignData.targetAudience) as TargetAudience,
-          creationTime: Number(campaignData.createdAt || Date.now() / 1000),
+          targetAudience: Number(campaignData.targetAudience || 0) as TargetAudience,
+          creationTime: Number(campaignData.creationTime || Date.now() / 1000),
           selectionDeadline: Number(campaignData.selectionDeadline || 0),
-          applicationCount: Number(campaignData.currentApplicants || 0),
+          applicationCount: Number(campaignData.applicationCount || 0),
           selectionGracePeriod: Number(campaignData.selectionGracePeriod || 86400),
           
           // Computed properties - will be set by utility functions
@@ -86,6 +89,11 @@ function CampaignDetailContent() {
           timingInfo: {} as any,
           progressInfo: {} as any,
         };
+
+        // Compute enhanced information
+        briefData.statusInfo = computeCampaignStatusInfo(briefData);
+        briefData.timingInfo = computeCampaignTimingInfo(briefData);
+        briefData.progressInfo = computeCampaignProgressInfo(briefData);
 
         setCampaign(briefData);
         setLoading(false);
