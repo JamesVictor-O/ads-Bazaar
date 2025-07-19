@@ -379,15 +379,26 @@ export default function InfluencerDashboard() {
   };
 
   const getFilteredCampaigns = () => {
-    if (!appliedBriefs) {
+    // Combine applied and assigned briefs
+    const allCampaigns = [];
+    
+    // Add applied campaigns
+    if (appliedBriefs && Array.isArray(appliedBriefs)) {
+      allCampaigns.push(...appliedBriefs.map(brief => ({ ...brief, campaignType: 'applied' as const })));
+    }
+    
+    // Add assigned campaigns (avoid duplicates by checking if they're already in applied)
+    if (assignedBriefs && Array.isArray(assignedBriefs)) {
+      const appliedIds = new Set(appliedBriefs?.map(b => b.briefId) || []);
+      const uniqueAssigned = assignedBriefs.filter(brief => !appliedIds.has(brief.briefId));
+      allCampaigns.push(...uniqueAssigned.map(brief => ({ ...brief, campaignType: 'assigned' as const })));
+    }
+
+    if (allCampaigns.length === 0) {
       return [];
     }
 
-    if (!Array.isArray(appliedBriefs)) {
-      return [];
-    }
-
-    const filtered = appliedBriefs.filter((briefData) => {
+    const filtered = allCampaigns.filter((briefData) => {
       try {
         const appInfo = computeApplicationInfo(
           briefData.application,
@@ -417,7 +428,15 @@ export default function InfluencerDashboard() {
       }
     });
 
-    return filtered;
+    // Sort campaigns: assigned first, then applied, then by creation time
+    return filtered.sort((a, b) => {
+      // Assigned campaigns first
+      if (a.application.isSelected && !b.application.isSelected) return -1;
+      if (!a.application.isSelected && b.application.isSelected) return 1;
+      
+      // Then by creation time (newest first)
+      return b.brief.creationTime - a.brief.creationTime;
+    });
   };
 
   const filteredCampaigns = getFilteredCampaigns();
@@ -800,7 +819,7 @@ export default function InfluencerDashboard() {
               {
                 key: "all",
                 label: "All Campaigns",
-                count: appliedBriefs?.length || 0,
+                count: (appliedBriefs?.length || 0) + (assignedBriefs?.length || 0),
               },
               {
                 key: "active",
@@ -974,11 +993,11 @@ export default function InfluencerDashboard() {
               Campaigns
             </h2>
             <span className="text-slate-400 text-sm md:text-base">
-              {filteredCampaigns.length} of {appliedBriefs?.length || 0}
+              {filteredCampaigns.length} of {(appliedBriefs?.length || 0) + (assignedBriefs?.length || 0)}
             </span>
           </div>
 
-          {isLoading && appliedBriefs === undefined ? (
+          {isLoading && appliedBriefs === undefined && assignedBriefs === undefined ? (
             <div className="flex items-center justify-center py-12 md:py-20">
               <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-emerald-500 mb-3 md:mb-4"></div>
@@ -995,8 +1014,8 @@ export default function InfluencerDashboard() {
               </h3>
               <p className="text-slate-400 max-w-md mx-auto leading-relaxed text-sm md:text-base">
                 {filter === "all"
-                  ? "Apply to campaigns to get started."
-                  : "Try changing the filter or apply to more campaigns."}
+                  ? "Apply to campaigns from the marketplace to get started. Assigned campaigns will appear here automatically."
+                  : "Try changing the filter or apply to more campaigns from the marketplace."}
               </p>
             </div>
           ) : (
@@ -1049,10 +1068,16 @@ export default function InfluencerDashboard() {
                           </div>
                           
                           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0">
-                            {briefData.application.isSelected && (
+                            {/* Campaign Type Badge */}
+                            {briefData.application.isSelected ? (
                               <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                                 <Star className="w-3 h-3 mr-1" />
-                                Selected
+                                Assigned
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Applied
                               </span>
                             )}
                             

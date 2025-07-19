@@ -122,8 +122,10 @@ function MarketplaceContent() {
   };
 
   // Function to check if description should show expand button
-  const shouldShowExpandButton = (description: string) => {
-    return description.length > 120; // Show expand button if description is longer than 120 characters
+  const shouldShowExpandButton = (description: string, requirements?: string) => {
+    const hasLongDescription = description.length > 120;
+    const hasLongRequirements = requirements && requirements.trim() !== '' && requirements.length > 120;
+    return hasLongDescription || hasLongRequirements;
   };
 
   // Function to get truncated description
@@ -774,7 +776,8 @@ function MarketplaceContent() {
             const userApplicationStatus = applicationStatus[campaign.id];
             const isDescriptionExpanded = expandedDescriptions.has(campaign.id);
             const showExpandButton = shouldShowExpandButton(
-              campaign.description
+              campaign.description,
+              campaign.requirements
             );
 
             // Check if this campaign should be highlighted
@@ -880,16 +883,47 @@ function MarketplaceContent() {
             
               {/* Description */}
               <div className="px-4 pb-3">
-                <div className="text-sm text-slate-300 leading-relaxed">
-                  {isDescriptionExpanded
-                    ? campaign.description
-                    : getTruncatedDescription(campaign.description)}
+                <div className="mb-3">
+                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <FileText className="w-3 h-3" />
+                    Description
+                  </h4>
+                  <div className="text-sm text-slate-300 leading-relaxed">
+                    {isDescriptionExpanded
+                      ? campaign.description
+                      : getTruncatedDescription(campaign.description)}
+                  </div>
                 </div>
+                
+                {/* Requirements */}
+                {campaign.requirements && campaign.requirements.trim() !== '' ? (
+                  <div className="mb-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                    <h4 className="text-xs font-semibold text-blue-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <Target className="w-3 h-3" />
+                      Requirements
+                    </h4>
+                    <div className="text-sm text-slate-300 leading-relaxed">
+                      {isDescriptionExpanded
+                        ? campaign.requirements
+                        : getTruncatedDescription(campaign.requirements)}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-3 p-3 bg-slate-700/20 border border-slate-600/30 rounded-lg">
+                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <Target className="w-3 h-3" />
+                      Requirements
+                    </h4>
+                    <div className="text-sm text-slate-500 italic">
+                      No specific requirements
+                    </div>
+                  </div>
+                )}
                 
                 {showExpandButton && (
                   <button
                     onClick={() => toggleDescription(campaign.id)}
-                    className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                    className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
                   >
                     {isDescriptionExpanded ? "Show less" : "Show more"}
                   </button>

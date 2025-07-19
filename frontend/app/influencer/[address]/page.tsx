@@ -87,7 +87,7 @@ function EnhancedInfluencerProfileComponent({
   const currentAppIndex = parseInt(searchParams.get('appIndex') || '0');
   
   // Campaign assignment functionality
-  const { selectInfluencer, isPending: isAssigning } = useSelectInfluencer();
+  const { selectInfluencer, isPending: isAssigning, isSuccess: isAssignmentSuccess } = useSelectInfluencer();
   const { applications, isLoadingApplications } = useBriefApplications(briefId as `0x${string}`);
   const { generateDivviReferralTag } = useDivviIntegration();
   
@@ -121,6 +121,18 @@ function EnhancedInfluencerProfileComponent({
       setIsOwner(ownerStatus);
     }
   }, [isConnected, connectedAddress, profileAddress]);
+
+  // Handle assignment success
+  useEffect(() => {
+    if (isAssignmentSuccess && fromApplications) {
+      toast.success('Campaign assigned successfully!');
+      
+      // Wait a moment for blockchain update, then navigate back
+      setTimeout(() => {
+        handleBackToApplications();
+      }, 2000);
+    }
+  }, [isAssignmentSuccess, fromApplications]);
 
 
   const handleCopy = async (text: string, label: string) => {
@@ -177,12 +189,8 @@ function EnhancedInfluencerProfileComponent({
         console.log('DIVVI: About to assign campaign with referral tag:', referralTag);
         
         await selectInfluencer(briefId as `0x${string}`, currentAppIndex, referralTag);
-        toast.success('Campaign assigned successfully!');
         
-        // Wait a moment for blockchain update, then navigate back
-        setTimeout(() => {
-          handleBackToApplications();
-        }, 2000);
+        // Success toast will be handled by the useEffect below when isAssignmentSuccess becomes true
       } catch (error) {
         console.error('Assignment error:', error);
         toast.error('Failed to assign campaign. Please try again.');
@@ -279,7 +287,27 @@ function EnhancedInfluencerProfileComponent({
 
   // Parse profile data from blockchain
   const socialMediaData = influencerProfile ? JSON.parse(influencerProfile as string) : {};
-  const displayName = socialMediaData?.name || "Influencer";
+  
+  // Get username from social media profiles or fallback to address display
+  const getDisplayName = () => {
+    // Check for username in social media data
+    if (socialMediaData?.socialMedia) {
+      const social = socialMediaData.socialMedia;
+      // Priority order: Twitter > Instagram > other platforms
+      if (social.twitter) return `@${social.twitter}`;
+      if (social.instagram) return `@${social.instagram}`;
+      if (social.tiktok) return `@${social.tiktok}`;
+      if (social.youtube) return `@${social.youtube}`;
+    }
+    
+    // Fallback to profile name or formatted address
+    if (socialMediaData?.name) return socialMediaData.name;
+    
+    // Use UserDisplay component logic for address formatting
+    return profileAddress ? `Creator ${(profileAddress as string).slice(0, 6)}...${(profileAddress as string).slice(-4)}` : "Creator";
+  };
+  
+  const displayName = getDisplayName();
   const bio = socialMediaData?.bio || "Digital creator and influencer";
   const pfpUrl = socialMediaData?.avatar;
 
@@ -696,8 +724,17 @@ function EnhancedInfluencerProfileComponent({
                     className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all font-medium shadow-lg shadow-blue-500/20"
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Users className="w-5 h-5" />
-                    Hire Creator
+                    {isOwner ? (
+                      <>
+                        <Globe className="w-5 h-5" />
+                        Explore Campaigns
+                      </>
+                    ) : (
+                      <>
+                        <Users className="w-5 h-5" />
+                        Hire Creator
+                      </>
+                    )}
                   </motion.button>
                 </Link>
               </div>
