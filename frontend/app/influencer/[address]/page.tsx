@@ -1,628 +1,50 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useState, useEffect } from "react";
 import {
   Shield,
-  ExternalLink,
   Copy,
   Users,
-  MessageSquare,
   Award,
   Globe,
   Sparkles,
   CheckCircle,
-  X,
   ArrowRight,
   TrendingUp,
   AlertCircle,
-  Loader2,
-  Zap,
-  Target,
   Eye,
   Share2,
-  ChevronDown,
   Verified,
-  User,
+  ArrowLeft,
+  UserCheck,
+  SkipForward,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
-import { useFarcasterAuth } from "@/hooks/UseFarcasterAuthNextAuth";
-import { useIsInfluencerVerified, useUserProfile, useGetInfluencerProfile } from "@/hooks/adsBazaar";
+import { useIsInfluencerVerified, useUserProfile, useGetInfluencerProfile, useSelectInfluencer, useBriefApplications } from "@/hooks/adsBazaar";
 import { SocialMediaCard } from "@/components/ui/SocialMediaCard";
 import { getUserStatusLabel, formatNumber } from "@/utils/format";
 import Image from "next/image";
 import Link from "next/link";
-import type { FarcasterProfile } from "@/lib/neynar";
 import { UserDisplay } from "@/components/ui/UserDisplay";
+import { withNetworkGuard } from "@/components/WithNetworkGuard";
+import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
-// Helper hook to get FID from address
-function useFidFromAddress(address: string) {
-  const [fid, setFid] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (address) {
-      try {
-        const storedFid = localStorage.getItem(`fid_${address}`);
-        if (storedFid) {
-          setFid(parseInt(storedFid));
-        }
-      } catch (error) {
-        console.warn("Failed to get FID from address:", error);
-      }
-    }
-  }, [address]);
 
-  return fid;
-}
 
-// FID-based Farcaster Profile Hook
-function useFarcasterProfile(fid: number | null, address?: string) {
-  const [profile, setProfile] = useState<FarcasterProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isFromCache, setIsFromCache] = useState(false);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      // If no FID provided, try to get it from localStorage using address
-      let actualFid = fid;
-
-      if (!actualFid && address) {
-        try {
-          const storedFid = localStorage.getItem(`fid_${address}`);
-          if (storedFid) {
-            actualFid = parseInt(storedFid);
-            console.log(
-              `Retrieved FID ${actualFid} from localStorage for address ${address}`
-            );
-          }
-        } catch (error) {
-          console.warn("Failed to get FID from localStorage:", error);
-        }
-      }
-
-      if (!actualFid) {
-        console.log("No FID provided and no stored FID found");
-        setProfile(null);
-        setError(null);
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-      setIsFromCache(false);
-
-      try {
-        // Check cache first
-        const cacheKey = `profile_fid_${actualFid}`;
-        try {
-          const cachedProfile = localStorage.getItem(cacheKey);
-          if (cachedProfile) {
-            const parsed = JSON.parse(cachedProfile);
-            console.log(`Using cached profile for FID ${actualFid}`);
-            setProfile(parsed);
-            setIsFromCache(true);
-            setIsLoading(false);
-
-            // Background refresh
-            setTimeout(async () => {
-              try {
-                console.log(`Background refresh for FID ${actualFid}`);
-                const response = await fetch(
-                  `/api/farcaster/profile/fid/${actualFid}`
-                );
-                if (response.ok) {
-                  const data = await response.json();
-                  if (data.success && data.profile) {
-                    setProfile(data.profile);
-                    setIsFromCache(false);
-                    localStorage.setItem(
-                      cacheKey,
-                      JSON.stringify(data.profile)
-                    );
-
-                    // Also store FID mapping if we have an address
-                    if (address) {
-                      localStorage.setItem(
-                        `fid_${address}`,
-                        actualFid.toString()
-                      );
-                    }
-                  }
-                }
-              } catch (error) {
-                console.log(
-                  `Background refresh failed, keeping cached profile ${error}`
-                );
-              }
-            }, 100);
-            return;
-          }
-        } catch (error) {
-          console.warn("Failed to read cached profile:", error);
-        }
-
-        // Fetch from API
-        console.log(`Fetching profile for FID: ${actualFid}`);
-        const response = await fetch(`/api/farcaster/profile/fid/${actualFid}`);
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.profile) {
-            setProfile(data.profile);
-            // Cache the profile
-            localStorage.setItem(cacheKey, JSON.stringify(data.profile));
-
-            // Store FID mapping if we have an address
-            if (address) {
-              localStorage.setItem(`fid_${address}`, actualFid.toString());
-            }
-          } else {
-            setError("Profile not found");
-          }
-        } else {
-          setError("Failed to fetch profile");
-        }
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch profile";
-        console.error("Profile fetch error:", errorMessage);
-        setError(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [fid, address]);
-
-  // Method to refresh profile data
-  const refreshProfile = async () => {
-    let actualFid = fid;
-
-    if (!actualFid && address) {
-      const storedFid = localStorage.getItem(`fid_${address}`);
-      if (storedFid) {
-        actualFid = parseInt(storedFid);
-      }
-    }
-
-    if (!actualFid) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/farcaster/profile/fid/${actualFid}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.profile) {
-          setProfile(data.profile);
-          localStorage.setItem(
-            `profile_fid_${actualFid}`,
-            JSON.stringify(data.profile)
-          );
-          if (address) {
-            localStorage.setItem(`fid_${address}`, actualFid.toString());
-          }
-        } else {
-          setError("Profile not found");
-        }
-      } else {
-        setError("Failed to refresh profile");
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to refresh profile";
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return {
-    profile,
-    isLoading,
-    error,
-    isFromCache,
-    refreshProfile,
-    fid:
-      fid ||
-      (address && typeof window !== "undefined"
-        ? parseInt(localStorage.getItem(`fid_${address}`) || "0")
-        : null),
-  };
-}
-
-// Farcaster Connect Component
-function FarcasterConnectButton({
-  address,
+// Simple Social Tab Content - Shows social media from blockchain data
+function SocialTabContent({
+  socialMediaData,
+  userAddress,
   isOwner,
-  onConnectionSuccess,
 }: {
-  address: string;
+  socialMediaData: any;
+  userAddress: string;
   isOwner: boolean;
-  onConnectionSuccess?: (fid: number) => void;
-}) {
-  const {
-    signIn,
-    connect,
-    isAuthenticated,
-    user,
-    isLoading,
-    error,
-    channelToken,
-    url,
-    validSignature,
-  } = useFarcasterAuth();
-  const [showQR, setShowQR] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-
-  // Handle showing QR code when URL becomes available
-  useEffect(() => {
-    console.log("QR effect triggered:", { url, isAuthenticated, user, showQR });
-    if (url && !isAuthenticated && !user) {
-      setShowQR(true);
-      console.log("QR code URL available, showing QR code");
-    } else if (url) {
-      console.log("URL available but conditions not met:", { url, isAuthenticated, user });
-    }
-  }, [url, isAuthenticated, user]);
-
-  // Handle successful authentication
-  useEffect(() => {
-    if (isAuthenticated && user && validSignature && user.fid) {
-      const storeConnection = async () => {
-        try {
-          setIsConnecting(true);
-
-          // Store the FID mapping - this is the key part!
-          localStorage.setItem(`fid_${address}`, user.fid.toString());
-          console.log(`Stored FID mapping: ${address} -> ${user.fid}`);
-
-          // Create a profile entry for immediate display (cached)
-          const profileData = {
-            fid: user.fid,
-            username: user.username,
-            displayName: user.displayName,
-            bio: user.bio,
-            pfpUrl: user.pfpUrl,
-            followerCount: 0, // Will be updated when profile is fetched from API
-            followingCount: 0,
-            isVerified: false, // Will be updated when profile is fetched from API
-          };
-
-          // Store profile data temporarily with FID-based key
-          localStorage.setItem(
-            `profile_fid_${user.fid}`,
-            JSON.stringify(profileData)
-          );
-          console.log(`Stored temporary profile for FID ${user.fid}`);
-
-          toast.success(
-            `Successfully connected Farcaster as @${user.username}!`
-          );
-          setShowQR(false);
-
-          // Trigger refresh with the FID
-          if (onConnectionSuccess) {
-            onConnectionSuccess(user.fid);
-          }
-
-          // Refresh the page to show updated profile
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
-        } catch (error) {
-          console.error("Error storing connection:", error);
-          toast.error("Connected but failed to save profile data");
-        } finally {
-          setIsConnecting(false);
-        }
-      };
-
-      storeConnection();
-    }
-  }, [isAuthenticated, user, validSignature, address, onConnectionSuccess]);
-
-  const handleConnect = async () => {
-    console.log("Connect button clicked");
-    console.log("isOwner:", isOwner);
-    console.log("isAuthenticated:", isAuthenticated);
-    console.log("channelToken:", channelToken);
-    console.log("validSignature:", validSignature);
-    
-    if (!isOwner) {
-      console.log("Not owner - showing error");
-      toast.error("You can only connect your own profile");
-      return;
-    }
-
-    try {
-      if (!isAuthenticated) {
-        console.log("Not authenticated - calling signIn");
-        signIn();
-        // Don't set showQR immediately - let useEffect handle it when url is available
-      } else if (channelToken && !validSignature) {
-        console.log("Calling connect with channelToken");
-        await connect();
-      } else {
-        console.log("Unexpected state - isAuthenticated:", isAuthenticated, "channelToken:", channelToken, "validSignature:", validSignature);
-      }
-    } catch (error) {
-      console.error("Farcaster auth error:", error);
-      toast.error("Failed to connect Farcaster");
-    }
-  };
-
-  // Check if we already have a stored FID for this address
-  const storedFid =
-    typeof window !== "undefined"
-      ? localStorage.getItem(`fid_${address}`)
-      : null;
-
-  if (!isOwner) {
-    console.log("FarcasterConnectButton: Not owner, component not rendering");
-    return null;
-  }
-
-  console.log("FarcasterConnectButton: Rendering for owner");
-  console.log("Button states:", { isLoading, isConnecting, isAuthenticated, error });
-
-  if ((isAuthenticated && user && validSignature) || storedFid) {
-    const displayFid = user?.fid || (storedFid ? parseInt(storedFid) : null);
-    const displayUsername = user?.username || "Connected";
-
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <CheckCircle className="w-4 h-4 text-emerald-400" />
-        <span className="text-emerald-400">
-          {isConnecting ? "Connecting..." : `Connected as @${displayUsername}`}
-          {displayFid && (
-            <span className="text-slate-400 ml-1">(FID: {displayFid})</span>
-          )}
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <motion.button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log("Button click event triggered");
-          handleConnect();
-        }}
-        disabled={isLoading || isConnecting}
-        className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-lg border border-purple-500/30 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm cursor-pointer"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        type="button"
-      >
-        {isLoading || isConnecting ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <Zap className="w-4 h-4" />
-        )}
-        {isLoading || isConnecting ? "Connecting..." : "Connect Farcaster"}
-      </motion.button>
-
-      {showQR && url && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-4 rounded-lg"
-        >
-          <p className="text-sm text-slate-600 mb-2 text-center">
-            Scan with Warpcast
-          </p>
-          <div className="flex justify-center">
-            <Image
-              src={url}
-              alt="Farcaster QR Code"
-              width={128}
-              height={128}
-              className="w-32 h-32"
-            />
-          </div>
-          <button
-            onClick={() => setShowQR(false)}
-            className="mt-2 w-full text-xs text-slate-500 hover:text-slate-700"
-          >
-            Cancel
-          </button>
-        </motion.div>
-      )}
-
-      {error && <p className="text-red-400 text-xs">{error}</p>}
-    </div>
-  );
-}
-
-// Farcaster Profile Card Component
-function FarcasterProfileCard({
-  profile,
-  isLoading,
-  error,
-}: {
-  profile: FarcasterProfile | null;
-  isLoading: boolean;
-  error: string | null;
-}) {
-  if (isLoading) {
-    return (
-      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
-            <MessageSquare className="w-6 h-6 text-purple-400" />
-          </div>
-          <div>
-            <h3 className="text-white font-semibold text-lg">Farcaster</h3>
-            <p className="text-slate-400 text-sm">Loading profile...</p>
-          </div>
-        </div>
-        <div className="animate-pulse">
-          <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
-          <div className="h-3 bg-slate-700 rounded w-1/2"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
-            <MessageSquare className="w-6 h-6 text-purple-400" />
-          </div>
-          <div>
-            <h3 className="text-white font-semibold text-lg">Farcaster</h3>
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
-              <MessageSquare className="w-6 h-6 text-purple-400" />
-            </div>
-            <div>
-              <h3 className="text-white font-semibold text-lg">Farcaster</h3>
-              <p className="text-slate-400 text-sm">Not connected</p>
-            </div>
-          </div>
-          <span className="text-sm text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
-            Not Found
-          </span>
-        </div>
-        <p className="text-slate-400 text-sm">
-          No Farcaster profile found for this address.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
-            <MessageSquare className="w-6 h-6 text-purple-400" />
-          </div>
-          <div>
-            <h3 className="text-white font-semibold text-lg">Farcaster</h3>
-            <div className="flex items-center gap-2">
-              <p className="text-emerald-400 text-sm">@{profile.username}</p>
-              <span className="text-slate-500">•</span>
-              <p className="text-slate-400 text-sm">FID: {profile.fid}</p>
-            </div>
-          </div>
-        </div>
-        <a
-          href={`https://warpcast.com/${profile.username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="p-3 bg-slate-600/50 rounded-xl hover:bg-slate-600 transition-colors"
-          title="View on Warpcast"
-        >
-          <ExternalLink className="w-5 h-5 text-slate-300" />
-        </a>
-      </div>
-
-      {/* Profile Stats */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="text-center p-3 bg-slate-900/30 rounded-xl">
-          <p className="text-2xl font-bold text-white">
-            {profile.followerCount.toLocaleString()}
-          </p>
-          <p className="text-slate-400 text-sm">Followers</p>
-        </div>
-        <div className="text-center p-3 bg-slate-900/30 rounded-xl">
-          <p className="text-2xl font-bold text-white">
-            {profile.followingCount.toLocaleString()}
-          </p>
-          <p className="text-slate-400 text-sm">Following</p>
-        </div>
-      </div>
-
-      {/* Bio */}
-      {profile.bio && (
-        <div className="mb-6">
-          <p className="text-slate-300 text-sm leading-relaxed">
-            {profile.bio}
-          </p>
-        </div>
-      )}
-
-      {/* X/Twitter Integration */}
-      {profile.twitterUsername && (
-        <div className="bg-slate-900/30 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/20 rounded-lg">
-                <X className="w-4 h-4 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-white font-medium">X (Twitter)</p>
-                <p className="text-blue-400 text-sm">
-                  @{profile.twitterUsername}
-                </p>
-              </div>
-            </div>
-            <a
-              href={`https://twitter.com/${profile.twitterUsername}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition-colors text-sm font-medium"
-            >
-              Visit Profile
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Verification Status */}
-      <div className="mt-4 flex items-center gap-2">
-        {profile.isVerified ? (
-          <>
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
-            <span className="text-emerald-400 text-sm">
-              Verified on Farcaster
-            </span>
-          </>
-        ) : (
-          <>
-            <AlertCircle className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-400 text-sm">Unverified</span>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Enhanced Social Tab Content
-function EnhancedSocialTabContent({
-  farcasterProfile,
-  isFarcasterLoading,
-  farcasterError,
-}: {
-  farcasterProfile: FarcasterProfile | null;
-  isFarcasterLoading: boolean;
-  farcasterError: string | null;
 }) {
   return (
     <motion.div
@@ -633,101 +55,50 @@ function EnhancedSocialTabContent({
       transition={{ duration: 0.3 }}
       className="space-y-4"
     >
-      {/* Enhanced Farcaster Section */}
-      <FarcasterProfileCard
-        profile={farcasterProfile}
-        isLoading={isFarcasterLoading}
-        error={farcasterError}
+      {/* Social Media Card */}
+      <SocialMediaCard 
+        profileData={socialMediaData}
+        userAddress={userAddress}
+        isOwner={isOwner}
       />
-
-      {/* Other Social Platforms */}
-      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6">
-        <h3 className="text-white font-semibold text-lg mb-4">
-          Other Platforms
-        </h3>
-        <div className="space-y-3">
-          {/* Instagram */}
-          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-xl">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-pink-500/20 rounded-lg">
-                <User className="w-4 h-4 text-pink-400" />
-              </div>
-              <span className="text-slate-300">Instagram</span>
-            </div>
-            <span className="text-slate-500 text-sm">Not connected</span>
-          </div>
-
-          {/* TikTok */}
-          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-xl">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-pink-500/20 rounded-lg">
-                <User className="w-4 h-4 text-pink-400" />
-              </div>
-              <span className="text-slate-300">TikTok</span>
-            </div>
-            <span className="text-slate-500 text-sm">Not connected</span>
-          </div>
-
-          {/* YouTube */}
-          <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-xl">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/20 rounded-lg">
-                <User className="w-4 h-4 text-red-400" />
-              </div>
-              <span className="text-slate-300">YouTube</span>
-            </div>
-            <span className="text-slate-500 text-sm">Not connected</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Social Metrics Summary */}
-      {farcasterProfile && (
-        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-2xl p-6">
-          <h3 className="text-white font-semibold text-lg mb-4">
-            Social Reach
-          </h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-400">
-                {farcasterProfile.followerCount.toLocaleString()}
-              </div>
-              <div className="text-slate-400 text-sm">Total Followers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-400">
-                {Math.round((farcasterProfile.followerCount / 1000) * 3.2)}
-              </div>
-              <div className="text-slate-400 text-sm">Avg. Engagement</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-400">
-                {farcasterProfile.isVerified ? "High" : "Medium"}
-              </div>
-              <div className="text-slate-400 text-sm">Trust Score</div>
-            </div>
-          </div>
-        </div>
-      )}
     </motion.div>
   );
 }
 
-// Main Component
-export default function EnhancedInfluencerProfile() {
+// Main Component  
+function EnhancedInfluencerProfileComponent({
+  guardedAction,
+}: {
+  guardedAction?: (action: () => Promise<void>) => Promise<void>;
+}) {
   const { address: profileAddress } = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { address: connectedAddress, isConnected } = useAccount();
   const [isOwner, setIsOwner] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState<
     "overview" | "social" | "activity"
   >("overview");
-  const [showAllStats, setShowAllStats] = useState(false);
-  const [connectedFid, setConnectedFid] = useState<number | null>(null);
-
-  // Get stored FID for this address
-  const storedFid = useFidFromAddress(profileAddress as string);
+  
+  // Navigation context from applications modal
+  const fromApplications = searchParams.get('from') === 'applications';
+  const briefId = searchParams.get('briefId');
+  const currentAppIndex = parseInt(searchParams.get('appIndex') || '0');
+  
+  // Campaign assignment functionality
+  const { selectInfluencer, isPending: isAssigning } = useSelectInfluencer();
+  const { applications, isLoadingApplications } = useBriefApplications(briefId as `0x${string}`);
+  const { generateDivviReferralTag } = useDivviIntegration();
+  
+  // Check campaign capacity and current application status
+  const currentApplication = applications && applications[currentAppIndex];
+  const selectedCount = applications ? applications.filter(app => app.isSelected).length : 0;
+  // We'll need to get campaign details from another source or pass maxInfluencers via URL
+  // For now, using a fallback - this should be passed from the applications modal
+  const maxInfluencers = parseInt(searchParams.get('maxInfluencers') || '1');
+  const spotsRemaining = maxInfluencers - selectedCount;
+  const canAssign = spotsRemaining > 0 && currentApplication && !currentApplication.isSelected;
 
   // Fetch blockchain data
   const { userProfile, isLoadingProfile } = useUserProfile(
@@ -740,25 +111,6 @@ export default function EnhancedInfluencerProfile() {
     profileAddress as `0x${string}`
   );
 
-  // Use FID-based profile lookup
-  const {
-    profile: farcasterProfile,
-    isLoading: isFarcasterLoading,
-    error: farcasterError,
-    refreshProfile: refreshFarcasterProfile,
-  } = useFarcasterProfile(storedFid, profileAddress as string);
-
-  // Handle connection success - updates the FID
-  const handleConnectionSuccess = (fid: number) => {
-    console.log(`Farcaster connected with FID: ${fid}`);
-    setConnectedFid(fid);
-    setRefreshTrigger((prev) => prev + 1);
-
-    // Refresh the Farcaster profile with the new FID
-    setTimeout(() => {
-      refreshFarcasterProfile();
-    }, 1000);
-  };
 
   // Check if connected wallet owns this profile
   useEffect(() => {
@@ -770,8 +122,6 @@ export default function EnhancedInfluencerProfile() {
     }
   }, [isConnected, connectedAddress, profileAddress]);
 
-  // Get the effective FID (either stored or newly connected)
-  const effectiveFid = connectedFid || storedFid;
 
   const handleCopy = async (text: string, label: string) => {
     try {
@@ -785,8 +135,79 @@ export default function EnhancedInfluencerProfile() {
     }
   };
 
-  const isLoading =
-    isLoadingProfile || isLoadingVerification || isFarcasterLoading;
+  const handleBackToApplications = () => {
+    // Close this tab/window and return focus to applications modal
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      window.close();
+    }
+  };
+
+  const handleAssignCampaign = async () => {
+    if (!guardedAction) {
+      toast.error('Network configuration error. Please refresh and try again.');
+      return;
+    }
+
+    if (!briefId || !applications || applications.length === 0) {
+      toast.error('Campaign data not available');
+      return;
+    }
+
+    if (!currentApplication) {
+      toast.error('Application not found');
+      return;
+    }
+
+    if (currentApplication.isSelected) {
+      toast.error('Influencer already selected for this campaign');
+      return;
+    }
+
+    if (spotsRemaining <= 0) {
+      toast.error('Campaign has reached maximum number of influencers');
+      return;
+    }
+
+    await guardedAction(async () => {
+      try {
+        // Generate Divvi referral tag for transaction tracking
+        const referralTag = generateDivviReferralTag();
+        console.log('DIVVI: About to assign campaign with referral tag:', referralTag);
+        
+        await selectInfluencer(briefId as `0x${string}`, currentAppIndex, referralTag);
+        toast.success('Campaign assigned successfully!');
+        
+        // Wait a moment for blockchain update, then navigate back
+        setTimeout(() => {
+          handleBackToApplications();
+        }, 2000);
+      } catch (error) {
+        console.error('Assignment error:', error);
+        toast.error('Failed to assign campaign. Please try again.');
+      }
+    });
+  };
+
+  const handleNextApplication = () => {
+    if (!applications || applications.length === 0) {
+      toast.error('No applications data available');
+      return;
+    }
+
+    const nextIndex = currentAppIndex + 1;
+    if (nextIndex >= applications.length) {
+      toast('This is the last application');
+      return;
+    }
+
+    // Navigate to next application
+    const nextApplication = applications[nextIndex];
+    router.push(`/influencer/${nextApplication.influencer}?from=applications&briefId=${briefId}&appIndex=${nextIndex}`);
+  };
+
+  const isLoading = isLoadingProfile || isLoadingVerification;
 
   if (isLoading) {
     return (
@@ -856,27 +277,18 @@ export default function EnhancedInfluencerProfile() {
     );
   }
 
-  const displayName =
-    farcasterProfile?.displayName || farcasterProfile?.username || "Influencer";
-  const bio = farcasterProfile?.bio || "Digital creator and influencer";
-  const pfpUrl = farcasterProfile?.pfpUrl;
+  // Parse profile data from blockchain
+  const socialMediaData = influencerProfile ? JSON.parse(influencerProfile as string) : {};
+  const displayName = socialMediaData?.name || "Influencer";
+  const bio = socialMediaData?.bio || "Digital creator and influencer";
+  const pfpUrl = socialMediaData?.avatar;
 
   const stats = [
     {
       icon: Users,
-      value: farcasterProfile
-        ? formatNumber(farcasterProfile.followerCount)
-        : userProfile?.completedCampaigns || 0,
-      label: farcasterProfile ? "Followers" : "Campaigns",
+      value: userProfile?.completedCampaigns || 0,
+      label: "Campaigns",
       color: "text-emerald-400",
-    },
-    {
-      icon: Target,
-      value: farcasterProfile
-        ? formatNumber(farcasterProfile.followingCount)
-        : "4.9",
-      label: farcasterProfile ? "Following" : "Rating",
-      color: "text-blue-400",
     },
     {
       icon: Award,
@@ -898,72 +310,50 @@ export default function EnhancedInfluencerProfile() {
 
       {/* Scrollable Container */}
       <div className="max-w-lg mx-auto min-h-screen overflow-y-auto">
+        {/* Applications Navigation Header */}
+        {fromApplications && (
+          <div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <motion.button
+                onClick={handleBackToApplications}
+                className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 hover:bg-slate-800 text-slate-300 rounded-lg transition-all text-sm font-medium"
+                whileTap={{ scale: 0.95 }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Applications
+              </motion.button>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 text-sm">
+                  Application #{currentAppIndex + 1}
+                  {applications && ` of ${applications.length}`}
+                </span>
+                {applications && applications[currentAppIndex]?.isSelected && (
+                  <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">
+                    Selected
+                  </span>
+                )}
+                <motion.button
+                  onClick={handleNextApplication}
+                  disabled={!applications || currentAppIndex >= applications.length - 1}
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-600/10 hover:bg-blue-600/20 disabled:bg-slate-600/10 text-blue-400 disabled:text-slate-500 rounded-lg transition-all text-sm font-medium disabled:cursor-not-allowed"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Next
+                  <SkipForward className="w-4 h-4" />
+                </motion.button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Header Section with Hero Design */}
         <div className="relative">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-blue-500/5 to-purple-500/10"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.1),transparent_50%)]"></div>
+          {/* Professional Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-blue-500/3 to-slate-500/5"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(16,185,129,0.05),transparent_50%)]"></div>
 
           <div className="relative px-4 pt-20 sm:pt-24 md:pt-28 pb-6">
-            {/* Connect Farcaster Banner - Enhanced for FID-based approach */}
-            {!effectiveFid && (
-              <motion.div
-                className="mb-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                {isOwner && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                        <MessageSquare className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-white font-semibold">
-                          Connect Farcaster
-                        </h3>
-                        <p className="text-slate-400 text-sm">
-                          Link your social presence with FID
-                        </p>
-                      </div>
-                    </div>
-                    <FarcasterConnectButton
-                      address={profileAddress as string}
-                      isOwner={isOwner}
-                      onConnectionSuccess={handleConnectionSuccess}
-                    />
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Farcaster Connection Status */}
-            {effectiveFid && (
-              <motion.div
-                className="mb-6 bg-gradient-to-r from-emerald-500/10 to-emerald-400/10 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                    <CheckCircle className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-emerald-400 font-semibold">
-                      Farcaster Connected
-                    </h3>
-                    <p className="text-emerald-300 text-sm">
-                      FID: {effectiveFid} •
-                      {farcasterProfile
-                        ? ` @${farcasterProfile.username}`
-                        : " Profile loading..."}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
 
             {/* Profile Header */}
             <motion.div
@@ -1005,22 +395,11 @@ export default function EnhancedInfluencerProfile() {
                     </motion.div>
                   )}
 
-                  {/* FID Badge */}
-                  {effectiveFid && (
-                    <motion.div
-                      className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full border-2 border-slate-900 flex items-center justify-center"
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ type: "spring", duration: 0.6, delay: 0.4 }}
-                    >
-                      <span className="text-white text-xs font-bold">F</span>
-                    </motion.div>
-                  )}
                 </div>
               </div>
 
               {/* Name and Username */}
-              <h1 className="text-3xl font-bold text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                 {displayName}
               </h1>
 
@@ -1045,16 +424,13 @@ export default function EnhancedInfluencerProfile() {
                     </>
                   )}
                 </span>
+                
+                {/* Business-focused badge */}
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/40">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  Available for Campaigns
+                </span>
 
-                {/* Farcaster Username and FID */}
-                {farcasterProfile && (
-                  <span className="flex items-center gap-2 text-slate-400 text-sm">
-                    <MessageSquare className="w-4 h-4" />@
-                    {farcasterProfile.username}
-                    <span className="text-slate-500">•</span>
-                    <span className="text-purple-400">FID {effectiveFid}</span>
-                  </span>
-                )}
               </div>
 
               {/* Address */}
@@ -1077,7 +453,7 @@ export default function EnhancedInfluencerProfile() {
               </div>
 
               {/* Bio */}
-              <p className="text-slate-300 text-lg leading-relaxed max-w-md mx-auto">
+              <p className="text-slate-300 text-base sm:text-lg leading-relaxed max-w-md mx-auto">
                 {bio}
               </p>
             </motion.div>
@@ -1124,46 +500,49 @@ export default function EnhancedInfluencerProfile() {
                 className="space-y-6"
               >
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  {stats
-                    .slice(0, showAllStats ? stats.length : 4)
-                    .map((stat, index) => (
-                      <motion.div
-                        key={stat.label}
-                        className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 text-center"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                      >
-                        <div className="flex justify-center mb-3">
-                          <div className="p-2 bg-slate-700/50 rounded-xl">
-                            <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                          </div>
+                <div className="grid grid-cols-3 gap-4">
+                  {stats.map((stat, index) => (
+                    <motion.div
+                      key={stat.label}
+                      className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 text-center"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <div className="flex justify-center mb-3">
+                        <div className="p-2 bg-slate-700/50 rounded-xl">
+                          <stat.icon className={`w-5 h-5 ${stat.color}`} />
                         </div>
-                        <p className="text-xl font-bold text-white mb-1">
-                          {stat.value}
-                        </p>
-                        <p className="text-slate-400 text-sm">{stat.label}</p>
-                      </motion.div>
-                    ))}
+                      </div>
+                      <p className="text-xl font-bold text-white mb-1">
+                        {stat.value}
+                      </p>
+                      <p className="text-slate-400 text-sm">{stat.label}</p>
+                    </motion.div>
+                  ))}
                 </div>
 
-                {stats.length > 4 && (
-                  <button
-                    onClick={() => setShowAllStats(!showAllStats)}
-                    className="w-full flex items-center justify-center gap-2 py-3 text-slate-400 hover:text-emerald-400 transition-colors"
-                  >
-                    <span className="text-sm font-medium">
-                      {showAllStats ? "Show Less" : "Show More Stats"}
-                    </span>
-                    <motion.div
-                      animate={{ rotate: showAllStats ? 180 : 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </motion.div>
-                  </button>
-                )}
+                {/* Performance Metrics for Business */}
+                <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 rounded-2xl p-6 mb-6">
+                  <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-emerald-400" />
+                    Campaign Performance
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-emerald-400">
+                        {userProfile?.completedCampaigns || 0}
+                      </div>
+                      <div className="text-slate-400 text-sm">Completed Campaigns</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-400">
+                        {isVerified ? "100%" : "95%"}
+                      </div>
+                      <div className="text-slate-400 text-sm">Success Rate</div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Social Media Card */}
                 <SocialMediaCard 
@@ -1175,10 +554,10 @@ export default function EnhancedInfluencerProfile() {
             )}
 
             {activeTab === "social" && (
-              <EnhancedSocialTabContent
-                farcasterProfile={farcasterProfile}
-                isFarcasterLoading={isFarcasterLoading}
-                farcasterError={farcasterError}
+              <SocialTabContent
+                socialMediaData={influencerProfile as string}
+                userAddress={profileAddress as string}
+                isOwner={isOwner}
               />
             )}
 
@@ -1208,7 +587,75 @@ export default function EnhancedInfluencerProfile() {
         {/* Action Buttons - Fixed at bottom */}
         <div className="sticky bottom-0 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent p-4 border-t border-slate-700/50">
           <div className="space-y-4">
-            {isOwner && (
+            {/* Campaign Assignment Actions - Show when from applications */}
+            {fromApplications && (
+              <div className="space-y-3">
+                {/* Campaign Status Info */}
+                <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-xl p-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">Campaign Capacity:</span>
+                    <span className="text-white font-medium">
+                      {selectedCount} / {maxInfluencers} selected
+                    </span>
+                  </div>
+                  {spotsRemaining <= 0 && (
+                    <div className="mt-2 text-xs text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/20">
+                      ⚠ Campaign has reached maximum capacity
+                    </div>
+                  )}
+                  {currentApplication?.isSelected && (
+                    <div className="mt-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">
+                      ✓ This creator is already assigned to this campaign
+                    </div>
+                  )}
+                </div>
+                
+                {/* Assignment Button */}
+                <motion.button
+                  onClick={handleAssignCampaign}
+                  disabled={isAssigning || isLoadingApplications || !canAssign}
+                  className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-semibold transition-all shadow-lg ${
+                    canAssign
+                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/20"
+                      : "bg-slate-600 text-slate-400 cursor-not-allowed"
+                  }`}
+                  whileTap={{ scale: isAssigning || !canAssign ? 1 : 0.95 }}
+                >
+                  {isAssigning ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                      </motion.div>
+                      Assigning Campaign...
+                    </>
+                  ) : !canAssign ? (
+                    currentApplication?.isSelected ? (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        Already Assigned
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="w-5 h-5" />
+                        Campaign Full
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <UserCheck className="w-5 h-5" />
+                      Assign Campaign to This Creator
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            )}
+            
+            {/* Owner Dashboard Link */}
+            {isOwner && !fromApplications && (
               <Link href="/influencersDashboard">
                 <motion.button
                   className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-2xl font-semibold transition-all shadow-lg shadow-emerald-500/20"
@@ -1221,63 +668,81 @@ export default function EnhancedInfluencerProfile() {
               </Link>
             )}
 
-            <div className="flex gap-3">
-              <motion.button
-                onClick={() =>
-                  handleCopy(
-                    typeof window !== "undefined"
-                      ? `${window.location.origin}/influencer/${profileAddress}`
-                      : "",
-                    "Profile Link"
-                  )
-                }
-                className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-slate-800/60 hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-600/50 transition-all font-medium"
-                whileTap={{ scale: 0.95 }}
-              >
-                {copiedText === "Profile Link" ? (
-                  <CheckCircle className="w-5 h-5 text-emerald-400" />
-                ) : (
-                  <Share2 className="w-5 h-5" />
-                )}
-                Share
-              </motion.button>
-
-              <Link href="/marketplace" className="flex-1">
+            {/* Standard Action Buttons */}
+            {!fromApplications && (
+              <div className="flex gap-3">
                 <motion.button
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl transition-all font-medium shadow-lg shadow-emerald-500/20"
+                  onClick={() =>
+                    handleCopy(
+                      typeof window !== "undefined"
+                        ? `${window.location.origin}/influencer/${profileAddress}`
+                        : "",
+                      "Profile Link"
+                    )
+                  }
+                  className="flex-1 flex items-center justify-center gap-3 px-4 py-3 bg-slate-800/60 hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-600/50 transition-all font-medium"
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Sparkles className="w-5 h-5" />
-                  Explore
+                  {copiedText === "Profile Link" ? (
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <Share2 className="w-5 h-5" />
+                  )}
+                  Share Profile
                 </motion.button>
-              </Link>
-            </div>
+
+                <Link href="/marketplace" className="flex-1">
+                  <motion.button
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all font-medium shadow-lg shadow-blue-500/20"
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Users className="w-5 h-5" />
+                    Hire Creator
+                  </motion.button>
+                </Link>
+              </div>
+            )}
+            
+            {/* Secondary Actions when from applications */}
+            {fromApplications && (
+              <div className="flex gap-3">
+                <motion.button
+                  onClick={() =>
+                    handleCopy(
+                      typeof window !== "undefined"
+                        ? `${window.location.origin}/influencer/${profileAddress}`
+                        : "",
+                      "Profile Link"
+                    )
+                  }
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/60 hover:bg-slate-800 text-slate-300 rounded-lg transition-all text-sm font-medium"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {copiedText === "Profile Link" ? (
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Share2 className="w-4 h-4" />
+                  )}
+                  Share
+                </motion.button>
+                
+                <motion.button
+                  onClick={handleNextApplication}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-lg transition-all text-sm font-medium"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Next Application
+                  <SkipForward className="w-4 h-4" />
+                </motion.button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Success State for Farcaster Connection */}
-        {farcasterProfile && effectiveFid && (
-          <motion.div
-            className="fixed top-4 left-4 right-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 backdrop-blur-xl z-50"
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-6 h-6 text-emerald-400" />
-              <div>
-                <p className="text-emerald-400 font-semibold">
-                  ✅ Farcaster Connected (FID: {effectiveFid})
-                </p>
-                <p className="text-emerald-400/70 text-sm">
-                  Profile verified and social presence confirmed
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
       </div>
     </div>
   );
 }
+
+// Export with network guard for blockchain functionality
+export default withNetworkGuard(EnhancedInfluencerProfileComponent);

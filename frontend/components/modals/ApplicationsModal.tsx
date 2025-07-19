@@ -319,7 +319,7 @@ const ApplicationsModal = ({
                           </div>
                           <div>
                             <Link
-                              href={`/influencer/${application.influencer}`}
+                              href={`/influencer/${application.influencer}?from=applications&briefId=${selectedBrief?.id}&appIndex=${index}&maxInfluencers=${selectedBrief?.maxInfluencers || 1}`}
                               className="text-sm font-medium text-emerald-400 hover:text-emerald-300 inline-flex items-center transition-colors duration-200"
                             >
                               {application.influencerProfile?.name ||
