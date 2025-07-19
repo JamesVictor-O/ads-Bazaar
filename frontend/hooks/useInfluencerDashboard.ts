@@ -188,7 +188,7 @@ export const useInfluencerDashboard = () => {
     contractAddress: CONTRACT_ADDRESS
   });
 
-  const briefIds = briefIdsResult?.[0]?.result as string[] | undefined;
+  const briefIds = briefIdsResult as string[] | undefined;
   
   console.log('[DEBUG] Brief IDs result:', briefIdsResult);
   console.log('[DEBUG] Extracted brief IDs:', briefIds);

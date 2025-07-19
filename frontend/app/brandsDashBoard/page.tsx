@@ -161,11 +161,19 @@ const BrandDashboard = () => {
   const {
     startCampaignWithPartialSelection,
     isPending: isStartingPartialCampaign,
+    isSuccess: isStartPartialSuccess,
+    isError: isStartPartialError,
+    error: startPartialError,
+    hash: startPartialHash,
   } = useStartCampaignWithPartialSelection();
 
   const {
     cancelCampaignWithCompensation,
     isPending: isCancelingWithCompensation,
+    isSuccess: isCancelWithCompensationSuccess,
+    isError: isCancelWithCompensationError,
+    error: cancelWithCompensationError,
+    hash: cancelWithCompensationHash,
   } = useCancelCampaignWithCompensation();
 
   // Function to toggle description expansion
@@ -244,6 +252,20 @@ const BrandDashboard = () => {
       trackTransaction(expireHash);
     }
   }, [expireHash, trackTransaction]);
+
+  useEffect(() => {
+    if (startPartialHash) {
+      console.log("DIVVI: Hash available from start partial campaign:", startPartialHash);
+      trackTransaction(startPartialHash);
+    }
+  }, [startPartialHash, trackTransaction]);
+
+  useEffect(() => {
+    if (cancelWithCompensationHash) {
+      console.log("DIVVI: Hash available from cancel with compensation:", cancelWithCompensationHash);
+      trackTransaction(cancelWithCompensationHash);
+    }
+  }, [cancelWithCompensationHash, trackTransaction]);
 
   // Computed dashboard data
   const dashboardData = useMemo(() => {
@@ -378,6 +400,44 @@ const BrandDashboard = () => {
       setShowExpireConfirm(null);
     }
   }, [isExpireSuccess, isExpireError, expireError, refetchBriefs]);
+
+  useEffect(() => {
+    if (isStartPartialSuccess) {
+      toast.success("Campaign started with partial selection successfully!");
+      
+      // Use standardized success handler
+      createBrandDashboardSuccessHandler([
+        () => setShowStartPartialConfirm(null),
+        () => refetchBriefs()
+      ])();
+    }
+
+    if (isStartPartialError) {
+      toast.error(
+        `Failed to start campaign with partial selection: ${startPartialError?.message || "Unknown error"}`
+      );
+      setShowStartPartialConfirm(null);
+    }
+  }, [isStartPartialSuccess, isStartPartialError, startPartialError, refetchBriefs]);
+
+  useEffect(() => {
+    if (isCancelWithCompensationSuccess) {
+      toast.success("Campaign cancelled with compensation successfully!");
+      
+      // Use standardized success handler
+      createBrandDashboardSuccessHandler([
+        () => setShowCancelWithCompensationModal(null),
+        () => refetchBriefs()
+      ])();
+    }
+
+    if (isCancelWithCompensationError) {
+      toast.error(
+        `Failed to cancel campaign with compensation: ${cancelWithCompensationError?.message || "Unknown error"}`
+      );
+      setShowCancelWithCompensationModal(null);
+    }
+  }, [isCancelWithCompensationSuccess, isCancelWithCompensationError, cancelWithCompensationError, refetchBriefs]);
 
   // Enhanced filtering logic
   const filteredBriefs = briefs.filter((brief) => {
@@ -574,12 +634,11 @@ const BrandDashboard = () => {
         briefId as `0x${string}`,
         referralTag
       );
-      toast.success("Campaign started with partial selection!");
-      setShowStartPartialConfirm(null);
-      setTimeout(() => refetchBriefs(), 1000);
+      // Success notification and cleanup will be handled by useEffect
     } catch (error) {
       console.error("Error starting partial campaign:", error);
-      toast.error("Failed to start campaign with partial selection");
+      // Error will be handled by useEffect, but we keep this for immediate feedback
+      toast.error("Failed to initiate partial campaign start");
     }
   };
 
@@ -593,12 +652,11 @@ const BrandDashboard = () => {
       
       const referralTag = generateDivviReferralTag();
       await cancelCampaignWithCompensation(briefId as `0x${string}`, compensationPerInfluencer, referralTag);
-      toast.success("Campaign cancelled with compensation!");
-      setShowCancelWithCompensationModal(null);
-      setTimeout(() => refetchBriefs(), 1000);
+      // Success notification and cleanup will be handled by useEffect
     } catch (error) {
       console.error("Error cancelling with compensation:", error);
-      toast.error("Failed to cancel campaign with compensation");
+      // Error will be handled by useEffect, but we keep this for immediate feedback
+      toast.error("Failed to initiate campaign cancellation");
     }
   };
 
