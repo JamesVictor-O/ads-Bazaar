@@ -16,6 +16,7 @@
     "@farcaster/frame-sdk": "^0.0.51",
     "@farcaster/frame-wagmi-connector": "^0.0.40",
     "@farcaster/miniapp-node": "^0.1.6",
+    "@mento-protocol/mento-sdk": "^1.10.3",
     "@neynar/nodejs-sdk": "^2.46.0",
     "@rainbow-me/rainbowkit": "^2.2.4",
     "@selfxyz/core": "^0.0.25",
