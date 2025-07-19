@@ -56,6 +56,7 @@ import {
 } from "@/utils/campaignUtils";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { NotificationButton } from "@/components/NotificationButton";
+import { UserDisplay } from "@/components/ui/UserDisplay";
 import { createInfluencerDashboardSuccessHandler } from "@/utils/transactionUtils";
 
 // Define precise interfaces
@@ -1063,7 +1064,7 @@ export default function InfluencerDashboard() {
                               {briefData.brief.name}
                             </h3>
                             <p className="text-sm text-slate-400">
-                              by <span className="font-medium text-emerald-400">{briefData.brief.business}</span>
+                              by <UserDisplay address={briefData.brief.business} className="font-medium text-emerald-400" />
                             </p>
                           </div>
                           
