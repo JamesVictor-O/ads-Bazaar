@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Share, Twitter, Facebook, Copy, Check } from "lucide-react";
+import { Share, Twitter, Facebook, Copy, Check, Share2 } from "lucide-react";
 import { Brief } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import sdk from '@farcaster/frame-sdk';
 import { CURRENT_NETWORK } from '@/lib/networks';
+import { useShareTracking } from '@/hooks/useShareTracking';
 
 interface ShareCampaignButtonProps {
   campaign: Brief;
   className?: string;
+  showCount?: boolean;
+  compact?: boolean;
 }
 
 // Add a simple Farcaster icon (FC initials) for now
@@ -21,6 +24,8 @@ const FarcasterIcon = () => (
 const ShareCampaignButton = ({
   campaign,
   className = "",
+  showCount = true,
+  compact = false,
 }: ShareCampaignButtonProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -29,6 +34,9 @@ const ShareCampaignButton = ({
   );
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
+  
+  // Add share tracking
+  const { shareCount, trackShare } = useShareTracking(campaign.id);
 
   // Check if we're in a Farcaster Mini App context
   useEffect(() => {
@@ -76,19 +84,18 @@ Apply now and get paid directly to your wallet!`;
     }
   }, [showDropdown]);
 
-  // Farcaster share handler
-  const handleFarcasterShare = () => {
-    const farcasterMessage = `🚀 New campaign opportunity: ${campaign.name}
 
-💰 Earn cryptocurrency on ${CURRENT_NETWORK.name}
-🌐 Secure smart contract payments in cUSD
-⚡ Fast, transparent blockchain transactions
-
-Apply now and get paid directly to your wallet! 👇`;
+  // Enhanced share handlers with tracking
+  const handleShareWithTracking = async (platform: string, shareAction: () => void) => {
+    shareAction();
     
-    const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(farcasterMessage)}&embeds[]=${encodeURIComponent(shareUrl)}`;
-    window.open(farcasterUrl, "_blank");
-    setShowDropdown(false);
+    // Track the share after opening the platform
+    setTimeout(async () => {
+      const success = await trackShare(platform);
+      if (success) {
+        toast.success(`Shared on ${platform}!`);
+      }
+    }, 500); // Small delay to ensure the share window opens
   };
 
   const shareOptions = [
@@ -97,33 +104,45 @@ Apply now and get paid directly to your wallet! 👇`;
       icon: FarcasterIcon,
       color: "text-purple-400",
       bgColor: "hover:bg-purple-500/10",
-      action: handleFarcasterShare,
+      action: () => handleShareWithTracking('farcaster', () => {
+        const farcasterMessage = `🚀 New campaign opportunity: ${campaign.name}
+
+💰 Earn cryptocurrency on ${CURRENT_NETWORK.name}
+🌐 Secure smart contract payments in cUSD
+⚡ Fast, transparent blockchain transactions
+
+Apply now and get paid directly to your wallet! 👇`;
+        
+        const farcasterUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(farcasterMessage)}&embeds[]=${encodeURIComponent(shareUrl)}`;
+        window.open(farcasterUrl, "_blank");
+        setShowDropdown(false);
+      }),
     },
     {
       name: "Twitter",
       icon: Twitter,
       color: "text-blue-400",
       bgColor: "hover:bg-blue-500/10",
-      action: () => {
+      action: () => handleShareWithTracking('twitter', () => {
         const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
           shareText
         )}&url=${encodeURIComponent(shareUrl)}`;
         window.open(url, "_blank");
         setShowDropdown(false);
-      },
+      }),
     },
     {
       name: "Facebook",
       icon: Facebook,
       color: "text-blue-500",
       bgColor: "hover:bg-blue-600/10",
-      action: () => {
+      action: () => handleShareWithTracking('facebook', () => {
         const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
           shareUrl
         )}`;
         window.open(url, "_blank");
         setShowDropdown(false);
-      },
+      }),
     },
     {
       name: "Copy Link",
@@ -134,7 +153,12 @@ Apply now and get paid directly to your wallet! 👇`;
         try {
           await navigator.clipboard.writeText(shareUrl);
           setCopied(true);
-          toast.success("Link copied to clipboard!");
+          const success = await trackShare('copy');
+          if (success) {
+            toast.success("Link copied and share tracked!");
+          } else {
+            toast.success("Link copied to clipboard!");
+          }
           setTimeout(() => setCopied(false), 2000);
           setShowDropdown(false);
         } catch {
@@ -148,11 +172,16 @@ Apply now and get paid directly to your wallet! 👇`;
     <div className={`relative ${className}`} ref={buttonRef}>
       <motion.button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center gap-2 px-3 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-white rounded-xl font-medium transition-all duration-200 border border-slate-600/50 hover:border-slate-500/50 hover:shadow-lg hover:shadow-slate-500/10"
+        className={`flex items-center gap-2 px-3 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-white rounded-xl font-medium transition-all duration-200 border border-slate-600/50 hover:border-slate-500/50 hover:shadow-lg hover:shadow-slate-500/10 ${compact ? 'px-2 py-2' : ''}`}
         whileTap={{ scale: 0.95 }}
       >
         <Share className="h-4 w-4" />
-        <span className="hidden sm:inline">Share</span>
+        {!compact && <span className="hidden sm:inline">Share</span>}
+        {showCount && shareCount > 0 && (
+          <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">
+            {shareCount}
+          </span>
+        )}
       </motion.button>
 
       <AnimatePresence>
@@ -247,6 +276,14 @@ Apply now and get paid directly to your wallet! 👇`;
                     {campaign.maxInfluencers} spots
                   </span>
                 </div>
+                {showCount && (
+                  <div className="flex items-center justify-center mt-2 pt-2 border-t border-slate-700/50">
+                    <span className="text-xs text-slate-300 flex items-center gap-1">
+                      <Share2 className="w-3 h-3" />
+                      {shareCount} {shareCount === 1 ? 'share' : 'shares'}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
