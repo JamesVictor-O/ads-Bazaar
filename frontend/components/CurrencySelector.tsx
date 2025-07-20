@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronDown, RefreshCw } from 'lucide-react';
-import { MENTO_TOKENS, SupportedCurrency, mentoFX, getCurrencyDisplayName } from '@/lib/mento-integration';
+import { MENTO_TOKENS, SupportedCurrency, mentoFX, getCurrencyDisplayName } from '@/lib/mento-simple';
 
 interface CurrencySelectorProps {
   selectedCurrency: SupportedCurrency;

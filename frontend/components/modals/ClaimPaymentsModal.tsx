@@ -21,6 +21,11 @@ import {
   usePendingPayments,
   useTotalPendingAmount,
 } from "@/hooks/adsBazaar";
+import { 
+  useMultiCurrencyPayments, 
+  useMultiCurrencyPendingPayments
+} from '@/hooks/useMultiCurrencyAdsBazaar';
+import { MENTO_TOKENS, SupportedCurrency, formatCurrencyAmount } from '@/lib/mento-simple';
 import { formatEther } from "viem";
 import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
@@ -60,14 +65,31 @@ function ClaimPaymentsModal({
     error: claimError,
   } = useClaimPayments();
 
+  // Multi-currency payment hooks
+  const { 
+    claimPaymentsInToken, 
+    claimAllPendingPayments, 
+    isClaiming: isClaimingMulti 
+  } = useMultiCurrencyPayments();
+  
+  const { 
+    pendingPayments: multiCurrencyPayments, 
+    isLoading: isLoadingMultiCurrency, 
+    refetch: refetchMultiCurrency 
+  } = useMultiCurrencyPendingPayments();
+
+  // State for multi-currency mode
+  const [claimMode, setClaimMode] = useState<'legacy' | 'multi'>('multi');
+  const [selectedCurrency, setSelectedCurrency] = useState<SupportedCurrency | 'all'>('all');
+
   // Track transaction phases
   useEffect(() => {
-    if (isClaimPending && transactionPhase !== "claiming") {
+    if ((isClaimPending || isClaimingMulti) && transactionPhase !== "claiming") {
       setTransactionPhase("claiming");
-    } else if (!isClaimPending && transactionPhase === "claiming") {
+    } else if (!(isClaimPending || isClaimingMulti) && transactionPhase === "claiming") {
       setTransactionPhase("idle");
     }
-  }, [isClaimPending, transactionPhase]);
+  }, [isClaimPending, isClaimingMulti, transactionPhase]);
 
   // Handle success
   useEffect(() => {
@@ -116,13 +138,18 @@ function ClaimPaymentsModal({
 
   
 
+  // Enhanced claim function that handles both legacy and multi-currency
   const handleClaimPayments = async () => {
     if (!guardedAction) {
       toast.error("Network guard not available. Please refresh and try again.");
       return;
     }
 
-    if (!pendingPayments || pendingPayments.length === 0) {
+    // Check if we have any payments to claim
+    const hasLegacyPayments = pendingPayments && pendingPayments.length > 0;
+    const hasMultiCurrencyPayments = multiCurrencyPayments && multiCurrencyPayments.tokens.length > 0;
+
+    if (!hasLegacyPayments && !hasMultiCurrencyPayments) {
       toast.error("No pending payments to claim");
       return;
     }
@@ -135,7 +162,23 @@ function ClaimPaymentsModal({
       console.log('DIVVI: About to claim payments with referral tag:', referralTag);
 
       try {
-        await claimPayments(referralTag); 
+        if (claimMode === 'multi' && hasMultiCurrencyPayments) {
+          // Multi-currency claims
+          if (selectedCurrency === 'all') {
+            await claimAllPendingPayments();
+            toast.success('All pending payments claimed successfully!');
+          } else {
+            await claimPaymentsInToken(selectedCurrency as SupportedCurrency);
+            const currencyInfo = MENTO_TOKENS[selectedCurrency as SupportedCurrency];
+            toast.success(`Payments claimed in ${currencyInfo.symbol}!`);
+          }
+          
+          // Refresh multi-currency data
+          setTimeout(() => refetchMultiCurrency(), 2000);
+        } else {
+          // Legacy cUSD claims
+          await claimPayments(referralTag); 
+        }
       } catch (err) {
         console.error("Claim failed:", err);
         throw err;
@@ -184,12 +227,16 @@ function ClaimPaymentsModal({
   };
 
   const isTransactionInProgress =
-    isClaimPending || transactionPhase === "claiming";
+    isClaimPending || isClaimingMulti || transactionPhase === "claiming";
+    
+  const hasLegacyPayments = pendingPayments && pendingPayments.length > 0;
+  const hasMultiCurrencyPayments = multiCurrencyPayments && multiCurrencyPayments.tokens.length > 0;
+  
   const canClaim =
     isConnected &&
     isCorrectChain &&
-    pendingPayments &&
-    pendingPayments.length > 0 &&
+    ((claimMode === 'legacy' && hasLegacyPayments) || 
+     (claimMode === 'multi' && hasMultiCurrencyPayments)) &&
     !isTransactionInProgress &&
     transactionPhase !== "success";
 
@@ -286,14 +333,76 @@ function ClaimPaymentsModal({
               </div>
             )}
 
-            {/* Total Amount Summary */}
-            {!isLoadingTotalAmount && totalPendingAmount !== undefined && (
+            {/* Claim Mode Selection */}
+            <div className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4">
+              <h4 className="text-sm font-medium text-slate-300 mb-3">Claim Mode</h4>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setClaimMode('legacy')}
+                  className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all ${
+                    claimMode === 'legacy'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-slate-800/50 text-slate-400 border border-slate-600/30 hover:bg-slate-700/50'
+                  }`}
+                >
+                  Legacy (cUSD only)
+                </button>
+                <button
+                  onClick={() => setClaimMode('multi')}
+                  className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all ${
+                    claimMode === 'multi'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-slate-800/50 text-slate-400 border border-slate-600/30 hover:bg-slate-700/50'
+                  }`}
+                >
+                  Multi-Currency
+                </button>
+              </div>
+            </div>
+
+            {/* Multi-Currency Selection */}
+            {claimMode === 'multi' && multiCurrencyPayments && (
+              <div className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4">
+                <h4 className="text-sm font-medium text-slate-300 mb-3">Currency Selection</h4>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setSelectedCurrency('all')}
+                    className={`px-3 py-2 text-xs rounded-lg transition-all ${
+                      selectedCurrency === 'all'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-slate-800/50 text-slate-400 border border-slate-600/30 hover:bg-slate-700/50'
+                    }`}
+                  >
+                    All Currencies
+                  </button>
+                  {multiCurrencyPayments.tokens.map((token) => {
+                    const tokenInfo = MENTO_TOKENS[token as SupportedCurrency];
+                    return (
+                      <button
+                        key={token}
+                        onClick={() => setSelectedCurrency(token as SupportedCurrency)}
+                        className={`px-3 py-2 text-xs rounded-lg transition-all ${
+                          selectedCurrency === token
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-slate-800/50 text-slate-400 border border-slate-600/30 hover:bg-slate-700/50'
+                        }`}
+                      >
+                        {tokenInfo?.symbol || token}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Total Amount Summary - Legacy Mode */}
+            {claimMode === 'legacy' && !isLoadingTotalAmount && totalPendingAmount !== undefined && (
               <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5">
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Award className="w-5 h-5 text-emerald-400" />
                     <span className="text-sm font-medium text-slate-300 uppercase tracking-wide">
-                      Total Claimable
+                      Total Claimable (Legacy)
                     </span>
                   </div>
                   <p className="text-3xl font-bold text-white mb-1">
@@ -308,74 +417,187 @@ function ClaimPaymentsModal({
               </div>
             )}
 
-            {/* Pending Payments List */}
-            {isLoadingPayments ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-              </div>
-            ) : paymentsError ? (
-              <div className="text-center py-8">
-                <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                <p className="text-white font-medium mb-2">
-                  Error Loading Payments
-                </p>
-                <p className="text-slate-400 text-sm">
-                  {paymentsError.message}
-                </p>
-              </div>
-            ) : pendingPayments && pendingPayments.length > 0 ? (
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-slate-300 uppercase tracking-wide">
-                  Payment Breakdown
-                </h3>
-                {pendingPayments.map((payment, index) => (
-                  <div
-                    key={index}
-                    className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-400" />
-                          <span className="text-sm font-medium text-white">
-                            Campaign Payment
-                          </span>
-                          {payment.approved && (
-                            <span className="px-2 py-0.5 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
-                              Approved
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-400 mb-2">
-                          Brief ID: {payment.briefId.slice(0, 10)}...
-                          {payment.briefId.slice(-6)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-emerald-400">
-                          {parseFloat(formatEther(payment.amount)).toFixed(4)}{" "}
-                          cUSD
-                        </p>
-                      </div>
-                    </div>
+            {/* Multi-Currency Summary */}
+            {claimMode === 'multi' && multiCurrencyPayments && (
+              <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5">
+                <div className="text-center mb-4">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Award className="w-5 h-5 text-emerald-400" />
+                    <span className="text-sm font-medium text-slate-300 uppercase tracking-wide">
+                      Multi-Currency Claimable
+                    </span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Clock className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <p className="text-white font-medium mb-2">
-                  No Pending Payments
-                </p>
-                <p className="text-slate-400 text-sm">
-                  Complete campaigns and wait for approval to see claimable
-                  payments here.
-                </p>
+                </div>
+                <div className="space-y-2">
+                  {multiCurrencyPayments.tokens.map((token, index) => {
+                    const tokenInfo = MENTO_TOKENS[token as SupportedCurrency];
+                    const amount = multiCurrencyPayments.amounts[index];
+                    return (
+                      <div key={token} className="flex justify-between items-center">
+                        <span className="text-sm text-slate-300">{tokenInfo?.symbol || token}:</span>
+                        <span className="text-lg font-bold text-emerald-400">
+                          {formatCurrencyAmount(amount.toString(), token as SupportedCurrency)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <div className="border-t border-slate-700/50 pt-2 mt-2">
+                    <p className="text-xs text-slate-400 text-center">
+                      From completed campaigns
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
+            {/* Payment Lists Based on Mode */}
+            {claimMode === 'legacy' ? (
+              // Legacy Payment List
+              isLoadingPayments ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                </div>
+              ) : paymentsError ? (
+                <div className="text-center py-8">
+                  <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+                  <p className="text-white font-medium mb-2">
+                    Error Loading Payments
+                  </p>
+                  <p className="text-slate-400 text-sm">
+                    {paymentsError.message}
+                  </p>
+                </div>
+              ) : pendingPayments && pendingPayments.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-slate-300 uppercase tracking-wide">
+                    Legacy Payment Breakdown
+                  </h3>
+                  {pendingPayments.map((payment, index) => (
+                    <div
+                      key={index}
+                      className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-400" />
+                            <span className="text-sm font-medium text-white">
+                              Campaign Payment
+                            </span>
+                            {payment.approved && (
+                              <span className="px-2 py-0.5 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
+                                Approved
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-400 mb-2">
+                            Brief ID: {payment.briefId.slice(0, 10)}...
+                            {payment.briefId.slice(-6)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-emerald-400">
+                            {parseFloat(formatEther(payment.amount)).toFixed(4)}{" "}
+                            cUSD
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Clock className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-white font-medium mb-2">
+                    No Legacy Payments
+                  </p>
+                  <p className="text-slate-400 text-sm">
+                    No legacy cUSD payments available for claiming.
+                  </p>
+                </div>
+              )
+            ) : (
+              // Multi-Currency Payment List
+              isLoadingMultiCurrency ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                </div>
+              ) : multiCurrencyPayments && multiCurrencyPayments.tokens.length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-slate-300 uppercase tracking-wide">
+                    Multi-Currency Payment Breakdown
+                  </h3>
+                  {selectedCurrency === 'all' ? (
+                    // Show all currencies
+                    multiCurrencyPayments.tokens.map((token, index) => {
+                      const tokenInfo = MENTO_TOKENS[token as SupportedCurrency];
+                      const amount = multiCurrencyPayments.amounts[index];
+                      return (
+                        <div
+                          key={token}
+                          className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4"
+                        >
+                          <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-emerald-400" />
+                              <span className="text-sm font-medium text-white">
+                                {tokenInfo?.name || token} Payments
+                              </span>
+                            </div>
+                            <span className="text-lg font-bold text-emerald-400">
+                              {formatCurrencyAmount(amount.toString(), token as SupportedCurrency)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400">
+                            From completed campaigns
+                          </p>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    // Show selected currency only
+                    (() => {
+                      const tokenIndex = multiCurrencyPayments.tokens.findIndex(t => t === selectedCurrency);
+                      if (tokenIndex === -1) return null;
+                      const amount = multiCurrencyPayments.amounts[tokenIndex];
+                      const tokenInfo = MENTO_TOKENS[selectedCurrency as SupportedCurrency];
+                      return (
+                        <div className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4">
+                          <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-emerald-400" />
+                              <span className="text-sm font-medium text-white">
+                                {tokenInfo?.name || selectedCurrency} Payments
+                              </span>
+                            </div>
+                            <span className="text-lg font-bold text-emerald-400">
+                              {formatCurrencyAmount(amount.toString(), selectedCurrency)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400">
+                            From completed campaigns
+                          </p>
+                        </div>
+                      );
+                    })()
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Clock className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-white font-medium mb-2">
+                    No Multi-Currency Payments
+                  </p>
+                  <p className="text-slate-400 text-sm">
+                    Complete multi-currency campaigns and wait for approval to see claimable payments here.
+                  </p>
+                </div>
+              )
+            )}
+
             {/* Gas Fee Notice */}
-            {pendingPayments && pendingPayments.length > 0 && (
+            {((claimMode === 'legacy' && pendingPayments && pendingPayments.length > 0) ||
+              (claimMode === 'multi' && multiCurrencyPayments && multiCurrencyPayments.tokens.length > 0)) && (
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -385,8 +607,10 @@ function ClaimPaymentsModal({
                     </p>
                     <p className="text-xs text-slate-400 leading-relaxed">
                       A small gas fee will be required to claim your payments.
-                      All approved payments will be claimed in a single
-                      transaction.
+                      {claimMode === 'multi' && selectedCurrency === 'all' 
+                        ? ' All currencies will be claimed in a single transaction.'
+                        : ' All approved payments will be claimed in a single transaction.'
+                      }
                     </p>
                   </div>
                 </div>
@@ -435,10 +659,20 @@ function ClaimPaymentsModal({
                   <CheckCircle className="w-4 h-4" />
                   <span>Claimed!</span>
                 </>
-              ) : pendingPayments && pendingPayments.length > 0 ? (
+              ) : claimMode === 'legacy' && hasLegacyPayments ? (
                 <>
                   <DollarSign className="w-4 h-4" />
-                  <span>Claim All Payments</span>
+                  <span>Claim Legacy Payments</span>
+                </>
+              ) : claimMode === 'multi' && hasMultiCurrencyPayments ? (
+                <>
+                  <DollarSign className="w-4 h-4" />
+                  <span>
+                    {selectedCurrency === 'all' 
+                      ? 'Claim All Currencies' 
+                      : `Claim ${MENTO_TOKENS[selectedCurrency as SupportedCurrency]?.symbol || selectedCurrency}`
+                    }
+                  </span>
                 </>
               ) : (
                 <>

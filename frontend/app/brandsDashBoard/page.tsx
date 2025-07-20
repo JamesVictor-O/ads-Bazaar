@@ -45,7 +45,7 @@ import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { NotificationButton } from "@/components/NotificationButton";
 import { NotificationDebug } from "@/components/NotificationDebug";
 import { MentoFXDemo } from "@/components/MentoFXDemo";
-import { SupportedCurrency } from "@/lib/mento-integration";
+import { SupportedCurrency } from "@/lib/mento-simple";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
   getStatusColor,
@@ -283,6 +283,19 @@ const BrandDashboard = () => {
     const completedBriefs = briefs.filter(
       (brief) => brief.status === CampaignStatus.COMPLETED
     );
+    
+    // Calculate budget by currency
+    const budgetByCurrency = briefs.reduce((acc, brief) => {
+      const currency = brief.currency || "cUSD"; // Default to cUSD for legacy campaigns
+      acc[currency] = (acc[currency] || 0) + brief.budget;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Get primary currency (highest total budget) for main display
+    const primaryCurrency = Object.keys(budgetByCurrency).reduce((a, b) => 
+      budgetByCurrency[a] > budgetByCurrency[b] ? a : b, "cUSD"
+    );
+    
     const totalBudget = briefs.reduce((sum, brief) => sum + brief.budget, 0);
     const totalInfluencers = briefs.reduce(
       (sum, brief) => sum + brief.selectedInfluencersCount,
@@ -304,6 +317,8 @@ const BrandDashboard = () => {
       activeBriefs,
       completedBriefs,
       totalBudget,
+      budgetByCurrency,
+      primaryCurrency,
       totalInfluencers,
       urgentActions: urgentActions || [],
     };
@@ -319,6 +334,7 @@ const BrandDashboard = () => {
           description: "",
           requirements: "",
           budget: "",
+          currency: "cUSD", // Default currency
           promotionDuration: "604800",
           maxInfluencers: "5",
           targetAudience: "0",
@@ -969,6 +985,38 @@ const BrandDashboard = () => {
 
         {/* Mento FX Demo */}
         <MentoFXDemo />
+        
+        {/* Multi-Currency Summary */}
+        {dashboardData?.budgetByCurrency && Object.keys(dashboardData.budgetByCurrency).length > 1 && (
+          <motion.div
+            className="mb-6 md:mb-8 bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-xl md:rounded-2xl p-4 md:p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h3 className="text-lg md:text-xl font-bold text-white mb-4">
+              Multi-Currency Portfolio
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+              {Object.entries(dashboardData.budgetByCurrency).map(([currency, amount]) => (
+                <div
+                  key={currency}
+                  className="bg-slate-700/30 rounded-lg p-3 border border-slate-600/50"
+                >
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-slate-400 mb-1">
+                      {currency}
+                    </div>
+                    <div className="text-base md:text-lg font-bold text-white">
+                      {formatCurrency(amount, currency as SupportedCurrency, 0)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+        
         <div className="mb-6 md:mb-8"></div>
 
         {/* Stats Grid */}
@@ -993,9 +1041,15 @@ const BrandDashboard = () => {
             {
               icon: DollarSign,
               color: "emerald-400",
-              value: formatCurrency(dashboardData?.totalBudget || 0, "cUSD", 0),
-              label: "Total Budget",
-              subtext: "Across all campaigns",
+              value: formatCurrency(
+                dashboardData?.budgetByCurrency?.[dashboardData.primaryCurrency] || 0, 
+                dashboardData?.primaryCurrency as SupportedCurrency || "cUSD", 
+                0
+              ),
+              label: `Total Budget (${dashboardData?.primaryCurrency || "cUSD"})`,
+              subtext: Object.keys(dashboardData?.budgetByCurrency || {}).length > 1 ? 
+                `${Object.keys(dashboardData?.budgetByCurrency || {}).length} currencies` : 
+                "Across all campaigns",
             },
             {
               icon: Users,
@@ -1259,16 +1313,25 @@ const BrandDashboard = () => {
                       {/* Budget & Progress Section - Mobile Optimized */}
                       <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600/50">
                         <div className="space-y-1">
-                          <div className="text-lg font-bold text-white">
-                            {formatCurrency(brief.budget)}
+                          <div className="flex items-center gap-2">
+                            <div className="text-lg font-bold text-white">
+                              {formatCurrency(brief.budget, brief.currency as SupportedCurrency || "cUSD")}
+                            </div>
+                            {(brief.currency && brief.currency !== "cUSD") && (
+                              <span className="px-2 py-0.5 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/40">
+                                {brief.currency}
+                              </span>
+                            )}
                           </div>
                           <div className="text-slate-400 text-xs">
                             {brief.selectedInfluencersCount > 0
                               ? `${formatCurrency(
-                                  brief.progressInfo.budgetPerSpot
+                                  brief.progressInfo.budgetPerSpot, 
+                                  brief.currency as SupportedCurrency || "cUSD"
                                 )} per influencer`
                               : `${formatCurrency(
-                                  brief.progressInfo.budgetPerSpot
+                                  brief.progressInfo.budgetPerSpot,
+                                  brief.currency as SupportedCurrency || "cUSD"
                                 )} per spot`}
                           </div>
                         </div>
@@ -1740,7 +1803,7 @@ const BrandDashboard = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Total Budget:</span>
-                      <span className="text-white">{Number(brief.budget).toFixed(2)} cUSD</span>
+                      <span className="text-white">{formatCurrency(Number(brief.budget), brief.currency as SupportedCurrency || "cUSD")}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Selected Influencers:</span>
@@ -1748,15 +1811,15 @@ const BrandDashboard = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Compensation per Influencer:</span>
-                      <span className="text-amber-400 font-medium">{compensationPerInfluencer.toFixed(2)} cUSD</span>
+                      <span className="text-amber-400 font-medium">{formatCurrency(compensationPerInfluencer, brief.currency as SupportedCurrency || "cUSD")}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Total Compensation (10%):</span>
-                      <span className="text-amber-400 font-medium">{totalCompensation.toFixed(2)} cUSD</span>
+                      <span className="text-amber-400 font-medium">{formatCurrency(totalCompensation, brief.currency as SupportedCurrency || "cUSD")}</span>
                     </div>
                     <div className="flex justify-between border-t border-slate-700/50 pt-2">
                       <span className="text-slate-400">Refund to You:</span>
-                      <span className="text-emerald-400 font-medium">{remainingRefund.toFixed(2)} cUSD</span>
+                      <span className="text-emerald-400 font-medium">{formatCurrency(remainingRefund, brief.currency as SupportedCurrency || "cUSD")}</span>
                     </div>
                   </div>
                 </div>

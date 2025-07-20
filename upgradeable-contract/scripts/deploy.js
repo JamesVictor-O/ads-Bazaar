@@ -54,7 +54,9 @@ async function deployDiamond() {
     'ProofManagementFacet',
     'PaymentManagementFacet',
     'DisputeManagementFacet',
-    'GettersFacet'
+    'GettersFacet',
+    'MultiCurrencyPaymentFacet',
+    'MultiCurrencyCampaignFacet'
   ]
   
   for (const FacetName of AdsBazaarFacetNames) {
@@ -78,7 +80,7 @@ async function deployDiamond() {
   // call to init function - initialize with all required parameters
   const owner = contractOwner.address
   const cUSD = '0x765DE816845861e75A25fCA122bb6898B8B1282a' // Celo mainnet cUSD
-  const platformFeePercentage = 5 // 0.5%
+  const platformFeePercentage = 100 // 1% (100 basis points)
   const identityVerificationHub = '0x77117D60eaB7C044e785D68edB6C7E0e134970Ea'
   const scope = process.env.HASHED_SCOPE || '8842010690511844304671443815706539493229053006563555412648726180531649441904'
   const attestationIds = [1] // For passport verification

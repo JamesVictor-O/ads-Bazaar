@@ -71,6 +71,7 @@ export interface Brief {
   description: string;
   requirements: string;
   budget: number;
+  currency?: string; // Optional for legacy campaigns, defaults to cUSD
   status: CampaignStatus;
   promotionDuration: number;
   promotionStartTime: number;

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Zap, TrendingUp, Globe, ArrowRightLeft } from 'lucide-react';
 import { CurrencySelector } from './CurrencySelector';
 import { CurrencyConverter } from './CurrencyConverter';
-import { SupportedCurrency, mentoFX, MENTO_TOKENS } from '@/lib/mento-integration';
+import { SupportedCurrency, mentoFX, MENTO_TOKENS } from '@/lib/mento-simple';
 
 export function MentoFXDemo() {
   const [fromCurrency, setFromCurrency] = useState<SupportedCurrency>('cUSD');

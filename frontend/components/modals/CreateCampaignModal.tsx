@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { CurrencySelector } from "../CurrencySelector";
 import { CurrencyConverter } from "../CurrencyConverter";
-import { SupportedCurrency } from "@/lib/mento-integration";
-import { motion } from "framer-motion";
+import { SupportedCurrency } from "@/lib/mento-simple";
+// import { motion } from "framer-motion";
 import { useAccount } from "wagmi";
 import { toast } from "react-hot-toast";
 import { withNetworkGuard } from "../WithNetworkGuard";
@@ -190,504 +190,307 @@ function CreateCampaignModal({
   const canSubmit =
     isConnected && isCorrectChain && isFormValid && !isTransactionInProgress;
 
+  const transactionMessage = getTransactionMessage();
+
   return (
-    <motion.div
-      className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 md:p-4 overflow-y-auto"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <motion.div
-        className="bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl w-full max-w-[95vw] sm:max-w-2xl mx-auto max-h-[90vh] md:overflow-y-auto"
-        initial={{ scale: 0.95, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.95, y: 20 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-700">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-700/50 sticky top-0 bg-slate-800/95 z-10 mb-2">
-          <h2 className="text-lg sm:text-2xl font-bold text-white">
-            Create New Campaign
-          </h2>
+        <div className="flex items-center justify-between p-6 border-b border-slate-700">
+          <div>
+            <h2 className="text-xl font-bold text-white">Create Campaign</h2>
+            <p className="text-sm text-slate-400">
+              Launch your multi-currency marketing campaign
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
-            aria-label="Close modal"
-            disabled={isTransactionInProgress}
+            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
 
-        {/* Scrollable Form Content */}
-        <div className="px-4 pb-4 max-h-[calc(90vh-180px)] sm:max-h-[calc(90vh-200px)] overflow-y-auto">
-          {/* Network Status */}
-          {isConnected && (
-            <div className="mt-4">
-              <NetworkStatus className="bg-slate-900/30 border-slate-600/50" />
-            </div>
-          )}
+        {/* Network Status */}
+        <div className="px-6 pt-4">
+          <NetworkStatus />
+        </div>
 
-          {/* Connection Warning */}
-          {!isConnected && (
-            <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start">
-              <AlertTriangle className="text-amber-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
-              <div>
-                <p className="text-sm font-medium text-amber-400">
-                  Wallet Not Connected
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Connect your wallet to create campaigns
-                </p>
+        {/* Transaction Status */}
+        {transactionMessage && (
+          <div className="mx-6 mt-4">
+            <div className={`p-4 rounded-lg border ${transactionMessage.bgColor}`}>
+              <div className="flex items-center gap-3">
+                {transactionMessage.icon}
+                <div>
+                  <h3 className={`font-medium ${transactionMessage.textColor}`}>
+                    {transactionMessage.title}
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    {transactionMessage.description}
+                  </p>
+                </div>
+                {isTransactionInProgress && (
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-400 ml-auto" />
+                )}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Transaction Status */}
-          {transactionPhase !== "idle" && (
-            <div className="mt-4">
-              {(() => {
-                const txMessage = getTransactionMessage();
-                if (!txMessage) return null;
-
-                return (
-                  <div
-                    className={`p-3 rounded-xl border flex items-start ${txMessage.bgColor}`}
-                  >
-                    <div className="mr-3 mt-0.5 flex-shrink-0">
-                      {transactionPhase === "approving" ||
-                      transactionPhase === "creating" ? (
-                        <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
-                      ) : (
-                        txMessage.icon
-                      )}
-                    </div>
-                    <div>
-                      <p
-                        className={`text-sm font-medium ${txMessage.textColor}`}
-                      >
-                        {txMessage.title}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {txMessage.description}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          <div className="space-y-4 mt-4">
+        {/* Form */}
+        <div className="p-6 space-y-6">
+          {/* Basic Info */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white">Campaign Details</h3>
+            
             {/* Campaign Name */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
-                Campaign Name
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Campaign Name *
               </label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
                 placeholder="Enter campaign name"
-                required
-                aria-required="true"
-                disabled={isTransactionInProgress}
               />
             </div>
 
-            {/* Campaign Description */}
+            {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
-                Campaign Description
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Description *
               </label>
               <textarea
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 resize-y text-sm"
-                rows={4}
-                placeholder="Describe your campaign"
-                required
-                aria-required="true"
-                disabled={isTransactionInProgress}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none resize-none"
+                placeholder="Describe your campaign goals and what you're promoting"
               />
             </div>
 
-            {/* Campaign Requirements */}
+            {/* Requirements */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
-                Campaign Requirements
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Requirements *
               </label>
               <textarea
                 value={formData.requirements}
-                onChange={(e) =>
-                  setFormData({ ...formData, requirements: e.target.value })
-                }
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 resize-y text-sm"
-                rows={4}
-                placeholder="Specify campaign requirements (e.g., content type, posting guidelines)"
-                required
-                aria-required="true"
-                disabled={isTransactionInProgress}
+                onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none resize-none"
+                placeholder="Specify what influencers need to do (e.g., post type, hashtags, mentions)"
               />
             </div>
+          </div>
 
-            {/* Budget and Currency Section */}
-            <div className="space-y-4">
+          {/* Budget & Currency */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-400" />
+              Budget & Currency
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Budget */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-slate-300">
-                    Campaign Budget
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowConverter(!showConverter)}
-                    className="text-xs text-emerald-400 hover:text-emerald-300"
-                  >
-                    {showConverter ? 'Hide' : 'Show'} Currency Converter
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Budget Amount Input */}
-                  <div>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        value={formData.budget}
-                        onChange={(e) =>
-                          setFormData({ ...formData, budget: e.target.value })
-                        }
-                        className="w-full pl-10 pr-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
-                        placeholder="Enter budget amount"
-                        required
-                        aria-required="true"
-                        disabled={isTransactionInProgress}
-                      />
-                    </div>
-                  </div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Total Budget *
+                </label>
+                <input
+                  type="number"
+                  value={formData.budget}
+                  onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+                  placeholder="100"
+                />
+              </div>
 
-                  {/* Currency Selector */}
-                  <div>
-                    <CurrencySelector
-                      selectedCurrency={formData.currency}
-                      onCurrencyChange={(currency) =>
-                        setFormData({ ...formData, currency })
-                      }
-                      amount={formData.budget}
-                      showConverter={false}
-                    />
-                  </div>
-                </div>
-
-                {/* Currency Converter */}
-                {showConverter && formData.budget && formData.currency !== 'cUSD' && (
-                  <div className="mt-4">
-                    <CurrencyConverter
-                      amount={formData.budget}
-                      fromCurrency={formData.currency}
-                      toCurrency="cUSD"
-                      showSwapButton={true}
-                      onSwap={() => {
-                        setFormData(prev => ({
-                          ...prev,
-                          currency: prev.currency === 'cUSD' ? 'cEUR' : 'cUSD'
-                        }));
-                      }}
-                    />
-                  </div>
-                )}
+              {/* Currency */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Currency *
+                </label>
+                <CurrencySelector
+                  selectedCurrency={formData.currency}
+                  onCurrencyChange={(currency) => setFormData({ ...formData, currency })}
+                  amount={formData.budget}
+                  className="bg-slate-800 border-slate-600 text-white"
+                />
               </div>
             </div>
 
-            {/* Grid Container for other fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Currency Converter */}
+            {showConverter && formData.budget && formData.currency !== 'cUSD' && (
+              <div className="mt-4">
+                <CurrencyConverter
+                  amount={formData.budget}
+                  fromCurrency={formData.currency}
+                  toCurrency="cUSD"
+                  className="bg-slate-800/50"
+                />
               </div>
+            )}
+            
+            <button
+              onClick={() => setShowConverter(!showConverter)}
+              className="text-sm text-emerald-400 hover:text-emerald-300"
+            >
+              {showConverter ? 'Hide' : 'Show'} currency conversion
+            </button>
+          </div>
 
+          {/* Campaign Settings */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-400" />
+              Campaign Settings
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Max Influencers */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Max Influencers
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Max Influencers *
                 </label>
-                <div className="relative">
-                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={formData.maxInfluencers}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        maxInfluencers: e.target.value,
-                      })
-                    }
-                    className="w-full pl-10 pr-3 py-2.5 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
-                    placeholder="Max influencers (1-10)"
-                    required
-                    aria-required="true"
-                    disabled={isTransactionInProgress}
-                  />
-                </div>
-              </div>
-
-              {/* Promotion Duration */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Promotion Duration
-                </label>
-                <select
-                  value={formData.promotionDuration}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      promotionDuration: e.target.value,
-                    })
-                  }
-                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                  disabled={isTransactionInProgress}
-                >
-                  <option value="86400">1 day</option>
-                  <option value="172800">2 days</option>
-                  <option value="259200">3 days</option>
-                  <option value="345600">4 days</option>
-                  <option value="432000">5 days</option>
-                  <option value="604800">6 days</option>
-                  <option value="691200">7 days</option>
-                  <option value="691200">8 days</option>
-                  <option value="777600">9 days</option>
-                  <option value="864000">10 days</option>
-                  <option value="950400">11 days</option>
-                  <option value="1036800">12 days</option>
-                  <option value="1123200">13 days</option>
-                  <option value="1209600">14 days</option>
-                </select>
+                <input
+                  type="number"
+                  value={formData.maxInfluencers}
+                  onChange={(e) => setFormData({ ...formData, maxInfluencers: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+                  placeholder="5"
+                />
               </div>
 
               {/* Target Audience */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Target Audience
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Target Audience *
                 </label>
                 <select
                   value={formData.targetAudience}
-                  onChange={(e) =>
-                    setFormData({ ...formData, targetAudience: e.target.value })
-                  }
-                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                  disabled={isTransactionInProgress}
+                  onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
                 >
-                  <option value="0">General</option>
-                  <option value="1">Fashion</option>
-                  <option value="2">Technology</option>
-                  <option value="3">Gaming</option>
-                  <option value="4">Fitness</option>
-                  <option value="5">Beauty</option>
-                  <option value="6">Food</option>
-                  <option value="7">Travel</option>
-                  <option value="8">Business</option>
-                  <option value="9">Education</option>
-                  <option value="10">Entertainment</option>
-                  <option value="11">Sports</option>
-                  <option value="12">Lifestyle</option>
+                  <option value="">Select audience</option>
+                  <option value="1">General (All ages)</option>
+                  <option value="2">Young Adults (18-30)</option>
+                  <option value="3">Adults (30-50)</option>
+                  <option value="4">Seniors (50+)</option>
                 </select>
               </div>
             </div>
+          </div>
 
-            {/* Timing Configuration Section */}
-            <div className="bg-slate-900/30 border border-slate-700/30 rounded-xl p-4">
-              <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center">
-                <Clock className="w-4 h-4 mr-2" />
-                Campaign Timing Configuration
-              </h4>
+          {/* Timing Settings */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Clock className="w-5 h-5 text-purple-400" />
+              Timing Settings
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Promotion Duration */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Promotion Duration (days) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.promotionDuration}
+                  onChange={(e) => setFormData({ ...formData, promotionDuration: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+                  placeholder="7"
+                />
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {/* Application Period */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Application Period
-                  </label>
-                  <select
-                    value={formData.applicationPeriod}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        applicationPeriod: e.target.value,
-                      })
-                    }
-                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                    disabled={isTransactionInProgress}
-                  >
-                    <option value="86400">1 day</option>
-                    <option value="172800">2 days</option>
-                    <option value="259200">3 days</option>
-                    <option value="345600">4 days</option>
-                    <option value="432000">5 days</option>
-                    <option value="604800">7 days</option>
-                    <option value="864000">10 days</option>
-                    <option value="1209600">14 days</option>
-                  </select>
-                  <p className="text-xs text-slate-400 mt-1">
-                    How long influencers can apply
-                  </p>
-                </div>
+              {/* Application Period */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Application Period (days) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.applicationPeriod}
+                  onChange={(e) => setFormData({ ...formData, applicationPeriod: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+                  placeholder="2"
+                />
+              </div>
 
-                {/* Proof Submission Grace Period */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Proof Grace Period
-                  </label>
-                  <select
-                    value={formData.proofSubmissionGracePeriod}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        proofSubmissionGracePeriod: e.target.value,
-                      })
-                    }
-                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                    disabled={isTransactionInProgress}
-                  >
-                    <option value="86400">1 day</option>
-                    <option value="172800">2 days (max)</option>
-                  </select>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Grace period after promotion ends
-                  </p>
-                </div>
+              {/* Verification Period */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Verification Period (days) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.verificationPeriod}
+                  onChange={(e) => setFormData({ ...formData, verificationPeriod: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+                  placeholder="1"
+                />
+              </div>
 
-                {/* Verification Period */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Verification Period
-                  </label>
-                  <select
-                    value={formData.verificationPeriod}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        verificationPeriod: e.target.value,
-                      })
-                    }
-                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                    disabled={isTransactionInProgress}
-                  >
-                    <option value="86400">1 day</option>
-                    <option value="172800">2 days</option>
-                    <option value="259200">3 days</option>
-                    <option value="345600">4 days</option>
-                    <option value="432000">5 days (max)</option>
-                  </select>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Time to review submissions
-                  </p>
-                </div>
-
-                {/* Selection Grace Period */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Selection Grace Period
-                  </label>
-                  <select
-                    value={formData.selectionGracePeriod}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        selectionGracePeriod: e.target.value,
-                      })
-                    }
-                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
-                    disabled={isTransactionInProgress}
-                  >
-                    <option value="86400">1d</option>
-                    <option value="172800">2d (max)</option>
-                  </select>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Grace period for selecting influencers
-                  </p>
-                </div>
+              {/* Proof Submission Grace Period */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Proof Submission (days) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.proofSubmissionGracePeriod}
+                  onChange={(e) => setFormData({ ...formData, proofSubmissionGracePeriod: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+                  placeholder="1"
+                />
               </div>
             </div>
 
-            {/* Budget Breakdown Info */}
-            {formData.budget && Number(formData.budget) > 0 && (
-              <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4">
-                <h4 className="text-sm font-medium text-slate-300 mb-2">
-                  Budget Breakdown
-                </h4>
-                <div className="space-y-1 text-xs text-slate-400">
-                  <div className="flex justify-between">
-                    <span>Total Budget:</span>
-                    <span className="text-white">{formData.budget} cUSD</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Platform Fee (1%):</span>
-                    <span>
-                      {(Number(formData.budget) * 0.01).toFixed(2)} cUSD
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t border-slate-700/50 pt-1">
-                    <span>Influencer Payout:</span>
-                    <span className="text-emerald-400">
-                      {(Number(formData.budget) * 0.99).toFixed(2)} cUSD
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Selection Grace Period */}
+            <div className="md:w-1/2">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Selection Grace Period (hours) *
+              </label>
+              <input
+                type="number"
+                value={formData.selectionGracePeriod}
+                onChange={(e) => setFormData({ ...formData, selectionGracePeriod: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+                placeholder="6"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Fixed Action Buttons */}
-        <div className="border-t border-slate-700/50 bg-slate-800/95 p-4 sticky bottom-0">
-          <div className="flex flex-col sm:flex-row justify-end gap-3">
+          {/* Submit Button */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
             <button
               onClick={onClose}
-              className="order-2 sm:order-1 px-4 py-2.5 bg-slate-700/50 text-slate-300 rounded-lg border border-slate-600/50 hover:bg-slate-700 hover:border-slate-500 active:bg-slate-600 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              disabled={isTransactionInProgress}
+              className="px-6 py-2 text-slate-400 hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleCreateCampaign}
               disabled={!canSubmit}
-              className="order-1 sm:order-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 transition-all duration-200 shadow-sm shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-400 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
             >
               {isTransactionInProgress ? (
                 <>
-                  <Loader2 className="animate-spin h-4 w-4 text-white flex-shrink-0" />
-                  <span>
-                    {transactionPhase === "approving"
-                      ? "Approving..."
-                      : "Creating..."}
-                  </span>
-                </>
-              ) : !isConnected ? (
-                <>
-                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                  <span>Connect Wallet</span>
-                </>
-              ) : !isCorrectChain ? (
-                <>
-                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                  <span>Switch to {currentNetwork.name}</span>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
                 </>
               ) : (
-                <span>Create Campaign</span>
+                'Create Campaign'
               )}
             </button>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 

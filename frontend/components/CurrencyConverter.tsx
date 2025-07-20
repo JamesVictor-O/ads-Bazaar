@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowRightLeft, TrendingUp, TrendingDown } from 'lucide-react';
-import { MENTO_TOKENS, SupportedCurrency, mentoFX } from '@/lib/mento-integration';
+import { MENTO_TOKENS, SupportedCurrency, mentoFX } from '@/lib/mento-simple';
 
 interface CurrencyConverterProps {
   amount: string;

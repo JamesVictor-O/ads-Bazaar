@@ -13,7 +13,7 @@ const CONTRACT_ADDRESSES = {
     EXOF: "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08", // Mainnet eXOF
     CNGN: "0x17700282592D6917F6A73D0bF8AcCf4D578c131e", // Mainnet cNGN
     ADS_BAZAAR: "0x01d7deb320aac719128950fc6b86c0fe851ab0c3", // Legacy contract (cUSD only)
-    ADS_BAZAAR_MULTICURRENCY: "", // NEW: Multi-currency Diamond contract (to be deployed)
+    ADS_BAZAAR_MULTICURRENCY: "0x2f00c10f7e0b6772a0d01d0f742590753edbe08b", // NEW: Multi-currency Diamond contract (MAINNET)
     SELF_SCOPE: "AdsBazaar"
     
   },
@@ -26,7 +26,7 @@ const CONTRACT_ADDRESSES = {
     EXOF: "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08", // Placeholder (same as mainnet)
     CNGN: "0x17700282592D6917F6A73D0bF8AcCf4D578c131e", // Placeholder (same as mainnet)
     ADS_BAZAAR: "0xe32DAF0A546a4bbe0e33EEeacb14CdC34B146BDf", // Legacy contract (cUSD only)
-    ADS_BAZAAR_MULTICURRENCY: "", // NEW: Multi-currency Diamond contract (to be deployed)
+    ADS_BAZAAR_MULTICURRENCY: "0x2f00c10f7e0b6772a0d01d0f742590753edbe08b", // NEW: Multi-currency Diamond contract (Using mainnet for now)
     SELF_SCOPE: "AdsBazaar"
   },
 };
@@ -43,13 +43,20 @@ export const cUSDContractConfig = {
   abi: erc20Abi,
 };
 
-export const CONTRACT_ADDRESS = getCurrentAddresses()
+// Legacy contract address (cUSD only)
+export const LEGACY_CONTRACT_ADDRESS = getCurrentAddresses()
   .ADS_BAZAAR as `0x${string}`;
 
-// Multi-currency contract address (will be updated after deployment)
+// Multi-currency contract address (new Diamond)
+export const CONTRACT_ADDRESS = (() => {
+  const addresses = getCurrentAddresses();
+  return addresses.ADS_BAZAAR_MULTICURRENCY as `0x${string}`;
+})();
+
+// Use multi-currency contract by default, fallback to legacy if needed
 export const MULTICURRENCY_CONTRACT_ADDRESS = () => {
   const addresses = getCurrentAddresses();
-  return (addresses.ADS_BAZAAR_MULTICURRENCY || addresses.ADS_BAZAAR) as `0x${string}`;
+  return addresses.ADS_BAZAAR_MULTICURRENCY as `0x${string}`;
 };
 
 // All Mento token addresses for current network
