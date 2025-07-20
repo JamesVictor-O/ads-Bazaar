@@ -7,7 +7,7 @@ import {
   usePublicClient,
 } from "wagmi";
 import { parseUnits, Hex, formatEther } from "viem";
-import { cUSDContractConfig, CONTRACT_ADDRESS, LEGACY_CONTRACT_ADDRESS } from "../lib/contracts";
+import { cUSDContractConfig, CONTRACT_ADDRESS } from "../lib/contracts";
 import {
   Brief,
   Application,
@@ -395,46 +395,28 @@ export function useUserProfile(userAddress?: Address) {
     },
   });
 
-  // Query legacy contract if user not found in new contract
-  const { 
-    data: legacyData, 
-    error: legacyError, 
-    isLoading: legacyLoading,
-    refetch: refetchLegacy 
-  } = useReadContract({
-    address: LEGACY_CONTRACT_ADDRESS,
-    abi: ABI.abi,
-    functionName: "getUsers",
-    args: [targetAddress],
-    query: {
-      enabled: !!targetAddress && (!newData || !(newData as any)?.isRegistered),
-    },
-  });
+  // Removed legacy contract query - using only diamond contract
 
-  // Use new contract data if user is registered, otherwise fallback to legacy
-  const data = (newData && (newData as any)?.isRegistered) ? newData : legacyData;
-  const error = newError || legacyError;
-  const isLoading = newLoading || legacyLoading;
+  // Use only diamond contract data
+  const data = newData;
+  const error = newError;
+  const isLoading = newLoading;
   
   const refetch = async () => {
     await refetchNew();
-    await refetchLegacy();
   };
 
   // Debug the contract call
   useEffect(() => {
     console.log('useUserProfile debug:', {
       targetAddress,
-      newContract: CONTRACT_ADDRESS,
-      legacyContract: LEGACY_CONTRACT_ADDRESS,
-      newData: newData && (newData as any)?.isRegistered ? 'registered' : 'not registered',
-      legacyData: legacyData && (legacyData as any)?.isRegistered ? 'registered' : 'not registered',
-      finalData: data,
+      contract: CONTRACT_ADDRESS,
+      data: data && (data as any)?.isRegistered ? 'registered' : 'not registered',
       error: error?.message,
       isLoading,
       enabled: !!targetAddress
     });
-  }, [targetAddress, newData, legacyData, data, error, isLoading]);
+  }, [targetAddress, data, error, isLoading]);
 
   const userProfile = useMemo(() => {
     if (!data) return null;
@@ -690,33 +672,16 @@ export function useGetUsername(userAddress?: Address) {
     },
   });
 
-  // Query legacy contract if no username found in new contract
-  const { 
-    data: legacyUsername, 
-    error: legacyError, 
-    isLoading: legacyLoading,
-    refetch: refetchLegacy 
-  } = useReadContract({
-    address: LEGACY_CONTRACT_ADDRESS,
-    abi: ABI.abi,
-    functionName: "getUserUsername",
-    args: [targetAddress],
-    query: {
-      enabled: !!targetAddress && (!newUsername || (newUsername as string)?.trim() === ""),
-    },
-  });
+  // Removed legacy contract query - using only diamond contract
+  
+  // Use only diamond contract username
+  const username = newUsername as string | undefined;
 
-  // Use new contract username if available, otherwise fallback to legacy
-  const username = (newUsername && (newUsername as string).trim() !== "") 
-    ? newUsername as string 
-    : legacyUsername as string | undefined;
-
-  const isLoading = newLoading || legacyLoading;
-  const error = newError || legacyError;
+  const isLoading = newLoading;
+  const error = newError;
 
   const refetch = async () => {
     await refetchNew();
-    await refetchLegacy();
   };
 
   return {

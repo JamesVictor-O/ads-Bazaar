@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useWriteContract, useAccount } from 'wagmi';
 import { parseUnits } from 'viem';
-import { MULTICURRENCY_CONTRACT_ADDRESS } from '@/lib/contracts';
+import { CONTRACT_ADDRESS } from '@/lib/contracts';
 import { SupportedCurrency, MENTO_TOKENS } from '@/lib/mento-simple';
 import { CURRENT_NETWORK } from '@/lib/networks';
 import { toast } from 'react-hot-toast';
@@ -38,7 +38,7 @@ export function useCreateBrief() {
       if (currency === 'cUSD') {
         // ✅ Use EXISTING function for cUSD (100% backward compatible)
         const result = await writeContract({
-          address: MULTICURRENCY_CONTRACT_ADDRESS(),
+          address: CONTRACT_ADDRESS,
           abi: ABI.abi,
           functionName: 'createAdBrief', // Same function name
           args: [
@@ -61,7 +61,7 @@ export function useCreateBrief() {
       } else {
         // 🆕 Use NEW function for other currencies
         const result = await writeContract({
-          address: MULTICURRENCY_CONTRACT_ADDRESS(),
+          address: CONTRACT_ADDRESS,
           abi: ABI.abi,
           functionName: 'createAdBriefWithToken',
           args: [
@@ -112,7 +112,7 @@ export function useClaimPayments() {
       if (!currency) {
         // ✅ Use EXISTING function (100% backward compatible)
         const result = await writeContract({
-          address: MULTICURRENCY_CONTRACT_ADDRESS(),
+          address: CONTRACT_ADDRESS,
           abi: ABI.abi,
           functionName: 'claimPayments', // Same function name
           args: [],
@@ -124,7 +124,7 @@ export function useClaimPayments() {
         // 🆕 Use NEW function for specific currency
         const tokenInfo = MENTO_TOKENS[currency];
         const result = await writeContract({
-          address: MULTICURRENCY_CONTRACT_ADDRESS(),
+          address: CONTRACT_ADDRESS,
           abi: ABI.abi,
           functionName: 'claimPaymentsInToken',
           args: [tokenInfo.address],
@@ -147,7 +147,7 @@ export function useClaimPayments() {
     setIsClaiming(true);
     try {
       const result = await writeContract({
-        address: MULTICURRENCY_CONTRACT_ADDRESS(),
+        address: CONTRACT_ADDRESS,
         abi: ABI.abi,
         functionName: 'claimAllPendingPayments',
         args: [],

@@ -1,7 +1,6 @@
 import { erc20Abi } from "viem";
 import { CURRENT_NETWORK } from "./networks";
 
-// 0xe93D4E7aC180D7e23DEb8b123F8E040982E00d22
 
 const CONTRACT_ADDRESSES = {
   // Celo Mainnet
@@ -12,10 +11,8 @@ const CONTRACT_ADDRESSES = {
     CKES: "0x456a3D042C0DbD3db53D5489e98dFb038553B0d0", // Mainnet cKES
     EXOF: "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08", // Mainnet eXOF
     CNGN: "0x17700282592D6917F6A73D0bF8AcCf4D578c131e", // Mainnet cNGN
-    ADS_BAZAAR: "0x01d7deb320aac719128950fc6b86c0fe851ab0c3", // Legacy contract (cUSD only)
-    ADS_BAZAAR_MULTICURRENCY: "0xe66b437DE9fbd724c59c635ABeB943f9d4c09677", // NEW: Multi-currency Diamond contract (MAINNET)
+    ADS_BAZAAR: "0xe66b437DE9fbd724c59c635ABeB943f9d4c09677", // Multi-currency Diamond contract (MAINNET)
     SELF_SCOPE: "AdsBazaar"
-    
   },
   // Celo Alfajores Testnet
   44787: {
@@ -25,8 +22,7 @@ const CONTRACT_ADDRESSES = {
     CKES: "0x456a3D042C0DbD3db53D5489e98dFb038553B0d0", // Placeholder (same as mainnet)
     EXOF: "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08", // Placeholder (same as mainnet)
     CNGN: "0x17700282592D6917F6A73D0bF8AcCf4D578c131e", // Placeholder (same as mainnet)
-    ADS_BAZAAR: "0xe32DAF0A546a4bbe0e33EEeacb14CdC34B146BDf", // Legacy contract (cUSD only)
-    ADS_BAZAAR_MULTICURRENCY: "0x5fc6b23f915D6208dD83270a796Dc6c2d0d2a72A", // Multi-currency Diamond contract (Alfajores testnet)
+    ADS_BAZAAR: "0xe66b437DE9fbd724c59c635ABeB943f9d4c09677", // Multi-currency Diamond contract (use same for testnet)
     SELF_SCOPE: "AdsBazaar"
   },
 };
@@ -43,21 +39,8 @@ export const cUSDContractConfig = {
   abi: erc20Abi,
 };
 
-// Legacy contract address (cUSD only)
-export const LEGACY_CONTRACT_ADDRESS = getCurrentAddresses()
-  .ADS_BAZAAR as `0x${string}`;
-
-// Multi-currency contract address (new Diamond)
-export const CONTRACT_ADDRESS = (() => {
-  const addresses = getCurrentAddresses();
-  return addresses.ADS_BAZAAR_MULTICURRENCY as `0x${string}`;
-})();
-
-// Use multi-currency contract by default, fallback to legacy if needed
-export const MULTICURRENCY_CONTRACT_ADDRESS = () => {
-  const addresses = getCurrentAddresses();
-  return addresses.ADS_BAZAAR_MULTICURRENCY as `0x${string}`;
-};
+// Main AdsBazaar Diamond contract address
+export const CONTRACT_ADDRESS = getCurrentAddresses().ADS_BAZAAR as `0x${string}`;
 
 // All Mento token addresses for current network
 export const getMentoTokenAddresses = () => {

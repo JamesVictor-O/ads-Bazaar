@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useWriteContract, useReadContract, useAccount } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { MENTO_TOKENS, SupportedCurrency, mentoFX } from '@/lib/mento-simple';
-import { MULTICURRENCY_CONTRACT_ADDRESS } from '@/lib/contracts';
+import { CONTRACT_ADDRESS } from '@/lib/contracts';
 import { CURRENT_NETWORK } from '@/lib/networks';
 import AdsBazaarABI from '@/lib/AdsBazaar.json';
 import { erc20Abi } from 'viem';
@@ -35,7 +35,7 @@ export function useMultiCurrencyCampaignCreation() {
     setIsCreating(true);
     try {
       const tokenInfo = MENTO_TOKENS[currency];
-      const contractAddress = MULTICURRENCY_CONTRACT_ADDRESS();
+      const contractAddress = CONTRACT_ADDRESS;
       const budgetInWei = parseUnits(campaignData.budget, tokenInfo.decimals);
 
       // First approve the token transfer
@@ -105,7 +105,7 @@ export function useMultiCurrencyPayments() {
     setIsClaiming(true);
     try {
       const tokenInfo = MENTO_TOKENS[currency];
-      const contractAddress = MULTICURRENCY_CONTRACT_ADDRESS();
+      const contractAddress = CONTRACT_ADDRESS;
 
       const result = await writeContract({
         address: contractAddress as `0x${string}`,
@@ -133,7 +133,7 @@ export function useMultiCurrencyPayments() {
 
     setIsClaiming(true);
     try {
-      const contractAddress = MULTICURRENCY_CONTRACT_ADDRESS();
+      const contractAddress = CONTRACT_ADDRESS;
 
       const result = await writeContract({
         address: contractAddress as `0x${string}`,
@@ -167,7 +167,7 @@ export function useMultiCurrencyPendingPayments() {
   const { address } = useAccount();
 
   const { data: pendingPayments, isLoading, refetch } = useReadContract({
-    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: AdsBazaarABI.abi,
     functionName: 'getAllPendingPayments',
     args: address ? [address] : undefined,
@@ -191,7 +191,7 @@ export function useMultiCurrencyPendingPayments() {
 // Get campaign token information
 export function useCampaignTokenInfo(campaignId?: string) {
   const { data: tokenInfo, isLoading } = useReadContract({
-    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: AdsBazaarABI.abi,
     functionName: 'getCampaignTokenInfo',
     args: campaignId ? [campaignId] : undefined,
@@ -328,7 +328,7 @@ export function useCurrencySwap() {
 // Statistics and analytics
 export function useMultiCurrencyStats() {
   const { data: stats, isLoading } = useReadContract({
-    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: AdsBazaarABI.abi,
     functionName: 'getCampaignStatsByCurrency',
     args: [],
@@ -338,7 +338,7 @@ export function useMultiCurrencyStats() {
   });
 
   const { data: tokenInfo } = useReadContract({
-    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: AdsBazaarABI.abi,
     functionName: 'getCampaignStatsByCurrency',
     args: [],
@@ -390,7 +390,7 @@ export function usePreferredCurrency(isBusiness: boolean = false) {
   const { address } = useAccount();
 
   const { data: preferredToken } = useReadContract({
-    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    address: CONTRACT_ADDRESS as `0x${string}`,
     abi: AdsBazaarABI.abi,
     functionName: 'getPreferredPaymentToken',
     args: address ? [address, isBusiness] : undefined,
@@ -403,7 +403,7 @@ export function usePreferredCurrency(isBusiness: boolean = false) {
     if (!address) throw new Error('Wallet not connected');
 
     try {
-      const contractAddress = MULTICURRENCY_CONTRACT_ADDRESS();
+      const contractAddress = CONTRACT_ADDRESS;
       const tokenAddress = MENTO_TOKENS[currency].address;
 
       // This would be implemented with writeContract
