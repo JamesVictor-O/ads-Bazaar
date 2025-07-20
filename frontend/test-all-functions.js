@@ -2,7 +2,7 @@
 import { createPublicClient, http } from 'viem';
 import { celo } from 'viem/chains';
 
-const CONTRACT_ADDRESS = '0x2f00c10f7e0b6772a0d01d0f742590753edbe08b';
+const CONTRACT_ADDRESS = '0xe66b437DE9fbd724c59c635ABeB943f9d4c09677';
 const RPC_URL = 'https://forno.celo.org';
 
 const publicClient = createPublicClient({

@@ -17,7 +17,7 @@ Your AdsBazaar platform now supports **6 Mento stablecoins** on Celo network thr
 
 ## 🏗️ Contract Deployment
 
-**Diamond Contract Address**: `0x2f00c10f7e0b6772a0d01d0f742590753edbe08b`
+**Diamond Contract Address**: `0xe66b437DE9fbd724c59c635ABeB943f9d4c09677`
 
 - **Network**: Celo Mainnet (Chain ID: 42220)
 - **Architecture**: EIP-2535 Diamond Standard

@@ -385,83 +385,129 @@ function CreateCampaignModal({
             </div>
           </div>
 
-          {/* Timing Settings */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Clock className="w-5 h-5 text-purple-400" />
-              Timing Settings
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Promotion Duration */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Promotion Duration (days) *
-                </label>
-                <input
-                  type="number"
-                  value={formData.promotionDuration}
-                  onChange={(e) => setFormData({ ...formData, promotionDuration: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
-                  placeholder="7"
-                />
-              </div>
+          {/* Timing Configuration Section */}
+          <div className="bg-slate-900/30 border border-slate-700/30 rounded-xl p-4">
+            <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              Campaign Timing Configuration
+            </h4>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Application Period */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Application Period (days) *
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Application Period
                 </label>
-                <input
-                  type="number"
+                <select
                   value={formData.applicationPeriod}
                   onChange={(e) => setFormData({ ...formData, applicationPeriod: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
-                  placeholder="2"
-                />
-              </div>
-
-              {/* Verification Period */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Verification Period (days) *
-                </label>
-                <input
-                  type="number"
-                  value={formData.verificationPeriod}
-                  onChange={(e) => setFormData({ ...formData, verificationPeriod: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
-                  placeholder="1"
-                />
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
+                  disabled={isTransactionInProgress}
+                >
+                  <option value="86400">1 day</option>
+                  <option value="172800">2 days</option>
+                  <option value="259200">3 days</option>
+                  <option value="345600">4 days</option>
+                  <option value="432000">5 days</option>
+                  <option value="604800">7 days</option>
+                  <option value="864000">10 days</option>
+                  <option value="1209600">14 days</option>
+                </select>
+                <p className="text-xs text-slate-400 mt-1">
+                  How long influencers can apply
+                </p>
               </div>
 
               {/* Proof Submission Grace Period */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Proof Submission (days) *
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Proof Grace Period
                 </label>
-                <input
-                  type="number"
+                <select
                   value={formData.proofSubmissionGracePeriod}
                   onChange={(e) => setFormData({ ...formData, proofSubmissionGracePeriod: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
-                  placeholder="1"
-                />
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
+                  disabled={isTransactionInProgress}
+                >
+                  <option value="86400">1 day</option>
+                  <option value="172800">2 days (max)</option>
+                </select>
+                <p className="text-xs text-slate-400 mt-1">
+                  Grace period after promotion ends
+                </p>
+              </div>
+
+              {/* Verification Period */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Verification Period
+                </label>
+                <select
+                  value={formData.verificationPeriod}
+                  onChange={(e) => setFormData({ ...formData, verificationPeriod: e.target.value })}
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
+                  disabled={isTransactionInProgress}
+                >
+                  <option value="86400">1 day</option>
+                  <option value="172800">2 days</option>
+                  <option value="259200">3 days</option>
+                  <option value="345600">4 days</option>
+                  <option value="432000">5 days (max)</option>
+                </select>
+                <p className="text-xs text-slate-400 mt-1">
+                  Time to review submissions
+                </p>
+              </div>
+
+              {/* Selection Grace Period */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Selection Grace Period
+                </label>
+                <select
+                  value={formData.selectionGracePeriod}
+                  onChange={(e) => setFormData({ ...formData, selectionGracePeriod: e.target.value })}
+                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
+                  disabled={isTransactionInProgress}
+                >
+                  <option value="86400">1d</option>
+                  <option value="172800">2d (max)</option>
+                </select>
+                <p className="text-xs text-slate-400 mt-1">
+                  Grace period for selecting influencers
+                </p>
               </div>
             </div>
 
-            {/* Selection Grace Period */}
-            <div className="md:w-1/2">
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Selection Grace Period (hours) *
+            {/* Promotion Duration - Separate section */}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Promotion Duration
               </label>
-              <input
-                type="number"
-                value={formData.selectionGracePeriod}
-                onChange={(e) => setFormData({ ...formData, selectionGracePeriod: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
-                placeholder="6"
-              />
+              <select
+                value={formData.promotionDuration}
+                onChange={(e) => setFormData({ ...formData, promotionDuration: e.target.value })}
+                className="w-full md:w-1/2 bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 appearance-none text-sm"
+                disabled={isTransactionInProgress}
+              >
+                <option value="86400">1 day</option>
+                <option value="172800">2 days</option>
+                <option value="259200">3 days</option>
+                <option value="345600">4 days</option>
+                <option value="432000">5 days</option>
+                <option value="604800">6 days</option>
+                <option value="691200">7 days</option>
+                <option value="777600">8 days</option>
+                <option value="864000">9 days</option>
+                <option value="950400">10 days</option>
+                <option value="1036800">11 days</option>
+                <option value="1123200">12 days</option>
+                <option value="1209600">13 days</option>
+                <option value="1296000">14 days</option>
+              </select>
+              <p className="text-xs text-slate-400 mt-1">
+                How long the promotion campaign will run
+              </p>
             </div>
           </div>
 

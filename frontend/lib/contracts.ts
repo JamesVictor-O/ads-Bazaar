@@ -13,7 +13,7 @@ const CONTRACT_ADDRESSES = {
     EXOF: "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08", // Mainnet eXOF
     CNGN: "0x17700282592D6917F6A73D0bF8AcCf4D578c131e", // Mainnet cNGN
     ADS_BAZAAR: "0x01d7deb320aac719128950fc6b86c0fe851ab0c3", // Legacy contract (cUSD only)
-    ADS_BAZAAR_MULTICURRENCY: "0x2f00c10f7e0b6772a0d01d0f742590753edbe08b", // NEW: Multi-currency Diamond contract (MAINNET)
+    ADS_BAZAAR_MULTICURRENCY: "0xe66b437DE9fbd724c59c635ABeB943f9d4c09677", // NEW: Multi-currency Diamond contract (MAINNET)
     SELF_SCOPE: "AdsBazaar"
     
   },
@@ -26,7 +26,7 @@ const CONTRACT_ADDRESSES = {
     EXOF: "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08", // Placeholder (same as mainnet)
     CNGN: "0x17700282592D6917F6A73D0bF8AcCf4D578c131e", // Placeholder (same as mainnet)
     ADS_BAZAAR: "0xe32DAF0A546a4bbe0e33EEeacb14CdC34B146BDf", // Legacy contract (cUSD only)
-    ADS_BAZAAR_MULTICURRENCY: "0x2f00c10f7e0b6772a0d01d0f742590753edbe08b", // NEW: Multi-currency Diamond contract (Using mainnet for now)
+    ADS_BAZAAR_MULTICURRENCY: "0x5fc6b23f915D6208dD83270a796Dc6c2d0d2a72A", // Multi-currency Diamond contract (Alfajores testnet)
     SELF_SCOPE: "AdsBazaar"
   },
 };
