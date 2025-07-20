@@ -21,6 +21,8 @@ import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 import { useMultiCurrencyCampaignCreation, usePreferredCurrency } from "@/hooks/useMultiCurrencyAdsBazaar";
+import { TargetAudience, AUDIENCE_LABELS } from "@/types/index";
+import { TARGET_AUDIENCE_CONFIG } from "@/lib/targetAudience";
 
 interface FormData {
   name: string;
@@ -375,11 +377,12 @@ function CreateCampaignModal({
                   onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:border-emerald-500 focus:outline-none"
                 >
-                  <option value="">Select audience</option>
-                  <option value="1">General (All ages)</option>
-                  <option value="2">Young Adults (18-30)</option>
-                  <option value="3">Adults (30-50)</option>
-                  <option value="4">Seniors (50+)</option>
+                  <option value="">Select target audience</option>
+                  {TARGET_AUDIENCE_CONFIG.map((audience) => (
+                    <option key={audience.value} value={audience.value.toString()}>
+                      {audience.icon} {audience.label} - {audience.description}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

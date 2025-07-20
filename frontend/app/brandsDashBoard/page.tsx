@@ -514,46 +514,25 @@ const BrandDashboard = () => {
     }
 
     try {
-      // Check if multi-currency campaign (non-cUSD) - use new multi-currency flow
-      if (formData.currency !== 'cUSD') {
-        console.log(`Creating multi-currency campaign with ${formData.currency}`);
-        
-        const campaignData = {
-          name: formData.name,
-          description: formData.description,
-          requirements: formData.requirements,
-          budget: formData.budget,
-          promotionDuration: Number(formData.promotionDuration),
-          maxInfluencers: Number(formData.maxInfluencers),
-          targetAudience: Number(formData.targetAudience),
-          applicationPeriod: Number(formData.applicationPeriod),
-          proofSubmissionGracePeriod: Number(formData.proofSubmissionGracePeriod),
-          verificationPeriod: Number(formData.verificationPeriod),
-          selectionGracePeriod: Number(formData.selectionGracePeriod),
-        };
-
-        const result = await createCampaignWithToken(campaignData, formData.currency);
-        console.log("DIVVI: Multi-currency campaign result:", result);
-        return typeof result === "string" ? result : "";
-      }
-
-      // Use legacy single-currency method for cUSD
-      const result = await createBrief(
-        formData.name,
-        formData.description,
-        formData.requirements,
-        formData.budget,
-        Number(formData.promotionDuration),
-        Number(formData.maxInfluencers),
-        Number(formData.targetAudience),
-        Number(formData.applicationPeriod),
-        Number(formData.proofSubmissionGracePeriod),
-        Number(formData.verificationPeriod),
-        Number(formData.selectionGracePeriod),
-        referralTag
-      );
-      console.log("DIVVI: Legacy cUSD campaign result:", result);
+      // Use unified multi-currency flow for ALL currencies including cUSD
+      console.log(`Creating campaign with ${formData.currency} using unified multi-currency contract`);
       
+      const campaignData = {
+        name: formData.name,
+        description: formData.description,
+        requirements: formData.requirements,
+        budget: formData.budget,
+        promotionDuration: Number(formData.promotionDuration),
+        maxInfluencers: Number(formData.maxInfluencers),
+        targetAudience: Number(formData.targetAudience),
+        applicationPeriod: Number(formData.applicationPeriod),
+        proofSubmissionGracePeriod: Number(formData.proofSubmissionGracePeriod),
+        verificationPeriod: Number(formData.verificationPeriod),
+        selectionGracePeriod: Number(formData.selectionGracePeriod),
+      };
+
+      const result = await createCampaignWithToken(campaignData, formData.currency, referralTag);
+      console.log("DIVVI: Unified campaign result:", result);
       return typeof result === "string" ? result : "";
     } catch (error) {
       console.error("Error creating campaign:", error);

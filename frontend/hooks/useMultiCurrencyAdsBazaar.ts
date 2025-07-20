@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useWriteContract, useReadContract, useAccount } from 'wagmi';
+import { useWriteContract, useReadContract, useAccount, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { MENTO_TOKENS, SupportedCurrency, mentoFX } from '@/lib/mento-simple';
 import { CONTRACT_ADDRESS } from '@/lib/contracts';
@@ -11,7 +11,7 @@ import { toast } from 'react-hot-toast';
 // Multi-Currency Campaign Management
 export function useMultiCurrencyCampaignCreation() {
   const { address } = useAccount();
-  const { writeContract, isPending, error } = useWriteContract();
+  const { writeContractAsync, isPending, error } = useWriteContract();
   const [isCreating, setIsCreating] = useState(false);
 
   const createCampaignWithToken = useCallback(async (
@@ -28,7 +28,8 @@ export function useMultiCurrencyCampaignCreation() {
       verificationPeriod: number;
       selectionGracePeriod: number;
     },
-    currency: SupportedCurrency
+    currency: SupportedCurrency,
+    referralTag?: `0x${string}`
   ) => {
     if (!address) throw new Error('Wallet not connected');
 
@@ -39,7 +40,7 @@ export function useMultiCurrencyCampaignCreation() {
       const budgetInWei = parseUnits(campaignData.budget, tokenInfo.decimals);
 
       // First approve the token transfer
-      await writeContract({
+      await writeContractAsync({
         address: tokenInfo.address as `0x${string}`,
         abi: erc20Abi,
         functionName: 'approve',
@@ -52,7 +53,7 @@ export function useMultiCurrencyCampaignCreation() {
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Then create the campaign
-      const result = await writeContract({
+      const result = await writeContractAsync({
         address: contractAddress as `0x${string}`,
         abi: AdsBazaarABI.abi,
         functionName: 'createAdBriefWithToken',
@@ -72,6 +73,7 @@ export function useMultiCurrencyCampaignCreation() {
         ],
         chain: CURRENT_NETWORK,
         account: address,
+        dataSuffix: referralTag,
       });
 
       toast.success(`Campaign created successfully with ${tokenInfo.symbol}!`);
@@ -83,7 +85,7 @@ export function useMultiCurrencyCampaignCreation() {
     } finally {
       setIsCreating(false);
     }
-  }, [address, writeContract]);
+  }, [address, writeContractAsync]);
 
   return {
     createCampaignWithToken,
