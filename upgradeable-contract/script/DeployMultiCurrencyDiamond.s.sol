@@ -42,9 +42,14 @@ contract DeployMultiCurrencyDiamond is Script {
     address constant CEUR_ALFAJORES = 0x10c892A6EC43a53E45D0B916B4b7D383B1b78C0F;
     address constant CREAL_ALFAJORES = 0xE4D517785D091D3c54818832dB6094bcc2744545;
 
-    // Platform fee: 3% (300 basis points)
-    uint256 constant PLATFORM_FEE_PERCENTAGE = 300;
+    // Platform fee: 1% (100 basis points) - matching existing deployment
+    uint256 constant PLATFORM_FEE_PERCENTAGE = 100;
 
+    // Self Protocol configuration
+    address constant IDENTITY_HUB_MAINNET = 0x5f62728946b9Eab7779Ef8DC8c8E6D65aDbb8AC2;
+    address constant IDENTITY_HUB_ALFAJORES = 0x5f62728946b9Eab7779Ef8DC8c8E6D65aDbb8AC2;
+    uint256 constant SCOPE = 123456789; // AdsBazaar scope
+    
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
@@ -77,78 +82,72 @@ contract DeployMultiCurrencyDiamond is Script {
         console.log("All facets deployed successfully");
 
         // 2. Create FacetCut array for diamond initialization
-        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](12);
+        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](11);
         
-        // Diamond core facets
+        // Diamond core facets (skip DiamondCutFacet as it's already included)        
         cuts[0] = IDiamondCut.FacetCut({
-            facetAddress: address(diamondCutFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: _getDiamondCutSelectors()
-        });
-        
-        cuts[1] = IDiamondCut.FacetCut({
             facetAddress: address(diamondLoupeFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getDiamondLoupeSelectors()
         });
         
-        cuts[2] = IDiamondCut.FacetCut({
+        cuts[1] = IDiamondCut.FacetCut({
             facetAddress: address(ownershipFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getOwnershipSelectors()
         });
 
         // AdsBazaar core facets
-        cuts[3] = IDiamondCut.FacetCut({
+        cuts[2] = IDiamondCut.FacetCut({
             facetAddress: address(applicationFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getApplicationSelectors()
         });
         
-        cuts[4] = IDiamondCut.FacetCut({
+        cuts[3] = IDiamondCut.FacetCut({
             facetAddress: address(campaignFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getCampaignSelectors()
         });
         
-        cuts[5] = IDiamondCut.FacetCut({
+        cuts[4] = IDiamondCut.FacetCut({
             facetAddress: address(disputeFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getDisputeSelectors()
         });
         
-        cuts[6] = IDiamondCut.FacetCut({
+        cuts[5] = IDiamondCut.FacetCut({
             facetAddress: address(gettersFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getGettersSelectors()
         });
         
-        cuts[7] = IDiamondCut.FacetCut({
+        cuts[6] = IDiamondCut.FacetCut({
             facetAddress: address(paymentFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getPaymentSelectors()
         });
         
-        cuts[8] = IDiamondCut.FacetCut({
+        cuts[7] = IDiamondCut.FacetCut({
             facetAddress: address(proofFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getProofSelectors()
         });
         
-        cuts[9] = IDiamondCut.FacetCut({
+        cuts[8] = IDiamondCut.FacetCut({
             facetAddress: address(selfVerificationFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getSelfVerificationSelectors()
         });
         
-        cuts[10] = IDiamondCut.FacetCut({
+        cuts[9] = IDiamondCut.FacetCut({
             facetAddress: address(userFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getUserSelectors()
         });
 
         // NEW Multi-Currency facets
-        cuts[11] = IDiamondCut.FacetCut({
+        cuts[10] = IDiamondCut.FacetCut({
             facetAddress: address(multiPaymentFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getMultiPaymentSelectors()
@@ -158,24 +157,37 @@ contract DeployMultiCurrencyDiamond is Script {
 
         // 3. Deploy the diamond
         address cUSDAddress = block.chainid == 42220 ? CUSD_MAINNET : CUSD_ALFAJORES;
+        address identityHub = block.chainid == 42220 ? IDENTITY_HUB_MAINNET : IDENTITY_HUB_ALFAJORES;
+        
+        // Initialize attestation IDs array (empty for now)
+        uint256[] memory attestationIds = new uint256[](0);
         
         AdsBazaarDiamond diamond = new AdsBazaarDiamond(
             deployer, // Contract owner
-            address(diamondCutFacet),
-            cuts
+            address(diamondCutFacet)
         );
 
         console.log("Multi-Currency AdsBazaar Diamond deployed at:", address(diamond));
 
-        // 4. Initialize the diamond with AdsBazaar-specific settings
+        // 4. Add all facets to the diamond
+        IDiamondCut(address(diamond)).diamondCut(
+            cuts,
+            address(0),
+            ""
+        );
+
+        // 5. Initialize the diamond with AdsBazaar-specific settings
         AdsBazaarInit initializer = new AdsBazaarInit();
         
         // Prepare initialization data
         bytes memory initData = abi.encodeWithSelector(
             AdsBazaarInit.init.selector,
+            deployer,                       // Contract owner
             cUSDAddress,                    // cUSD token address
-            PLATFORM_FEE_PERCENTAGE,       // Platform fee (3%)
-            deployer                        // Initial dispute resolver
+            PLATFORM_FEE_PERCENTAGE,       // Platform fee (1%)
+            identityHub,                    // Identity verification hub
+            SCOPE,                          // AdsBazaar scope
+            attestationIds                  // Attestation IDs
         );
 
         // Initialize the diamond
@@ -197,7 +209,7 @@ contract DeployMultiCurrencyDiamond is Script {
         console.log("Chain ID:", block.chainid);
         console.log("Owner:", deployer);
         console.log("cUSD Address:", cUSDAddress);
-        console.log("Platform Fee:", PLATFORM_FEE_PERCENTAGE, "basis points");
+        console.log("Platform Fee:", PLATFORM_FEE_PERCENTAGE, "basis points (1%)");
         console.log("=================================");
         
         // 6. Deploy MultiCurrencyCampaignFacet as separate upgrade
@@ -252,21 +264,18 @@ contract DeployMultiCurrencyDiamond is Script {
 
     // AdsBazaar facet selectors (simplified - in production, generate automatically)
     function _getApplicationSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](4);
-        selectors[0] = ApplicationManagementFacet.applyForAdBrief.selector;
-        selectors[1] = ApplicationManagementFacet.selectInfluencersForAdBrief.selector;
-        selectors[2] = ApplicationManagementFacet.getBriefApplications.selector;
-        selectors[3] = ApplicationManagementFacet.getInfluencerApplications.selector;
+        bytes4[] memory selectors = new bytes4[](3);
+        selectors[0] = ApplicationManagementFacet.applyToBrief.selector;
+        selectors[1] = ApplicationManagementFacet.selectInfluencer.selector;
+        selectors[2] = ApplicationManagementFacet.hasInfluencerApplied.selector;
         return selectors;
     }
 
     function _getCampaignSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](5);
+        bytes4[] memory selectors = new bytes4[](3);
         selectors[0] = CampaignManagementFacet.createAdBrief.selector;
         selectors[1] = CampaignManagementFacet.cancelAdBrief.selector;
-        selectors[2] = CampaignManagementFacet.startPromotionPeriod.selector;
-        selectors[3] = CampaignManagementFacet.autoCompleteCampaign.selector;
-        selectors[4] = CampaignManagementFacet.completeCampaign.selector;
+        selectors[2] = CampaignManagementFacet.completeCampaign.selector;
         return selectors;
     }
 
@@ -280,17 +289,22 @@ contract DeployMultiCurrencyDiamond is Script {
     }
 
     function _getGettersSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](10);
-        selectors[0] = GettersFacet.getBrief.selector;
-        selectors[1] = GettersFacet.getAllBriefIds.selector;
+        bytes4[] memory selectors = new bytes4[](15);
+        selectors[0] = GettersFacet.getAdBrief.selector;
+        selectors[1] = GettersFacet.getAllBriefs.selector;
         selectors[2] = GettersFacet.getBusinessBriefs.selector;
-        selectors[3] = GettersFacet.getUser.selector;
+        selectors[3] = GettersFacet.getUsers.selector;
         selectors[4] = GettersFacet.getTotalUsers.selector;
         selectors[5] = GettersFacet.getTotalEscrowAmount.selector;
         selectors[6] = GettersFacet.getPlatformFeePercentage.selector;
         selectors[7] = GettersFacet.getOwner.selector;
-        selectors[8] = GettersFacet.getCUSDAddress.selector;
-        selectors[9] = GettersFacet.getPlatformStats.selector;
+        selectors[8] = GettersFacet.getCUSD.selector;
+        selectors[9] = GettersFacet.getInfluencerApplications.selector;
+        selectors[10] = GettersFacet.getBriefApplications.selector;
+        selectors[11] = GettersFacet.getBusinessStats.selector;
+        selectors[12] = GettersFacet.getInfluencerStats.selector;
+        selectors[13] = GettersFacet.getUserByUsername.selector;
+        selectors[14] = GettersFacet.isUsernameAvailable.selector;
         return selectors;
     }
 
@@ -305,24 +319,23 @@ contract DeployMultiCurrencyDiamond is Script {
     function _getProofSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](2);
         selectors[0] = ProofManagementFacet.submitProof.selector;
-        selectors[1] = ProofManagementFacet.approveProof.selector;
+        selectors[1] = ProofManagementFacet.triggerAutoApproval.selector;
         return selectors;
     }
 
     function _getSelfVerificationSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](3);
-        selectors[0] = SelfVerificationFacet.verifyInfluencer.selector;
-        selectors[1] = SelfVerificationFacet.updateVerificationConfig.selector;
+        selectors[0] = SelfVerificationFacet.verifySelfProof.selector;
+        selectors[1] = SelfVerificationFacet.setVerificationConfig.selector;
         selectors[2] = SelfVerificationFacet.isInfluencerVerified.selector;
         return selectors;
     }
 
     function _getUserSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](4);
+        bytes4[] memory selectors = new bytes4[](3);
         selectors[0] = UserManagementFacet.registerUser.selector;
         selectors[1] = UserManagementFacet.updateInfluencerProfile.selector;
-        selectors[2] = UserManagementFacet.updatePlatformFeePercentage.selector;
-        selectors[3] = UserManagementFacet.getInfluencerProfile.selector;
+        selectors[2] = UserManagementFacet.setPlatformFee.selector;
         return selectors;
     }
 

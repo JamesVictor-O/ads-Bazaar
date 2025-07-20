@@ -9,7 +9,7 @@ import {
   useMultiCurrencyPendingPayments,
   formatCurrencyAmount
 } from '@/hooks/useMultiCurrencyAdsBazaar';
-import { MENTO_TOKENS, SupportedCurrency } from '@/lib/mento-integration';
+import { MENTO_TOKENS, SupportedCurrency } from '@/lib/mento-simple';
 
 interface MultiCurrencyPaymentModalProps {
   isOpen: boolean;

@@ -1,15 +1,17 @@
 import { useState, useCallback } from 'react';
 import { useWriteContract, useReadContract, useAccount } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
-import { MENTO_TOKENS, SupportedCurrency, mentoFX } from '@/lib/mento-integration';
-import { getCurrentAddresses } from '@/lib/contracts';
+import { MENTO_TOKENS, SupportedCurrency, mentoFX } from '@/lib/mento-simple';
+import { MULTICURRENCY_CONTRACT_ADDRESS } from '@/lib/contracts';
+import { CURRENT_NETWORK } from '@/lib/networks';
+import AdsBazaarABI from '@/lib/AdsBazaar.json';
 import { erc20Abi } from 'viem';
 import { toast } from 'react-hot-toast';
 
 // Multi-Currency Campaign Management
 export function useMultiCurrencyCampaignCreation() {
   const { address } = useAccount();
-  const { writeContract, isLoading, error } = useWriteContract();
+  const { writeContract, isPending, error } = useWriteContract();
   const [isCreating, setIsCreating] = useState(false);
 
   const createCampaignWithToken = useCallback(async (
@@ -33,7 +35,7 @@ export function useMultiCurrencyCampaignCreation() {
     setIsCreating(true);
     try {
       const tokenInfo = MENTO_TOKENS[currency];
-      const contractAddress = getCurrentAddresses().CONTRACT_ADDRESS;
+      const contractAddress = MULTICURRENCY_CONTRACT_ADDRESS();
       const budgetInWei = parseUnits(campaignData.budget, tokenInfo.decimals);
 
       // First approve the token transfer
@@ -42,6 +44,8 @@ export function useMultiCurrencyCampaignCreation() {
         abi: erc20Abi,
         functionName: 'approve',
         args: [contractAddress as `0x${string}`, budgetInWei],
+        chain: CURRENT_NETWORK,
+        account: address,
       });
 
       // Wait for approval confirmation
@@ -50,7 +54,7 @@ export function useMultiCurrencyCampaignCreation() {
       // Then create the campaign
       const result = await writeContract({
         address: contractAddress as `0x${string}`,
-        abi: [], // TODO: Add multi-currency campaign ABI
+        abi: AdsBazaarABI.abi,
         functionName: 'createAdBriefWithToken',
         args: [
           campaignData.name,
@@ -66,6 +70,8 @@ export function useMultiCurrencyCampaignCreation() {
           BigInt(campaignData.selectionGracePeriod),
           tokenInfo.address
         ],
+        chain: CURRENT_NETWORK,
+        account: address,
       });
 
       toast.success(`Campaign created successfully with ${tokenInfo.symbol}!`);
@@ -81,7 +87,7 @@ export function useMultiCurrencyCampaignCreation() {
 
   return {
     createCampaignWithToken,
-    isCreating: isCreating || isLoading,
+    isCreating: isCreating || isPending,
     error
   };
 }
@@ -89,7 +95,7 @@ export function useMultiCurrencyCampaignCreation() {
 // Multi-Currency Payment Claims
 export function useMultiCurrencyPayments() {
   const { address } = useAccount();
-  const { writeContract, isLoading } = useWriteContract();
+  const { writeContract, isPending } = useWriteContract();
   const [isClaiming, setIsClaiming] = useState(false);
 
   // Claim payments in a specific token
@@ -99,13 +105,15 @@ export function useMultiCurrencyPayments() {
     setIsClaiming(true);
     try {
       const tokenInfo = MENTO_TOKENS[currency];
-      const contractAddress = getCurrentAddresses().CONTRACT_ADDRESS;
+      const contractAddress = MULTICURRENCY_CONTRACT_ADDRESS();
 
       const result = await writeContract({
         address: contractAddress as `0x${string}`,
-        abi: [], // TODO: Add multi-currency payment ABI
+        abi: AdsBazaarABI.abi,
         functionName: 'claimPaymentsInToken',
         args: [tokenInfo.address],
+        chain: CURRENT_NETWORK,
+        account: address,
       });
 
       toast.success(`Payments claimed in ${tokenInfo.symbol}!`);
@@ -125,13 +133,15 @@ export function useMultiCurrencyPayments() {
 
     setIsClaiming(true);
     try {
-      const contractAddress = getCurrentAddresses().CONTRACT_ADDRESS;
+      const contractAddress = MULTICURRENCY_CONTRACT_ADDRESS();
 
       const result = await writeContract({
         address: contractAddress as `0x${string}`,
-        abi: [], // TODO: Add multi-currency payment ABI
+        abi: AdsBazaarABI.abi,
         functionName: 'claimAllPendingPayments',
         args: [],
+        chain: CURRENT_NETWORK,
+        account: address,
       });
 
       toast.success('All pending payments claimed!');
@@ -148,7 +158,7 @@ export function useMultiCurrencyPayments() {
   return {
     claimPaymentsInToken,
     claimAllPendingPayments,
-    isClaiming: isClaiming || isLoading
+    isClaiming: isClaiming || isPending
   };
 }
 
@@ -157,8 +167,8 @@ export function useMultiCurrencyPendingPayments() {
   const { address } = useAccount();
 
   const { data: pendingPayments, isLoading, refetch } = useReadContract({
-    address: getCurrentAddresses().CONTRACT_ADDRESS as `0x${string}`,
-    abi: [], // TODO: Add multi-currency payment ABI
+    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    abi: AdsBazaarABI.abi,
     functionName: 'getAllPendingPayments',
     args: address ? [address] : undefined,
     query: {
@@ -181,8 +191,8 @@ export function useMultiCurrencyPendingPayments() {
 // Get campaign token information
 export function useCampaignTokenInfo(campaignId?: string) {
   const { data: tokenInfo, isLoading } = useReadContract({
-    address: getCurrentAddresses().CONTRACT_ADDRESS as `0x${string}`,
-    abi: [], // TODO: Add multi-currency campaign ABI
+    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    abi: AdsBazaarABI.abi,
     functionName: 'getCampaignTokenInfo',
     args: campaignId ? [campaignId] : undefined,
     query: {
@@ -301,15 +311,8 @@ export function useCurrencySwap() {
     if (!address) throw new Error('Wallet not connected');
 
     try {
-      const txData = await mentoFX.getSwapTransaction(
-        fromCurrency,
-        toCurrency,
-        amount,
-        address,
-        slippage
-      );
-      
-      return txData;
+      // TODO: Implement swap transaction when full Mento SDK is integrated
+      throw new Error('Swap functionality not yet implemented');
     } catch (error) {
       console.error('Error preparing swap:', error);
       throw error;
@@ -325,8 +328,8 @@ export function useCurrencySwap() {
 // Statistics and analytics
 export function useMultiCurrencyStats() {
   const { data: stats, isLoading } = useReadContract({
-    address: getCurrentAddresses().CONTRACT_ADDRESS as `0x${string}`,
-    abi: [], // TODO: Add multi-currency stats ABI
+    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    abi: AdsBazaarABI.abi,
     functionName: 'getCampaignStatsByCurrency',
     args: [],
     query: {
@@ -335,9 +338,9 @@ export function useMultiCurrencyStats() {
   });
 
   const { data: tokenInfo } = useReadContract({
-    address: getCurrentAddresses().CONTRACT_ADDRESS as `0x${string}`,
-    abi: [], // TODO: Add multi-currency stats ABI
-    functionName: 'getSupportedTokensInfo',
+    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    abi: AdsBazaarABI.abi,
+    functionName: 'getCampaignStatsByCurrency',
     args: [],
     query: {
       refetchInterval: 300000, // Refetch every 5 minutes
@@ -387,8 +390,8 @@ export function usePreferredCurrency(isBusiness: boolean = false) {
   const { address } = useAccount();
 
   const { data: preferredToken } = useReadContract({
-    address: getCurrentAddresses().CONTRACT_ADDRESS as `0x${string}`,
-    abi: [], // TODO: Add multi-currency payment ABI
+    address: MULTICURRENCY_CONTRACT_ADDRESS() as `0x${string}`,
+    abi: AdsBazaarABI.abi,
     functionName: 'getPreferredPaymentToken',
     args: address ? [address, isBusiness] : undefined,
     query: {
@@ -400,7 +403,7 @@ export function usePreferredCurrency(isBusiness: boolean = false) {
     if (!address) throw new Error('Wallet not connected');
 
     try {
-      const contractAddress = getCurrentAddresses().CONTRACT_ADDRESS;
+      const contractAddress = MULTICURRENCY_CONTRACT_ADDRESS();
       const tokenAddress = MENTO_TOKENS[currency].address;
 
       // This would be implemented with writeContract

@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getUserIdentifier } from "@selfxyz/core";
-import { ethers } from "ethers";
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { CURRENT_NETWORK } from "@/lib/networks";
 import AdsBazaarABI from "@/lib/AdsBazaar.json";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import { CIRCUIT_CONSTANTS } from "@/lib/circuit";
@@ -31,16 +33,26 @@ export default async function handler(
       const nullifier = publicSignals[CIRCUIT_CONSTANTS.NULLIFIER_INDEX];
       const address = await getUserIdentifier(publicSignals);
 
-      const provider = new ethers.JsonRpcProvider(process.env.RPC_URL!);
-      const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
-      const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        AdsBazaarABI.abi,
-        signer
-      );
+      const publicClient = createPublicClient({
+        chain: CURRENT_NETWORK,
+        transport: http(process.env.RPC_URL!)
+      });
+      
+      const account = privateKeyToAccount(`0x${process.env.PRIVATE_KEY!}`);
+      const walletClient = createWalletClient({
+        account,
+        chain: CURRENT_NETWORK,
+        transport: http(process.env.RPC_URL!)
+      });
 
       // Check nullifier status
-      const isNullifierUsed = await contract._nullifiers(nullifier);
+      const isNullifierUsed = await publicClient.readContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: AdsBazaarABI.abi,
+        functionName: '_nullifiers',
+        args: [nullifier]
+      });
+      
       if (isNullifierUsed) {
         return res.status(400).json({
           error: "This proof has already been used",
@@ -60,8 +72,18 @@ export default async function handler(
       };
 
       // Submit verification
-      const tx = await contract.verifySelfProof(formattedProof);
-      const receipt = await tx.wait();
+      const txHash = await walletClient.writeContract({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: AdsBazaarABI.abi,
+        functionName: 'verifySelfProof',
+        args: [formattedProof],
+        account: account,
+        chain: CURRENT_NETWORK
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash
+      });
 
       return res.status(200).json({
         success: true,

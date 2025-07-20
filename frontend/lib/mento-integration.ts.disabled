@@ -344,8 +344,7 @@ const getRpcUrl = () => {
 export const mentoFX = new MentoFXService(getRpcUrl());
 
 // Export types for external use
-export type { SupportedCurrency };
-export { MENTO_TOKENS };
+// Note: SupportedCurrency is already exported above
 
 // Export utility for creating new service instances
 export const createMentoFXService = (rpcUrl?: string) => new MentoFXService(rpcUrl);
