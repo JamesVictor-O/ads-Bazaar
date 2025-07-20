@@ -68,6 +68,7 @@ import {
   useStartCampaignWithPartialSelection,
   useCancelCampaignWithCompensation,
 } from "../../hooks/adsBazaar";
+import { useMultiCurrencyCampaignCreation } from "../../hooks/useMultiCurrencyAdsBazaar";
 
 const BrandDashboard = () => {
   const { address, isConnected } = useAccount();
@@ -134,6 +135,9 @@ const BrandDashboard = () => {
     error: createError,
     hash: createHash,
   } = useCreateAdBrief();
+
+  // Multi-currency campaign creation
+  const { createCampaignWithToken, isCreating: isCreatingMultiCurrency } = useMultiCurrencyCampaignCreation();
 
   const {
     completeCampaign,
@@ -510,6 +514,30 @@ const BrandDashboard = () => {
     }
 
     try {
+      // Check if multi-currency campaign (non-cUSD) - use new multi-currency flow
+      if (formData.currency !== 'cUSD') {
+        console.log(`Creating multi-currency campaign with ${formData.currency}`);
+        
+        const campaignData = {
+          name: formData.name,
+          description: formData.description,
+          requirements: formData.requirements,
+          budget: formData.budget,
+          promotionDuration: Number(formData.promotionDuration),
+          maxInfluencers: Number(formData.maxInfluencers),
+          targetAudience: Number(formData.targetAudience),
+          applicationPeriod: Number(formData.applicationPeriod),
+          proofSubmissionGracePeriod: Number(formData.proofSubmissionGracePeriod),
+          verificationPeriod: Number(formData.verificationPeriod),
+          selectionGracePeriod: Number(formData.selectionGracePeriod),
+        };
+
+        const result = await createCampaignWithToken(campaignData, formData.currency);
+        console.log("DIVVI: Multi-currency campaign result:", result);
+        return typeof result === "string" ? result : "";
+      }
+
+      // Use legacy single-currency method for cUSD
       const result = await createBrief(
         formData.name,
         formData.description,
@@ -524,8 +552,8 @@ const BrandDashboard = () => {
         Number(formData.selectionGracePeriod),
         referralTag
       );
-      console.log("DIVVI: Create campaign result:", result);
-      // If createBrief returns a string (e.g., campaign ID), return it
+      console.log("DIVVI: Legacy cUSD campaign result:", result);
+      
       return typeof result === "string" ? result : "";
     } catch (error) {
       console.error("Error creating campaign:", error);
@@ -1870,7 +1898,7 @@ const BrandDashboard = () => {
         <CreateCampaignModal
           formData={formData}
           setFormData={setFormData}
-          isCreatingBrief={isCreatingBrief}
+          isCreatingBrief={isCreatingBrief || isCreatingMultiCurrency}
           isFormValid={isFormValid()}
           onCreateCampaign={handleCreateCampaign}
           onClose={() => setShowCreateModal(false)}

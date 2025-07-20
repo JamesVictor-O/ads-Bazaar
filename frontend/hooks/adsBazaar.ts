@@ -7,7 +7,7 @@ import {
   usePublicClient,
 } from "wagmi";
 import { parseUnits, Hex, formatEther } from "viem";
-import { cUSDContractConfig, CONTRACT_ADDRESS } from "../lib/contracts";
+import { cUSDContractConfig, CONTRACT_ADDRESS, LEGACY_CONTRACT_ADDRESS } from "../lib/contracts";
 import {
   Brief,
   Application,
@@ -374,12 +374,18 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
   };
 }
 
-// Get user profile
+// Get user profile with fallback to legacy contract
 export function useUserProfile(userAddress?: Address) {
   const { address } = useAccount();
   const targetAddress = userAddress || address;
 
-  const { data, error, isLoading, refetch } = useReadContract({
+  // Query multi-currency contract first
+  const { 
+    data: newData, 
+    error: newError, 
+    isLoading: newLoading, 
+    refetch: refetchNew 
+  } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
     functionName: "getUsers",
@@ -389,17 +395,46 @@ export function useUserProfile(userAddress?: Address) {
     },
   });
 
+  // Query legacy contract if user not found in new contract
+  const { 
+    data: legacyData, 
+    error: legacyError, 
+    isLoading: legacyLoading,
+    refetch: refetchLegacy 
+  } = useReadContract({
+    address: LEGACY_CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "getUsers",
+    args: [targetAddress],
+    query: {
+      enabled: !!targetAddress && (!newData || !(newData as any)?.isRegistered),
+    },
+  });
+
+  // Use new contract data if user is registered, otherwise fallback to legacy
+  const data = (newData && (newData as any)?.isRegistered) ? newData : legacyData;
+  const error = newError || legacyError;
+  const isLoading = newLoading || legacyLoading;
+  
+  const refetch = async () => {
+    await refetchNew();
+    await refetchLegacy();
+  };
+
   // Debug the contract call
   useEffect(() => {
     console.log('useUserProfile debug:', {
       targetAddress,
-      contractAddress: CONTRACT_ADDRESS,
-      data,
+      newContract: CONTRACT_ADDRESS,
+      legacyContract: LEGACY_CONTRACT_ADDRESS,
+      newData: newData && (newData as any)?.isRegistered ? 'registered' : 'not registered',
+      legacyData: legacyData && (legacyData as any)?.isRegistered ? 'registered' : 'not registered',
+      finalData: data,
       error: error?.message,
       isLoading,
       enabled: !!targetAddress
     });
-  }, [targetAddress, data, error, isLoading]);
+  }, [targetAddress, newData, legacyData, data, error, isLoading]);
 
   const userProfile = useMemo(() => {
     if (!data) return null;
@@ -634,12 +669,18 @@ export function useRegisterUser() {
   };
 }
 
-// Get username by address
+// Get username by address with fallback to legacy contract
 export function useGetUsername(userAddress?: Address) {
   const { address } = useAccount();
   const targetAddress = userAddress || address;
 
-  const { data, error, isLoading, refetch } = useReadContract({
+  // Query multi-currency contract first
+  const { 
+    data: newUsername, 
+    error: newError, 
+    isLoading: newLoading,
+    refetch: refetchNew 
+  } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
     functionName: "getUserUsername",
@@ -649,8 +690,37 @@ export function useGetUsername(userAddress?: Address) {
     },
   });
 
+  // Query legacy contract if no username found in new contract
+  const { 
+    data: legacyUsername, 
+    error: legacyError, 
+    isLoading: legacyLoading,
+    refetch: refetchLegacy 
+  } = useReadContract({
+    address: LEGACY_CONTRACT_ADDRESS,
+    abi: ABI.abi,
+    functionName: "getUserUsername",
+    args: [targetAddress],
+    query: {
+      enabled: !!targetAddress && (!newUsername || (newUsername as string)?.trim() === ""),
+    },
+  });
+
+  // Use new contract username if available, otherwise fallback to legacy
+  const username = (newUsername && (newUsername as string).trim() !== "") 
+    ? newUsername as string 
+    : legacyUsername as string | undefined;
+
+  const isLoading = newLoading || legacyLoading;
+  const error = newError || legacyError;
+
+  const refetch = async () => {
+    await refetchNew();
+    await refetchLegacy();
+  };
+
   return {
-    username: data as string | undefined,
+    username,
     isLoadingUsername: isLoading,
     usernameError: error,
     refetchUsername: refetch,

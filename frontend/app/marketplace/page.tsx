@@ -28,6 +28,7 @@ import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { format } from "date-fns";
 import { truncateAddress, formatCurrency } from "@/utils/format";
 import { UserDisplay } from "@/components/ui/UserDisplay";
+import { SupportedCurrency } from "@/lib/mento-simple";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
@@ -522,10 +523,10 @@ function MarketplaceContent() {
       AUDIENCE_LABELS[campaign.targetAudience] === categoryFilter;
     const matchesBudget =
       budgetFilter === "Budget: Any" ||
-      (budgetFilter === "Under 500 cUSD" && budget < 500) ||
-      (budgetFilter === "500-1000 cUSD" && budget >= 500 && budget <= 1000) ||
-      (budgetFilter === "1000-2000 cUSD" && budget > 1000 && budget <= 2000) ||
-      (budgetFilter === "2000+ cUSD" && budget > 2000);
+      (budgetFilter === "Under 500" && budget < 500) ||
+      (budgetFilter === "500-1000" && budget >= 500 && budget <= 1000) ||
+      (budgetFilter === "1000-2000" && budget > 1000 && budget <= 2000) ||
+      (budgetFilter === "2000+" && budget > 2000);
     return matchesSearch && matchesCategory && matchesBudget;
   });
 
@@ -696,10 +697,10 @@ function MarketplaceContent() {
                 className="w-48 pl-4 pr-8 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
               >
                 <option>Budget: Any</option>
-                <option>Under 500 cUSD</option>
-                <option>500-1000 cUSD</option>
-                <option>1000-2000 cUSD</option>
-                <option>2000+ cUSD</option>
+                <option>Under 500</option>
+                <option>500-1000</option>
+                <option>1000-2000</option>
+                <option>2000+</option>
               </select>
 
               <select
@@ -848,11 +849,18 @@ function MarketplaceContent() {
                     
                     {/* Budget */}
                     <div className="text-right">
-                      <div className="text-lg font-bold text-white">
-                        ${campaign.budget.toLocaleString()}
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="text-lg font-bold text-white">
+                          {formatCurrency(campaign.budget, campaign.currency as SupportedCurrency || "cUSD")}
+                        </div>
+                        {(campaign.currency && campaign.currency !== "cUSD") && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/40">
+                            {campaign.currency}
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-slate-400">
-                        ${formatCurrency(campaign.progressInfo.budgetPerSpot)} per spot
+                        {formatCurrency(campaign.progressInfo.budgetPerSpot, campaign.currency as SupportedCurrency || "cUSD")} per spot
                       </div>
                     </div>
                   </div>
