@@ -33,10 +33,22 @@ type Bytes32 = Hex;
 
 // Helper function to get currency symbol from token address
 function getCurrencyFromTokenAddress(tokenAddress: string): string {
+  console.log(`🔍 Looking up currency for token address: ${tokenAddress}`);
+  console.log('📋 Available tokens:', MENTO_TOKENS);
+  
+  // Log each token address for comparison
+  Object.entries(MENTO_TOKENS).forEach(([key, token]) => {
+    console.log(`  ${key}: ${token.address} (${token.address.toLowerCase()})`);
+  });
+  
   const currency = Object.entries(MENTO_TOKENS).find(([_, token]) => 
     token.address.toLowerCase() === tokenAddress.toLowerCase()
   );
-  return currency ? currency[0] : 'cUSD';
+  
+  console.log(`💰 Found currency mapping:`, currency);
+  const result = currency ? currency[0] : 'cUSD';
+  console.log(`✅ Final currency result: ${result}`);
+  return result;
 }
 
 // type UserProfile = {
@@ -246,18 +258,28 @@ export function useGetAllBriefs() {
               // Fetch campaign token info for currency
               let currency = 'cUSD'; // Default
               try {
+                console.log(`🔎 Fetching token info for campaign ${id}`);
                 const tokenInfo = await publicClient.readContract({
                   address: CONTRACT_ADDRESS,
                   abi: ABI.abi,
                   functionName: "getCampaignTokenInfo",
                   args: [id],
                 });
-                if (tokenInfo && (tokenInfo as any).tokenAddress) {
-                  currency = getCurrencyFromTokenAddress((tokenInfo as any).tokenAddress);
+                console.log(`📄 Campaign ${id} token info raw response:`, tokenInfo);
+                console.log(`📄 Token info type:`, typeof tokenInfo);
+                console.log(`📄 Token info structure:`, JSON.stringify(tokenInfo, null, 2));
+                
+                if (tokenInfo && (tokenInfo as any).tokenAddress && (tokenInfo as any).tokenAddress !== '0x0000000000000000000000000000000000000000') {
+                  const tokenAddress = (tokenInfo as any).tokenAddress;
+                  console.log(`🎯 Campaign ${id} has token address: ${tokenAddress}`);
+                  currency = getCurrencyFromTokenAddress(tokenAddress);
+                  console.log(`🎯 Campaign ${id} mapped to currency: ${currency} from token: ${tokenAddress}`);
+                } else {
+                  console.log(`⚠️ Campaign ${id} has no valid token address set (got: ${(tokenInfo as any)?.tokenAddress}), using default cUSD`);
                 }
               } catch (err) {
-                // Campaign token info not available, using default cUSD
-                console.log(`Campaign ${id} token info not available, defaulting to cUSD`);
+                console.error(`❌ Error fetching token info for campaign ${id}:`, err);
+                console.log(`❌ Campaign ${id} token info call failed, defaulting to cUSD`);
               }
 
               if (briefData) {
@@ -367,12 +389,17 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
                   functionName: "getCampaignTokenInfo",
                   args: [id],
                 });
-                if (tokenInfo && (tokenInfo as any).tokenAddress) {
-                  currency = getCurrencyFromTokenAddress((tokenInfo as any).tokenAddress);
+                console.log(`Campaign ${id} token info:`, tokenInfo);
+                if (tokenInfo && (tokenInfo as any).tokenAddress && (tokenInfo as any).tokenAddress !== '0x0000000000000000000000000000000000000000') {
+                  const tokenAddress = (tokenInfo as any).tokenAddress;
+                  currency = getCurrencyFromTokenAddress(tokenAddress);
+                  console.log(`Campaign ${id} mapped to currency: ${currency} from token: ${tokenAddress}`);
+                } else {
+                  console.log(`Campaign ${id} has no token address set, using default cUSD`);
                 }
               } catch (err) {
-                // Campaign token info not available, using default cUSD
-                console.log(`Campaign ${id} token info not available, defaulting to cUSD`);
+                console.error(`Error fetching token info for campaign ${id}:`, err);
+                console.log(`Campaign ${id} token info call failed, defaulting to cUSD`);
               }
 
               if (result) {

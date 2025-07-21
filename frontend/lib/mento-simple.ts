@@ -1,5 +1,3 @@
-// Simplified Mento integration for build success
-
 export const MENTO_TOKENS = {
   cUSD: {
     address: '0x765DE816845861e75A25fCA122bb6898B8B1282a',

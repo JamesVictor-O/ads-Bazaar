@@ -1,5 +1,3 @@
-// Real Mento Protocol integration using @mento-protocol/mento-sdk
-
 import { Mento } from '@mento-protocol/mento-sdk';
 import { PublicClient, createPublicClient, http } from 'viem';
 import { celo } from 'viem/chains';

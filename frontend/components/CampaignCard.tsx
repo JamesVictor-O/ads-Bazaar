@@ -102,14 +102,14 @@ export default function CampaignCard({
             <DollarSign className="h-4 w-4 text-emerald-600" />
             <div>
               <p className={`text-xs ${themeStyles.label}`}>Budget</p>
-              <p className={`font-semibold ${themeStyles.value}`}>{formatCurrency(brief.budget)}</p>
+              <p className={`font-semibold ${themeStyles.value}`}>{formatCurrency(brief.budget, brief.currency)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-blue-600" />
             <div>
               <p className={`text-xs ${themeStyles.label}`}>Per Influencer</p>
-              <p className={`font-semibold ${themeStyles.value}`}>{formatCurrency(paymentPerInfluencer)}</p>
+              <p className={`font-semibold ${themeStyles.value}`}>{formatCurrency(paymentPerInfluencer, brief.currency)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
