@@ -35,6 +35,7 @@ import {
   Crown,
   CheckSquare,
   ChevronDown,
+  ArrowRightLeft,
   FileText,
 } from "lucide-react";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
