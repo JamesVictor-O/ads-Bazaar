@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, RefreshCw } from 'lucide-react';
 import { MENTO_TOKENS, SupportedCurrency, mentoFX, getCurrencyDisplayName } from '@/lib/mento-simple';
+import { useAccount, useBalance } from 'wagmi';
 
 interface CurrencySelectorProps {
   selectedCurrency: SupportedCurrency;
@@ -23,6 +24,54 @@ export function CurrencySelector({
   const [rates, setRates] = useState<any[]>([]);
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [convertedAmounts, setConvertedAmounts] = useState<Record<string, string>>({});
+  
+  const { address } = useAccount();
+  
+  // Fetch balances for all supported currencies
+  const cUSDBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cUSD.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const cEURBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cEUR.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const cREALBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cREAL.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const cKESBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cKES.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const eXOFBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.eXOF.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const cNGNBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cNGN.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+
+  const balances = {
+    cUSD: cUSDBalance.data,
+    cEUR: cEURBalance.data,
+    cREAL: cREALBalance.data,
+    cKES: cKESBalance.data,
+    eXOF: eXOFBalance.data,
+    cNGN: cNGNBalance.data,
+  };
 
   useEffect(() => {
     loadRates();
@@ -112,11 +161,11 @@ export function CurrencySelector({
                 </div>
                 
                 <div className="text-right">
-                  {rateInfo && (
-                    <div className="text-xs text-slate-400">
-                      {rateInfo.rate.toFixed(4)}
-                    </div>
-                  )}
+                  <div className="text-xs text-slate-400">
+                    Balance: {balances[currency]?.formatted ? 
+                      parseFloat(balances[currency].formatted).toFixed(2) : 
+                      '0.00'}
+                  </div>
                   {showConverter && amount && convertedAmounts[currency] && (
                     <div className="text-sm text-emerald-400">
                       ≈ {parseFloat(convertedAmounts[currency]).toLocaleString()}

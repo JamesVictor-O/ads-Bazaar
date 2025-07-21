@@ -6,6 +6,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance } from "wagmi";
 import { cUSDContractConfig } from "../../lib/contracts";
 import { useUserProfile } from "../../hooks/adsBazaar";
+import { MENTO_TOKENS, SupportedCurrency } from "../../lib/mento-simple";
 import { motion } from "framer-motion";
 
 interface HeaderProps {
@@ -22,9 +23,55 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
     address: address,
   });
 
-  const { data: cUSDBalanceData } = useBalance({
+  // Fetch balances for all supported currencies
+  const cUSDBalance = useBalance({
     address: address,
-    token: cUSDContractConfig.address,
+    token: MENTO_TOKENS.cUSD.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const cEURBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cEUR.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const cREALBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cREAL.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const cKESBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cKES.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const eXOFBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.eXOF.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+  
+  const cNGNBalance = useBalance({
+    address: address,
+    token: MENTO_TOKENS.cNGN.address as `0x${string}`,
+    query: { enabled: !!address }
+  });
+
+  const balances = {
+    cUSD: cUSDBalance.data,
+    cEUR: cEURBalance.data,
+    cREAL: cREALBalance.data,
+    cKES: cKESBalance.data,
+    eXOF: eXOFBalance.data,
+    cNGN: cNGNBalance.data,
+  };
+
+  // Filter currencies with non-zero balances for display
+  const nonZeroBalances = Object.entries(balances).filter(([currency, balance]) => {
+    return balance && parseFloat(balance.formatted) > 0;
   });
 
   const { userProfile, isLoadingProfile } = useUserProfile();
@@ -181,27 +228,32 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                             Wallet Balance
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="grid grid-cols-2 gap-2 text-sm max-h-32 overflow-y-auto">
                           <div className="text-center p-2 bg-slate-800 rounded">
                             <div className="text-slate-400 text-xs">CELO</div>
                             <div className="text-slate-200 font-medium">
                               {celoBalance?.formatted
-                                ? `${parseFloat(celoBalance.formatted).toFixed(
-                                    2
-                                  )}`
+                                ? `${parseFloat(celoBalance.formatted).toFixed(2)}`
                                 : "0.00"}
                             </div>
                           </div>
-                          <div className="text-center p-2 bg-slate-800 rounded">
-                            <div className="text-slate-400 text-xs">cUSD</div>
-                            <div className="text-slate-200 font-medium">
-                              {cUSDBalanceData?.formatted
-                                ? `${parseFloat(
-                                    cUSDBalanceData.formatted
-                                  ).toFixed(2)}`
-                                : "0.00"}
+                          {nonZeroBalances.map(([currency, balance]) => (
+                            <div key={currency} className="text-center p-2 bg-slate-800 rounded">
+                              <div className="text-slate-400 text-xs flex items-center justify-center gap-1">
+                                <span>{MENTO_TOKENS[currency as SupportedCurrency].flag}</span>
+                                {MENTO_TOKENS[currency as SupportedCurrency].symbol}
+                              </div>
+                              <div className="text-slate-200 font-medium">
+                                {parseFloat(balance.formatted).toFixed(2)}
+                              </div>
                             </div>
-                          </div>
+                          ))}
+                          {nonZeroBalances.length === 0 && (
+                            <div className="text-center p-2 bg-slate-800 rounded">
+                              <div className="text-slate-400 text-xs">No tokens</div>
+                              <div className="text-slate-500 text-xs">0.00</div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -272,27 +324,32 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                             Balance
                           </span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
                           <div className="flex justify-between items-center">
                             <span className="text-slate-400 text-xs">CELO</span>
                             <span className="text-slate-200 font-medium text-sm">
                               {celoBalance?.formatted
-                                ? `${parseFloat(celoBalance.formatted).toFixed(
-                                    2
-                                  )}`
+                                ? `${parseFloat(celoBalance.formatted).toFixed(2)}`
                                 : "0.00"}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-slate-400 text-xs">cUSD</span>
-                            <span className="text-slate-200 font-medium text-sm">
-                              {cUSDBalanceData?.formatted
-                                ? `${parseFloat(
-                                    cUSDBalanceData.formatted
-                                  ).toFixed(2)}`
-                                : "0.00"}
-                            </span>
-                          </div>
+                          {nonZeroBalances.map(([currency, balance]) => (
+                            <div key={currency} className="flex justify-between items-center">
+                              <span className="text-slate-400 text-xs flex items-center gap-1">
+                                <span>{MENTO_TOKENS[currency as SupportedCurrency].flag}</span>
+                                {MENTO_TOKENS[currency as SupportedCurrency].symbol}
+                              </span>
+                              <span className="text-slate-200 font-medium text-sm">
+                                {parseFloat(balance.formatted).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                          {nonZeroBalances.length === 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-400 text-xs">No tokens</span>
+                              <span className="text-slate-500 text-xs">0.00</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 

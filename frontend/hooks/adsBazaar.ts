@@ -8,6 +8,7 @@ import {
 } from "wagmi";
 import { parseUnits, Hex, formatEther } from "viem";
 import { cUSDContractConfig, CONTRACT_ADDRESS } from "../lib/contracts";
+import { MENTO_TOKENS, SupportedCurrency } from "../lib/mento-simple";
 import {
   Brief,
   Application,
@@ -29,6 +30,14 @@ import { CIRCUIT_CONSTANTS } from "@/lib/circuit";
 // Type definitions
 type Address = `0x${string}`;
 type Bytes32 = Hex;
+
+// Helper function to get currency symbol from token address
+function getCurrencyFromTokenAddress(tokenAddress: string): string {
+  const currency = Object.entries(MENTO_TOKENS).find(([_, token]) => 
+    token.address.toLowerCase() === tokenAddress.toLowerCase()
+  );
+  return currency ? currency[0] : 'cUSD';
+}
 
 // type UserProfile = {
 //   isRegistered: boolean;
@@ -78,7 +87,8 @@ function useHandleTransaction() {
 function formatBriefData(
   briefId: `0x${string}`,
   rawData: any,
-  applicationCount: number = 0
+  applicationCount: number = 0,
+  currency?: string
 ): Brief | null {
   try {
     if (!rawData || typeof rawData !== 'object') {
@@ -94,6 +104,7 @@ function formatBriefData(
       description: rawData.description as string,
       requirements: rawData.requirements as string,
       budget: Number(formatEther(rawData.budget as bigint)),
+      currency: currency || 'cUSD', // Default to cUSD if currency info unavailable
       status: Number(rawData.status) as CampaignStatus,
       promotionDuration: Number(rawData.promotionDuration),
       promotionStartTime: Number(rawData.promotionStartTime),
@@ -232,8 +243,25 @@ export function useGetAllBriefs() {
               
               const applicationCount = applicationsData ? (applicationsData as any).influencers.length : 0;
 
+              // Fetch campaign token info for currency
+              let currency = 'cUSD'; // Default
+              try {
+                const tokenInfo = await publicClient.readContract({
+                  address: CONTRACT_ADDRESS,
+                  abi: ABI.abi,
+                  functionName: "getCampaignTokenInfo",
+                  args: [id],
+                });
+                if (tokenInfo && (tokenInfo as any).tokenAddress) {
+                  currency = getCurrencyFromTokenAddress((tokenInfo as any).tokenAddress);
+                }
+              } catch (err) {
+                // Campaign token info not available, using default cUSD
+                console.log(`Campaign ${id} token info not available, defaulting to cUSD`);
+              }
+
               if (briefData) {
-                return formatBriefData(id, briefData, Number(applicationCount));
+                return formatBriefData(id, briefData, Number(applicationCount), currency);
               }
               return null;
             } catch (err) {
@@ -330,8 +358,25 @@ export function useGetBusinessBriefs(businessAddress: `0x${string}`) {
               
               const applicationCount = applicationsData ? (applicationsData as any).influencers.length : 0;
 
+              // Fetch campaign token info for currency
+              let currency = 'cUSD'; // Default
+              try {
+                const tokenInfo = await publicClient.readContract({
+                  address: CONTRACT_ADDRESS,
+                  abi: ABI.abi,
+                  functionName: "getCampaignTokenInfo",
+                  args: [id],
+                });
+                if (tokenInfo && (tokenInfo as any).tokenAddress) {
+                  currency = getCurrencyFromTokenAddress((tokenInfo as any).tokenAddress);
+                }
+              } catch (err) {
+                // Campaign token info not available, using default cUSD
+                console.log(`Campaign ${id} token info not available, defaulting to cUSD`);
+              }
+
               if (result) {
-                return formatBriefData(id, result, Number(applicationCount));
+                return formatBriefData(id, result, Number(applicationCount), currency);
               }
               return null;
             } catch (err) {

@@ -54,7 +54,8 @@ import {
   formatTimeRemaining,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
-import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
+import { getUserStatusColor, getUserStatusLabel, formatCurrency } from "@/utils/format";
+import { SupportedCurrency } from "@/lib/mento-simple";
 import { NotificationButton } from "@/components/NotificationButton";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { createInfluencerDashboardSuccessHandler } from "@/utils/transactionUtils";
@@ -1183,7 +1184,7 @@ export default function InfluencerDashboard() {
                       
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4" />
-                        <span className="font-medium whitespace-nowrap">{budget.toFixed(0)} cUSD</span>
+                        <span className="font-medium whitespace-nowrap">{formatCurrency(budget, briefData.brief.currency as SupportedCurrency || "cUSD")}</span>
                       </div>
                       
                       {briefData.brief.timingInfo.timeRemaining && (
@@ -1286,7 +1287,7 @@ export default function InfluencerDashboard() {
                                   className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg transition-colors font-medium shadow-lg shadow-emerald-500/20 touch-manipulation text-sm sm:text-base"
                                 >
                                   <DollarSign className="w-4 h-4" />
-                                  Claim {budget.toFixed(0)} cUSD
+                                  Claim {formatCurrency(budget, briefData.brief.currency as SupportedCurrency || "cUSD")}
                                   <ArrowRight className="w-4 h-4" />
                                 </button>
                               )}
