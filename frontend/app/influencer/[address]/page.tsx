@@ -41,10 +41,12 @@ function SocialTabContent({
   socialMediaData,
   userAddress,
   isOwner,
+  onProfileUpdate,
 }: {
   socialMediaData: any;
   userAddress: string;
   isOwner: boolean;
+  onProfileUpdate?: () => void;
 }) {
   return (
     <motion.div
@@ -60,6 +62,7 @@ function SocialTabContent({
         profileData={socialMediaData}
         userAddress={userAddress}
         isOwner={isOwner}
+        onProfileUpdate={onProfileUpdate}
       />
     </motion.div>
   );
@@ -107,7 +110,7 @@ function EnhancedInfluencerProfileComponent({
   const { isVerified, isLoadingVerification } = useIsInfluencerVerified(
     profileAddress as `0x${string}`
   );
-  const { data: influencerProfile } = useGetInfluencerProfile(
+  const { data: influencerProfile, refetch: refetchInfluencerProfile } = useGetInfluencerProfile(
     profileAddress as `0x${string}`
   );
 
@@ -586,6 +589,7 @@ function EnhancedInfluencerProfileComponent({
                 socialMediaData={influencerProfile as string}
                 userAddress={profileAddress as string}
                 isOwner={isOwner}
+                onProfileUpdate={refetchInfluencerProfile}
               />
             )}
 

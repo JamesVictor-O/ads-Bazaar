@@ -61,9 +61,10 @@ interface SocialMediaCardProps {
   profileData?: string;
   userAddress: string;
   isOwner?: boolean;
+  onProfileUpdate?: () => void;
 }
 
-export function SocialMediaCard({ profileData, userAddress, isOwner = false }: SocialMediaCardProps) {
+export function SocialMediaCard({ profileData, userAddress, isOwner = false, onProfileUpdate }: SocialMediaCardProps) {
   const [showModal, setShowModal] = useState(false);
   const { address } = useAccount();
 
@@ -153,6 +154,7 @@ export function SocialMediaCard({ profileData, userAddress, isOwner = false }: S
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         userAddress={userAddress}
+        onProfileUpdate={onProfileUpdate}
       />
     </>
   );

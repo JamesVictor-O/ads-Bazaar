@@ -18,9 +18,10 @@ interface SocialMediaModalProps {
   isOpen: boolean;
   onClose: () => void;
   userAddress: string;
+  onProfileUpdate?: () => void;
 }
 
-export function SocialMediaModal({ isOpen, onClose, userAddress }: SocialMediaModalProps) {
+export function SocialMediaModal({ isOpen, onClose, userAddress, onProfileUpdate }: SocialMediaModalProps) {
   const [socialMedia, setSocialMedia] = useState<SocialMediaProfile>({});
   const [loading, setLoading] = useState(false);
 
@@ -40,9 +41,13 @@ export function SocialMediaModal({ isOpen, onClose, userAddress }: SocialMediaMo
     if (isSuccess) {
       toast.success("Social media profiles updated successfully!");
       refetchProfile();
+      // Also refresh the parent page's profile data
+      if (onProfileUpdate) {
+        onProfileUpdate();
+      }
       onClose();
     }
-  }, [isSuccess, refetchProfile, onClose]);
+  }, [isSuccess, refetchProfile, onClose, onProfileUpdate]);
 
   useEffect(() => {
     if (isError && error) {

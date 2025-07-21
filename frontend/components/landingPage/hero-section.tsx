@@ -18,6 +18,8 @@ import { usePlatformStats } from "../../hooks/usePlatformStats";
 import { formatNumber } from "@/utils/format";
 import Link from "next/link";
 import Image from "next/image";
+import { CurrencySelector } from "../CurrencySelector";
+import { SupportedCurrency } from "@/lib/mento-simple";
 
 interface HeroSectionProps {
   setIsModalOpen: (isOpen: boolean) => void;
@@ -27,6 +29,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   const [animationPhase, setAnimationPhase] = useState(0);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState<SupportedCurrency>("cUSD");
   const { isConnected: wagmiConnected } = useAccount();
   const { userProfile, isLoadingProfile } = useUserProfile();
 
@@ -46,7 +49,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
     setMounted(true);
   }, []);
 
-  const { stats, isLoading: isLoadingStats } = usePlatformStats();
+  const { stats, isLoading: isLoadingStats } = usePlatformStats(displayCurrency);
 
   const handleGetStartedClick = async () => {
     try {
@@ -435,7 +438,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             {
               value: isLoadingStats
                 ? "..."
-                : `$${formatNumber(stats.totalEscrowAmount)}`,
+                : `${formatNumber(stats.totalEscrowAmount)} ${stats.displayCurrency}`,
               label: "Active Escrow",
               icon: "💰",
               color: "from-amber-400 to-amber-600",
@@ -462,15 +465,68 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           ))}
         </div>
 
-        {/* Live indicator */}
-        <div className="flex justify-center mt-6">
+        {/* Live indicator and Currency Selector */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-6">
           <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-full">
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
             <span className="text-xs text-slate-400">
               Live on Celo Blockchain
             </span>
           </div>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">Display currency:</span>
+            <CurrencySelector
+              selectedCurrency={displayCurrency}
+              onCurrencyChange={setDisplayCurrency}
+              className="scale-75"
+            />
+          </div>
         </div>
+
+        {/* Escrow Breakdown */}
+        {!isLoadingStats && stats.escrowBreakdown.length > 0 && (
+          <motion.div
+            className="mt-8 max-w-2xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.6 }}
+          >
+            <details className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-xl p-4">
+              <summary className="cursor-pointer text-slate-300 hover:text-white transition-colors select-none">
+                <span className="text-sm font-medium">View escrow breakdown by currency</span>
+              </summary>
+              
+              <div className="mt-4 space-y-3">
+                {stats.escrowBreakdown.map((item) => (
+                  <div key={item.currency} className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">
+                        {item.currency === 'cUSD' ? '🇺🇸' : 
+                         item.currency === 'cEUR' ? '🇪🇺' :
+                         item.currency === 'cREAL' ? '🇧🇷' :
+                         item.currency === 'cKES' ? '🇰🇪' :
+                         item.currency === 'eXOF' ? '🌍' :
+                         item.currency === 'cNGN' ? '🇳🇬' : '💰'}
+                      </span>
+                      <span className="font-medium text-white">{item.currency}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-white">
+                        {formatNumber(item.amount)} {item.currency}
+                      </div>
+                      {item.currency !== displayCurrency && (
+                        <div className="text-xs text-slate-400">
+                          ≈ {formatNumber(item.convertedAmount)} {displayCurrency}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </motion.div>
+        )}
       </motion.div>
       {/* END OF PLATFORM STATISTICS */}
     </section>

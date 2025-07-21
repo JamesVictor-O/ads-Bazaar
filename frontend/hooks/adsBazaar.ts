@@ -622,7 +622,7 @@ export function usePendingPayments(influencerAddress?: Address) {
   const { data, error, isLoading, refetch } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
-    functionName: "getPendingPayments",
+    functionName: "getMultiCurrencyPendingPayments",
     args: [targetAddress],
     query: {
       enabled: !!targetAddress,
@@ -670,7 +670,7 @@ export function useTotalPendingAmount(influencerAddress?: Address) {
   const { data, error, isLoading, refetch } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI.abi,
-    functionName: "getTotalPendingAmount",
+    functionName: "getTotalMultiCurrencyPendingAmount",
     args: [targetAddress],
     query: {
       enabled: !!targetAddress,
@@ -920,7 +920,7 @@ export function useCreateAdBrief() {
         tx.writeContract({
           address: CONTRACT_ADDRESS,
           abi: ABI.abi,
-          functionName: "createAdBrief",
+          functionName: "createAdBriefWithToken",
           args: [
             briefData.name,
             briefData.description,
@@ -933,6 +933,7 @@ export function useCreateAdBrief() {
             BigInt(briefData.proofSubmissionGracePeriod),
             BigInt(briefData.verificationPeriod),
             BigInt(briefData.selectionGracePeriod),
+            cUSDContractConfig.address, // Default to cUSD for legacy compatibility
           ],
           dataSuffix: briefData.dataSuffix,
           account: address,
@@ -1114,7 +1115,7 @@ export function useCompleteCampaign() {
       const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
-        functionName: "completeCampaign",
+        functionName: "completeCampaignWithToken",
         args: [briefId],
         dataSuffix: dataSuffix,
         account: address,
@@ -1168,7 +1169,7 @@ export function useCancelAdBrief() {
       const result = await writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
-        functionName: "cancelAdBrief",
+        functionName: "cancelAdBriefWithToken", 
         args: [briefId],
         dataSuffix: dataSuffix,
         account: address,
@@ -1275,7 +1276,7 @@ export function useClaimPayments() {
       const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
-        functionName: "claimPayments",
+        functionName: "claimAllPendingPayments",
         args: [],
         dataSuffix: dataSuffix,
         account: address,
@@ -1702,7 +1703,7 @@ export function useExpireCampaign() {
       const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
-        functionName: "expireCampaign",
+        functionName: "expireCampaignWithToken",
         args: [briefId],
         dataSuffix: dataSuffix,
         account: address,
