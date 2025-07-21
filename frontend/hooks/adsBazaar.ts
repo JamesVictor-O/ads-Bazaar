@@ -268,6 +268,11 @@ export function useGetAllBriefs() {
     isLoading: isLoading || isLoadingIds,
     isError: isErrorIds || error !== null,
     error: idError || error,
+    refetch: () => {
+      if (briefIds && !isLoadingIds) {
+        fetchAllBriefDetails(briefIds as `0x${string}`[]);
+      }
+    },
   };
 }
 

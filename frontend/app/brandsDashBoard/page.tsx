@@ -533,6 +533,26 @@ const BrandDashboard = () => {
 
       const result = await createCampaignWithToken(campaignData, formData.currency, referralTag);
       console.log("DIVVI: Unified campaign result:", result);
+      
+      // Refresh the briefs list to show the new campaign
+      await refetchBriefs();
+      
+      // Reset form data for next campaign
+      setFormData({
+        name: "",
+        description: "",
+        requirements: "",
+        budget: "",
+        currency: "cUSD" as SupportedCurrency,
+        promotionDuration: "604800", // 7 days in seconds
+        maxInfluencers: "5",
+        targetAudience: "0",
+        applicationPeriod: "432000", // 5 days default
+        proofSubmissionGracePeriod: "172800", // 2 days default (max)
+        verificationPeriod: "259200", // 3 days default
+        selectionGracePeriod: "86400", // 1 day default
+      });
+      
       return typeof result === "string" ? result : "";
     } catch (error) {
       console.error("Error creating campaign:", error);

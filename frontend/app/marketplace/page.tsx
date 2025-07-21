@@ -101,7 +101,7 @@ function MarketplaceContent() {
   }>({});
 
   // Fetch all campaigns
-  const { briefs: allBriefs, isLoading } = useGetAllBriefs();
+  const { briefs: allBriefs, isLoading, refetch: refetchBriefs } = useGetAllBriefs();
   
   // Get share counts for all campaigns
   const campaignIds = allBriefs.map(brief => brief.id);
@@ -1076,6 +1076,8 @@ function MarketplaceContent() {
           onSuccess={() => {
             // Immediately refresh application status on success
             refreshApplicationStatus();
+            // Also refresh the campaigns list to update application counts
+            refetchBriefs();
             // Trigger dashboard refresh with delay for blockchain propagation
             setTimeout(() => {
               window.dispatchEvent(new CustomEvent("dashboardRefresh"));
