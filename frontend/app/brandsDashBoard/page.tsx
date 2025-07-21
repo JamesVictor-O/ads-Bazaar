@@ -44,7 +44,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { NotificationButton } from "@/components/NotificationButton";
 import { NotificationDebug } from "@/components/NotificationDebug";
-import { MentoFXDemo } from "@/components/MentoFXDemo";
+import { CurrencyConverterModal } from "@/components/modals/CurrencyConverterModal";
 import { SupportedCurrency } from "@/lib/mento-simple";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
@@ -98,6 +98,9 @@ const BrandDashboard = () => {
   // State for partial campaign management
   const [showStartPartialConfirm, setShowStartPartialConfirm] = useState<string | null>(null);
   const [showCancelWithCompensationModal, setShowCancelWithCompensationModal] = useState<string | null>(null);
+
+  // Currency converter modal state
+  const [showCurrencyConverter, setShowCurrencyConverter] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -1010,8 +1013,31 @@ const BrandDashboard = () => {
           <NotificationDebug className="mb-6 md:mb-8" />
         )}
 
-        {/* Mento FX Demo */}
-        <MentoFXDemo />
+        {/* Currency Converter Button */}
+        <motion.div
+          className="mb-6 md:mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <button
+            onClick={() => setShowCurrencyConverter(true)}
+            className="w-full bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-4 hover:from-emerald-500/20 hover:to-teal-500/20 transition-all duration-300"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/20 rounded-lg">
+                  <ArrowRightLeft className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-white">Currency Converter</h3>
+                  <p className="text-sm text-slate-400">View rates and plan multi-currency campaigns</p>
+                </div>
+              </div>
+              <ChevronDown className="w-5 h-5 text-slate-400 transform rotate-[-90deg]" />
+            </div>
+          </button>
+        </motion.div>
         
         {/* Multi-Currency Summary */}
         {dashboardData?.budgetByCurrency && Object.keys(dashboardData.budgetByCurrency).length > 1 && (
@@ -1930,6 +1956,13 @@ const BrandDashboard = () => {
           onClose={() => setShowSubmissionsModal(false)}
         />
       )}
+
+      {/* Currency Converter Modal */}
+      <CurrencyConverterModal
+        isOpen={showCurrencyConverter}
+        onClose={() => setShowCurrencyConverter(false)}
+        userType="brand"
+      />
     </div>
   );
 };

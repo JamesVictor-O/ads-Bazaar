@@ -22,6 +22,7 @@ import {
   Award,
   Zap,
   ArrowRight,
+  ArrowRightLeft,
   Upload,
   Bell,
   Edit3,
@@ -59,6 +60,7 @@ import { SupportedCurrency } from "@/lib/mento-simple";
 import { NotificationButton } from "@/components/NotificationButton";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { createInfluencerDashboardSuccessHandler } from "@/utils/transactionUtils";
+import { CurrencyConverterModal } from "@/components/modals/CurrencyConverterModal";
 
 // Define precise interfaces
 interface ApplicationWithBrief {
@@ -110,6 +112,7 @@ export default function InfluencerDashboard() {
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(
     new Set()
   );
+  const [showCurrencyConverter, setShowCurrencyConverter] = useState(false);
 
   // Enhanced state for tracking resubmissions
   const [isResubmission, setIsResubmission] = useState(false);
@@ -814,6 +817,32 @@ export default function InfluencerDashboard() {
           </motion.div>
         )}
 
+        {/* Currency Converter Button */}
+        <motion.div
+          className="mb-6 md:mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <button
+            onClick={() => setShowCurrencyConverter(true)}
+            className="w-full bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-4 hover:from-emerald-500/20 hover:to-teal-500/20 transition-all duration-300"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/20 rounded-lg">
+                  <ArrowRightLeft className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-white">Currency Converter</h3>
+                  <p className="text-sm text-slate-400">Convert your earnings and view live rates</p>
+                </div>
+              </div>
+              <ChevronDown className="w-5 h-5 text-slate-400 transform rotate-[-90deg]" />
+            </div>
+          </button>
+        </motion.div>
+
         {/* Filter Tabs */}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
@@ -1422,6 +1451,13 @@ export default function InfluencerDashboard() {
           onSuccess={handleClaimSuccess}
         />
       )}
+
+      {/* Currency Converter Modal */}
+      <CurrencyConverterModal
+        isOpen={showCurrencyConverter}
+        onClose={() => setShowCurrencyConverter(false)}
+        userType="influencer"
+      />
     </div>
   );
 }
