@@ -11,7 +11,7 @@ const CONTRACT_ADDRESSES = {
     CKES: "0x456a3D042C0DbD3db53D5489e98dFb038553B0d0", // Mainnet cKES
     EXOF: "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08", // Mainnet eXOF
     CNGN: "0x17700282592D6917F6A73D0bF8AcCf4D578c131e", // Mainnet cNGN
-    ADS_BAZAAR: "0xe66b437DE9fbd724c59c635ABeB943f9d4c09677", // Multi-currency Diamond contract (MAINNET)
+    ADS_BAZAAR: "0xc48fa76f729bceebb79c1b65de8feb52f9475cf9", // Multi-currency Diamond contract (MAINNET)
     SELF_SCOPE: "AdsBazaar"
   },
   // Celo Alfajores Testnet
@@ -22,7 +22,7 @@ const CONTRACT_ADDRESSES = {
     CKES: "0x456a3D042C0DbD3db53D5489e98dFb038553B0d0", // Placeholder (same as mainnet)
     EXOF: "0x73F93dcc49cB8A239e2032663e9475dd5ef29A08", // Placeholder (same as mainnet)
     CNGN: "0x17700282592D6917F6A73D0bF8AcCf4D578c131e", // Placeholder (same as mainnet)
-    ADS_BAZAAR: "0xe66b437DE9fbd724c59c635ABeB943f9d4c09677", // Multi-currency Diamond contract (use same for testnet)
+    ADS_BAZAAR: "0xc48fa76f729bceebb79c1b65de8feb52f9475cf9", // Multi-currency Diamond contract (use same for testnet)
     SELF_SCOPE: "AdsBazaar"
   },
 };

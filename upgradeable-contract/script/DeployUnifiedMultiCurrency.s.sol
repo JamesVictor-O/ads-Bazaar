@@ -12,7 +12,6 @@ import "../contracts/facets/OwnershipFacet.sol";
 
 // AdsBazaar Facets
 import "../contracts/adsbazaar-facets/ApplicationManagementFacet.sol";
-import "../contracts/adsbazaar-facets/CampaignManagementFacet.sol";
 import "../contracts/adsbazaar-facets/DisputeManagementFacet.sol";
 import "../contracts/adsbazaar-facets/GettersFacet.sol";
 import "../contracts/adsbazaar-facets/ProofManagementFacet.sol";
@@ -62,7 +61,6 @@ contract DeployUnifiedMultiCurrency is Script {
         
         // Core AdsBazaar facets
         ApplicationManagementFacet applicationFacet = new ApplicationManagementFacet();
-        CampaignManagementFacet campaignFacet = new CampaignManagementFacet();
         DisputeManagementFacet disputeFacet = new DisputeManagementFacet();
         GettersFacet gettersFacet = new GettersFacet();
         ProofManagementFacet proofFacet = new ProofManagementFacet();
@@ -84,7 +82,7 @@ contract DeployUnifiedMultiCurrency is Script {
         console.log("Unified AdsBazaar Diamond deployed at:", address(diamond));
 
         // 3. Create FacetCut array for diamond initialization
-        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](11);
+        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](10);
         
         // Diamond core facets        
         cuts[0] = IDiamondCut.FacetCut({
@@ -107,49 +105,43 @@ contract DeployUnifiedMultiCurrency is Script {
         });
         
         cuts[3] = IDiamondCut.FacetCut({
-            facetAddress: address(campaignFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: _getCampaignSelectors()
-        });
-        
-        cuts[4] = IDiamondCut.FacetCut({
             facetAddress: address(disputeFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getDisputeSelectors()
         });
         
-        cuts[5] = IDiamondCut.FacetCut({
+        cuts[4] = IDiamondCut.FacetCut({
             facetAddress: address(gettersFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getGettersSelectors()
         });
         
-        cuts[6] = IDiamondCut.FacetCut({
+        cuts[5] = IDiamondCut.FacetCut({
             facetAddress: address(proofFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getProofSelectors()
         });
         
-        cuts[7] = IDiamondCut.FacetCut({
+        cuts[6] = IDiamondCut.FacetCut({
             facetAddress: address(selfVerificationFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getSelfVerificationSelectors()
         });
         
-        cuts[8] = IDiamondCut.FacetCut({
+        cuts[7] = IDiamondCut.FacetCut({
             facetAddress: address(userFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getUserSelectors()
         });
 
         // Multi-Currency facets (primary system)
-        cuts[9] = IDiamondCut.FacetCut({
+        cuts[8] = IDiamondCut.FacetCut({
             facetAddress: address(multiPaymentFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getMultiPaymentSelectors()
         });
 
-        cuts[10] = IDiamondCut.FacetCut({
+        cuts[9] = IDiamondCut.FacetCut({
             facetAddress: address(multiCampaignFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: _getMultiCampaignSelectors()
@@ -245,14 +237,6 @@ contract DeployUnifiedMultiCurrency is Script {
         return selectors;
     }
 
-    function _getCampaignSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](3);
-        selectors[0] = CampaignManagementFacet.createAdBrief.selector;
-        selectors[1] = CampaignManagementFacet.cancelAdBrief.selector;
-        selectors[2] = CampaignManagementFacet.completeCampaign.selector;
-        return selectors;
-    }
-
     function _getDisputeSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory selectors = new bytes4[](4);
         selectors[0] = DisputeManagementFacet.flagSubmission.selector;
@@ -279,10 +263,10 @@ contract DeployUnifiedMultiCurrency is Script {
         selectors[12] = GettersFacet.getInfluencerStats.selector;
         selectors[13] = GettersFacet.getUserByUsername.selector;
         selectors[14] = GettersFacet.isUsernameAvailable.selector;
-        selectors[15] = GettersFacet.getTotalBusinesses.selector; // MISSING FUNCTION
-        selectors[16] = GettersFacet.getTotalInfluencers.selector; // MISSING FUNCTION
-        selectors[17] = GettersFacet.getUserUsername.selector; // MISSING FUNCTION
-        selectors[18] = GettersFacet.isRegistered.selector; // MISSING FUNCTION
+        selectors[15] = GettersFacet.getTotalBusinesses.selector;
+        selectors[16] = GettersFacet.getTotalInfluencers.selector;
+        selectors[17] = GettersFacet.getUserUsername.selector;
+        selectors[18] = GettersFacet.isRegistered.selector;
         return selectors;
     }
 
@@ -323,13 +307,14 @@ contract DeployUnifiedMultiCurrency is Script {
     }
 
     function _getMultiCampaignSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](6);
+        bytes4[] memory selectors = new bytes4[](7);
         selectors[0] = MultiCurrencyCampaignFacet.createAdBriefWithToken.selector;
         selectors[1] = MultiCurrencyCampaignFacet.createAdBriefWithPreferredToken.selector;
         selectors[2] = MultiCurrencyCampaignFacet.cancelAdBriefWithToken.selector;
-        selectors[3] = MultiCurrencyCampaignFacet.getCampaignTokenInfo.selector;
-        selectors[4] = MultiCurrencyCampaignFacet.getCampaignsByToken.selector;
-        selectors[5] = MultiCurrencyCampaignFacet.getCampaignStatsByCurrency.selector;
+        selectors[3] = MultiCurrencyCampaignFacet.cancelCampaignWithCompensation.selector;
+        selectors[4] = MultiCurrencyCampaignFacet.getCampaignTokenInfo.selector;
+        selectors[5] = MultiCurrencyCampaignFacet.getCampaignsByToken.selector;
+        selectors[6] = MultiCurrencyCampaignFacet.getCampaignStatsByCurrency.selector;
         return selectors;
     }
 }
