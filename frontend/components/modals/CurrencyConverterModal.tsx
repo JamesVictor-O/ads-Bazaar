@@ -79,12 +79,16 @@ export function CurrencyConverterModal({
     }
 
     try {
-      await prepareSwap(fromCurrency, toCurrency, amount);
-      toast.success('Swap executed successfully!');
-      onClose();
+      const result = await prepareSwap(fromCurrency, toCurrency, amount);
+      toast.success(result.message || 'Swap executed successfully!');
+      // Refresh balances and close modal
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('not yet implemented')) {
-        toast.error('Swap functionality coming soon! For now, you can view conversion rates.');
+      console.error('Swap error:', error);
+      if (error instanceof Error) {
+        toast.error(error.message || 'Swap failed. Please try again.');
       } else {
         toast.error('Swap failed. Please try again.');
       }
@@ -265,9 +269,9 @@ export function CurrencyConverterModal({
                 {/* Swap Interface */}
                 <div className="bg-slate-900/30 border border-slate-700/30 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <AlertTriangle className="w-5 h-5 text-amber-400" />
-                    <span className="text-sm text-amber-400">
-                      Swap functionality coming soon via Mento Protocol integration
+                    <Zap className="w-5 h-5 text-emerald-400" />
+                    <span className="text-sm text-emerald-400">
+                      Live swaps powered by Mento Protocol
                     </span>
                   </div>
 
@@ -347,7 +351,7 @@ export function CurrencyConverterModal({
                       ) : (
                         <>
                           <ArrowRightLeft className="w-4 h-4" />
-                          Preview Swap
+                          Execute Swap
                         </>
                       )}
                     </button>

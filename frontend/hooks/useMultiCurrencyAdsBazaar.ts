@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useWriteContract, useReadContract, useAccount, useWaitForTransactionReceipt } from 'wagmi';
+import { useWriteContract, useReadContract, useAccount, useWaitForTransactionReceipt, useWalletClient, usePublicClient } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { MENTO_TOKENS, SupportedCurrency, mentoFX } from '@/lib/mento-simple';
 import { CONTRACT_ADDRESS } from '@/lib/contracts';
@@ -299,32 +299,544 @@ export function useExchangeRates(baseCurrency: SupportedCurrency = 'cUSD') {
   };
 }
 
-// Currency swap hooks (for future implementation)
+// Currency swap hooks with Mento Protocol integration
 export function useCurrencySwap() {
   const { address } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient();
   const [isSwapping, setIsSwapping] = useState(false);
 
   const prepareSwap = useCallback(async (
     fromCurrency: SupportedCurrency,
     toCurrency: SupportedCurrency,
     amount: string,
-    slippage: number = 1
+    slippage: number = 1,
+    recipientAddress?: string
   ) => {
-    if (!address) throw new Error('Wallet not connected');
+    if (!address || !walletClient || !publicClient) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (fromCurrency === toCurrency) {
+      throw new Error('Cannot swap same currency');
+    }
+
+    if (!amount || parseFloat(amount) <= 0) {
+      throw new Error('Invalid amount');
+    }
+
+    setIsSwapping(true);
 
     try {
-      // TODO: Implement swap transaction when full Mento SDK is integrated
-      throw new Error('Swap functionality not yet implemented');
+      console.log('🚀 Starting Mento swap on mainnet...');
+      
+      // Get token addresses for Celo mainnet
+      const fromTokenAddress = MENTO_TOKENS[fromCurrency].address;
+      const toTokenAddress = MENTO_TOKENS[toCurrency].address;
+      
+      console.log('Token addresses:', {
+        fromCurrency,
+        toCurrency,
+        fromTokenAddress,
+        toTokenAddress
+      });
+
+      // Get RPC URL from environment
+      const rpcUrl = process.env.NEXT_PUBLIC_CELO_RPC_URL || 'https://celo-mainnet.g.alchemy.com/v2/qMj263vOQ9uKwIE4R9s3638-8zRBds9t';
+      
+      // Create ethers provider for Mento SDK compatibility
+      const { providers, Wallet, Contract } = await import('ethers');
+      const provider = new providers.JsonRpcProvider(rpcUrl);
+      
+      // Create signer proxy that uses viem for actual transactions
+      const createViemSigner = (userAddress: string) => {
+        // Create dummy wallet for Mento SDK compatibility
+        const deterministicKey = '0x' + userAddress.slice(2).padStart(64, '0');
+        const wallet = new Wallet(deterministicKey, provider);
+        
+        // Override key methods to use viem
+        const signerProxy = Object.create(wallet);
+        
+        Object.defineProperty(signerProxy, 'address', {
+          value: userAddress,
+          writable: false,
+          enumerable: true
+        });
+        
+        signerProxy.getAddress = () => Promise.resolve(userAddress);
+        
+        signerProxy.sendTransaction = async (transaction: any) => {
+          console.log('📤 Sending transaction via viem:', transaction);
+          const txParams: any = {
+            account: userAddress as `0x${string}`,
+            to: transaction.to as `0x${string}`,
+            data: transaction.data as `0x${string}`,
+            value: transaction.value ? BigInt(transaction.value.toString()) : BigInt(0)
+          };
+          
+          // Only add gas parameters if they exist
+          if (transaction.gasLimit) {
+            txParams.gas = BigInt(transaction.gasLimit.toString());
+          }
+          if (transaction.gasPrice) {
+            txParams.gasPrice = BigInt(transaction.gasPrice.toString());
+          }
+          
+          const hash = await walletClient.sendTransaction(txParams);
+          return { 
+            hash, 
+            wait: () => publicClient.waitForTransactionReceipt({ hash, confirmations: 1 }) 
+          };
+        };
+        
+        signerProxy.populateTransaction = async (transaction: any) => {
+          const populated = await wallet.populateTransaction(transaction);
+          populated.from = userAddress;
+          return populated;
+        };
+        
+        return signerProxy;
+      };
+      
+      const signer = createViemSigner(address);
+      
+      console.log('✨ Creating Mento SDK...');
+      const { Mento } = await import('@mento-protocol/mento-sdk');
+      const mento = await Mento.create(signer);
+      
+      // Initialize and check exchanges
+      console.log('🔄 Getting exchanges...');
+      const exchanges = await mento.getExchanges();
+      console.log('📊 Available exchanges:', exchanges.length);
+      
+      if (exchanges.length === 0) {
+        throw new Error('No exchanges found - cannot perform swaps');
+      }
+      
+      // Parse amount using viem
+      const { parseEther, formatEther } = await import('viem');
+      const amountInWei = parseEther(amount);
+      
+      console.log('📊 Getting quote...');
+      const quoteAmountOut = await mento.getAmountOut(
+        fromTokenAddress,
+        toTokenAddress,
+        amountInWei.toString()
+      );
+      
+      console.log(`💰 Quote: ${formatEther(BigInt(quoteAmountOut.toString()))} ${toCurrency} for ${amount} ${fromCurrency}`);
+      
+      // Apply slippage protection
+      const quoteBigInt = BigInt(quoteAmountOut.toString());
+      const slippageMultiplier = BigInt(100 - slippage);
+      const expectedAmountOut = (quoteBigInt * slippageMultiplier / BigInt(100)).toString();
+      
+      console.log(`🎯 Expected amount out with ${slippage}% slippage: ${formatEther(BigInt(expectedAmountOut))} ${toCurrency}`);
+      
+      // Find tradable pair
+      console.log('🔍 Finding tradable pair...');
+      const tradablePair = await mento.findPairForTokens(
+        fromTokenAddress,
+        toTokenAddress
+      );
+      console.log('✅ Found tradable pair:', tradablePair);
+      
+      // Get broker contract
+      const broker = await mento.getBroker();
+      console.log('📊 Broker contract:', broker.address);
+      
+      // Handle token allowance
+      console.log('🔓 Handling token allowance...');
+      const tokenInterface = [
+        'function allowance(address owner, address spender) view returns (uint256)',
+        'function approve(address spender, uint256 amount) returns (bool)'
+      ];
+      const tokenContract = new Contract(fromTokenAddress, tokenInterface, signer);
+      
+      const currentAllowance = await tokenContract.allowance(signer.address, broker.address);
+      console.log('Current allowance:', currentAllowance.toString());
+      
+      if (BigInt(currentAllowance.toString()) < BigInt(amountInWei.toString())) {
+        console.log('🔓 Approving broker contract...');
+        
+        const approvalTx = await tokenContract.populateTransaction.approve(
+          broker.address,
+          amountInWei.toString()
+        );
+        
+        const approvalHash = await walletClient.sendTransaction({
+          account: signer.address as `0x${string}`,
+          to: fromTokenAddress as `0x${string}`,
+          data: approvalTx.data as `0x${string}`,
+          value: BigInt(0)
+        } as any);
+        
+        console.log('📤 Approval transaction:', approvalHash);
+        await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+        console.log('✅ Approval confirmed');
+      } else {
+        console.log('✅ Sufficient allowance exists');
+      }
+      
+      // Execute swap based on path type
+      let result;
+      
+      if (tradablePair.path.length === 1) {
+        // Direct single-hop swap
+        result = await executeDirectSwap(
+          exchanges,
+          broker,
+          fromTokenAddress,
+          toTokenAddress,
+          amountInWei.toString(),
+          expectedAmountOut,
+          signer,
+          walletClient,
+          publicClient,
+          fromCurrency,
+          toCurrency,
+          recipientAddress
+        );
+      } else if (tradablePair.path.length === 2) {
+        // Multi-hop swap
+        result = await executeMultiHopSwap(
+          tradablePair,
+          broker,
+          fromTokenAddress,
+          toTokenAddress,
+          amountInWei.toString(),
+          signer,
+          walletClient,
+          publicClient,
+          fromCurrency,
+          toCurrency,
+          recipientAddress
+        );
+      } else {
+        throw new Error(`Unsupported swap path length: ${tradablePair.path.length}`);
+      }
+      
+      console.log('🎉 Swap completed successfully:', result);
+      return result;
+      
     } catch (error) {
-      console.error('Error preparing swap:', error);
+      console.error('❌ Swap failed:', error);
       throw error;
+    } finally {
+      setIsSwapping(false);
     }
-  }, [address]);
+  }, [address, walletClient, publicClient]);
 
   return {
     prepareSwap,
     isSwapping
   };
+}
+
+// Direct swap execution helper
+async function executeDirectSwap(
+  exchanges: any[],
+  broker: any,
+  fromTokenAddress: string,
+  toTokenAddress: string,
+  amountInWei: string,
+  expectedAmountOut: string,
+  signer: any,
+  walletClient: any,
+  publicClient: any,
+  fromCurrency: SupportedCurrency,
+  toCurrency: SupportedCurrency,
+  recipientAddress?: string
+) {
+  console.log('🔄 Direct swap execution...');
+  
+  const correctExchange = exchanges.find(exchange => {
+    const hasTokens = exchange.assets.length === 2 &&
+      ((exchange.assets[0] === fromTokenAddress && exchange.assets[1] === toTokenAddress) ||
+       (exchange.assets[0] === toTokenAddress && exchange.assets[1] === fromTokenAddress));
+    return hasTokens;
+  });
+  
+  if (!correctExchange) {
+    throw new Error(`No exchange found for ${fromCurrency} -> ${toCurrency}`);
+  }
+  
+  console.log('📊 Using exchange:', correctExchange.id);
+  
+  const txRequest = await broker.populateTransaction.swapIn(
+    correctExchange.providerAddr,
+    correctExchange.id,
+    fromTokenAddress,
+    toTokenAddress,
+    amountInWei,
+    expectedAmountOut
+  );
+  
+  console.log('📋 Swap transaction request:', txRequest);
+  
+  const hash = await walletClient.sendTransaction({
+    account: signer.address as `0x${string}`,
+    to: broker.address as `0x${string}`,
+    data: txRequest.data as `0x${string}`,
+    gas: txRequest.gasLimit ? BigInt(txRequest.gasLimit.toString()) : undefined,
+    gasPrice: txRequest.gasPrice ? BigInt(txRequest.gasPrice.toString()) : undefined,
+    value: BigInt(0)
+  } as any);
+  
+  console.log('📤 Swap transaction hash:', hash);
+  await publicClient.waitForTransactionReceipt({ hash });
+  console.log('✅ Swap confirmed');
+  
+  // Handle remittance if needed
+  if (recipientAddress && recipientAddress !== signer.address) {
+    const transferHash = await handleRemittance(
+      toTokenAddress,
+      expectedAmountOut,
+      recipientAddress,
+      signer,
+      walletClient,
+      publicClient
+    );
+    
+    const { formatEther } = await import('viem');
+    return {
+      success: true,
+      hash,
+      transferHash,
+      amountOut: formatEther(BigInt(expectedAmountOut)),
+      recipient: recipientAddress,
+      message: `Successfully sent ${formatEther(BigInt(expectedAmountOut))} ${toCurrency} to ${recipientAddress}`
+    };
+  }
+  
+  const { formatEther } = await import('viem');
+  return {
+    success: true,
+    hash,
+    amountOut: formatEther(BigInt(expectedAmountOut)),
+    recipient: signer.address,
+    message: `Successfully swapped ${formatEther(BigInt(amountInWei))} ${fromCurrency} for ${formatEther(BigInt(expectedAmountOut))} ${toCurrency}`
+  };
+}
+
+// Multi-hop swap execution helper
+async function executeMultiHopSwap(
+  tradablePair: any,
+  broker: any,
+  fromTokenAddress: string,
+  toTokenAddress: string,
+  amountInWei: string,
+  signer: any,
+  walletClient: any,
+  publicClient: any,
+  fromCurrency: SupportedCurrency,
+  toCurrency: SupportedCurrency,
+  recipientAddress?: string
+) {
+  console.log('🔄 Multi-hop swap execution...');
+  
+  const firstExchange = tradablePair.path[0];
+  const secondExchange = tradablePair.path[1];
+  
+  // Find intermediate token
+  let intermediateTokenAddress;
+  for (const asset1 of firstExchange.assets) {
+    for (const asset2 of secondExchange.assets) {
+      if (asset1 === asset2 && asset1 !== fromTokenAddress && asset1 !== toTokenAddress) {
+        intermediateTokenAddress = asset1;
+        break;
+      }
+    }
+    if (intermediateTokenAddress) break;
+  }
+  
+  if (!intermediateTokenAddress) {
+    throw new Error('Could not determine intermediate token');
+  }
+  
+  console.log('🔗 Intermediate token:', intermediateTokenAddress);
+  
+  // Determine step exchanges
+  let step1Exchange, step2Exchange;
+  
+  for (const exchange of [firstExchange, secondExchange]) {
+    const hasFromToken = exchange.assets.includes(fromTokenAddress);
+    const hasIntermediateToken = exchange.assets.includes(intermediateTokenAddress);
+    if (hasFromToken && hasIntermediateToken) {
+      step1Exchange = exchange;
+      break;
+    }
+  }
+  
+  for (const exchange of [firstExchange, secondExchange]) {
+    const hasIntermediateToken = exchange.assets.includes(intermediateTokenAddress);
+    const hasToToken = exchange.assets.includes(toTokenAddress);
+    if (hasIntermediateToken && hasToToken) {
+      step2Exchange = exchange;
+      break;
+    }
+  }
+  
+  if (!step1Exchange || !step2Exchange) {
+    throw new Error('Could not find exchanges for multi-hop swap');
+  }
+  
+  // Execute step 1
+  console.log('📍 Step 1: Swap to intermediate token...');
+  const step1Quote = await broker.functions.getAmountOut(
+    step1Exchange.providerAddr,
+    step1Exchange.id,
+    fromTokenAddress,
+    intermediateTokenAddress,
+    amountInWei
+  );
+  
+  const step1MinAmount = (BigInt(step1Quote.toString()) * BigInt(99)) / BigInt(100);
+  
+  const step1TxRequest = await broker.populateTransaction.swapIn(
+    step1Exchange.providerAddr,
+    step1Exchange.id,
+    fromTokenAddress,
+    intermediateTokenAddress,
+    amountInWei,
+    step1MinAmount.toString()
+  );
+  
+  const step1Hash = await walletClient.sendTransaction({
+    account: signer.address as `0x${string}`,
+    to: broker.address as `0x${string}`,
+    data: step1TxRequest.data as `0x${string}`,
+    gas: step1TxRequest.gasLimit ? BigInt(step1TxRequest.gasLimit.toString()) : undefined,
+    gasPrice: step1TxRequest.gasPrice ? BigInt(step1TxRequest.gasPrice.toString()) : undefined,
+    value: BigInt(0)
+  } as any);
+  
+  await publicClient.waitForTransactionReceipt({ hash: step1Hash });
+  console.log('✅ Step 1 complete');
+  
+  // Step 2: Approve and execute second swap
+  console.log('📍 Step 2: Approve intermediate token...');
+  const { Contract } = await import('ethers');
+  const intermediateTokenContract = new Contract(
+    intermediateTokenAddress,
+    ['function approve(address spender, uint256 amount) returns (bool)'],
+    signer
+  );
+  
+  const approvalTx = await intermediateTokenContract.populateTransaction.approve(
+    broker.address,
+    step1Quote.toString()
+  );
+  
+  const approvalHash = await walletClient.sendTransaction({
+    account: signer.address as `0x${string}`,
+    to: intermediateTokenAddress as `0x${string}`,
+    data: approvalTx.data as `0x${string}`,
+    value: BigInt(0)
+  } as any);
+  
+  await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+  console.log('✅ Intermediate token approved');
+  
+  // Execute second swap
+  console.log('📍 Step 2: Swap to target token...');
+  const step2Quote = await broker.functions.getAmountOut(
+    step2Exchange.providerAddr,
+    step2Exchange.id,
+    intermediateTokenAddress,
+    toTokenAddress,
+    step1Quote.toString()
+  );
+  
+  const step2MinAmount = (BigInt(step2Quote.toString()) * BigInt(99)) / BigInt(100);
+  
+  const step2TxRequest = await broker.populateTransaction.swapIn(
+    step2Exchange.providerAddr,
+    step2Exchange.id,
+    intermediateTokenAddress,
+    toTokenAddress,
+    step1Quote.toString(),
+    step2MinAmount.toString()
+  );
+  
+  const step2Hash = await walletClient.sendTransaction({
+    account: signer.address as `0x${string}`,
+    to: broker.address as `0x${string}`,
+    data: step2TxRequest.data as `0x${string}`,
+    gas: step2TxRequest.gasLimit ? BigInt(step2TxRequest.gasLimit.toString()) : undefined,
+    gasPrice: step2TxRequest.gasPrice ? BigInt(step2TxRequest.gasPrice.toString()) : undefined,
+    value: BigInt(0)
+  } as any);
+  
+  await publicClient.waitForTransactionReceipt({ hash: step2Hash });
+  console.log('✅ Multi-hop swap complete');
+  
+  // Handle remittance if needed
+  if (recipientAddress && recipientAddress !== signer.address) {
+    const transferHash = await handleRemittance(
+      toTokenAddress,
+      step2Quote.toString(),
+      recipientAddress,
+      signer,
+      walletClient,
+      publicClient
+    );
+    
+    const { formatEther } = await import('viem');
+    return {
+      success: true,
+      hash: step2Hash,
+      transferHash,
+      amountOut: formatEther(BigInt(step2Quote.toString())),
+      recipient: recipientAddress,
+      message: `Successfully sent ${formatEther(BigInt(step2Quote.toString()))} ${toCurrency} to ${recipientAddress}`
+    };
+  }
+  
+  const { formatEther } = await import('viem');
+  return {
+    success: true,
+    hash: step2Hash,
+    amountOut: formatEther(BigInt(step2Quote.toString())),
+    recipient: signer.address,
+    message: `Successfully swapped ${formatEther(BigInt(amountInWei))} ${fromCurrency} for ${formatEther(BigInt(step2Quote.toString()))} ${toCurrency}`
+  };
+}
+
+// Handle token transfer to recipient helper
+async function handleRemittance(
+  tokenAddress: string,
+  amount: string,
+  recipientAddress: string,
+  signer: any,
+  walletClient: any,
+  publicClient: any
+) {
+  console.log('🔄 Transferring to recipient...');
+  
+  const { Contract } = await import('ethers');
+  const tokenContract = new Contract(
+    tokenAddress,
+    ['function transfer(address to, uint256 amount) returns (bool)'],
+    signer
+  );
+  
+  const transferTx = await tokenContract.populateTransaction.transfer(
+    recipientAddress,
+    amount
+  );
+  
+  const transferHash = await walletClient.sendTransaction({
+    account: signer.address as `0x${string}`,
+    to: tokenAddress as `0x${string}`,
+    data: transferTx.data as `0x${string}`,
+    value: BigInt(0)
+  } as any);
+  
+  await publicClient.waitForTransactionReceipt({ hash: transferHash });
+  console.log('✅ Transfer confirmed');
+  
+  return transferHash;
 }
 
 // Statistics and analytics
