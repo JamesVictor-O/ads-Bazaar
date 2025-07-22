@@ -433,6 +433,42 @@
     },
     {
       "type": "function",
+      "name": "getCampaignTokenInfo",
+      "inputs": [
+        {
+          "name": "_briefId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct LibMultiCurrencyAdsBazaar.CampaignTokenInfo",
+          "components": [
+            {
+              "name": "tokenAddress",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "symbol",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "currency",
+              "type": "uint8",
+              "internalType": "uint8"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "getCampaignStatsByCurrency",
       "inputs": [],
       "outputs": [
