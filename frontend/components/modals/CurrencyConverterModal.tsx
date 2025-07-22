@@ -79,12 +79,16 @@ export function CurrencyConverterModal({
     }
 
     try {
-      await prepareSwap(fromCurrency, toCurrency, amount);
-      toast.success('Swap executed successfully!');
-      onClose();
+      const result = await prepareSwap(fromCurrency, toCurrency, amount);
+      toast.success(result.message || 'Swap executed successfully!');
+      // Refresh balances and close modal
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (error) {
-      if (error instanceof Error && error.message.includes('not yet implemented')) {
-        toast.error('Swap functionality coming soon! For now, you can view conversion rates.');
+      console.error('Swap error:', error);
+      if (error instanceof Error) {
+        toast.error(error.message || 'Swap failed. Please try again.');
       } else {
         toast.error('Swap failed. Please try again.');
       }
@@ -101,14 +105,14 @@ export function CurrencyConverterModal({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-50"
+      className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
       <motion.div
-        className="bg-slate-800/90 backdrop-blur-md border border-slate-700/50 rounded-2xl w-full max-w-2xl mx-auto max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10"
+        className="bg-slate-800/95 backdrop-blur-md border border-slate-700/50 rounded-xl sm:rounded-2xl w-full max-w-md sm:max-w-2xl mx-auto max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
@@ -116,47 +120,49 @@ export function CurrencyConverterModal({
       >
         {/* Scrollable Content */}
         <div className="overflow-y-auto flex-1">
-          <div className="p-4 sm:p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white">Currency Converter</h2>
-                <p className="text-sm text-slate-400 mt-1">
+          <div className="p-3 sm:p-6">
+            {/* Header - Mobile Optimized */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex-1">
+                <h2 className="text-lg sm:text-2xl font-bold text-white">Currency Converter</h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1 hidden sm:block">
                   {userType === 'brand' ? 'Plan campaigns in any currency' : 'Convert your earnings'}
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors ml-2"
               >
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="mb-6">
+            {/* Tabs - Mobile Optimized */}
+            <div className="mb-4">
               <div className="flex bg-slate-900/50 rounded-lg p-1">
                 <button
                   onClick={() => setActiveTab('convert')}
-                  className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex-1 py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1 sm:gap-2 ${
                     activeTab === 'convert'
                       ? 'bg-emerald-500 text-white'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Globe className="w-4 h-4 inline mr-2" />
-                  View Rates
+                  <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">View Rates</span>
+                  <span className="sm:hidden">Rates</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('swap')}
-                  className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex-1 py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1 sm:gap-2 ${
                     activeTab === 'swap'
                       ? 'bg-emerald-500 text-white'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <ArrowRightLeft className="w-4 h-4 inline mr-2" />
-                  Swap Currency
+                  <ArrowRightLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Swap Currency</span>
+                  <span className="sm:hidden">Swap</span>
                 </button>
               </div>
             </div>
@@ -260,118 +266,145 @@ export function CurrencyConverterModal({
                 </div>
               </div>
             ) : (
-              // Swap View
-              <div className="space-y-6">
+              // Swap View - Mobile Optimized
+              <div className="space-y-4">
                 {/* Swap Interface */}
-                <div className="bg-slate-900/30 border border-slate-700/30 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <AlertTriangle className="w-5 h-5 text-amber-400" />
-                    <span className="text-sm text-amber-400">
-                      Swap functionality coming soon via Mento Protocol integration
+                <div className="bg-slate-900/30 border border-slate-700/30 rounded-xl p-3 sm:p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs sm:text-sm text-emerald-400">
+                      Live swaps via Mento Protocol
                     </span>
                   </div>
 
-                  <div className="space-y-4">
-                    {/* From Currency */}
-                    <div className="bg-slate-800/50 rounded-lg p-4">
+                  <div className="space-y-3">
+                    {/* From Currency - Stack Layout */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-sm font-medium text-slate-300">From</label>
                         {fromBalance && (
                           <button
                             onClick={setMaxAmount}
-                            className="text-xs text-emerald-400 hover:text-emerald-300"
+                            className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 rounded transition-colors"
                           >
-                            Balance: {parseFloat(fromBalance.formatted).toFixed(2)} {MENTO_TOKENS[fromCurrency].symbol}
+                            MAX: {parseFloat(fromBalance.formatted).toFixed(2)}
                           </button>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      
+                      {/* Currency Selector */}
+                      <div className="mb-3">
                         <CurrencySelector
                           selectedCurrency={fromCurrency}
                           onCurrencyChange={setFromCurrency}
-                          className="bg-slate-800 border-slate-600 text-white focus:border-emerald-500"
-                        />
-                        <input
-                          type="number"
-                          value={amount}
-                          onChange={(e) => setAmount(e.target.value)}
-                          className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
-                          placeholder="0.00"
+                          className="bg-slate-700 border-slate-600 text-white focus:border-emerald-500 w-full"
                         />
                       </div>
+                      
+                      {/* Amount Input */}
+                      <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white text-lg placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
+                        placeholder="Enter amount"
+                      />
                     </div>
 
-                    {/* Swap Arrow */}
-                    <div className="flex justify-center">
+                    {/* Swap Arrow - Compact */}
+                    <div className="flex justify-center py-1">
                       <button
                         onClick={swapCurrencies}
-                        className="p-3 bg-slate-700 hover:bg-slate-600 rounded-full transition-colors"
+                        className="p-2 bg-slate-700 hover:bg-emerald-600 rounded-full transition-colors border-2 border-slate-600 hover:border-emerald-500"
+                        title="Swap currencies"
                       >
-                        <ArrowRightLeft className="w-5 h-5 text-slate-300" />
+                        <ArrowRightLeft className="w-4 h-4 text-slate-300" />
                       </button>
                     </div>
 
-                    {/* To Currency */}
-                    <div className="bg-slate-800/50 rounded-lg p-4">
-                      <label className="block text-sm font-medium text-slate-300 mb-2">To (estimated)</label>
-                      <div className="grid grid-cols-2 gap-3">
+                    {/* To Currency - Stack Layout */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                      <label className="block text-sm font-medium text-slate-300 mb-2">To (you receive)</label>
+                      
+                      {/* Currency Selector */}
+                      <div className="mb-3">
                         <CurrencySelector
                           selectedCurrency={toCurrency}
                           onCurrencyChange={setToCurrency}
-                          className="bg-slate-800 border-slate-600 text-white focus:border-emerald-500"
+                          className="bg-slate-700 border-slate-600 text-white focus:border-emerald-500 w-full"
                         />
-                        <div className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-400 flex items-center">
-                          {amount && fromCurrency !== toCurrency ? (
+                      </div>
+                      
+                      {/* Estimated Amount */}
+                      <div className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg">
+                        {amount && fromCurrency !== toCurrency ? (
+                          <div className="text-white text-lg font-medium">
                             <CurrencyConverter
                               amount={amount}
                               fromCurrency={fromCurrency}
                               toCurrency={toCurrency}
                               className="text-white"
                             />
-                          ) : '0.00'}
-                        </div>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-lg">0.00</span>
+                        )}
                       </div>
                     </div>
 
-                    {/* Swap Button */}
+                    {/* Swap Info - Compact */}
+                    {amount && fromCurrency !== toCurrency && (
+                      <div className="bg-slate-800/30 rounded-lg p-2 text-xs text-slate-400">
+                        <div className="flex justify-between items-center">
+                          <span>Network fee:</span>
+                          <span className="text-emerald-400">~$0.01</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-1">
+                          <span>Slippage tolerance:</span>
+                          <span className="text-emerald-400">1%</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Swap Button - Mobile Optimized */}
                     <button
                       onClick={handleSwap}
                       disabled={!address || !amount || parseFloat(amount) <= 0 || isSwapping}
-                      className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-400 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-400 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-base"
                     >
                       {isSwapping ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           Swapping...
                         </>
                       ) : (
                         <>
-                          <ArrowRightLeft className="w-4 h-4" />
-                          Preview Swap
+                          <ArrowRightLeft className="w-5 h-5" />
+                          Execute Swap
                         </>
                       )}
                     </button>
                   </div>
                 </div>
 
-                {/* Info Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-slate-900/30 border border-slate-700/30 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="w-4 h-4 text-emerald-400" />
-                      <span className="font-medium text-white">Low Slippage</span>
+                {/* Compact Info Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-800/30 border border-slate-700/30 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap className="w-3 h-3 text-emerald-400" />
+                      <span className="text-xs font-medium text-white">Low Fees</span>
                     </div>
-                    <p className="text-xs text-slate-400">
-                      Near 1:1 swaps with minimal fees via Mento Protocol
+                    <p className="text-xs text-slate-400 leading-tight">
+                      Minimal slippage via Mento
                     </p>
                   </div>
-                  <div className="bg-slate-900/30 border border-slate-700/30 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Info className="w-4 h-4 text-blue-400" />
-                      <span className="font-medium text-white">Transparent</span>
+                  <div className="bg-slate-800/30 border border-slate-700/30 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Info className="w-3 h-3 text-blue-400" />
+                      <span className="text-xs font-medium text-white">Secure</span>
                     </div>
-                    <p className="text-xs text-slate-400">
-                      All rates and reserves verified onchain
+                    <p className="text-xs text-slate-400 leading-tight">
+                      Onchain verification
                     </p>
                   </div>
                 </div>
