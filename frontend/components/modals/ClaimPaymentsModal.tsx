@@ -22,6 +22,14 @@ import {
 } from '@/hooks/useMultiCurrencyAdsBazaar';
 import { MENTO_TOKENS, SupportedCurrency, formatCurrencyAmount } from '@/lib/mento-simple';
 
+// Helper function to get currency symbol from token address
+function getCurrencyFromTokenAddress(tokenAddress: string): SupportedCurrency {
+  const currency = Object.entries(MENTO_TOKENS).find(([, token]) => 
+    token.address.toLowerCase() === tokenAddress.toLowerCase()
+  );
+  return currency ? currency[0] as SupportedCurrency : 'cUSD';
+}
+
 interface ClaimPaymentsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -270,19 +278,20 @@ function ClaimPaymentsModal({
                   >
                     All Currencies
                   </button>
-                  {multiCurrencyPayments.tokens.map((token) => {
-                    const tokenInfo = MENTO_TOKENS[token as SupportedCurrency];
+                  {multiCurrencyPayments.tokens.map((tokenAddress) => {
+                    const currency = getCurrencyFromTokenAddress(tokenAddress);
+                    const tokenInfo = MENTO_TOKENS[currency];
                     return (
                       <button
-                        key={token}
-                        onClick={() => setSelectedCurrency(token as SupportedCurrency)}
+                        key={tokenAddress}
+                        onClick={() => setSelectedCurrency(currency)}
                         className={`px-3 py-2 text-xs rounded-lg transition-all ${
-                          selectedCurrency === token
+                          selectedCurrency === currency
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                             : 'bg-slate-800/50 text-slate-400 border border-slate-600/30 hover:bg-slate-700/50'
                         }`}
                       >
-                        {tokenInfo?.symbol || token}
+                        {tokenInfo?.symbol || currency}
                       </button>
                     );
                   })}
@@ -302,14 +311,15 @@ function ClaimPaymentsModal({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {multiCurrencyPayments.tokens.map((token, index) => {
-                    const tokenInfo = MENTO_TOKENS[token as SupportedCurrency];
+                  {multiCurrencyPayments.tokens.map((tokenAddress, index) => {
+                    const currency = getCurrencyFromTokenAddress(tokenAddress);
+                    const tokenInfo = MENTO_TOKENS[currency];
                     const amount = multiCurrencyPayments.amounts[index];
                     return (
-                      <div key={token} className="flex justify-between items-center">
-                        <span className="text-sm text-slate-300">{tokenInfo?.symbol || token}:</span>
+                      <div key={tokenAddress} className="flex justify-between items-center">
+                        <span className="text-sm text-slate-300">{tokenInfo?.symbol || currency}:</span>
                         <span className="text-lg font-bold text-emerald-400">
-                          {formatCurrencyAmount(amount.toString(), token as SupportedCurrency)}
+                          {formatCurrencyAmount(amount.toString(), currency)}
                         </span>
                       </div>
                     );
@@ -335,23 +345,24 @@ function ClaimPaymentsModal({
                   </h3>
                   {selectedCurrency === 'all' ? (
                     // Show all currencies
-                    multiCurrencyPayments.tokens.map((token, index) => {
-                      const tokenInfo = MENTO_TOKENS[token as SupportedCurrency];
+                    multiCurrencyPayments.tokens.map((tokenAddress, index) => {
+                      const currency = getCurrencyFromTokenAddress(tokenAddress);
+                      const tokenInfo = MENTO_TOKENS[currency];
                       const amount = multiCurrencyPayments.amounts[index];
                       return (
                         <div
-                          key={token}
+                          key={tokenAddress}
                           className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4"
                         >
                           <div className="flex justify-between items-center mb-3">
                             <div className="flex items-center gap-2">
                               <CheckCircle className="w-4 h-4 text-emerald-400" />
                               <span className="text-sm font-medium text-white">
-                                {tokenInfo?.name || token} Payments
+                                {tokenInfo?.name || currency} Payments
                               </span>
                             </div>
                             <span className="text-lg font-bold text-emerald-400">
-                              {formatCurrencyAmount(amount.toString(), token as SupportedCurrency)}
+                              {formatCurrencyAmount(amount.toString(), currency)}
                             </span>
                           </div>
                           <p className="text-xs text-slate-400">
@@ -363,8 +374,15 @@ function ClaimPaymentsModal({
                   ) : (
                     // Show selected currency only
                     (() => {
-                      const tokenIndex = multiCurrencyPayments.tokens.findIndex(t => t === selectedCurrency);
+                      // Find the token address for the selected currency
+                      const tokenAddress = multiCurrencyPayments.tokens.find(address => 
+                        getCurrencyFromTokenAddress(address) === selectedCurrency
+                      );
+                      if (!tokenAddress) return null;
+                      
+                      const tokenIndex = multiCurrencyPayments.tokens.findIndex(t => t === tokenAddress);
                       if (tokenIndex === -1) return null;
+                      
                       const amount = multiCurrencyPayments.amounts[tokenIndex];
                       const tokenInfo = MENTO_TOKENS[selectedCurrency as SupportedCurrency];
                       return (
