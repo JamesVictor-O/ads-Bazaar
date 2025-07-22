@@ -341,12 +341,49 @@ export function useCurrencySwap() {
         toTokenAddress
       });
 
-      // Get RPC URL from environment
-      const rpcUrl = process.env.NEXT_PUBLIC_CELO_RPC_URL || 'https://celo-mainnet.g.alchemy.com/v2/qMj263vOQ9uKwIE4R9s3638-8zRBds9t';
+      // Get RPC URL from environment with fallbacks
+      const primaryRpcUrl = process.env.NEXT_PUBLIC_CELO_RPC_URL || 'https://celo-mainnet.g.alchemy.com/v2/qMj263vOQ9uKwIE4R9s3638-8zRBds9t';
+      const fallbackRpcUrls = [
+        'https://forno.celo.org',
+        'https://rpc.ankr.com/celo',
+        'https://celo-mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'
+      ];
+      
+      console.log('🌐 Primary RPC URL:', primaryRpcUrl);
       
       // Create ethers provider for Mento SDK compatibility
       const { providers, Wallet, Contract } = await import('ethers');
-      const provider = new providers.JsonRpcProvider(rpcUrl);
+      
+      // Test RPC connectivity with fallback
+      console.log('🔍 Testing RPC connectivity...');
+      let provider;
+      let rpcUrl = primaryRpcUrl;
+      
+      try {
+        provider = new providers.JsonRpcProvider(primaryRpcUrl);
+        const network = await provider.getNetwork();
+        console.log('✅ Primary RPC connected. Network:', network.name, 'ChainId:', network.chainId);
+      } catch (primaryError) {
+        console.warn('⚠️ Primary RPC failed, trying fallbacks...', primaryError);
+        
+        for (const fallbackUrl of fallbackRpcUrls) {
+          try {
+            console.log('🔄 Trying fallback RPC:', fallbackUrl);
+            provider = new providers.JsonRpcProvider(fallbackUrl);
+            const network = await provider.getNetwork();
+            console.log('✅ Fallback RPC connected. Network:', network.name, 'ChainId:', network.chainId);
+            rpcUrl = fallbackUrl;
+            break;
+          } catch (fallbackError) {
+            console.warn('⚠️ Fallback RPC failed:', fallbackUrl, fallbackError);
+            continue;
+          }
+        }
+        
+        if (!provider) {
+          throw new Error('All RPC endpoints failed. Check your network connection.');
+        }
+      }
       
       // Create signer proxy that uses viem for actual transactions
       const createViemSigner = (userAddress: string) => {
@@ -402,15 +439,23 @@ export function useCurrencySwap() {
       
       console.log('✨ Creating Mento SDK...');
       const { Mento } = await import('@mento-protocol/mento-sdk');
-      const mento = await Mento.create(signer);
       
-      // Initialize and check exchanges
-      console.log('🔄 Getting exchanges...');
-      const exchanges = await mento.getExchanges();
-      console.log('📊 Available exchanges:', exchanges.length);
-      
-      if (exchanges.length === 0) {
-        throw new Error('No exchanges found - cannot perform swaps');
+      let mento, exchanges;
+      try {
+        mento = await Mento.create(signer);
+        console.log('✅ Mento SDK created successfully');
+        
+        // Initialize and check exchanges
+        console.log('🔄 Getting exchanges...');
+        exchanges = await mento.getExchanges();
+        console.log('📊 Available exchanges:', exchanges.length);
+        
+        if (exchanges.length === 0) {
+          throw new Error('No exchanges found - cannot perform swaps');
+        }
+      } catch (mentoError) {
+        console.error('❌ Mento SDK initialization failed:', mentoError);
+        throw new Error(`Mento SDK failed: ${mentoError instanceof Error ? mentoError.message : 'Unknown error'}`);
       }
       
       // Parse amount using viem
@@ -418,13 +463,18 @@ export function useCurrencySwap() {
       const amountInWei = parseEther(amount);
       
       console.log('📊 Getting quote...');
-      const quoteAmountOut = await mento.getAmountOut(
-        fromTokenAddress,
-        toTokenAddress,
-        amountInWei.toString()
-      );
-      
-      console.log(`💰 Quote: ${formatEther(BigInt(quoteAmountOut.toString()))} ${toCurrency} for ${amount} ${fromCurrency}`);
+      let quoteAmountOut;
+      try {
+        quoteAmountOut = await mento.getAmountOut(
+          fromTokenAddress,
+          toTokenAddress,
+          amountInWei.toString()
+        );
+        console.log(`💰 Quote: ${formatEther(BigInt(quoteAmountOut.toString()))} ${toCurrency} for ${amount} ${fromCurrency}`);
+      } catch (quoteError) {
+        console.error('❌ Getting quote failed:', quoteError);
+        throw new Error(`Quote failed: ${quoteError instanceof Error ? quoteError.message : 'Unknown error'}`);
+      }
       
       // Apply slippage protection
       const quoteBigInt = BigInt(quoteAmountOut.toString());
