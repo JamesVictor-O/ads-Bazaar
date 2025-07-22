@@ -50,7 +50,7 @@ export function usePlatformStats(displayCurrency: SupportedCurrency = "cUSD") {
       {
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
-        functionName: "getSupportedTokensInfo",
+        functionName: "getCampaignStatsByCurrency",
       },
     ],
     query: {
@@ -61,9 +61,9 @@ export function usePlatformStats(displayCurrency: SupportedCurrency = "cUSD") {
 
   // Process multi-currency escrow data
   const multiCurrencyData = useMemo(() => {
-    const tokenInfo = data?.[3]?.status === "success" ? data[3].result : null;
+    const campaignStats = data?.[3]?.status === "success" ? data[3].result : null;
     
-    if (!tokenInfo) {
+    if (!campaignStats) {
       return {
         escrowByToken: {},
         totalEscrowAmount: 0,
@@ -71,14 +71,15 @@ export function usePlatformStats(displayCurrency: SupportedCurrency = "cUSD") {
       };
     }
 
-    const [, symbols, totalEscrowAmounts] = tokenInfo;
+    // getCampaignStatsByCurrency returns: { tokens, symbols, campaignCounts, totalBudgets, totalVolumes }
+    const { symbols, totalBudgets } = campaignStats;
     const escrowByToken: Record<string, number> = {};
     const escrowBreakdown: Array<{currency: SupportedCurrency, amount: number, convertedAmount: number}> = [];
     let totalInDisplayCurrency = 0;
 
     symbols.forEach((symbol: string, index: number) => {
       const currency = symbol as SupportedCurrency;
-      const amount = Number(totalEscrowAmounts[index]) / 1e18; // Convert from wei
+      const amount = Number(totalBudgets[index]) / 1e18; // totalBudgets represents escrow amounts
       const convertedAmount = convertAmount(amount, currency, displayCurrency);
       
       escrowByToken[currency] = amount;

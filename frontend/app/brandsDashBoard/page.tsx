@@ -377,26 +377,28 @@ const BrandDashboard = () => {
   useEffect(() => {
     if (isCreateSuccess) {
       toast.success("Campaign created successfully!");
-      // Reset form data
-      const resetForm = () => {
-        setFormData({
-          name: "",
-          description: "",
-          requirements: "",
-          budget: "",
-          currency: "cUSD", // Default currency
-          promotionDuration: "604800",
-          maxInfluencers: "5",
-          targetAudience: "0",
-          applicationPeriod: "432000", // 5 days default
-          proofSubmissionGracePeriod: "172800", // 2 days default (max)
-          verificationPeriod: "259200", // 3 days default
-          selectionGracePeriod: "86400", // 1 day default
-        });
-      };
       
-      // Use standardized success handler
-      createBrandDashboardSuccessHandler([resetForm, () => refetchBriefs()])();
+      // Close modal and reset form
+      setShowCreateModal(false);
+      setFormData({
+        name: "",
+        description: "",
+        requirements: "",
+        budget: "",
+        currency: "cUSD",
+        promotionDuration: "604800",
+        maxInfluencers: "5",
+        targetAudience: "0",
+        applicationPeriod: "432000",
+        proofSubmissionGracePeriod: "172800",
+        verificationPeriod: "259200",
+        selectionGracePeriod: "86400",
+      });
+      
+      // Simple refresh after a short delay
+      setTimeout(() => {
+        refetchBriefs();
+      }, 2000);
     }
 
     if (isCreateError) {
