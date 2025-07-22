@@ -233,13 +233,14 @@ const BrandDashboard = () => {
       console.log("Global refresh event received in brand dashboard");
       refetchBriefs();
       refetchApplications();
+      refetchProfile();
     };
 
     window.addEventListener('dashboardRefresh', handleDashboardRefresh);
     return () => {
       window.removeEventListener('dashboardRefresh', handleDashboardRefresh);
     };
-  }, [refetchBriefs, refetchApplications]);
+  }, [refetchBriefs, refetchApplications, refetchProfile]);
 
   useEffect(() => {
     if (completeHash) {
@@ -278,6 +279,47 @@ const BrandDashboard = () => {
       trackTransaction(cancelWithCompensationHash);
     }
   }, [cancelWithCompensationHash, trackTransaction]);
+
+  // Handle campaign operation success states and refresh data
+  useEffect(() => {
+    if (isCompleteSuccess) {
+      console.log("Campaign completed successfully, refreshing data");
+      refetchBriefs();
+      refetchProfile();
+    }
+  }, [isCompleteSuccess, refetchBriefs, refetchProfile]);
+
+  useEffect(() => {
+    if (isCancelSuccess) {
+      console.log("Campaign cancelled successfully, refreshing data");
+      refetchBriefs();
+      refetchProfile();
+    }
+  }, [isCancelSuccess, refetchBriefs, refetchProfile]);
+
+  useEffect(() => {
+    if (isExpireSuccess) {
+      console.log("Campaign expired successfully, refreshing data");
+      refetchBriefs();
+      refetchProfile();
+    }
+  }, [isExpireSuccess, refetchBriefs, refetchProfile]);
+
+  useEffect(() => {
+    if (isStartPartialSuccess) {
+      console.log("Partial campaign started successfully, refreshing data");
+      refetchBriefs();
+      refetchProfile();
+    }
+  }, [isStartPartialSuccess, refetchBriefs, refetchProfile]);
+
+  useEffect(() => {
+    if (isCancelWithCompensationSuccess) {
+      console.log("Campaign cancelled with compensation successfully, refreshing data");
+      refetchBriefs();
+      refetchProfile();
+    }
+  }, [isCancelWithCompensationSuccess, refetchBriefs, refetchProfile]);
 
   // Computed dashboard data
   const dashboardData = useMemo(() => {
@@ -540,6 +582,9 @@ const BrandDashboard = () => {
       
       // Refresh the briefs list to show the new campaign
       await refetchBriefs();
+      
+      // Refresh user profile to update escrow amounts and stats
+      await refetchProfile();
       
       // Reset form data for next campaign
       setFormData({

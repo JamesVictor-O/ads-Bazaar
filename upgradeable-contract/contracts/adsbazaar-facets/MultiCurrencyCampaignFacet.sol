@@ -176,6 +176,70 @@ contract MultiCurrencyCampaignFacet {
         emit LibAdsBazaar.BudgetRefunded(_briefId, msg.sender, refundAmount);
     }
 
+    // Cancel campaign with compensation to selected influencers
+    function cancelCampaignWithCompensation(bytes32 _briefId, uint256 _compensationPerInfluencer) external {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        LibMultiCurrencyAdsBazaar.MultiCurrencyStorage storage mcs = LibMultiCurrencyAdsBazaar.multiCurrencyStorage();
+        
+        LibAdsBazaar.enforceBriefExists(_briefId);
+        require(ds.briefs[_briefId].business == msg.sender, "Not authorized");
+        require(ds.briefs[_briefId].status == LibAdsBazaar.CampaignStatus.OPEN, "Cannot cancel non-open campaign");
+        require(ds.briefs[_briefId].selectedInfluencersCount > 0, "No influencers selected");
+        require(_compensationPerInfluencer > 0, "Compensation must be greater than 0");
+        
+        LibAdsBazaar.AdBrief storage brief = ds.briefs[_briefId];
+        
+        // Get the token used for this campaign
+        address campaignToken = mcs.campaignTokens[_briefId];
+        require(campaignToken != address(0), "Campaign token not found");
+        
+        uint256 totalCompensation = _compensationPerInfluencer * brief.selectedInfluencersCount;
+        require(totalCompensation <= brief.budget, "Compensation exceeds campaign budget");
+        
+        // Update campaign status
+        brief.status = LibAdsBazaar.CampaignStatus.CANCELLED;
+        
+        // Find and compensate selected influencers
+        LibAdsBazaar.InfluencerApplication[] storage applications = ds.applications[_briefId];
+        uint256 compensatedCount = 0;
+        
+        for (uint256 i = 0; i < applications.length; i++) {
+            if (applications[i].isSelected && compensatedCount < brief.selectedInfluencersCount) {
+                address influencer = applications[i].influencer;
+                
+                // Add compensation to influencer's pending payments in campaign token
+                mcs.influencerPaymentsByToken[influencer][campaignToken].push(
+                    LibAdsBazaar.PendingPayment({
+                        briefId: _briefId,
+                        amount: _compensationPerInfluencer,
+                        isApproved: true
+                    })
+                );
+                
+                mcs.influencerPendingByToken[influencer][campaignToken] += _compensationPerInfluencer;
+                
+                emit LibAdsBazaar.CompensationPaid(_briefId, influencer, _compensationPerInfluencer);
+                compensatedCount++;
+            }
+        }
+        
+        // Calculate refund amount (remaining budget after compensation)
+        uint256 refundAmount = brief.budget - totalCompensation;
+        
+        // Update escrow amounts
+        ds.totalEscrowAmount -= brief.budget;
+        mcs.totalEscrowByToken[campaignToken] -= brief.budget;
+        
+        // Refund remaining amount to business in original token
+        if (refundAmount > 0) {
+            require(IERC20(campaignToken).transfer(msg.sender, refundAmount), "Refund failed");
+        }
+        
+        emit LibAdsBazaar.BriefCancelled(_briefId);
+        emit LibAdsBazaar.BudgetRefunded(_briefId, msg.sender, refundAmount);
+        emit LibMultiCurrencyAdsBazaar.CampaignCancelledWithCompensation(_briefId, totalCompensation, compensatedCount);
+    }
+
     // Release payment to influencer in campaign's token
     function releasePaymentInCampaignToken(bytes32 _briefId, address _influencer) external {
         LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
@@ -231,19 +295,21 @@ contract MultiCurrencyCampaignFacet {
 
     // Get campaign token information
     function getCampaignTokenInfo(bytes32 _briefId) external view returns (
-        address tokenAddress,
-        string memory symbol,
-        LibMultiCurrencyAdsBazaar.SupportedCurrency currency
+        LibMultiCurrencyAdsBazaar.CampaignTokenInfo memory
     ) {
         LibMultiCurrencyAdsBazaar.MultiCurrencyStorage storage mcs = LibMultiCurrencyAdsBazaar.multiCurrencyStorage();
         
-        tokenAddress = mcs.campaignTokens[_briefId];
+        address tokenAddress = mcs.campaignTokens[_briefId];
         require(tokenAddress != address(0), "Campaign not found or no token set");
         
-        currency = mcs.campaignCurrencies[_briefId];
-        symbol = LibMultiCurrencyAdsBazaar.getCurrencySymbol(currency);
+        LibMultiCurrencyAdsBazaar.SupportedCurrency currency = mcs.campaignCurrencies[_briefId];
+        string memory symbol = LibMultiCurrencyAdsBazaar.getCurrencySymbol(currency);
         
-        return (tokenAddress, symbol, currency);
+        return LibMultiCurrencyAdsBazaar.CampaignTokenInfo({
+            tokenAddress: tokenAddress,
+            symbol: symbol,
+            currency: uint8(currency)
+        });
     }
 
     // Get campaigns by token
@@ -277,11 +343,7 @@ contract MultiCurrencyCampaignFacet {
 
     // Get campaign statistics by currency
     function getCampaignStatsByCurrency() external view returns (
-        address[] memory tokens,
-        string[] memory symbols,
-        uint256[] memory campaignCounts,
-        uint256[] memory totalBudgets,
-        uint256[] memory totalVolumes
+        LibMultiCurrencyAdsBazaar.MultiCurrencyStats memory
     ) {
         (address[] memory supportedTokens, LibMultiCurrencyAdsBazaar.SupportedCurrency[] memory currencies) = 
             LibMultiCurrencyAdsBazaar.getAllSupportedTokens();
@@ -289,11 +351,10 @@ contract MultiCurrencyCampaignFacet {
         LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
         LibMultiCurrencyAdsBazaar.MultiCurrencyStorage storage mcs = LibMultiCurrencyAdsBazaar.multiCurrencyStorage();
         
-        tokens = supportedTokens;
-        symbols = new string[](supportedTokens.length);
-        campaignCounts = new uint256[](supportedTokens.length);
-        totalBudgets = new uint256[](supportedTokens.length);
-        totalVolumes = new uint256[](supportedTokens.length);
+        string[] memory symbols = new string[](supportedTokens.length);
+        uint256[] memory campaignCounts = new uint256[](supportedTokens.length);
+        uint256[] memory totalBudgets = new uint256[](supportedTokens.length);
+        uint256[] memory totalVolumes = new uint256[](supportedTokens.length);
         
         // Count campaigns and sum budgets for each token
         bytes32[] memory allBriefs = ds.allBriefIds;
@@ -316,7 +377,13 @@ contract MultiCurrencyCampaignFacet {
             totalVolumes[i] = mcs.totalVolumeByToken[supportedTokens[i]];
         }
         
-        return (tokens, symbols, campaignCounts, totalBudgets, totalVolumes);
+        return LibMultiCurrencyAdsBazaar.MultiCurrencyStats({
+            tokens: supportedTokens,
+            symbols: symbols,
+            campaignCounts: campaignCounts,
+            totalBudgets: totalBudgets,
+            totalVolumes: totalVolumes
+        });
     }
 
     // Legacy support: create campaign with cUSD (backward compatibility)

@@ -186,6 +186,7 @@ library LibAdsBazaar {
     event DisputeResolverRemoved(address indexed resolver);
     event SubmissionFlagged(bytes32 indexed briefId, address indexed influencer, address indexed business, string reason);
     event DisputeResolved(bytes32 indexed briefId, address indexed influencer, address indexed resolver, bool isValid);
+    event CompensationPaid(bytes32 indexed briefId, address indexed influencer, uint256 amount);
 
     // Common modifier functions (to be used in facets)
     function enforceOwner() internal view {

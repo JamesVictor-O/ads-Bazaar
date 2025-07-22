@@ -16,18 +16,11 @@ import { toast } from "react-hot-toast";
 import { withNetworkGuard } from "@/components/WithNetworkGuard";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
-import {
-  useClaimPayments,
-  usePendingPayments,
-  useTotalPendingAmount,
-} from "@/hooks/adsBazaar";
 import { 
   useMultiCurrencyPayments, 
   useMultiCurrencyPendingPayments
 } from '@/hooks/useMultiCurrencyAdsBazaar';
 import { MENTO_TOKENS, SupportedCurrency, formatCurrencyAmount } from '@/lib/mento-simple';
-import { formatEther } from "viem";
-import { useDivviIntegration } from '@/hooks/useDivviIntegration'
 
 interface ClaimPaymentsModalProps {
   isOpen: boolean;
@@ -42,28 +35,12 @@ function ClaimPaymentsModal({
   onSuccess,
   guardedAction,
 }: ClaimPaymentsModalProps) {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const { isCorrectChain, currentNetwork } = useEnsureNetwork();
   const [transactionPhase, setTransactionPhase] = useState<
     "idle" | "claiming" | "success" | "error"
   >("idle");
-  const { generateDivviReferralTag, trackTransaction } = useDivviIntegration()
 
-  // Fetch pending payments data
-  const { pendingPayments, isLoadingPayments, paymentsError, refetchPayments } =
-    usePendingPayments(address);
-
-  const { totalPendingAmount, isLoadingTotalAmount } =
-    useTotalPendingAmount(address);
-
-  const {
-    claimPayments,
-    hash,
-    isPending: isClaimPending,
-    isSuccess: isClaimSuccess,
-    isError: isClaimError,
-    error: claimError,
-  } = useClaimPayments();
 
   // Multi-currency payment hooks
   const { 
@@ -78,67 +55,22 @@ function ClaimPaymentsModal({
     refetch: refetchMultiCurrency 
   } = useMultiCurrencyPendingPayments();
 
-  // State for multi-currency mode
-  const [claimMode, setClaimMode] = useState<'legacy' | 'multi'>('multi');
+  // State for currency selection
   const [selectedCurrency, setSelectedCurrency] = useState<SupportedCurrency | 'all'>('all');
 
   // Track transaction phases
   useEffect(() => {
-    if ((isClaimPending || isClaimingMulti) && transactionPhase !== "claiming") {
+    if (isClaimingMulti && transactionPhase !== "claiming") {
       setTransactionPhase("claiming");
-    } else if (!(isClaimPending || isClaimingMulti) && transactionPhase === "claiming") {
+    } else if (!isClaimingMulti && transactionPhase === "claiming") {
       setTransactionPhase("idle");
     }
-  }, [isClaimPending, isClaimingMulti, transactionPhase]);
+  }, [isClaimingMulti, transactionPhase]);
 
-  // Handle success
-  useEffect(() => {
-    if (isClaimSuccess) {
-      setTransactionPhase("success");
-      toast.success("Payments claimed successfully!");
-      refetchPayments();
-
-      if (onSuccess) {
-        onSuccess();
-      }
-
-      // Auto-close after success
-      setTimeout(() => {
-        onClose();
-        setTransactionPhase("idle");
-      }, 2000);
-    }
-  }, [isClaimSuccess, onClose, refetchPayments, onSuccess]);
-
-  // Handle errors
-  useEffect(() => {
-    if (isClaimError && claimError) {
-      setTransactionPhase("error");
-      let errorMessage = "Failed to claim payments";
-
-      if (typeof claimError === "string") {
-        errorMessage = claimError;
-      } else if (claimError instanceof Error) {
-        errorMessage = claimError.message;
-        if (claimError.message.includes("User rejected the request")) {
-          errorMessage = "Transaction rejected by user";
-        } else if (claimError.message.includes("insufficient funds")) {
-          errorMessage = "Insufficient funds for transaction";
-        }
-      }
-
-      toast.error(errorMessage, { duration: 5000 });
-
-      // Reset phase after showing error
-      setTimeout(() => {
-        setTransactionPhase("idle");
-      }, 3000);
-    }
-  }, [isClaimError, claimError]);
 
   
 
-  // Enhanced claim function that handles both legacy and multi-currency
+  // Multi-currency claim function
   const handleClaimPayments = async () => {
     if (!guardedAction) {
       toast.error("Network guard not available. Please refresh and try again.");
@@ -146,10 +78,9 @@ function ClaimPaymentsModal({
     }
 
     // Check if we have any payments to claim
-    const hasLegacyPayments = pendingPayments && pendingPayments.length > 0;
     const hasMultiCurrencyPayments = multiCurrencyPayments && multiCurrencyPayments.tokens.length > 0;
 
-    if (!hasLegacyPayments && !hasMultiCurrencyPayments) {
+    if (!hasMultiCurrencyPayments) {
       toast.error("No pending payments to claim");
       return;
     }
@@ -157,41 +88,34 @@ function ClaimPaymentsModal({
     setTransactionPhase("idle");
 
     await guardedAction(async () => {
-      // Generate Divvi referral tag to append to transaction calldata
-      const referralTag = generateDivviReferralTag();
-      console.log('DIVVI: About to claim payments with referral tag:', referralTag);
-
       try {
-        if (claimMode === 'multi' && hasMultiCurrencyPayments) {
-          // Multi-currency claims
-          if (selectedCurrency === 'all') {
-            await claimAllPendingPayments();
-            toast.success('All pending payments claimed successfully!');
-          } else {
-            await claimPaymentsInToken(selectedCurrency as SupportedCurrency);
-            const currencyInfo = MENTO_TOKENS[selectedCurrency as SupportedCurrency];
-            toast.success(`Payments claimed in ${currencyInfo.symbol}!`);
-          }
-          
-          // Refresh multi-currency data
-          setTimeout(() => refetchMultiCurrency(), 2000);
+        if (selectedCurrency === 'all') {
+          await claimAllPendingPayments();
+          toast.success('All pending payments claimed successfully!');
         } else {
-          // Legacy cUSD claims
-          await claimPayments(referralTag); 
+          await claimPaymentsInToken(selectedCurrency as SupportedCurrency);
+          const currencyInfo = MENTO_TOKENS[selectedCurrency as SupportedCurrency];
+          toast.success(`Payments claimed in ${currencyInfo.symbol}!`);
         }
+        
+        setTransactionPhase("success");
+        if (onSuccess) onSuccess();
+        
+        // Refresh data and auto-close
+        setTimeout(() => {
+          refetchMultiCurrency();
+          onClose();
+          setTransactionPhase("idle");
+        }, 2000);
       } catch (err) {
         console.error("Claim failed:", err);
-        throw err;
+        setTransactionPhase("error");
+        toast.error("Failed to claim payments. Please try again.");
+        setTimeout(() => setTransactionPhase("idle"), 3000);
       }
     });
   };
 
-  useEffect(() => {
-    if (hash) {
-      console.log('DIVVI: Hash available from claim payments:', hash);
-      trackTransaction(hash);
-    }
-  }, [hash, trackTransaction]);
 
   const getTransactionMessage = () => {
     switch (transactionPhase) {
@@ -227,16 +151,14 @@ function ClaimPaymentsModal({
   };
 
   const isTransactionInProgress =
-    isClaimPending || isClaimingMulti || transactionPhase === "claiming";
-    
-  const hasLegacyPayments = pendingPayments && pendingPayments.length > 0;
+    isClaimingMulti || transactionPhase === "claiming";
+  
   const hasMultiCurrencyPayments = multiCurrencyPayments && multiCurrencyPayments.tokens.length > 0;
   
   const canClaim =
     isConnected &&
     isCorrectChain &&
-    ((claimMode === 'legacy' && hasLegacyPayments) || 
-     (claimMode === 'multi' && hasMultiCurrencyPayments)) &&
+    hasMultiCurrencyPayments &&
     !isTransactionInProgress &&
     transactionPhase !== "success";
 
@@ -333,35 +255,8 @@ function ClaimPaymentsModal({
               </div>
             )}
 
-            {/* Claim Mode Selection */}
-            <div className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4">
-              <h4 className="text-sm font-medium text-slate-300 mb-3">Claim Mode</h4>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setClaimMode('legacy')}
-                  className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all ${
-                    claimMode === 'legacy'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-slate-800/50 text-slate-400 border border-slate-600/30 hover:bg-slate-700/50'
-                  }`}
-                >
-                  Legacy (cUSD only)
-                </button>
-                <button
-                  onClick={() => setClaimMode('multi')}
-                  className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all ${
-                    claimMode === 'multi'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-slate-800/50 text-slate-400 border border-slate-600/30 hover:bg-slate-700/50'
-                  }`}
-                >
-                  Multi-Currency
-                </button>
-              </div>
-            </div>
-
-            {/* Multi-Currency Selection */}
-            {claimMode === 'multi' && multiCurrencyPayments && (
+            {/* Currency Selection */}
+            {multiCurrencyPayments && (
               <div className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4">
                 <h4 className="text-sm font-medium text-slate-300 mb-3">Currency Selection</h4>
                 <div className="grid grid-cols-3 gap-2">
@@ -395,30 +290,8 @@ function ClaimPaymentsModal({
               </div>
             )}
 
-            {/* Total Amount Summary - Legacy Mode */}
-            {claimMode === 'legacy' && !isLoadingTotalAmount && totalPendingAmount !== undefined && (
-              <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Award className="w-5 h-5 text-emerald-400" />
-                    <span className="text-sm font-medium text-slate-300 uppercase tracking-wide">
-                      Total Claimable (Legacy)
-                    </span>
-                  </div>
-                  <p className="text-3xl font-bold text-white mb-1">
-                    {parseFloat(formatEther(totalPendingAmount)).toFixed(4)}{" "}
-                    cUSD
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    From {pendingPayments?.length || 0} completed campaign
-                    {pendingPayments?.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* Multi-Currency Summary */}
-            {claimMode === 'multi' && multiCurrencyPayments && (
+            {multiCurrencyPayments && (
               <div className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-5">
                 <div className="text-center mb-4">
                   <div className="flex items-center justify-center gap-2 mb-2">
@@ -450,75 +323,8 @@ function ClaimPaymentsModal({
               </div>
             )}
 
-            {/* Payment Lists Based on Mode */}
-            {claimMode === 'legacy' ? (
-              // Legacy Payment List
-              isLoadingPayments ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                </div>
-              ) : paymentsError ? (
-                <div className="text-center py-8">
-                  <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-                  <p className="text-white font-medium mb-2">
-                    Error Loading Payments
-                  </p>
-                  <p className="text-slate-400 text-sm">
-                    {paymentsError.message}
-                  </p>
-                </div>
-              ) : pendingPayments && pendingPayments.length > 0 ? (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-slate-300 uppercase tracking-wide">
-                    Legacy Payment Breakdown
-                  </h3>
-                  {pendingPayments.map((payment, index) => (
-                    <div
-                      key={index}
-                      className="bg-slate-900/30 border border-slate-700/50 rounded-xl p-4"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle className="w-4 h-4 text-emerald-400" />
-                            <span className="text-sm font-medium text-white">
-                              Campaign Payment
-                            </span>
-                            {payment.approved && (
-                              <span className="px-2 py-0.5 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
-                                Approved
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-400 mb-2">
-                            Brief ID: {payment.briefId.slice(0, 10)}...
-                            {payment.briefId.slice(-6)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-emerald-400">
-                            {parseFloat(formatEther(payment.amount)).toFixed(4)}{" "}
-                            cUSD
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Clock className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-white font-medium mb-2">
-                    No Legacy Payments
-                  </p>
-                  <p className="text-slate-400 text-sm">
-                    No legacy cUSD payments available for claiming.
-                  </p>
-                </div>
-              )
-            ) : (
-              // Multi-Currency Payment List
-              isLoadingMultiCurrency ? (
+            {/* Multi-Currency Payment List */}
+            {isLoadingMultiCurrency ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
                 </div>
@@ -593,11 +399,10 @@ function ClaimPaymentsModal({
                   </p>
                 </div>
               )
-            )}
+            }
 
             {/* Gas Fee Notice */}
-            {((claimMode === 'legacy' && pendingPayments && pendingPayments.length > 0) ||
-              (claimMode === 'multi' && multiCurrencyPayments && multiCurrencyPayments.tokens.length > 0)) && (
+            {multiCurrencyPayments && multiCurrencyPayments.tokens.length > 0 && (
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -607,7 +412,7 @@ function ClaimPaymentsModal({
                     </p>
                     <p className="text-xs text-slate-400 leading-relaxed">
                       A small gas fee will be required to claim your payments.
-                      {claimMode === 'multi' && selectedCurrency === 'all' 
+                      {selectedCurrency === 'all' 
                         ? ' All currencies will be claimed in a single transaction.'
                         : ' All approved payments will be claimed in a single transaction.'
                       }
@@ -659,12 +464,7 @@ function ClaimPaymentsModal({
                   <CheckCircle className="w-4 h-4" />
                   <span>Claimed!</span>
                 </>
-              ) : claimMode === 'legacy' && hasLegacyPayments ? (
-                <>
-                  <DollarSign className="w-4 h-4" />
-                  <span>Claim Legacy Payments</span>
-                </>
-              ) : claimMode === 'multi' && hasMultiCurrencyPayments ? (
+              ) : hasMultiCurrencyPayments ? (
                 <>
                   <DollarSign className="w-4 h-4" />
                   <span>

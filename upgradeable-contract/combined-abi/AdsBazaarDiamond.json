@@ -21,7 +21,7 @@
     },
     {
       "type": "function",
-      "name": "cancelAdBrief",
+      "name": "cancelAdBriefWithToken",
       "inputs": [
         {
           "name": "_briefId",
@@ -34,19 +34,37 @@
     },
     {
       "type": "function",
-      "name": "claimPayments",
+      "name": "cancelCampaignWithCompensation",
+      "inputs": [
+        {
+          "name": "_briefId",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "_compensationPerInfluencer",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "claimAllPendingPayments",
       "inputs": [],
       "outputs": [],
       "stateMutability": "nonpayable"
     },
     {
       "type": "function",
-      "name": "completeCampaign",
+      "name": "claimPaymentsInToken",
       "inputs": [
         {
-          "name": "_briefId",
-          "type": "bytes32",
-          "internalType": "bytes32"
+          "name": "tokenAddress",
+          "type": "address",
+          "internalType": "address"
         }
       ],
       "outputs": [],
@@ -54,7 +72,7 @@
     },
     {
       "type": "function",
-      "name": "createAdBrief",
+      "name": "createAdBriefWithToken",
       "inputs": [
         {
           "name": "_name",
@@ -110,22 +128,20 @@
           "name": "_selectionGracePeriod",
           "type": "uint256",
           "internalType": "uint256"
+        },
+        {
+          "name": "_paymentToken",
+          "type": "address",
+          "internalType": "address"
         }
       ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "expireCampaign",
-      "inputs": [
+      "outputs": [
         {
-          "name": "_briefId",
+          "name": "",
           "type": "bytes32",
           "internalType": "bytes32"
         }
       ],
-      "outputs": [],
       "stateMutability": "nonpayable"
     },
     {
@@ -282,6 +298,42 @@
     },
     {
       "type": "function",
+      "name": "getAllPendingPayments",
+      "inputs": [
+        {
+          "name": "_influencer",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct LibMultiCurrencyAdsBazaar.PendingPaymentsSummary",
+          "components": [
+            {
+              "name": "tokens",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "amounts",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "symbols",
+              "type": "string[]",
+              "internalType": "string[]"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "getBriefApplications",
       "inputs": [
         {
@@ -375,6 +427,46 @@
           "name": "status",
           "type": "uint8",
           "internalType": "enum LibAdsBazaar.UserStatus"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getCampaignStatsByCurrency",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct LibMultiCurrencyAdsBazaar.MultiCurrencyStats",
+          "components": [
+            {
+              "name": "tokens",
+              "type": "address[]",
+              "internalType": "address[]"
+            },
+            {
+              "name": "symbols",
+              "type": "string[]",
+              "internalType": "string[]"
+            },
+            {
+              "name": "campaignCounts",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "totalBudgets",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            },
+            {
+              "name": "totalVolumes",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            }
+          ]
         }
       ],
       "stateMutability": "view"
@@ -488,35 +580,6 @@
     },
     {
       "type": "function",
-      "name": "getPendingPayments",
-      "inputs": [
-        {
-          "name": "_influencer",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "briefIds",
-          "type": "bytes32[]",
-          "internalType": "bytes32[]"
-        },
-        {
-          "name": "amounts",
-          "type": "uint256[]",
-          "internalType": "uint256[]"
-        },
-        {
-          "name": "approved",
-          "type": "bool[]",
-          "internalType": "bool[]"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
       "name": "getPlatformFeePercentage",
       "inputs": [],
       "outputs": [
@@ -558,25 +621,6 @@
       "type": "function",
       "name": "getTotalInfluencers",
       "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "getTotalPendingAmount",
-      "inputs": [
-        {
-          "name": "_influencer",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
       "outputs": [
         {
           "name": "",
@@ -1050,19 +1094,6 @@
     },
     {
       "type": "event",
-      "name": "BriefExpired",
-      "inputs": [
-        {
-          "name": "briefId",
-          "type": "bytes32",
-          "indexed": true,
-          "internalType": "bytes32"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
       "name": "BudgetRefunded",
       "inputs": [
         {
@@ -1113,7 +1144,7 @@
     },
     {
       "type": "event",
-      "name": "CampaignCompleted",
+      "name": "CampaignCancelledWithCompensation",
       "inputs": [
         {
           "name": "briefId",
@@ -1122,7 +1153,13 @@
           "internalType": "bytes32"
         },
         {
-          "name": "totalRefunded",
+          "name": "totalCompensation",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "compensatedInfluencers",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
@@ -1151,7 +1188,7 @@
     },
     {
       "type": "event",
-      "name": "CampaignCompletionBlocked",
+      "name": "CampaignCreatedWithToken",
       "inputs": [
         {
           "name": "briefId",
@@ -1160,7 +1197,44 @@
           "internalType": "bytes32"
         },
         {
-          "name": "pendingDisputeCount",
+          "name": "business",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "token",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "budget",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "CompensationPaid",
+      "inputs": [
+        {
+          "name": "briefId",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        },
+        {
+          "name": "influencer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
@@ -1328,12 +1402,24 @@
     },
     {
       "type": "event",
-      "name": "PaymentClaimed",
+      "name": "MultiCurrencyInitialized",
+      "inputs": [],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PaymentClaimedInToken",
       "inputs": [
         {
           "name": "influencer",
           "type": "address",
           "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "token",
+          "type": "address",
+          "indexed": false,
           "internalType": "address"
         },
         {
@@ -1416,56 +1502,25 @@
     },
     {
       "type": "event",
-      "name": "PlatformFeeTransferred",
+      "name": "PreferredTokenSet",
       "inputs": [
         {
-          "name": "recipient",
+          "name": "user",
           "type": "address",
           "indexed": true,
           "internalType": "address"
         },
         {
-          "name": "amount",
-          "type": "uint256",
+          "name": "token",
+          "type": "address",
           "indexed": false,
-          "internalType": "uint256"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "PromotionStarted",
-      "inputs": [
-        {
-          "name": "briefId",
-          "type": "bytes32",
-          "indexed": true,
-          "internalType": "bytes32"
+          "internalType": "address"
         },
         {
-          "name": "startTime",
-          "type": "uint256",
+          "name": "isBusiness",
+          "type": "bool",
           "indexed": false,
-          "internalType": "uint256"
-        },
-        {
-          "name": "endTime",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        },
-        {
-          "name": "proofDeadline",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        },
-        {
-          "name": "verificationDeadline",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
+          "internalType": "bool"
         }
       ],
       "anonymous": false
@@ -1510,44 +1565,6 @@
     {
       "type": "event",
       "name": "ProofApproved",
-      "inputs": [
-        {
-          "name": "briefId",
-          "type": "bytes32",
-          "indexed": true,
-          "internalType": "bytes32"
-        },
-        {
-          "name": "influencer",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "ProofApproved",
-      "inputs": [
-        {
-          "name": "briefId",
-          "type": "bytes32",
-          "indexed": true,
-          "internalType": "bytes32"
-        },
-        {
-          "name": "influencer",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "ProofNotSubmitted",
       "inputs": [
         {
           "name": "briefId",

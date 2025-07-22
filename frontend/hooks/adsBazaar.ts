@@ -1115,7 +1115,7 @@ export function useCompleteCampaign() {
       const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
-        functionName: "completeCampaignWithToken",
+        functionName: "completeCampaign",
         args: [briefId],
         dataSuffix: dataSuffix,
         account: address,
@@ -1703,7 +1703,7 @@ export function useExpireCampaign() {
       const result = await tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
-        functionName: "expireCampaignWithToken",
+        functionName: "expireCampaign",
         args: [briefId],
         dataSuffix: dataSuffix,
         account: address,

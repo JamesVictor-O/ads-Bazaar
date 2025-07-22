@@ -23,6 +23,26 @@ library LibMultiCurrencyAdsBazaar {
         cNGN
     }
 
+    struct CampaignTokenInfo {
+        address tokenAddress;
+        string symbol;
+        uint8 currency;
+    }
+
+    struct PendingPaymentsSummary {
+        address[] tokens;
+        uint256[] amounts;
+        string[] symbols;
+    }
+
+    struct MultiCurrencyStats {
+        address[] tokens;
+        string[] symbols;
+        uint256[] campaignCounts;
+        uint256[] totalBudgets;
+        uint256[] totalVolumes;
+    }
+
     struct MultiCurrencyStorage {
         // Token whitelist
         mapping(address => bool) supportedTokens;
@@ -127,6 +147,7 @@ library LibMultiCurrencyAdsBazaar {
     event ExchangeRateUpdated(address indexed fromToken, address indexed toToken, uint256 rate);
     event PreferredTokenSet(address indexed user, address token, bool isBusiness);
     event PlatformFeeCollectedInToken(address token, uint256 amount);
+    event CampaignCancelledWithCompensation(bytes32 indexed briefId, uint256 totalCompensation, uint256 compensatedInfluencers);
 
     // Helper functions
     function enforceTokenSupported(address tokenAddress) internal view {

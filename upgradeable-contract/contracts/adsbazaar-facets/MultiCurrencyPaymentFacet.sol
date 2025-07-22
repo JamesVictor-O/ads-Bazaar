@@ -171,9 +171,7 @@ contract MultiCurrencyPaymentFacet is ReentrancyGuard {
 
     // Get all pending payments across all tokens
     function getAllPendingPayments(address _influencer) external view returns (
-        address[] memory tokens,
-        uint256[] memory amounts,
-        string[] memory symbols
+        LibMultiCurrencyAdsBazaar.PendingPaymentsSummary memory
     ) {
         (address[] memory supportedTokens, LibMultiCurrencyAdsBazaar.SupportedCurrency[] memory currencies) = 
             LibMultiCurrencyAdsBazaar.getAllSupportedTokens();
@@ -188,9 +186,9 @@ contract MultiCurrencyPaymentFacet is ReentrancyGuard {
             }
         }
         
-        tokens = new address[](count);
-        amounts = new uint256[](count);
-        symbols = new string[](count);
+        address[] memory tokens = new address[](count);
+        uint256[] memory amounts = new uint256[](count);
+        string[] memory symbols = new string[](count);
         
         uint256 index = 0;
         // Second pass: populate arrays
@@ -204,7 +202,11 @@ contract MultiCurrencyPaymentFacet is ReentrancyGuard {
             }
         }
         
-        return (tokens, amounts, symbols);
+        return LibMultiCurrencyAdsBazaar.PendingPaymentsSummary({
+            tokens: tokens,
+            amounts: amounts,
+            symbols: symbols
+        });
     }
 
     // Set preferred payment token for user
@@ -264,22 +266,4 @@ contract MultiCurrencyPaymentFacet is ReentrancyGuard {
         return (tokens, symbols, totalEscrow, totalVolume);
     }
 
-    // Legacy support: claim payments (defaults to cUSD)
-    function claimPayments() external nonReentrant {
-        this.claimPaymentsInToken(LibMultiCurrencyAdsBazaar.CUSD_ADDRESS);
-    }
-
-    // Legacy support: get pending payments (defaults to cUSD)
-    function getPendingPayments(address _influencer) external view returns (
-        bytes32[] memory briefIds,
-        uint256[] memory amounts,
-        bool[] memory approved
-    ) {
-        return this.getPendingPaymentsInToken(_influencer, LibMultiCurrencyAdsBazaar.CUSD_ADDRESS);
-    }
-
-    // Legacy support: get total pending amount (defaults to cUSD)
-    function getTotalPendingAmount(address _influencer) external view returns (uint256) {
-        return this.getTotalPendingAmountInToken(_influencer, LibMultiCurrencyAdsBazaar.CUSD_ADDRESS);
-    }
 }
