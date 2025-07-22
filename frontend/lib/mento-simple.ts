@@ -37,7 +37,7 @@ export const MENTO_TOKENS = {
     flag: '🌍'
   },
   cNGN: {
-    address: '0x17700282592D6917F6A73D0bF8AcCf4D578c131e',
+    address: '0xE2702Bd97ee33c88c8f6f92DA3B733608aa76F71',
     symbol: 'cNGN',
     name: 'Celo Nigerian Naira',
     decimals: 18,
