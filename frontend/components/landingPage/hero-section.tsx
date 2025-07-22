@@ -487,7 +487,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
         {/* Escrow Breakdown */}
         {!isLoadingStats && stats.escrowBreakdown.length > 0 && (
           <motion.div
-            className="mt-8 max-w-2xl mx-auto"
+            className="mt-16 max-w-2xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.6 }}

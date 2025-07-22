@@ -114,7 +114,7 @@ export function CurrencySelector({
   const selectedToken = MENTO_TOKENS[selectedCurrency];
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative z-[100] ${className}`}>
       {/* Currency Selector Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -136,7 +136,13 @@ export function CurrencySelector({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto">
+        <>
+          {/* Backdrop to close dropdown when clicking outside */}
+          <div 
+            className="fixed inset-0 z-[90]" 
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[9999] max-h-80 overflow-y-auto">
           {Object.entries(MENTO_TOKENS).map(([key, token]) => {
             const currency = key as SupportedCurrency;
             const rateInfo = rates.find(r => r.key === currency);
@@ -188,6 +194,7 @@ export function CurrencySelector({
             </button>
           </div>
         </div>
+        </>
       )}
 
       {/* Exchange Rate Display */}
