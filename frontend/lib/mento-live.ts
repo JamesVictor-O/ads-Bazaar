@@ -1,4 +1,5 @@
 import { Mento } from '@mento-protocol/mento-sdk';
+import { providers, BigNumber } from 'ethers';
 import { SupportedCurrency, MENTO_TOKENS } from './mento-simple';
 
 // Get RPC URL from environment variable
@@ -11,10 +12,18 @@ const getRpcUrl = () => {
   return rpcUrl || 'https://forno.celo.org'; // fallback to public Celo RPC
 };
 
-// Initialize Mento SDK
-const mento = Mento.create({
-  rpcUrl: getRpcUrl(),
-});
+// Create ethers provider for Mento SDK
+const provider = new providers.JsonRpcProvider(getRpcUrl());
+
+// Initialize Mento SDK - this returns a Promise
+let mentoInstance: Mento | null = null;
+
+const getMento = async (): Promise<Mento> => {
+  if (!mentoInstance) {
+    mentoInstance = await Mento.create(provider);
+  }
+  return mentoInstance;
+};
 
 // Cache for exchange rates to avoid too many API calls
 interface RateCache {
@@ -56,15 +65,19 @@ export async function getLiveExchangeRate(
       return getFallbackRate(from, to);
     }
 
-    // Use Mento SDK to get exchange rate
-    const quote = await mento.getAmountOut(
-      fromToken.address as `0x${string}`,
-      toToken.address as `0x${string}`,
-      '1000000000000000000' // 1 token in wei (18 decimals)
+    // Get Mento instance
+    const mento = await getMento();
+
+    // Use Mento SDK to get exchange rate - how much 'to' token we get for 1 'from' token
+    const oneTokenInWei = BigNumber.from('1000000000000000000'); // 1 token in 18 decimals
+    const amountOut = await mento.getAmountOut(
+      fromToken.address,
+      toToken.address,
+      oneTokenInWei
     );
 
-    // Convert the quote to a rate (amount out for 1 unit in)
-    const rate = Number(quote.amountOut) / 1e18;
+    // Convert the BigNumber result to a rate
+    const rate = Number(amountOut.toString()) / 1e18;
     
     // Update cache
     rateCache.rates[cacheKey] = rate;
