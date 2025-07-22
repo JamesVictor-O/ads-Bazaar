@@ -1,3 +1,5 @@
+import { getLiveExchangeRate, convertCurrencyLive, getCurrencyRatesWithMetadata } from './mento-live';
+
 export const MENTO_TOKENS = {
   cUSD: {
     address: '0x765DE816845861e75A25fCA122bb6898B8B1282a',
@@ -56,31 +58,22 @@ export const getCurrencyDisplayName = (currency: SupportedCurrency): string => {
   return `${token.flag} ${token.name} (${token.symbol})`;
 };
 
-// Simple mock service for build
+// Live Mento FX service using real protocol data
 export const mentoFX = {
   async getExchangeRate(from: SupportedCurrency, to: SupportedCurrency): Promise<number> {
-    if (from === to) return 1;
-    // Mock rates for build
-    return 1.2;
+    return await getLiveExchangeRate(from, to);
   },
   
   async convertCurrency(amount: string, from: SupportedCurrency, to: SupportedCurrency): Promise<string> {
-    if (from === to) return amount;
-    const rate = await this.getExchangeRate(from, to);
-    return (parseFloat(amount) * rate).toFixed(6);
+    return await convertCurrencyLive(amount, from, to);
   },
 
   async getAllCurrenciesWithRates(baseCurrency: SupportedCurrency = 'cUSD') {
-    return Object.entries(MENTO_TOKENS).map(([key, token]) => ({
-      ...token,
-      key: key as SupportedCurrency,
-      rate: 1.0, // Mock rate
-      rateDisplay: `1 ${MENTO_TOKENS[baseCurrency].symbol} = 1.00 ${token.symbol}`,
-      lastUpdated: new Date().toISOString()
-    }));
+    return await getCurrencyRatesWithMetadata(baseCurrency);
   },
 
   async getSwapTransaction() {
+    // TODO: Implement real swap transaction when needed
     return {
       to: '0x0000000000000000000000000000000000000000',
       data: '0x',

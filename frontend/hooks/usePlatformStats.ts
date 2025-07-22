@@ -1,29 +1,79 @@
 import { useReadContracts } from "wagmi";
 import { CONTRACT_ADDRESS } from "../lib/contracts";
 import ABI from "../lib/AdsBazaar.json";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { SupportedCurrency } from "../lib/mento-simple";
+import { getAllLiveRates } from "../lib/mento-live";
 
-// Exchange rates (mock data - in production, fetch from Mento)
+// Live exchange rates from Mento Protocol - completely dynamic
 const useExchangeRates = (baseCurrency: SupportedCurrency = "cUSD") => {
-  // Mock exchange rates - replace with real Mento rates in production
-  const rates: Record<SupportedCurrency, number> = {
-    cUSD: 1.0,
-    cEUR: 1.06, // 1 cEUR ≈ 1.06 cUSD
-    cREAL: 0.19, // 1 cREAL ≈ 0.19 cUSD
-    cKES: 0.0077, // 1 cKES ≈ 0.0077 cUSD
-    eXOF: 0.0017, // 1 eXOF ≈ 0.0017 cUSD  
-    cNGN: 0.0013, // 1 cNGN ≈ 0.0013 cUSD
-  };
+  const [rates, setRates] = useState<Record<SupportedCurrency, number>>(() => {
+    // Initialize with empty state - will be populated by useEffect
+    return {
+      cUSD: 1.0,
+      cEUR: 1.0,
+      cREAL: 1.0,
+      cKES: 1.0,
+      eXOF: 1.0,
+      cNGN: 1.0,
+    };
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchLiveRates = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        console.log('🔄 Fetching live exchange rates from Mento Protocol...');
+        const liveRates = await getAllLiveRates(baseCurrency);
+        
+        if (isMounted) {
+          setRates(liveRates);
+          console.log('✅ Live rates loaded:', liveRates);
+        }
+      } catch (err) {
+        console.error('❌ Failed to fetch live rates from Mento:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error('Failed to fetch live rates'));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchLiveRates();
+
+    // Refresh rates frequently as they change dynamically
+    const interval = setInterval(fetchLiveRates, 5 * 60 * 1000); // Every 5 minutes
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [baseCurrency]);
 
   const convertAmount = (amount: number, fromCurrency: SupportedCurrency, toCurrency: SupportedCurrency = baseCurrency): number => {
     if (fromCurrency === toCurrency) return amount;
+    
+    // Only convert if we have valid rates
+    if (!rates[fromCurrency] || !rates[toCurrency]) {
+      console.warn(`⚠️ Missing rate data for ${fromCurrency} or ${toCurrency}`);
+      return amount; // Return original amount if no rates available
+    }
+    
     // Convert from -> cUSD -> to
     const usdAmount = amount * rates[fromCurrency];
     return usdAmount / rates[toCurrency];
   };
 
-  return { rates, convertAmount };
+  return { rates, convertAmount, isLoading, error };
 };
 
 export function usePlatformStats(displayCurrency: SupportedCurrency = "cUSD") {
