@@ -18,6 +18,27 @@ import {
 import ABI from "../lib/AdsBazaar.json";
 import { CONTRACT_ADDRESS } from "../lib/contracts";
 import { Address } from "viem";
+import { MENTO_TOKENS, SupportedCurrency } from "../lib/mento-simple";
+
+// Helper function to get currency symbol from token address
+function getCurrencyFromTokenAddress(tokenAddress: string): string {
+  console.log(`🔍 Looking up currency for token address: ${tokenAddress}`);
+  console.log('📋 Available tokens:', MENTO_TOKENS);
+  
+  // Log each token address for comparison
+  Object.entries(MENTO_TOKENS).forEach(([key, token]) => {
+    console.log(`  ${key}: ${token.address} (${token.address.toLowerCase()})`);
+  });
+  
+  const currency = Object.entries(MENTO_TOKENS).find(([_, token]) => 
+    token.address.toLowerCase() === tokenAddress.toLowerCase()
+  );
+  
+  console.log(`💰 Found currency mapping:`, currency);
+  const result = currency ? currency[0] : 'cUSD';
+  console.log(`✅ Final currency result: ${result}`);
+  return result;
+}
 
 interface RawBriefData {
   briefId: string;
@@ -52,7 +73,7 @@ interface RawApplicationData {
 /**
  * Formats raw brief data from contract to frontend Brief type
  */
-function formatBriefData(briefId: string, rawData: any): Brief | null {
+function formatBriefData(briefId: string, rawData: any, currency: string = 'cUSD'): Brief | null {
   try {
     console.log(`[DEBUG] formatBriefData called for ${briefId}:`, rawData);
     if (!rawData || typeof rawData !== 'object') {
@@ -80,6 +101,7 @@ function formatBriefData(briefId: string, rawData: any): Brief | null {
       selectionDeadline: Number(rawData.selectionDeadline),
       applicationCount: 0, // Will be filled if available
       selectionGracePeriod: Number(rawData.selectionGracePeriod || 86400), // Default 1 day
+      currency: currency, // Add currency field
 
       // Computed properties (will be set below)
       statusInfo: {} as any,
@@ -233,8 +255,33 @@ export const useInfluencerDashboard = () => {
 
               console.log(`[DEBUG] Application data for ${briefId}:`, applicationData);
 
+              // Fetch campaign token info for currency
+              let currency = 'cUSD'; // Default
+              try {
+                console.log(`🔎 Fetching token info for campaign ${briefId}`);
+                const tokenInfo = await publicClient.readContract({
+                  address: CONTRACT_ADDRESS,
+                  abi: ABI.abi,
+                  functionName: "getCampaignTokenInfo",
+                  args: [briefId],
+                });
+                console.log(`📄 Campaign ${briefId} token info raw response:`, tokenInfo);
+                
+                if (tokenInfo && (tokenInfo as any).tokenAddress && (tokenInfo as any).tokenAddress !== '0x0000000000000000000000000000000000000000') {
+                  const tokenAddress = (tokenInfo as any).tokenAddress;
+                  console.log(`🎯 Campaign ${briefId} has token address: ${tokenAddress}`);
+                  currency = getCurrencyFromTokenAddress(tokenAddress);
+                  console.log(`🎯 Campaign ${briefId} mapped to currency: ${currency} from token: ${tokenAddress}`);
+                } else {
+                  console.log(`⚠️ Campaign ${briefId} has no valid token address set (got: ${(tokenInfo as any)?.tokenAddress}), using default cUSD`);
+                }
+              } catch (err) {
+                console.error(`❌ Error fetching token info for campaign ${briefId}:`, err);
+                console.log(`❌ Campaign ${briefId} token info call failed, defaulting to cUSD`);
+              }
+
               if (briefData) {
-                const formattedBrief = formatBriefData(briefId, briefData);
+                const formattedBrief = formatBriefData(briefId, briefData, currency);
                 if (formattedBrief) {
                   const formattedApplication = formatApplicationData(
                     applicationData,
