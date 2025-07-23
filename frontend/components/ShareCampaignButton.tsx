@@ -8,6 +8,8 @@ import { toast } from "react-hot-toast";
 import sdk from '@farcaster/frame-sdk';
 import { CURRENT_NETWORK } from '@/lib/networks';
 import { useShareTracking } from '@/hooks/useShareTracking';
+import { MENTO_TOKENS, SupportedCurrency } from '@/lib/mento-simple';
+import { formatCurrency } from '@/utils/format';
 
 interface ShareCampaignButtonProps {
   campaign: Brief;
@@ -38,6 +40,15 @@ const ShareCampaignButton = ({
   // Add share tracking
   const { shareCount, trackShare } = useShareTracking(campaign.id);
 
+  // Get campaign currency info
+  const campaignCurrency = (campaign.currency as SupportedCurrency) || 'cUSD';
+  const currencyToken = MENTO_TOKENS[campaignCurrency];
+  const currencyFlag = currencyToken?.flag || '🇺🇸';
+  const currencySymbol = currencyToken?.symbol || 'cUSD';
+  
+  // Calculate total prize pool
+  const totalPrizePool = formatCurrency(campaign.budget, campaignCurrency);
+
   // Check if we're in a Farcaster Mini App context
   useEffect(() => {
     const checkMiniAppContext = async () => {
@@ -59,8 +70,9 @@ const ShareCampaignButton = ({
     : `${window.location.origin}/campaign/${campaign.id}`;
   const shareText = `Check out this amazing campaign: ${campaign.name}
 
-💰 Earn cryptocurrency on ${CURRENT_NETWORK.name}
-🌐 Secure blockchain payments in cUSD
+💎 Total Prize Pool: ${totalPrizePool} ${currencyFlag}
+💰 Earn ${currencySymbol} on ${CURRENT_NETWORK.name}
+🌐 Secure blockchain payments in ${currencySymbol}
 ⚡ Fast, transparent transactions
 
 Apply now and get paid directly to your wallet!`;
@@ -107,8 +119,9 @@ Apply now and get paid directly to your wallet!`;
       action: () => handleShareWithTracking('farcaster', () => {
         const farcasterMessage = `🚀 New campaign opportunity: ${campaign.name}
 
-💰 Earn cryptocurrency on ${CURRENT_NETWORK.name}
-🌐 Secure smart contract payments in cUSD
+💎 Total Prize Pool: ${totalPrizePool} ${currencyFlag}
+💰 Earn ${currencySymbol} on ${CURRENT_NETWORK.name}
+🌐 Secure smart contract payments in ${currencySymbol}
 ⚡ Fast, transparent blockchain transactions
 
 Apply now and get paid directly to your wallet! 👇`;
@@ -270,7 +283,10 @@ Apply now and get paid directly to your wallet! 👇`;
               {/* Quick Stats */}
               <div className="p-3 bg-slate-900/30 border-t border-slate-700/50">
                 <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Budget: {campaign.budget} cUSD</span>
+                  <span className="flex items-center gap-1">
+                    Prize Pool: {totalPrizePool}
+                    <span className="text-base">{currencyFlag}</span>
+                  </span>
                   <span>
                     {campaign.selectedInfluencersCount}/
                     {campaign.maxInfluencers} spots
