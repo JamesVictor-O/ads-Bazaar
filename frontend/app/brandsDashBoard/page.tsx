@@ -374,39 +374,8 @@ const BrandDashboard = () => {
     };
   }, [briefs]);
 
-  useEffect(() => {
-    if (isCreateSuccess) {
-      toast.success("Campaign created successfully!");
-      
-      // Close modal and reset form
-      setShowCreateModal(false);
-      setFormData({
-        name: "",
-        description: "",
-        requirements: "",
-        budget: "",
-        currency: "cUSD",
-        promotionDuration: "604800",
-        maxInfluencers: "5",
-        targetAudience: "0",
-        applicationPeriod: "432000",
-        proofSubmissionGracePeriod: "172800",
-        verificationPeriod: "259200",
-        selectionGracePeriod: "86400",
-      });
-      
-      // Simple refresh after a short delay
-      setTimeout(() => {
-        refetchBriefs();
-      }, 2000);
-    }
-
-    if (isCreateError) {
-      toast.error(
-        `Failed to create campaign: ${createError?.message || "Unknown error"}`
-      );
-    }
-  }, [isCreateSuccess, isCreateError, createError, refetchBriefs]);
+  // Note: Campaign creation success is now handled in handleCreateCampaign function
+  // for immediate refresh instead of delayed refresh via useEffect
 
   useEffect(() => {
     if (isCompleteSuccess) {
@@ -588,7 +557,8 @@ const BrandDashboard = () => {
       // Refresh user profile to update escrow amounts and stats
       await refetchProfile();
       
-      // Reset form data for next campaign
+      // Close modal and reset form
+      setShowCreateModal(false);
       setFormData({
         name: "",
         description: "",
