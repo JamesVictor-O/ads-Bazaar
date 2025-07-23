@@ -46,7 +46,7 @@ import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { NotificationButton } from "@/components/NotificationButton";
 import { NotificationDebug } from "@/components/NotificationDebug";
 import { CurrencyConverterModal } from "@/components/modals/CurrencyConverterModal";
-import { SupportedCurrency } from "@/lib/mento-simple";
+import { SupportedCurrency, MENTO_TOKENS } from "@/lib/mento-simple";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
   getStatusColor,
@@ -1418,9 +1418,9 @@ const BrandDashboard = () => {
                             <div className="text-lg font-bold text-white">
                               {formatCurrency(brief.budget, brief.currency as SupportedCurrency || "cUSD")}
                             </div>
-                            {(brief.currency && brief.currency !== "cUSD") && (
-                              <span className="px-2 py-0.5 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/40">
-                                {brief.currency}
+                            {brief.currency && MENTO_TOKENS[brief.currency as SupportedCurrency] && (
+                              <span className="text-lg">
+                                {MENTO_TOKENS[brief.currency as SupportedCurrency]?.flag}
                               </span>
                             )}
                           </div>

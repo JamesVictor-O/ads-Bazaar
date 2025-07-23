@@ -56,7 +56,7 @@ import {
   getPhaseLabel,
 } from "@/utils/campaignUtils";
 import { getUserStatusColor, getUserStatusLabel, formatCurrency } from "@/utils/format";
-import { SupportedCurrency } from "@/lib/mento-simple";
+import { SupportedCurrency, MENTO_TOKENS } from "@/lib/mento-simple";
 import { NotificationButton } from "@/components/NotificationButton";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { createInfluencerDashboardSuccessHandler } from "@/utils/transactionUtils";
@@ -1214,6 +1214,11 @@ export default function InfluencerDashboard() {
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4" />
                         <span className="font-medium whitespace-nowrap">{formatCurrency(budget, briefData.brief.currency as SupportedCurrency || "cUSD")}</span>
+                        {briefData.brief.currency && MENTO_TOKENS[briefData.brief.currency as SupportedCurrency] && (
+                          <span className="text-lg">
+                            {MENTO_TOKENS[briefData.brief.currency as SupportedCurrency]?.flag}
+                          </span>
+                        )}
                       </div>
                       
                       {briefData.brief.timingInfo.timeRemaining && (
@@ -1317,6 +1322,11 @@ export default function InfluencerDashboard() {
                                 >
                                   <DollarSign className="w-4 h-4" />
                                   Claim {formatCurrency(budget, briefData.brief.currency as SupportedCurrency || "cUSD")}
+                                  {briefData.brief.currency && MENTO_TOKENS[briefData.brief.currency as SupportedCurrency] && (
+                                    <span className="text-lg">
+                                      {MENTO_TOKENS[briefData.brief.currency as SupportedCurrency]?.flag}
+                                    </span>
+                                  )}
                                   <ArrowRight className="w-4 h-4" />
                                 </button>
                               )}

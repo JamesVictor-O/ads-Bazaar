@@ -28,7 +28,7 @@ import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { format } from "date-fns";
 import { truncateAddress, formatCurrency } from "@/utils/format";
 import { UserDisplay } from "@/components/ui/UserDisplay";
-import { SupportedCurrency } from "@/lib/mento-simple";
+import { SupportedCurrency, MENTO_TOKENS } from "@/lib/mento-simple";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
@@ -853,9 +853,9 @@ function MarketplaceContent() {
                         <div className="text-lg font-bold text-white">
                           {formatCurrency(campaign.budget, campaign.currency as SupportedCurrency || "cUSD")}
                         </div>
-                        {(campaign.currency && campaign.currency !== "cUSD") && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/40">
-                            {campaign.currency}
+                        {campaign.currency && (
+                          <span className="text-lg" title={`${MENTO_TOKENS[campaign.currency as SupportedCurrency]?.name || campaign.currency} campaign`}>
+                            {MENTO_TOKENS[campaign.currency as SupportedCurrency]?.flag || '💰'}
                           </span>
                         )}
                       </div>
