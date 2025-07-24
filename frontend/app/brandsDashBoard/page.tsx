@@ -46,6 +46,7 @@ import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { NotificationButton } from "@/components/NotificationButton";
 import { NotificationDebug } from "@/components/NotificationDebug";
 import { CurrencyConverterModal } from "@/components/modals/CurrencyConverterModal";
+import { WalletFundingSection } from "@/components/WalletFundingSection";
 import { SupportedCurrency, MENTO_TOKENS } from "@/lib/mento-simple";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
@@ -1055,6 +1056,16 @@ const BrandDashboard = () => {
               <ChevronDown className="w-5 h-5 text-slate-400 transform rotate-[-90deg]" />
             </div>
           </button>
+        </motion.div>
+
+        {/* Wallet Funding Section */}
+        <motion.div
+          className="mb-6 md:mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <WalletFundingSection />
         </motion.div>
         
         {/* Multi-Currency Summary */}
