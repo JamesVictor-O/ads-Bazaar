@@ -33,3 +33,32 @@ ReferenceError: indexedDB is not defined
     at initProvider (../../src/walletConnect.ts:251:38)
     at async Object.getProvider (../../src/walletConnect.ts:271:20)
     at async Object.setup (../../src/walletConnect.ts:118:23)
+Failed to generate cache key for https://celo-mainnet.g.alchemy.com/v2/qMj263vOQ9uKwIE4R9s3638-8zRBds9t
+Failed to generate cache key for https://celo-mainnet.g.alchemy.com/v2/qMj263vOQ9uKwIE4R9s3638-8zRBds9t
+ GET / 200 in 5480ms
+WalletConnect Core is already initialized. This is probably a mistake and can lead to unexpected behavior. Init() was called 2 times.
+WalletConnect Core is already initialized. This is probably a mistake and can lead to unexpected behavior. Init() was called 2 times.
+ ⚠ The "images.domains" configuration is deprecated. Please use "images.remotePatterns" configuration instead.
+ ○ Compiling /favicon.ico ...
+ HEAD / 200 in 1063ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 36807ms
+ ✓ Compiled /favicon.ico in 36.9s
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 1157ms
+[next-auth][warn][DEBUG_ENABLED] 
+https://next-auth.js.org/warnings#debug_enabled
+ GET /api/auth/session 200 in 44091ms
+ GET /api/auth/session 200 in 22041ms
+ ○ Compiling /influencersDashboard ...
+ ✓ Compiled /influencersDashboard in 59.9s
+ GET /influencersDashboard 200 in 60080ms
+ ○ Compiling /influencer/[address] ...
+ ✓ Compiled /influencer/[address] in 35.5s
+ GET /influencer/0x3b88C42331d81e0e9B3F9a02c1d270400a3DD289 200 in 46080ms
+ ✓ Compiled in 8.9s
+ ✓ Compiled in 1286ms
+ ✓ Compiled in 1140ms
+ ✓ Compiled in 667ms
+ ✓ Compiled in 740ms
+ ✓ Compiled in 774ms
+ ✓ Compiled in 693ms
+ ✓ Compiled in 1725ms

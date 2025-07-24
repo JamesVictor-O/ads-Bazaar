@@ -68,18 +68,8 @@ export function SocialMediaCard({ profileData, userAddress, isOwner = false, onP
   const [showModal, setShowModal] = useState(false);
   const { address } = useAccount();
 
-  console.log("🔍 SocialMediaCard - Processing profile data:");
-  console.log("  - profileData:", profileData);
-  console.log("  - profileData type:", typeof profileData);
-  console.log("  - profileData length:", profileData ? profileData.length : 0);
-  
   const socialMediaData = profileData ? parseSocialMediaFromProfile(profileData) : {};
-  console.log("  - parsed socialMediaData:", socialMediaData);
-  console.log("  - Object.keys(socialMediaData):", Object.keys(socialMediaData));
-  
   const socialLinks = getSocialMediaLinks(socialMediaData);
-  console.log("  - generated socialLinks:", socialLinks);
-  console.log("  - socialLinks.length:", socialLinks.length);
 
   const SocialLinkButton = ({ link }: { link: SocialMediaLink }) => {
     const IconComponent = SocialIcons[link.icon];
