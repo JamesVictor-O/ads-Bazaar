@@ -1,0 +1,35 @@
+
+> frontend@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.2 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.166.2:3000
+   - Environments: .env
+
+ ✓ Starting...
+Slow filesystem detected. If /home/musaga/ads-bazaar/frontend/.next is a network drive, consider moving it to a local folder. If you have an antivirus enabled, consider excluding your project directory.
+ ✓ Ready in 2.7s
+ ○ Compiling / ...
+ ✓ Compiled / in 62.8s
+Failed to generate cache key for https://celo-mainnet.g.alchemy.com/v2/qMj263vOQ9uKwIE4R9s3638-8zRBds9t
+Failed to generate cache key for https://celo-mainnet.g.alchemy.com/v2/qMj263vOQ9uKwIE4R9s3638-8zRBds9t
+ GET / 200 in 65234ms
+ReferenceError: indexedDB is not defined
+    at initProvider (../../src/walletConnect.ts:251:38)
+ ⨯ unhandledRejection: ReferenceError: indexedDB is not defined
+    at initProvider (../../src/walletConnect.ts:251:38)
+ ⨯ unhandledRejection:  ReferenceError: indexedDB is not defined
+    at initProvider (../../src/walletConnect.ts:251:38)
+ReferenceError: indexedDB is not defined
+    at initProvider (../../src/walletConnect.ts:251:38)
+    at async Object.getProvider (../../src/walletConnect.ts:271:20)
+    at async Object.setup (../../src/walletConnect.ts:118:23)
+ ⨯ unhandledRejection: ReferenceError: indexedDB is not defined
+    at initProvider (../../src/walletConnect.ts:251:38)
+    at async Object.getProvider (../../src/walletConnect.ts:271:20)
+    at async Object.setup (../../src/walletConnect.ts:118:23)
+ ⨯ unhandledRejection:  ReferenceError: indexedDB is not defined
+    at initProvider (../../src/walletConnect.ts:251:38)
+    at async Object.getProvider (../../src/walletConnect.ts:271:20)
+    at async Object.setup (../../src/walletConnect.ts:118:23)

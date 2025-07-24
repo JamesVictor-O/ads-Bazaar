@@ -30,9 +30,17 @@ export function SocialMediaModal({ isOpen, onClose, userAddress, onProfileUpdate
 
   // Load current social media data when modal opens
   useEffect(() => {
+    console.log("🔄 Modal opened - Loading current profile data:");
+    console.log("  - isOpen:", isOpen);
+    console.log("  - currentProfileData:", currentProfileData);
+    
     if (isOpen && currentProfileData) {
       const currentSocialMedia = parseSocialMediaFromProfile(currentProfileData as string);
+      console.log("  - parsed currentSocialMedia:", currentSocialMedia);
       setSocialMedia(currentSocialMedia);
+    } else if (isOpen) {
+      console.log("  - No current profile data, starting fresh");
+      setSocialMedia({});
     }
   }, [isOpen, currentProfileData]);
 
@@ -42,30 +50,54 @@ export function SocialMediaModal({ isOpen, onClose, userAddress, onProfileUpdate
       // Wait for transaction to be confirmed on blockchain before refetching
       const waitForConfirmationAndRefetch = async () => {
         try {
+          console.log("🚀 Transaction successful! Starting confirmation wait...");
+          
           // Wait longer to ensure blockchain state is updated
+          console.log("⏰ Waiting 4 seconds for blockchain confirmation...");
           await new Promise(resolve => setTimeout(resolve, 4000));
           
           // Refetch profile data multiple times to ensure we get fresh data
+          console.log("📡 Starting profile refetch attempts...");
+          let finalResult = null;
+          
           for (let attempt = 1; attempt <= 3; attempt++) {
+            console.log(`🔄 Refetch attempt ${attempt}/3...`);
             const result = await refetchProfile();
+            finalResult = result;
+            
+            console.log(`📊 Attempt ${attempt} result:`);
+            console.log("  - result.data:", result.data);
+            console.log("  - result.data type:", typeof result.data);
+            console.log("  - result.data length:", result.data ? result.data.length : 0);
             
             // Check if we have updated data
             if (result.data) {
               try {
                 const parsed = JSON.parse(result.data as string);
+                console.log(`  - parsed data:`, parsed);
+                console.log(`  - parsed.socialMedia:`, parsed.socialMedia);
+                
                 if (parsed.socialMedia && Object.keys(parsed.socialMedia).length > 0) {
+                  console.log(`🎉 Found updated data on attempt ${attempt}!`);
                   break; // Found fresh data
+                } else {
+                  console.log(`⚠️ Attempt ${attempt}: No social media data found in parsed result`);
                 }
-              } catch {
-                // Continue to next attempt
+              } catch (parseError) {
+                console.log(`❌ Attempt ${attempt}: JSON parse error:`, parseError);
               }
+            } else {
+              console.log(`❌ Attempt ${attempt}: No data returned from blockchain`);
             }
             
             // Wait between attempts (except for the last one)
             if (attempt < 3) {
+              console.log(`⏳ Waiting 1.5s before attempt ${attempt + 1}...`);
               await new Promise(resolve => setTimeout(resolve, 1500));
             }
           }
+          
+          console.log("📋 Final refetch result:", finalResult?.data);
           
           // Also refresh the parent page's profile data
           if (onProfileUpdate) {
@@ -119,12 +151,22 @@ export function SocialMediaModal({ isOpen, onClose, userAddress, onProfileUpdate
       ) as SocialMediaProfile;
 
       // Update profile data
+      console.log("💾 Preparing to update profile:");
+      console.log("  - currentProfileData:", currentProfileData);
+      console.log("  - currentProfileData type:", typeof currentProfileData);
+      console.log("  - cleanedSocialMedia:", cleanedSocialMedia);
+      
       const updatedProfileData = updateProfileWithSocialMedia(
         currentProfileData as string || "",
         cleanedSocialMedia
       );
+      
+      console.log("📝 Final profile data to save to blockchain:");
+      console.log("  - updatedProfileData:", updatedProfileData);
+      console.log("  - updatedProfileData length:", updatedProfileData.length);
 
       await updateProfile(updatedProfileData);
+      console.log("✅ updateProfile() called - waiting for blockchain transaction");
     } catch (err) {
       console.error("Error updating social media:", err);
       toast.error("Failed to update social media profiles");

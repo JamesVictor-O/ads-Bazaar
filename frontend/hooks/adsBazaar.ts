@@ -829,6 +829,12 @@ export function useIsUsernameAvailable(username?: string) {
 export function useGetInfluencerProfile(influencerAddress?: Address) {
   const { address } = useAccount();
   const targetAddress = influencerAddress || address;
+  
+  console.log("🔍 useGetInfluencerProfile hook called:");
+  console.log("  - CONTRACT_ADDRESS:", CONTRACT_ADDRESS);
+  console.log("  - targetAddress:", targetAddress);
+  console.log("  - influencerAddress param:", influencerAddress);
+  console.log("  - connected address:", address);
 
   const { data, error, isLoading, refetch } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -841,6 +847,13 @@ export function useGetInfluencerProfile(influencerAddress?: Address) {
       gcTime: 0, // Don't cache data
     },
   });
+
+  // Debug log the raw blockchain response
+  console.log("🔍 useReadContract response:");
+  console.log("  - data:", data);
+  console.log("  - data type:", typeof data);
+  console.log("  - error:", error);
+  console.log("  - isLoading:", isLoading);
 
   return {
     data: data as string | undefined,
@@ -856,11 +869,19 @@ export function useUpdateInfluencerProfile() {
   const { address, chain } = useAccount();
 
   const updateProfile = async (profileData: string) => {
+    console.log("🚀 updateProfile called:");
+    console.log("  - CONTRACT_ADDRESS:", CONTRACT_ADDRESS);
+    console.log("  - profileData:", profileData);
+    console.log("  - profileData length:", profileData.length);
+    console.log("  - account address:", address);
+    console.log("  - chain:", chain);
+    
     if (!address) {
       throw new Error("Wallet not connected");
     }
 
     try {
+      console.log("📝 Calling tx.writeContract...");
       tx.writeContract({
         address: CONTRACT_ADDRESS,
         abi: ABI.abi,
@@ -869,8 +890,9 @@ export function useUpdateInfluencerProfile() {
         account: address,
         chain,
       });
+      console.log("✅ tx.writeContract called successfully");
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error("❌ Error in tx.writeContract:", error);
       throw error;
     }
   };

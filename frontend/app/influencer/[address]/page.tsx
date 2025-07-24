@@ -300,7 +300,24 @@ function EnhancedInfluencerProfileComponent({
   }
 
   // Parse profile data from blockchain
-  const socialMediaData = influencerProfile ? JSON.parse(influencerProfile as string) : {};
+  console.log("🔍 Profile Page - Parsing blockchain data:");
+  console.log("  - influencerProfile raw:", influencerProfile);
+  console.log("  - influencerProfile type:", typeof influencerProfile);
+  console.log("  - influencerProfile length:", influencerProfile ? influencerProfile.length : 0);
+  
+  let socialMediaData = {};
+  try {
+    if (influencerProfile) {
+      socialMediaData = JSON.parse(influencerProfile as string);
+      console.log("  - parsed socialMediaData:", socialMediaData);
+      console.log("  - socialMediaData.socialMedia:", socialMediaData.socialMedia);
+    } else {
+      console.log("  - influencerProfile is falsy, using empty object");
+    }
+  } catch (error) {
+    console.log("  - JSON parse error:", error);
+    socialMediaData = {};
+  }
   
   // Get username from social media profiles or fallback to address display
   const getDisplayName = () => {
