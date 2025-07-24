@@ -196,7 +196,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           ) : (
             <>
-              Start Earning Now
+              Start Promotion/Start Earning Now
               <ArrowRight className="w-5 h-5" />
             </>
           )}
@@ -329,7 +329,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             >
               <Shield className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-emerald-400" />
               <div className="text-xs md:text-sm text-slate-300">
-                Self Protocol Verified
+                Mento StableCoins Supported
               </div>
             </motion.div>
 
