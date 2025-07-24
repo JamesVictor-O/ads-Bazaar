@@ -837,6 +837,8 @@ export function useGetInfluencerProfile(influencerAddress?: Address) {
     args: [targetAddress],
     query: {
       enabled: !!targetAddress,
+      staleTime: 0, // Always consider data stale
+      gcTime: 0, // Don't cache data
     },
   });
 

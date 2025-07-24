@@ -42,11 +42,30 @@ export function SocialMediaModal({ isOpen, onClose, userAddress, onProfileUpdate
       // Wait for transaction to be confirmed on blockchain before refetching
       const waitForConfirmationAndRefetch = async () => {
         try {
-          // Wait 2 seconds to ensure blockchain state is updated
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Wait longer to ensure blockchain state is updated
+          await new Promise(resolve => setTimeout(resolve, 4000));
           
-          // Refetch profile data
-          await refetchProfile();
+          // Refetch profile data multiple times to ensure we get fresh data
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            const result = await refetchProfile();
+            
+            // Check if we have updated data
+            if (result.data) {
+              try {
+                const parsed = JSON.parse(result.data as string);
+                if (parsed.socialMedia && Object.keys(parsed.socialMedia).length > 0) {
+                  break; // Found fresh data
+                }
+              } catch {
+                // Continue to next attempt
+              }
+            }
+            
+            // Wait between attempts (except for the last one)
+            if (attempt < 3) {
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+          }
           
           // Also refresh the parent page's profile data
           if (onProfileUpdate) {
