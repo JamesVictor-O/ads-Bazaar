@@ -179,6 +179,7 @@ library LibAdsBazaar {
     event ProofNotSubmitted(bytes32 indexed briefId, address indexed influencer);
     event BudgetRefunded(bytes32 indexed briefId, address indexed business, uint256 amount);
     event CampaignCompleted(bytes32 indexed briefId, uint256 totalRefunded);
+    event CampaignExpired(bytes32 indexed briefId);
     event DisputeExpired(bytes32 indexed briefId, address indexed influencer, bool defaultedToInvalid);
     event CampaignCompletionBlocked(bytes32 indexed briefId, uint256 pendingDisputeCount);
     event VerificationConfigUpdated(address indexed updater);

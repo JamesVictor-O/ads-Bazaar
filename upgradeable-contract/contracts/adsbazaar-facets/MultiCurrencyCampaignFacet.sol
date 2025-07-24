@@ -293,6 +293,38 @@ contract MultiCurrencyCampaignFacet {
         emit LibAdsBazaar.PaymentReleased(_briefId, _influencer, paymentAmount);
     }
 
+    // Expire campaign with token-specific refund
+    function expireCampaign(bytes32 _briefId) external {
+        LibAdsBazaar.AdsBazaarStorage storage ds = LibAdsBazaar.adsBazaarStorage();
+        LibMultiCurrencyAdsBazaar.MultiCurrencyStorage storage mcs = LibMultiCurrencyAdsBazaar.multiCurrencyStorage();
+        
+        LibAdsBazaar.enforceBriefExists(_briefId);
+        require(ds.briefs[_briefId].business == msg.sender, "Not authorized");
+        
+        LibAdsBazaar.AdBrief storage brief = ds.briefs[_briefId];
+        require(brief.status == LibAdsBazaar.CampaignStatus.OPEN, "Campaign is not open");
+        require(block.timestamp > brief.selectionDeadline, "Selection deadline not passed");
+        
+        // Get the token used for this campaign
+        address campaignToken = mcs.campaignTokens[_briefId];
+        require(campaignToken != address(0), "Campaign token not found");
+        
+        // Update campaign status
+        brief.status = LibAdsBazaar.CampaignStatus.EXPIRED;
+        
+        uint256 refundAmount = brief.budget;
+        
+        // Update escrow amounts
+        ds.totalEscrowAmount -= refundAmount;
+        mcs.totalEscrowByToken[campaignToken] -= refundAmount;
+        
+        // Refund in the original token
+        require(IERC20(campaignToken).transfer(msg.sender, refundAmount), "Refund failed");
+        
+        emit LibAdsBazaar.CampaignExpired(_briefId);
+        emit LibAdsBazaar.BudgetRefunded(_briefId, msg.sender, refundAmount);
+    }
+
     // Get campaign token information
     function getCampaignTokenInfo(bytes32 _briefId) external view returns (
         LibMultiCurrencyAdsBazaar.CampaignTokenInfo memory

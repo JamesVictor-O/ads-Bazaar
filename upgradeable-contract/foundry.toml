@@ -9,6 +9,10 @@ verbosity=5
 via_ir = true
 optimizer = true
 optimizer_runs = 200
+auto_detect_solc = true
+
+# Set EVM version to london to avoid PUSH0 issues
+evm_version = "london"
 
 
 [etherscan]

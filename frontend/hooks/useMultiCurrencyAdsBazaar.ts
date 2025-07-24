@@ -13,6 +13,9 @@ export function useMultiCurrencyCampaignCreation() {
   const { address } = useAccount();
   const { writeContractAsync, isPending, error } = useWriteContract();
   const [isCreating, setIsCreating] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [latestError, setLatestError] = useState<Error | null>(null);
 
   const createCampaignWithToken = useCallback(async (
     campaignData: {
@@ -34,6 +37,10 @@ export function useMultiCurrencyCampaignCreation() {
     if (!address) throw new Error('Wallet not connected');
 
     setIsCreating(true);
+    setIsSuccess(false);
+    setIsError(false);
+    setLatestError(null);
+    
     try {
       const tokenInfo = MENTO_TOKENS[currency];
       const contractAddress = CONTRACT_ADDRESS;
@@ -76,10 +83,13 @@ export function useMultiCurrencyCampaignCreation() {
         dataSuffix: referralTag,
       });
 
+      setIsSuccess(true);
       toast.success(`Campaign created successfully with ${tokenInfo.symbol}!`);
       return result;
     } catch (error) {
       console.error('Error creating campaign:', error);
+      setIsError(true);
+      setLatestError(error as Error);
       toast.error('Failed to create campaign');
       throw error;
     } finally {
@@ -90,7 +100,9 @@ export function useMultiCurrencyCampaignCreation() {
   return {
     createCampaignWithToken,
     isCreating: isCreating || isPending,
-    error
+    isSuccess,
+    isError,
+    error: latestError || error
   };
 }
 

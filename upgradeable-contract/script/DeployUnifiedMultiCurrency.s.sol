@@ -238,16 +238,22 @@ contract DeployUnifiedMultiCurrency is Script {
     }
 
     function _getDisputeSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](4);
+        bytes4[] memory selectors = new bytes4[](9);
         selectors[0] = DisputeManagementFacet.flagSubmission.selector;
         selectors[1] = DisputeManagementFacet.resolveDispute.selector;
         selectors[2] = DisputeManagementFacet.addDisputeResolver.selector;
         selectors[3] = DisputeManagementFacet.removeDisputeResolver.selector;
+        // Missing selectors added:
+        selectors[4] = DisputeManagementFacet.expireDispute.selector;
+        selectors[5] = DisputeManagementFacet.getDisputeResolvers.selector;
+        selectors[6] = DisputeManagementFacet.getApplicationDispute.selector;
+        selectors[7] = DisputeManagementFacet.hasPendingDisputes.selector;
+        selectors[8] = DisputeManagementFacet.getPendingDisputeCount.selector;
         return selectors;
     }
 
     function _getGettersSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](19);
+        bytes4[] memory selectors = new bytes4[](21);
         selectors[0] = GettersFacet.getAdBrief.selector;
         selectors[1] = GettersFacet.getAllBriefs.selector;
         selectors[2] = GettersFacet.getBusinessBriefs.selector;
@@ -267,6 +273,9 @@ contract DeployUnifiedMultiCurrency is Script {
         selectors[16] = GettersFacet.getTotalInfluencers.selector;
         selectors[17] = GettersFacet.getUserUsername.selector;
         selectors[18] = GettersFacet.isRegistered.selector;
+        // Missing selectors added:
+        selectors[19] = GettersFacet.getInfluencerProfile.selector;
+        selectors[20] = GettersFacet.isInfluencer.selector;
         return selectors;
     }
 
@@ -278,10 +287,12 @@ contract DeployUnifiedMultiCurrency is Script {
     }
 
     function _getSelfVerificationSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](3);
+        bytes4[] memory selectors = new bytes4[](4);
         selectors[0] = SelfVerificationFacet.verifySelfProof.selector;
         selectors[1] = SelfVerificationFacet.setVerificationConfig.selector;
         selectors[2] = SelfVerificationFacet.isInfluencerVerified.selector;
+        // Missing selector added:
+        selectors[3] = SelfVerificationFacet.getVerificationConfig.selector;
         return selectors;
     }
 
@@ -294,7 +305,7 @@ contract DeployUnifiedMultiCurrency is Script {
     }
 
     function _getMultiPaymentSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](8);
+        bytes4[] memory selectors = new bytes4[](10);
         selectors[0] = MultiCurrencyPaymentFacet.initializeMultiCurrency.selector;
         selectors[1] = MultiCurrencyPaymentFacet.claimPaymentsInToken.selector;
         selectors[2] = MultiCurrencyPaymentFacet.claimAllPendingPayments.selector;
@@ -303,11 +314,14 @@ contract DeployUnifiedMultiCurrency is Script {
         selectors[5] = MultiCurrencyPaymentFacet.getAllPendingPayments.selector;
         selectors[6] = MultiCurrencyPaymentFacet.setPreferredPaymentToken.selector;
         selectors[7] = MultiCurrencyPaymentFacet.getPreferredPaymentToken.selector;
+        // Missing selectors added:
+        selectors[8] = MultiCurrencyPaymentFacet.getSupportedTokensInfo.selector;
+        selectors[9] = MultiCurrencyPaymentFacet.addPendingPaymentInToken.selector;
         return selectors;
     }
 
     function _getMultiCampaignSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory selectors = new bytes4[](7);
+        bytes4[] memory selectors = new bytes4[](10);
         selectors[0] = MultiCurrencyCampaignFacet.createAdBriefWithToken.selector;
         selectors[1] = MultiCurrencyCampaignFacet.createAdBriefWithPreferredToken.selector;
         selectors[2] = MultiCurrencyCampaignFacet.cancelAdBriefWithToken.selector;
@@ -315,6 +329,10 @@ contract DeployUnifiedMultiCurrency is Script {
         selectors[4] = MultiCurrencyCampaignFacet.getCampaignTokenInfo.selector;
         selectors[5] = MultiCurrencyCampaignFacet.getCampaignsByToken.selector;
         selectors[6] = MultiCurrencyCampaignFacet.getCampaignStatsByCurrency.selector;
+        // Missing selectors added:
+        selectors[7] = MultiCurrencyCampaignFacet.releasePaymentInCampaignToken.selector;
+        selectors[8] = MultiCurrencyCampaignFacet.expireCampaign.selector;
+        selectors[9] = MultiCurrencyCampaignFacet.createAdBrief.selector;
         return selectors;
     }
 }

@@ -63,7 +63,6 @@ import { createBrandDashboardSuccessHandler } from "@/utils/transactionUtils";
 import {
   useUserProfile,
   useBriefApplications,
-  useCreateAdBrief,
   useCompleteCampaign,
   useGetBusinessBriefs,
   useCancelAdBrief,
@@ -72,6 +71,7 @@ import {
   useCancelCampaignWithCompensation,
 } from "../../hooks/adsBazaar";
 import { useMultiCurrencyCampaignCreation } from "../../hooks/useMultiCurrencyAdsBazaar";
+import { useContractEventListener } from "../../hooks/useContractEventListener";
 
 const BrandDashboard = () => {
   const { address, isConnected } = useAccount();
@@ -134,17 +134,16 @@ const BrandDashboard = () => {
   const { applications, isLoadingApplications, refetchApplications } =
     useBriefApplications(selectedBrief?.id || "0x0");
 
-  const {
-    createBrief,
-    isPending: isCreatingBrief,
-    isSuccess: isCreateSuccess,
-    isError: isCreateError,
-    error: createError,
-    hash: createHash,
-  } = useCreateAdBrief();
+  // Legacy campaign creation removed - now using unified multi-currency system only
 
   // Multi-currency campaign creation
-  const { createCampaignWithToken, isCreating: isCreatingMultiCurrency } = useMultiCurrencyCampaignCreation();
+  const { 
+    createCampaignWithToken, 
+    isCreating: isCreatingMultiCurrency,
+    isSuccess: isMultiCurrencyCreateSuccess,
+    isError: isMultiCurrencyCreateError,
+    error: multiCurrencyCreateError
+  } = useMultiCurrencyCampaignCreation();
 
   const {
     completeCampaign,
@@ -191,6 +190,35 @@ const BrandDashboard = () => {
     hash: cancelWithCompensationHash,
   } = useCancelCampaignWithCompensation();
 
+  // Set up real-time contract event listeners for automatic refresh
+  const { isListening } = useContractEventListener({
+    onCampaignCreated: () => {
+      console.log("Real-time campaign created event - refreshing dashboard");
+      refetchBriefs();
+      refetchProfile();
+      toast.success("Campaign created! Dashboard updated.", { duration: 3000 });
+    },
+    onCampaignCancelled: () => {
+      console.log("Real-time campaign cancelled event - refreshing dashboard");
+      refetchBriefs();
+      refetchProfile();
+      toast.success("Campaign cancelled! Dashboard updated.", { duration: 3000 });
+    },
+    onCampaignExpired: () => {
+      console.log("Real-time campaign expired event - refreshing dashboard");
+      refetchBriefs();
+      refetchProfile();
+      toast.success("Campaign expired! Dashboard updated.", { duration: 3000 });
+    },
+    onCampaignCompleted: () => {
+      console.log("Real-time campaign completed event - refreshing dashboard");
+      refetchBriefs();
+      refetchProfile();
+      toast.success("Campaign completed! Dashboard updated.", { duration: 3000 });
+    },
+    enabled: isConnected && isCorrectChain
+  });
+
   // Function to toggle description expansion
   const toggleDescription = (briefId: string) => {
     setExpandedDescriptions((prev) => {
@@ -215,13 +243,7 @@ const BrandDashboard = () => {
     return description.substring(0, 120) + "...";
   };
 
-  // Track transactions when hash becomes available
-  useEffect(() => {
-    if (createHash) {
-      console.log("DIVVI: Hash available from create campaign:", createHash);
-      trackTransaction(createHash);
-    }
-  }, [createHash, trackTransaction]);
+  // Legacy createHash tracking removed - multi-currency campaigns handle tracking internally
 
   // Refetch user profile when component mounts or address changes
   useEffect(() => {
@@ -377,8 +399,40 @@ const BrandDashboard = () => {
     };
   }, [briefs]);
 
-  // Note: Campaign creation success is now handled in handleCreateCampaign function
-  // for immediate refresh instead of delayed refresh via useEffect
+  // Legacy campaign creation useEffect removed - now handled by multi-currency system
+
+  // Handle multi-currency campaign creation success with automatic refresh
+  useEffect(() => {
+    if (isMultiCurrencyCreateSuccess) {
+      console.log("Multi-currency campaign created successfully, refreshing data");
+      
+      // Use standardized success handler
+      createBrandDashboardSuccessHandler([
+        () => setShowCreateModal(false),
+        () => refetchBriefs(),
+        () => refetchProfile(),
+        () => setFormData({
+          name: "",
+          description: "",
+          requirements: "",
+          budget: "",
+          currency: "cUSD" as SupportedCurrency,
+          promotionDuration: "604800",
+          maxInfluencers: "5",
+          targetAudience: "0",
+          applicationPeriod: "432000",
+          proofSubmissionGracePeriod: "172800",
+          verificationPeriod: "259200",
+          selectionGracePeriod: "86400",
+        })
+      ])();
+    }
+
+    if (isMultiCurrencyCreateError) {
+      console.error("Multi-currency campaign creation failed:", multiCurrencyCreateError);
+      // Error toast is already handled in the hook
+    }
+  }, [isMultiCurrencyCreateSuccess, isMultiCurrencyCreateError, multiCurrencyCreateError, refetchBriefs, refetchProfile]);
 
   useEffect(() => {
     if (isCompleteSuccess) {
@@ -554,28 +608,8 @@ const BrandDashboard = () => {
       const result = await createCampaignWithToken(campaignData, formData.currency, referralTag);
       console.log("DIVVI: Unified campaign result:", result);
       
-      // Refresh the briefs list to show the new campaign
-      await refetchBriefs();
-      
-      // Refresh user profile to update escrow amounts and stats
-      await refetchProfile();
-      
-      // Close modal and reset form
-      setShowCreateModal(false);
-      setFormData({
-        name: "",
-        description: "",
-        requirements: "",
-        budget: "",
-        currency: "cUSD" as SupportedCurrency,
-        promotionDuration: "604800", // 7 days in seconds
-        maxInfluencers: "5",
-        targetAudience: "0",
-        applicationPeriod: "432000", // 5 days default
-        proofSubmissionGracePeriod: "172800", // 2 days default (max)
-        verificationPeriod: "259200", // 3 days default
-        selectionGracePeriod: "86400", // 1 day default
-      });
+      // The automatic refresh will be handled by the useEffect listening to isMultiCurrencyCreateSuccess
+      // This ensures proper state management and avoids race conditions
       
       return typeof result === "string" ? result : "";
     } catch (error) {
@@ -641,24 +675,45 @@ const BrandDashboard = () => {
   };
 
   const handleExpireCampaign = async (briefId: string) => {
-    console.log("DIVVI: Expiring campaign for briefId:", briefId);
+    console.log("🔥 EXPIRE DEBUG: Starting expire process for briefId:", briefId);
+    
+    // Find the campaign to debug its state
+    const campaign = briefs.find(b => b.id === briefId);
+    console.log("🔥 EXPIRE DEBUG: Campaign found:", campaign);
+    console.log("🔥 EXPIRE DEBUG: Campaign status:", campaign?.status);
+    console.log("🔥 EXPIRE DEBUG: Campaign statusInfo:", campaign?.statusInfo);
+    console.log("🔥 EXPIRE DEBUG: Can expire?", campaign?.statusInfo?.canExpire);
+
+    if (!campaign) {
+      toast.error("Campaign not found");
+      return;
+    }
+
+    if (!campaign.statusInfo?.canExpire) {
+      toast.error("Campaign cannot be expired in its current state");
+      return;
+    }
 
     try {
       // Generate Divvi referral tag
       const referralTag = generateDivviReferralTag();
-      console.log(
-        "DIVVI: About to expire campaign with referral tag:",
-        referralTag
-      );
+      console.log("🔥 EXPIRE DEBUG: About to expire campaign with referral tag:", referralTag);
 
       const result = await expireCampaign(
         briefId as `0x${string}`,
         referralTag
       );
-      console.log("DIVVI: Expire campaign result:", result);
+      console.log("🔥 EXPIRE DEBUG: Expire campaign result:", result);
       return result;
     } catch (error) {
-      console.error("Error expiring campaign:", error);
+      console.error("🔥 EXPIRE DEBUG: Error expiring campaign:", error);
+      
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error("🔥 EXPIRE DEBUG: Error message:", error.message);
+        console.error("🔥 EXPIRE DEBUG: Error stack:", error.stack);
+      }
+      
       toast.error(
         `Failed to expire campaign: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -1575,17 +1630,15 @@ const BrandDashboard = () => {
                             {/* Action Buttons */}
                             {brief.statusInfo.canExpire && (
                               <motion.button
-                                onClick={() => setShowExpireConfirm(brief.id)}
-                                disabled={isExpiringBrief}
-                                className="p-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 rounded-lg border border-orange-500/40 hover:border-orange-500/60 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => {
+                                  toast.error("Expire campaign function is currently being updated. Please use cancel campaign instead.");
+                                }}
+                                disabled={true}
+                                className="p-2 bg-gray-600/20 text-gray-400 rounded-lg border border-gray-500/40 transition-all duration-300 font-medium opacity-50 cursor-not-allowed"
                                 whileTap={{ scale: 0.95 }}
-                                title="Expire Campaign"
+                                title="Expire Campaign (Currently Unavailable)"
                               >
-                                {isExpiringBrief ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Clock className="w-4 h-4" />
-                                )}
+                                <Clock className="w-4 h-4" />
                               </motion.button>
                             )}
 
@@ -1980,13 +2033,13 @@ const BrandDashboard = () => {
         <CreateCampaignModal
           formData={formData}
           setFormData={setFormData}
-          isCreatingBrief={isCreatingBrief || isCreatingMultiCurrency}
+          isCreatingBrief={isCreatingMultiCurrency}
           isFormValid={isFormValid()}
           onCreateCampaign={handleCreateCampaign}
           onClose={() => setShowCreateModal(false)}
-          isCreateSuccess={isCreateSuccess}
-          isCreateError={isCreateError}
-          createError={createError}
+          isCreateSuccess={isMultiCurrencyCreateSuccess}
+          isCreateError={isMultiCurrencyCreateError}
+          createError={multiCurrencyCreateError}
         />
       )}
 
