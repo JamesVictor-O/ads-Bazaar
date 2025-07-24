@@ -37,6 +37,7 @@ import {
   ChevronDown,
   ArrowRightLeft,
   FileText,
+  Wallet,
 } from "lucide-react";
 import { getUserStatusColor, getUserStatusLabel } from "@/utils/format";
 import { format } from "date-fns";
@@ -46,7 +47,7 @@ import ShareCampaignButton from "@/components/ShareCampaignButton";
 import { NotificationButton } from "@/components/NotificationButton";
 import { NotificationDebug } from "@/components/NotificationDebug";
 import { CurrencyConverterModal } from "@/components/modals/CurrencyConverterModal";
-import { WalletFundingSection } from "@/components/WalletFundingSection";
+import { WalletFundingModal } from "@/components/modals/WalletFundingModal";
 import { SupportedCurrency, MENTO_TOKENS } from "@/lib/mento-simple";
 import { formatCurrency, fromWei } from "@/utils/format";
 import {
@@ -103,6 +104,7 @@ const BrandDashboard = () => {
 
   // Currency converter modal state
   const [showCurrencyConverter, setShowCurrencyConverter] = useState(false);
+  const [showWalletFunding, setShowWalletFunding] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -1058,14 +1060,40 @@ const BrandDashboard = () => {
           </button>
         </motion.div>
 
-        {/* Wallet Funding Section */}
+        {/* Fund Wallet Button */}
         <motion.div
           className="mb-6 md:mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <WalletFundingSection />
+          <button
+            onClick={() => setShowWalletFunding(true)}
+            className="w-full bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-6 hover:from-emerald-500/20 hover:to-teal-500/20 transition-all duration-300 group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-500/20 rounded-xl group-hover:bg-emerald-500/30 transition-colors">
+                  <Wallet className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">
+                    Fund Wallet with Local Currency
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    Add Naira, M-Pesa, SEPA, and more • Get stablecoins instantly • 96% lower fees
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <div className="text-sm text-slate-400">6 Currencies</div>
+                  <div className="text-xs text-emerald-400">2.5-3.5% fees</div>
+                </div>
+                <ChevronDown className="w-5 h-5 text-slate-400 transform rotate-[-90deg] group-hover:text-emerald-400 transition-colors" />
+              </div>
+            </div>
+          </button>
         </motion.div>
         
         {/* Multi-Currency Summary */}
@@ -1992,6 +2020,13 @@ const BrandDashboard = () => {
         onClose={() => setShowCurrencyConverter(false)}
         userType="brand"
       />
+
+      {/* Wallet Funding Modal */}
+      {showWalletFunding && (
+        <WalletFundingModal
+          onClose={() => setShowWalletFunding(false)}
+        />
+      )}
     </div>
   );
 };
