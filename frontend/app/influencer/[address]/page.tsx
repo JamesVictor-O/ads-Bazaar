@@ -38,12 +38,12 @@ import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
 // Simple Social Tab Content - Shows social media from blockchain data
 function SocialTabContent({
-  socialMediaData,
+  profileData,
   userAddress,
   isOwner,
   onProfileUpdate,
 }: {
-  socialMediaData: any;
+  profileData: string;
   userAddress: string;
   isOwner: boolean;
   onProfileUpdate?: () => void;
@@ -59,7 +59,7 @@ function SocialTabContent({
     >
       {/* Social Media Card */}
       <SocialMediaCard 
-        profileData={socialMediaData}
+        profileData={profileData}
         userAddress={userAddress}
         isOwner={isOwner}
         onProfileUpdate={onProfileUpdate}
@@ -586,7 +586,7 @@ function EnhancedInfluencerProfileComponent({
 
             {activeTab === "social" && (
               <SocialTabContent
-                socialMediaData={influencerProfile as string}
+                profileData={influencerProfile as string}
                 userAddress={profileAddress as string}
                 isOwner={isOwner}
                 onProfileUpdate={refetchInfluencerProfile}

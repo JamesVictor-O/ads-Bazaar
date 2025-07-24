@@ -24,6 +24,7 @@
 ## What We Built
 
 **The first fully decentralized influencer marketplace with:**
+- **Mento Protocol Integration**: Multi-currency campaigns and live exchange rates
 - **Self Protocol Integration**: Privacy-preserving identity verification
 - **Smart Contract Escrow**: Guaranteed payments for completed work
 - **Farcaster Integration**: Real social media verification
@@ -36,7 +37,8 @@
 
 ### 1. **Business/Individuals Creates Campaign**
    * Create ad brief with budget, target audience, requirements and promotion duration
-   * Lock cUSD in smart contract escrow
+   * Choose from 6 supported currencies: cUSD, cEUR, cREAL, cKES, eXOF, cNGN
+   * Lock chosen currency in smart contract escrow
    * Specify maximum number of influencers (max is 10 per campaign)
 
 ### 2. **Influencer Participation**
@@ -60,7 +62,8 @@
    * They can flag submissions that does not meet their provided requirements
    * Dispute resolvers will inspect the flagged submission and give a valid or invalid verdict
    * If valid, the funds of that submission returns to you the business
-   * Influencers receive instant cUSD payments to claim when campaign is completed
+   * Influencers receive instant payments in campaign currency when completed
+   * Built-in currency swap functionality for cross-currency conversions
    * Status increase based on successful campaigns
 
 ### 6. **Auto-approval opportunities**
@@ -102,6 +105,33 @@ function _processPayments(bytes32 _briefId) internal {
 - **Time-locked Decisions**: 2-day resolution periods
 - **Auto-approval Protection**: Prevents payment withholding
 
+### 5. **Mento Protocol Integration**
+```solidity
+function createAdBriefWithToken(
+    string memory _name,
+    string memory _description,
+    string memory _requirements,
+    uint256 _budget,
+    address _tokenAddress
+) external {
+    // Support for all Mento stablecoins
+    // Dynamic currency detection and management
+}
+```
+- **Multi-Currency Campaigns**: Support for all 6 Mento stablecoins
+- **Live Exchange Rates**: Real-time pricing from Mento Protocol
+- **Currency Swapping**: Built-in swap functionality for cross-currency conversions
+- **Regional Accessibility**: Local currency support for global creators
+- **Smart Contract Multi-Currency**: Diamond pattern architecture with currency facets
+
+**Supported Currencies:**
+- **cUSD** (US Dollar) - Global campaigns
+- **cEUR** (Euro) - European market focus  
+- **cREAL** (Brazilian Real) - Latin American expansion
+- **cKES** (Kenyan Shilling) - East African creators
+- **eXOF** (West African Franc) - West African market
+- **cNGN** (Nigerian Naira) - Largest African creator economy
+
 ---
 
 ## Technical Architecture
@@ -119,6 +149,7 @@ graph TB
 
 ### **Tech Stack**
 - **Blockchain**: Solidity, OpenZeppelin, Foundry
+- **Multi-Currency**: Mento Protocol integration
 - **Identity**: Self Protocol (ZK-SNARKs)
 - **Frontend**: Next.js, TypeScript, Wagmi
 - **Social**: Farcaster Protocol integration
@@ -135,13 +166,15 @@ graph TB
 4. Submit proof → Auto-approved → Claim guaranteed payment
 
 ### **For Businesses:**
-1. Connect wallet → Fund with cUSD → Create campaign
-2. Set requirements → Funds auto-escrowed → Review applications
+1. Connect wallet → Choose currency (cUSD, cEUR, cREAL, etc.) → Create campaign
+2. Set requirements → Funds auto-escrowed in chosen currency → Review applications
 3. Select influencers → Monitor progress → Review submissions
-4. Complete campaign → Automatic payment distribution
+4. Complete campaign → Automatic payment distribution in campaign currency
 
 ### **Live Demo Features:**
 - Real smart contract on Celo mainnet
+- Multi-currency campaigns with live Mento exchange rates
+- Built-in currency swapping functionality
 - Actual Farcaster social verification
 - Working Self Protocol identity verification
 - End-to-end campaign lifecycle
@@ -162,6 +195,7 @@ graph TB
 - Smart contract auto-enforcement
 
 ### **Real Innovation**
+- Mento Protocol multi-currency integration with live exchange rates
 - Self Protocol + Farcaster integration
 - Novel automated dispute resolution
 - Breakthrough 0.5% fee structure
@@ -211,16 +245,16 @@ npm install && npm run dev
 open https://ads-bazaar.vercel.app
 ```
 
-**Requirements**: MetaMask wallet + Celo network + cUSD tokens
+**Requirements**: MetaMask wallet + Celo network + Mento stablecoins (cUSD, cEUR, cREAL, etc.)
 
 ---
 
 ## Why We'll Win
 
 1. **Solving Real Problems**: $1.3B fraud market + 67% payment issues
-2. **Technical Innovation**: First ZK + social + blockchain integration  
-3. **Massive Savings**: 96% cost reduction vs competitors
-4. **Global Impact**: Accessible to creators worldwide
+2. **Technical Innovation**: First ZK + social + multi-currency blockchain integration  
+3. **Global Financial Inclusion**: 6 Mento stablecoins supporting creators across 4 continents
+4. **Massive Savings**: 96% cost reduction vs competitors
 5. **Production Ready**: Real users, real money, real results
 
 **We're not just building a platform - we're creating the infrastructure for the future creator economy.**
