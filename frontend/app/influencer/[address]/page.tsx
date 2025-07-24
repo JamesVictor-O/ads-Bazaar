@@ -114,6 +114,17 @@ function EnhancedInfluencerProfileComponent({
     profileAddress as `0x${string}`
   );
 
+  // Enhanced profile update handler with delay to ensure blockchain state is updated
+  const handleProfileUpdate = async () => {
+    try {
+      // Wait a moment before refetching to ensure blockchain state is updated
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await refetchInfluencerProfile();
+    } catch (error) {
+      console.error("Error refetching profile:", error);
+    }
+  };
+
 
   // Check if connected wallet owns this profile
   useEffect(() => {
@@ -580,6 +591,7 @@ function EnhancedInfluencerProfileComponent({
                   profileData={influencerProfile as string}
                   userAddress={profileAddress as string}
                   isOwner={isOwner}
+                  onProfileUpdate={handleProfileUpdate}
                 />
               </motion.div>
             )}
@@ -589,7 +601,7 @@ function EnhancedInfluencerProfileComponent({
                 profileData={influencerProfile as string}
                 userAddress={profileAddress as string}
                 isOwner={isOwner}
-                onProfileUpdate={refetchInfluencerProfile}
+                onProfileUpdate={handleProfileUpdate}
               />
             )}
 

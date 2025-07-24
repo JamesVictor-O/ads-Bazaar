@@ -36,16 +36,33 @@ export function SocialMediaModal({ isOpen, onClose, userAddress, onProfileUpdate
     }
   }, [isOpen, currentProfileData]);
 
-  // Handle success/error states
+  // Handle success/error states - Wait for blockchain confirmation
   useEffect(() => {
     if (isSuccess) {
-      toast.success("Social media profiles updated successfully!");
-      refetchProfile();
-      // Also refresh the parent page's profile data
-      if (onProfileUpdate) {
-        onProfileUpdate();
-      }
-      onClose();
+      // Wait for transaction to be confirmed on blockchain before refetching
+      const waitForConfirmationAndRefetch = async () => {
+        try {
+          // Wait 2 seconds to ensure blockchain state is updated
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Refetch profile data
+          await refetchProfile();
+          
+          // Also refresh the parent page's profile data
+          if (onProfileUpdate) {
+            onProfileUpdate();
+          }
+          
+          toast.success("Social media profiles updated successfully!");
+          onClose();
+        } catch (error) {
+          console.error("Error refetching profile after update:", error);
+          toast.error("Profile updated but failed to refresh. Please reload the page.");
+          onClose();
+        }
+      };
+      
+      waitForConfirmationAndRefetch();
     }
   }, [isSuccess, refetchProfile, onClose, onProfileUpdate]);
 
