@@ -12,10 +12,14 @@ import Link from "next/link";
 import { useDivviIntegration } from "@/hooks/useDivviIntegration";
 
 export default function AutoApprovalPage() {
-  const {  isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const { briefs, isLoading } = useGetAllBriefs();
-  const { triggerAutoApproval, isPending, isSuccess, hash: triggerApprovalHash} =
-    useTriggerAutoApproval();
+  const {
+    triggerAutoApproval,
+    isPending,
+    isSuccess,
+    hash: triggerApprovalHash,
+  } = useTriggerAutoApproval();
   const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
   // Filter campaigns eligible for auto-approval
   const eligibleCampaigns =
@@ -30,17 +34,22 @@ export default function AutoApprovalPage() {
   // Track transaction when hash becomes available
   useEffect(() => {
     if (triggerApprovalHash) {
-      console.log('DIVVI: Hash available from auto-approval:', triggerApprovalHash);
+      console.log(
+        "DIVVI: Hash available from auto-approval:",
+        triggerApprovalHash
+      );
       trackTransaction(triggerApprovalHash);
     }
   }, [triggerApprovalHash, trackTransaction]);
-
 
   const handleAutoApproval = async (briefId: string) => {
     try {
       // Generate Divvi referral tag to append to transaction calldata
       const referralTag = generateDivviReferralTag();
-      console.log('DIVVI: About to trigger auto-approval with referral tag:', referralTag);
+      console.log(
+        "DIVVI: About to trigger auto-approval with referral tag:",
+        referralTag
+      );
 
       await triggerAutoApproval(briefId as `0x${string}`, referralTag);
     } catch (error) {
@@ -67,9 +76,6 @@ export default function AutoApprovalPage() {
           transition={{ duration: 0.3 }}
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30">
-              <Zap className="w-8 h-8 text-blue-400" />
-            </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Auto-Approval</h1>
               <p className="text-slate-400">

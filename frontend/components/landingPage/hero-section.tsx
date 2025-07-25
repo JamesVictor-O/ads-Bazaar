@@ -142,7 +142,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                     </span>
                   ) : (
                     <>
-                      <span className="text-white font-medium">
+                      <span className="text-white font-medium ">
                         Connect Wallet to Start
                       </span>
                     </>
@@ -193,7 +193,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           aria-label="Get Started"
         >
           {isButtonPressed ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 mt-4  md:mt-0 border-white border-t-transparent rounded-full animate-spin"></div>
           ) : (
             <>
               Start Promotion/Start Earning Now
@@ -202,7 +202,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           )}
         </motion.button>
         <Link href={"/learn"} passHref>
-          <button className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-transparent border border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
+          <button className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-transparent border mt-4 md:mt-0 border-slate-600 text-slate-200 font-medium rounded-xl hover:bg-slate-700/50 transition">
             Learn More
           </button>
         </Link>

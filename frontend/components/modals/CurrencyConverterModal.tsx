@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, TrendingUp, Globe, ArrowRightLeft, DollarSign, AlertTriangle, Info, Zap } from 'lucide-react';
+import { X,  Globe, ArrowRightLeft, DollarSign, Info, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CurrencySelector } from '../CurrencySelector';
 import { CurrencyConverter } from '../CurrencyConverter';
@@ -234,7 +234,6 @@ export function CurrencyConverterModal({
                 {/* Supported Currencies Grid */}
                 <div className="bg-slate-900/30 border border-slate-700/30 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp className="w-5 h-5 text-emerald-400" />
                     <h4 className="font-semibold text-white">Live Exchange Rates</h4>
                     {isLoadingRates && (
                       <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />

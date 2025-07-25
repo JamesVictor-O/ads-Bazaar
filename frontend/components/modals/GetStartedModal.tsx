@@ -351,7 +351,7 @@ const GetStartedModal = ({
                       const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '');
                       setUserDetails({ ...userDetails, username: sanitized });
                     }}
-                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
+                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-3 py-2.5 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 text-sm"
                     placeholder="Enter your username (3-20 characters)"
                     maxLength={20}
                     disabled={isPending}
@@ -388,7 +388,7 @@ const GetStartedModal = ({
                       <span className="text-red-400 ml-1">*</span>
                     </label>
                     <select
-                      className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 sm:p-4 text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
+                      className="w-full bg-slate-900/50 border border-slate-700/50 rounded p-3 sm:p-4 text-sm text-slate-300 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200"
                       value={userDetails.niche || ""}
                       onChange={(e) =>
                         setUserDetails({
@@ -463,21 +463,6 @@ const GetStartedModal = ({
             )}
           </AnimatePresence>
 
-          {/* Transaction Status */}
-          {isPending && (
-            <div className="mt-6 p-3 sm:p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start">
-              <Loader2 className="animate-spin text-emerald-400 mr-3 mt-0.5 flex-shrink-0 w-5 h-5" />
-              <div>
-                <p className="text-sm font-medium text-emerald-400">
-                  Processing Registration
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Please confirm the transaction in your wallet and wait for it
-                  to be processed...
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Action Buttons */}
@@ -496,7 +481,7 @@ const GetStartedModal = ({
               disabled={
                 !isConnected || !isCorrectChain || !isFormValid() || isPending
               }
-              className="px-4 sm:px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md shadow-emerald-500/25 order-1 sm:order-2"
+              className="px-4 sm:px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-emerald-600 flex items-center justify-center rounded-xl hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md shadow-emerald-500/25 order-1 sm:order-2"
               whileTap={{ scale: 0.95 }}
             >
               {isPending ? (
