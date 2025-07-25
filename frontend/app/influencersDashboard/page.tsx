@@ -9,7 +9,6 @@ import {
   Briefcase,
   DollarSign,
   Calendar,
-  TrendingUp,
   CheckCircle,
   ExternalLink,
   AlertCircle,
@@ -55,7 +54,11 @@ import {
   formatTimeRemaining,
   getPhaseLabel,
 } from "@/utils/campaignUtils";
-import { getUserStatusColor, getUserStatusLabel, formatCurrency } from "@/utils/format";
+import {
+  getUserStatusColor,
+  getUserStatusLabel,
+  formatCurrency,
+} from "@/utils/format";
 import { SupportedCurrency, MENTO_TOKENS } from "@/lib/mento-simple";
 import { NotificationButton } from "@/components/NotificationButton";
 import { UserDisplay } from "@/components/ui/UserDisplay";
@@ -199,9 +202,9 @@ export default function InfluencerDashboard() {
       refetchPayments();
     };
 
-    window.addEventListener('dashboardRefresh', handleDashboardRefresh);
+    window.addEventListener("dashboardRefresh", handleDashboardRefresh);
     return () => {
-      window.removeEventListener('dashboardRefresh', handleDashboardRefresh);
+      window.removeEventListener("dashboardRefresh", handleDashboardRefresh);
     };
   }, [refetch, refetchPayments]);
 
@@ -233,7 +236,7 @@ export default function InfluencerDashboard() {
           ? "Proof updated successfully!"
           : "Post submitted successfully!"
       );
-      
+
       // Use standardized success handler
       createInfluencerDashboardSuccessHandler([
         () => refetch(),
@@ -246,7 +249,7 @@ export default function InfluencerDashboard() {
           setSelectedTask(null);
           setIsResubmission(false);
           setExistingProofLink("");
-        }
+        },
       ])();
     }
   }, [
@@ -386,17 +389,29 @@ export default function InfluencerDashboard() {
   const getFilteredCampaigns = () => {
     // Combine applied and assigned briefs
     const allCampaigns = [];
-    
+
     // Add applied campaigns
     if (appliedBriefs && Array.isArray(appliedBriefs)) {
-      allCampaigns.push(...appliedBriefs.map(brief => ({ ...brief, campaignType: 'applied' as const })));
+      allCampaigns.push(
+        ...appliedBriefs.map((brief) => ({
+          ...brief,
+          campaignType: "applied" as const,
+        }))
+      );
     }
-    
+
     // Add assigned campaigns (avoid duplicates by checking if they're already in applied)
     if (assignedBriefs && Array.isArray(assignedBriefs)) {
-      const appliedIds = new Set(appliedBriefs?.map(b => b.briefId) || []);
-      const uniqueAssigned = assignedBriefs.filter(brief => !appliedIds.has(brief.briefId));
-      allCampaigns.push(...uniqueAssigned.map(brief => ({ ...brief, campaignType: 'assigned' as const })));
+      const appliedIds = new Set(appliedBriefs?.map((b) => b.briefId) || []);
+      const uniqueAssigned = assignedBriefs.filter(
+        (brief) => !appliedIds.has(brief.briefId)
+      );
+      allCampaigns.push(
+        ...uniqueAssigned.map((brief) => ({
+          ...brief,
+          campaignType: "assigned" as const,
+        }))
+      );
     }
 
     if (allCampaigns.length === 0) {
@@ -438,7 +453,7 @@ export default function InfluencerDashboard() {
       // Assigned campaigns first
       if (a.application.isSelected && !b.application.isSelected) return -1;
       if (!a.application.isSelected && b.application.isSelected) return 1;
-      
+
       // Then by creation time (newest first)
       return b.brief.creationTime - a.brief.creationTime;
     });
@@ -638,17 +653,18 @@ export default function InfluencerDashboard() {
                   </div>
                 </div>
 
-                <span className="text-slate-400 text-xs md:text-sm">
-                  {userProfile.completedCampaigns} campaigns completed
-                </span>
-
-                <p className="text-lg md:text-xl text-slate-400">
-                  {stats.urgentActions > 0
-                    ? `${stats.urgentActions} action${
-                        stats.urgentActions !== 1 ? "s" : ""
-                      } needed`
-                    : "All caught up! 🎉"}
-                </p>
+                <Link href={`/influencer/${address}`}>
+                  <motion.button
+                    className="flex items-center mt-4 gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 font-medium text-slate-300 bg-slate-800/50 hover:bg-slate-800 rounded-lg md:rounded-xl border border-slate-700/50 transition-all shadow-sm text-sm md:text-base"
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.4 }}
+                  >
+                    Edit Profile{" "}
+                    <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
+                  </motion.button>
+                </Link>
               </div>
             </div>
 
@@ -668,19 +684,6 @@ export default function InfluencerDashboard() {
                   <span className="sm:hidden font-medium">Verified ✓</span>
                 </motion.div>
               )}
-
-              <Link href={`/influencer/${address}`}>
-                <motion.button
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:py-2.5 font-medium text-slate-300 bg-slate-800/50 hover:bg-slate-800 rounded-lg md:rounded-xl border border-slate-700/50 transition-all shadow-sm text-sm md:text-base"
-                  whileTap={{ scale: 0.95 }}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.4 }}
-                >
-                  Edit Profile{" "}
-                  <ExternalLink className="w-3 h-3 md:w-4 md:h-4" />
-                </motion.button>
-              </Link>
 
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -709,19 +712,6 @@ export default function InfluencerDashboard() {
         >
           <div className="flex flex-col md:flex-col justify-between">
             <div className="flex items-center gap-3 md:gap-4">
-              <div
-                className={`p-2 hidden md:block md:p-3 rounded-lg md:rounded-xl border ${
-                  isVerified
-                    ? "bg-emerald-500/10 border-emerald-500/20"
-                    : "bg-amber-500/10 border-amber-500/20"
-                }`}
-              >
-                <Shield
-                  className={`w-4 h-4 md:w-6 md:h-6 ${
-                    isVerified ? "text-emerald-400" : "text-amber-400"
-                  }`}
-                />
-              </div>
               <div>
                 <p
                   className={`text-lg md:text-xl font-bold mb-0.5 ${
@@ -772,10 +762,10 @@ export default function InfluencerDashboard() {
             {!isVerified && (
               <Link href="/selfVerification">
                 <motion.button
-                  className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500  text-white rounded-lg md:rounded-xl font-medium transition-all text-sm md:text-base md:mt-4"
+                  className="flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-amber-500 to-orange-500 mt-3  text-white rounded-lg md:rounded-xl font-medium transition-all text-base md:text-base md:mt-4"
                   whileTap={{ scale: 0.95 }}
                 >
-                  <span className="text-xl">Get Verified Now</span>
+                  <span className="md:text-xl">Get Verified Now</span>
                   <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
                 </motion.button>
               </Link>
@@ -834,8 +824,12 @@ export default function InfluencerDashboard() {
                   <ArrowRightLeft className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-white">Currency Converter</h3>
-                  <p className="text-sm text-slate-400">Convert your earnings and view live rates</p>
+                  <h3 className="font-semibold text-white">
+                    Currency Converter
+                  </h3>
+                  <p className="text-sm text-slate-400">
+                    Convert your earnings and view live rates
+                  </p>
                 </div>
               </div>
               <ChevronDown className="w-5 h-5 text-slate-400 transform rotate-[-90deg]" />
@@ -850,7 +844,8 @@ export default function InfluencerDashboard() {
               {
                 key: "all",
                 label: "All Campaigns",
-                count: (appliedBriefs?.length || 0) + (assignedBriefs?.length || 0),
+                count:
+                  (appliedBriefs?.length || 0) + (assignedBriefs?.length || 0),
               },
               {
                 key: "active",
@@ -920,25 +915,21 @@ export default function InfluencerDashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-10">
           {[
             {
-              icon: Briefcase,
               value: stats.applied,
               label: "Applied",
               color: "blue-400",
             },
             {
-              icon: CheckCircle,
               value: stats.assigned,
               label: "Selected",
               color: "emerald-400",
             },
             {
-              icon: DollarSign,
               value: stats.totalEarned.toFixed(2),
               label: "Earned",
               color: "purple-400",
             },
             {
-              icon: TrendingUp,
               value: stats.pendingEarnings.toFixed(2),
               label: "Pending",
               color: "amber-400",
@@ -948,7 +939,7 @@ export default function InfluencerDashboard() {
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
-              className="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-3 md:p-4 transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-slate-700/20 hover:border-slate-600/50 hover:-translate-y-1 group relative overflow-hidden"
+              className="flex flex-col items-center justify-center bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl md:rounded-2xl p-4 md:p-6 transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-slate-700/20 hover:border-slate-600/50 hover:-translate-y-1 group relative overflow-hidden"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.05 * index }}
@@ -956,57 +947,39 @@ export default function InfluencerDashboard() {
               {/* Subtle animated background */}
               <div className="absolute inset-0 bg-gradient-to-br from-slate-700/10 via-transparent to-slate-800/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-              <div className="flex items-start justify-between mb-2 md:mb-3 relative z-10">
-                <div
-                  className={`p-2 md:p-2.5 bg-${stat.color}/10 rounded-lg md:rounded-xl border border-${stat.color}/20 group-hover:bg-${stat.color}/15 transition-all duration-300 group-hover:scale-105`}
-                >
-                  <stat.icon
-                    className={`w-4 h-4 md:w-5 md:h-5 text-${stat.color}`}
-                  />
+              <div className="flex-1 flex flex-col items-center justify-center w-full">
+                <div className="mb-2 md:mb-3 flex flex-col items-center w-full">
+                  <p
+                    className={`text-xl md:text-2xl lg:text-3xl font-bold mb-1 group-hover:text-white/90 transition-colors leading-tight text-${stat.color}`}
+                  >
+                    {stat.isLoading ? (
+                      <span className="animate-pulse flex items-center gap-1">
+                        ...
+                        <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce" />
+                      </span>
+                    ) : (
+                      stat.value
+                    )}
+                  </p>
+                  {/* Colored dot accent */}
+                 
+                  <p className="text-slate-400 text-xs md:text-sm font-medium text-center">
+                    {stat.label}
+                  </p>
                 </div>
+
                 {stat.hasClaimable && !stat.isLoading && (
                   <motion.button
                     onClick={handleOpenClaimModal}
-                    className="p-1.5 md:p-2 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-200"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    title="Claim rewards"
+                    className="w-full mt-2 py-2 md:py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg md:rounded-xl flex items-center justify-center gap-1.5 md:gap-2 font-medium text-sm md:text-base shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all duration-200 relative z-10"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <DollarSign className="w-3 h-3 md:w-4 md:h-4 text-amber-400" />
+                    <span className="sm:hidden">Claim</span>
+                    <span className="hidden sm:inline">Claim All</span>
                   </motion.button>
                 )}
               </div>
-
-              <div className="relative z-10 mb-3 md:mb-4">
-                <p className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-0.5 md:mb-1 group-hover:text-white/90 transition-colors leading-tight">
-                  {stat.isLoading ? (
-                    <span className="animate-pulse flex items-center gap-1">
-                      ...
-                      <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce" />
-                    </span>
-                  ) : (
-                    stat.value
-                  )}
-                </p>
-                <p
-                  className={`text-slate-400 text-xs md:text-sm font-medium group-hover:text-${stat.color} transition-colors`}
-                >
-                  {stat.label}
-                </p>
-              </div>
-
-              {stat.hasClaimable && !stat.isLoading && (
-                <motion.button
-                  onClick={handleOpenClaimModal}
-                  className="w-full py-2 md:py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg md:rounded-xl flex items-center justify-center gap-1.5 md:gap-2 font-medium text-sm md:text-base shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all duration-200 relative z-10"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <DollarSign className="w-3 h-3 md:w-4 md:h-4" />
-                  <span className="hidden sm:inline">Claim All</span>
-                  <span className="sm:hidden">Claim</span>
-                </motion.button>
-              )}
             </motion.div>
           ))}
         </div>
@@ -1020,15 +993,17 @@ export default function InfluencerDashboard() {
         >
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2 md:gap-3">
-              <Briefcase className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />{" "}
               Campaigns
             </h2>
             <span className="text-slate-400 text-sm md:text-base">
-              {filteredCampaigns.length} of {(appliedBriefs?.length || 0) + (assignedBriefs?.length || 0)}
+              {filteredCampaigns.length} of{" "}
+              {(appliedBriefs?.length || 0) + (assignedBriefs?.length || 0)}
             </span>
           </div>
 
-          {isLoading && appliedBriefs === undefined && assignedBriefs === undefined ? (
+          {isLoading &&
+          appliedBriefs === undefined &&
+          assignedBriefs === undefined ? (
             <div className="flex items-center justify-center py-12 md:py-20">
               <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-emerald-500 mb-3 md:mb-4"></div>
@@ -1039,7 +1014,6 @@ export default function InfluencerDashboard() {
             </div>
           ) : !filteredCampaigns || filteredCampaigns.length === 0 ? (
             <div className="text-center py-12 md:py-20">
-              <Briefcase className="w-12 h-12 md:w-16 md:h-16 text-slate-600 mx-auto mb-4 md:mb-6" />
               <h3 className="text-lg md:text-2xl font-semibold text-white mb-2 md:mb-3">
                 {filter === "all" ? "No Campaigns" : `No ${filter} campaigns`}
               </h3>
@@ -1072,271 +1046,353 @@ export default function InfluencerDashboard() {
 
                 return (
                   <motion.div
-                  key={briefData.briefId}
-                  className="bg-white/5 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-white/10 transition-all duration-300 hover:border-slate-600/50 overflow-hidden"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  whileHover={{ y: -1 }}
-                >
-                  {/* Main Content */}
-                  <div className="p-4 sm:p-6">
-                    {/* Header Section */}
-                    <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
-                      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
-                        <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 line-clamp-2 pr-2 sm:pr-0">
-                              {briefData.brief.name}
-                            </h3>
-                            <p className="text-sm text-slate-400">
-                              by <UserDisplay address={briefData.brief.business} className="font-medium text-emerald-400" />
-                            </p>
-                          </div>
-                          
-                          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0">
-                            {/* Campaign Type Badge */}
-                            {briefData.application.isSelected ? (
-                              <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                                <Star className="w-3 h-3 mr-1" />
-                                Assigned
+                    key={briefData.briefId}
+                    className="bg-white/5 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-white/10 transition-all duration-300 hover:border-slate-600/50 overflow-hidden"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    whileHover={{ y: -1 }}
+                  >
+                    {/* Main Content */}
+                    <div className="p-4 sm:p-6">
+                      {/* Header Section */}
+                      <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 line-clamp-2 pr-2 sm:pr-0">
+                                {briefData.brief.name}
+                              </h3>
+                              <p className="text-sm text-slate-400">
+                                by{" "}
+                                <UserDisplay
+                                  address={briefData.brief.business}
+                                  className="font-medium text-emerald-400"
+                                />
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0">
+                              {/* Campaign Type Badge */}
+                              {briefData.application.isSelected ? (
+                                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                  <Star className="w-3 h-3 mr-1" />
+                                  Assigned
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Applied
+                                </span>
+                              )}
+
+                              <span
+                                className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getPhaseColor(
+                                  briefData.brief.timingInfo.phase
+                                )}`}
+                              >
+                                {getPhaseLabel(
+                                  briefData.brief.timingInfo.phase
+                                )}
                               </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
-                                <Clock className="w-3 h-3 mr-1" />
-                                Applied
-                              </span>
-                            )}
-                            
-                            <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getPhaseColor(briefData.brief.timingInfo.phase)}`}>
-                              {getPhaseLabel(briefData.brief.timingInfo.phase)}
-                            </span>
-                            
-                            {(appInfo.canSubmitProof || appInfo.canClaim || appInfo.warning) && (
-                              <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                                <Zap className="w-3 h-3 mr-1" />
-                                Action
-                              </span>
-                            )}
+
+                              {(appInfo.canSubmitProof ||
+                                appInfo.canClaim ||
+                                appInfo.warning) && (
+                                <span className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                  <Zap className="w-3 h-3 mr-1" />
+                                  Action
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                
-                    {/* Description */}
-                    <div className="mb-4 sm:mb-6">
-                      <p className="text-slate-300 leading-relaxed text-sm sm:text-base">
-                        {isDescriptionExpanded
-                          ? briefData.brief.description
-                          : getTruncatedDescription(briefData.brief.description)}
-                      </p>
-                      
-                      {showExpandButton && (
-                        <button
-                          onClick={() => toggleDescription(briefData.briefId)}
-                          className="mt-2 inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 font-medium touch-manipulation"
-                        >
-                          <FileText className="w-4 h-4" />
-                          {isDescriptionExpanded ? "Show less" : "Show more"}
-                          <ChevronDown className={`w-4 h-4 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
-                        </button>
-                      )}
-                    </div>
-                
-                    {/* Action Alert */}
-                    {(canSubmitProof || canClaim || appInfo.warning) && (
-                      <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-                        <div className="flex items-start gap-2 sm:gap-3">
-                          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-orange-300">
-                              {canSubmitProof
-                                ? "Ready to submit your content"
-                                : canClaim
-                                ? "Payment ready to claim"
-                                : appInfo.nextAction}
-                            </p>
-                            <p className="text-xs sm:text-sm text-orange-400/70 mt-1">
-                              {appInfo.warning ||
-                                (canSubmitProof
-                                  ? "Upload your promotional content for review"
+
+                      {/* Description */}
+                      <div className="mb-4 sm:mb-6">
+                        <p className="text-slate-300 leading-relaxed text-sm sm:text-base">
+                          {isDescriptionExpanded
+                            ? briefData.brief.description
+                            : getTruncatedDescription(
+                                briefData.brief.description
+                              )}
+                        </p>
+
+                        {showExpandButton && (
+                          <button
+                            onClick={() => toggleDescription(briefData.briefId)}
+                            className="mt-2 inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300 font-medium touch-manipulation"
+                          >
+                            <FileText className="w-4 h-4" />
+                            {isDescriptionExpanded ? "Show less" : "Show more"}
+                            <ChevronDown
+                              className={`w-4 h-4 transition-transform ${
+                                isDescriptionExpanded ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Action Alert */}
+                      {(canSubmitProof || canClaim || appInfo.warning) && (
+                        <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-orange-300">
+                                {canSubmitProof
+                                  ? "Ready to submit your content"
                                   : canClaim
-                                  ? "Claim your earnings now"
-                                  : "")}
-                            </p>
+                                  ? "Payment ready to claim"
+                                  : appInfo.nextAction}
+                              </p>
+                              <p className="text-xs sm:text-sm text-orange-400/70 mt-1">
+                                {appInfo.warning ||
+                                  (canSubmitProof
+                                    ? "Upload your promotional content for review"
+                                    : canClaim
+                                    ? "Claim your earnings now"
+                                    : "")}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                
-                    {/* Status Row */}
-                    {briefData.application.isSelected && (
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-4 sm:mb-6">
+                      )}
+
+                      {/* Status Row */}
+                      {briefData.application.isSelected && (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-4 sm:mb-6">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-3 h-3 rounded-full ${
+                                briefData.application.isApproved
+                                  ? "bg-emerald-400"
+                                  : hasProof
+                                  ? "bg-amber-400"
+                                  : "bg-slate-500"
+                              }`}
+                            />
+                            <span className="text-sm font-medium text-slate-300">
+                              {briefData.application.isApproved
+                                ? "Content Approved"
+                                : hasProof
+                                ? "Under Review"
+                                : appInfo.nextAction || "Awaiting Content"}
+                            </span>
+                          </div>
+
+                          {briefData.application.hasClaimed && (
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-emerald-400" />
+                              <span className="text-sm font-medium text-emerald-400">
+                                Payment Claimed
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Metrics */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-6 text-sm text-slate-400 mb-4 sm:mb-6">
                         <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${
-                            briefData.application.isApproved
-                              ? "bg-emerald-400"
-                              : hasProof
-                              ? "bg-amber-400"
-                              : "bg-slate-500"
-                          }`} />
-                          <span className="text-sm font-medium text-slate-300">
-                            {briefData.application.isApproved
-                              ? "Content Approved"
-                              : hasProof
-                              ? "Under Review"
-                              : appInfo.nextAction || "Awaiting Content"}
+                          <Calendar className="w-4 h-4" />
+                          <span className="whitespace-nowrap">
+                            {new Date(
+                              briefData.brief.creationTime * 1000
+                            ).toLocaleDateString()}
                           </span>
                         </div>
-                        
-                        {briefData.application.hasClaimed && (
+
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4" />
+                          <span className="font-medium whitespace-nowrap">
+                            {formatCurrency(
+                              budget,
+                              (briefData.brief.currency as SupportedCurrency) ||
+                                "cUSD"
+                            )}
+                          </span>
+                          {briefData.brief.currency &&
+                            MENTO_TOKENS[
+                              briefData.brief.currency as SupportedCurrency
+                            ] && (
+                              <span className="text-lg">
+                                {
+                                  MENTO_TOKENS[
+                                    briefData.brief
+                                      .currency as SupportedCurrency
+                                  ]?.flag
+                                }
+                              </span>
+                            )}
+                        </div>
+
+                        {briefData.brief.timingInfo.timeRemaining && (
                           <div className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-emerald-400" />
-                            <span className="text-sm font-medium text-emerald-400">
-                              Payment Claimed
+                            <Timer className="w-4 h-4" />
+                            <span
+                              className={`whitespace-nowrap ${
+                                briefData.brief.timingInfo.isUrgent
+                                  ? "text-orange-400 font-medium"
+                                  : ""
+                              }`}
+                            >
+                              {formatTimeRemaining(
+                                briefData.brief.timingInfo.timeRemaining
+                              )}{" "}
+                              left
                             </span>
                           </div>
                         )}
                       </div>
-                    )}
-                
-                    {/* Metrics */}
-                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-6 text-sm text-slate-400 mb-4 sm:mb-6">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        <span className="whitespace-nowrap">{new Date(briefData.brief.creationTime * 1000).toLocaleDateString()}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4" />
-                        <span className="font-medium whitespace-nowrap">{formatCurrency(budget, briefData.brief.currency as SupportedCurrency || "cUSD")}</span>
-                        {briefData.brief.currency && MENTO_TOKENS[briefData.brief.currency as SupportedCurrency] && (
-                          <span className="text-lg">
-                            {MENTO_TOKENS[briefData.brief.currency as SupportedCurrency]?.flag}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {briefData.brief.timingInfo.timeRemaining && (
-                        <div className="flex items-center gap-2">
-                          <Timer className="w-4 h-4" />
-                          <span className={`whitespace-nowrap ${briefData.brief.timingInfo.isUrgent ? "text-orange-400 font-medium" : ""}`}>
-                            {formatTimeRemaining(briefData.brief.timingInfo.timeRemaining)} left
+                    </div>
+
+                    {/* Expandable Section */}
+                    <div className="border-t border-slate-700/30">
+                      <button
+                        onClick={() =>
+                          setExpandedBriefId(
+                            isExpanded ? null : briefData.briefId
+                          )
+                        }
+                        className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors touch-manipulation"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-slate-400" />
+                          <span className="font-medium text-slate-300 text-sm sm:text-base">
+                            Requirements & Actions
                           </span>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                
-                  {/* Expandable Section */}
-                  <div className="border-t border-slate-700/30">
-                    <button
-                      onClick={() => setExpandedBriefId(isExpanded ? null : briefData.briefId)}
-                      className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors touch-manipulation"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-slate-400" />
-                        <span className="font-medium text-slate-300 text-sm sm:text-base">Requirements & Actions</span>
-                      </div>
-                      <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                    </button>
-                
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-                            {/* Requirements */}
-                            <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-3 sm:p-4 mb-4">
-                              <h4 className="font-semibold text-slate-300 mb-2 text-sm sm:text-base">Campaign Requirements:</h4>
-                              <p className="text-slate-200 leading-relaxed text-sm sm:text-base">{briefData.brief.requirements}</p>
-                            </div>
-                
-                            {/* Timeline Info */}
-                            {briefData.application.isSelected && (
-                              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 sm:p-4 mb-4">
-                                <div className="flex items-center gap-2">
-                                  <Clock className="w-4 h-4 text-blue-400" />
-                                  <p className="text-sm font-medium text-blue-400">{appInfo.nextAction}</p>
-                                </div>
+                        <ChevronDown
+                          className={`w-5 h-5 text-slate-400 transition-transform ${
+                            isExpanded ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                              {/* Requirements */}
+                              <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-3 sm:p-4 mb-4">
+                                <h4 className="font-semibold text-slate-300 mb-2 text-sm sm:text-base">
+                                  Campaign Requirements:
+                                </h4>
+                                <p className="text-slate-200 leading-relaxed text-sm sm:text-base">
+                                  {briefData.brief.requirements}
+                                </p>
                               </div>
-                            )}
-                
-                            {/* Action Buttons */}
-                            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
-                              {hasProof && (
-                                <a
-                                  href={briefData.application.proofLink}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg border border-blue-500/30 transition-colors font-medium touch-manipulation text-sm sm:text-base"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  View Submission
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                
-                              {canSubmitProof && (
-                                <button
-                                  onClick={() => handleSubmitProofClick(briefData, hasProof)}
-                                  className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 transition-colors font-medium touch-manipulation text-sm sm:text-base"
-                                  disabled={isSubmittingProof}
-                                >
-                                  {hasProof ? (
-                                    <>
-                                      <Edit3 className="w-4 h-4" />
-                                      Update Content
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload className="w-4 h-4" />
-                                      Submit Content
-                                    </>
-                                  )}
-                                </button>
-                              )}
-                
-                              {briefData.application.isSelected && !canSubmitProof && !briefData.application.isApproved && (
-                                <div className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-amber-600/10 text-amber-400 rounded-lg border border-amber-500/20 text-sm sm:text-base">
-                                  <Timer className="w-4 h-4" />
-                                  <span className="font-medium text-center">
-                                    {appInfo.nextAction || "Campaign not ready for submissions yet"}
-                                  </span>
+
+                              {/* Timeline Info */}
+                              {briefData.application.isSelected && (
+                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 sm:p-4 mb-4">
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-blue-400" />
+                                    <p className="text-sm font-medium text-blue-400">
+                                      {appInfo.nextAction}
+                                    </p>
+                                  </div>
                                 </div>
                               )}
-                
-                              {canClaim && (
-                                <button
-                                  onClick={handleOpenClaimModal}
-                                  className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg transition-colors font-medium shadow-lg shadow-emerald-500/20 touch-manipulation text-sm sm:text-base"
-                                >
-                                  <DollarSign className="w-4 h-4" />
-                                  Claim {formatCurrency(budget, briefData.brief.currency as SupportedCurrency || "cUSD")}
-                                  {briefData.brief.currency && MENTO_TOKENS[briefData.brief.currency as SupportedCurrency] && (
-                                    <span className="text-lg">
-                                      {MENTO_TOKENS[briefData.brief.currency as SupportedCurrency]?.flag}
-                                    </span>
+
+                              {/* Action Buttons */}
+                              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                                {hasProof && (
+                                  <a
+                                    href={briefData.application.proofLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg border border-blue-500/30 transition-colors font-medium touch-manipulation text-sm sm:text-base"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                    View Submission
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+
+                                {canSubmitProof && (
+                                  <button
+                                    onClick={() =>
+                                      handleSubmitProofClick(
+                                        briefData,
+                                        hasProof
+                                      )
+                                    }
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg border border-emerald-500/30 transition-colors font-medium touch-manipulation text-sm sm:text-base"
+                                    disabled={isSubmittingProof}
+                                  >
+                                    {hasProof ? (
+                                      <>
+                                        <Edit3 className="w-4 h-4" />
+                                        Update Content
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="w-4 h-4" />
+                                        Submit Content
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+
+                                {briefData.application.isSelected &&
+                                  !canSubmitProof &&
+                                  !briefData.application.isApproved && (
+                                    <div className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-amber-600/10 text-amber-400 rounded-lg border border-amber-500/20 text-sm sm:text-base">
+                                      <Timer className="w-4 h-4" />
+                                      <span className="font-medium text-center">
+                                        {appInfo.nextAction ||
+                                          "Campaign not ready for submissions yet"}
+                                      </span>
+                                    </div>
                                   )}
-                                  <ArrowRight className="w-4 h-4" />
-                                </button>
-                              )}
+
+                                {canClaim && (
+                                  <button
+                                    onClick={handleOpenClaimModal}
+                                    className="inline-flex items-center justify-center gap-2 px-4 py-3 sm:py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg transition-colors font-medium shadow-lg shadow-emerald-500/20 touch-manipulation text-sm sm:text-base"
+                                  >
+                                    <DollarSign className="w-4 h-4" />
+                                    Claim{" "}
+                                    {formatCurrency(
+                                      budget,
+                                      (briefData.brief
+                                        .currency as SupportedCurrency) ||
+                                        "cUSD"
+                                    )}
+                                    {briefData.brief.currency &&
+                                      MENTO_TOKENS[
+                                        briefData.brief
+                                          .currency as SupportedCurrency
+                                      ] && (
+                                        <span className="text-lg">
+                                          {
+                                            MENTO_TOKENS[
+                                              briefData.brief
+                                                .currency as SupportedCurrency
+                                            ]?.flag
+                                          }
+                                        </span>
+                                      )}
+                                    <ArrowRight className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -1353,7 +1409,6 @@ export default function InfluencerDashboard() {
           <div className="p-4 md:p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
             <div className="flex items-center justify-between">
               <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2 md:gap-3">
-                <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-amber-400" />
                 Transactions
               </h2>
               <span className="text-slate-400 text-sm md:text-base">

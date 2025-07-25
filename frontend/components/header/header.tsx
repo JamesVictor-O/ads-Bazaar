@@ -161,7 +161,6 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                 className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors"
                 whileTap={{ scale: 0.95 }}
               >
-                <Zap className="w-4 h-4" />
                 Auto-Approval
               </motion.button>
             </Link>
@@ -172,7 +171,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                 className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors"
                 whileTap={{ scale: 0.95 }}
               >
-                <Zap className="w-4 h-4" />
+              
                 Disputes
               </motion.button>
             </Link>
