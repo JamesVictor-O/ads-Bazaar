@@ -7,8 +7,10 @@
 ## Try It Now
 - **Farcaster Mini-App**:[https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar](https://farcaster.xyz/miniapps/rjMsBh5zjPSl/ads-bazaar)
 - **Live Demo**: [https://ads-bazaar.vercel.app](https://ads-bazaar.vercel.app/)
-- **Video Walkthrough**: [demo](https://www.loom.com/share/e80f001464a3445797832db0cc9f2599)
+- **Video Walkthrough**: [demo](https://www.loom.com/share/7da6c09092ef4d3f8723726ec84a8515?sid=5cd62ea1-ae6d-405d-b2db-a4609cf1a8f8)
 - **Contract**: [Celo Mainnet](https://celo.blockscout.com/address/0xe93D4E7aC180D7e23DEb8b123F8E040982E00d22)
+- **Diamond Contract**: [Celo Mainnet](https://celo.blockscout.com/address/0x7bfaf4acf2f34a43041bde3f150adface7e4afce)
+
 
 ---
 
