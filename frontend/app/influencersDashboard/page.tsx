@@ -60,7 +60,6 @@ import {
   formatCurrency,
 } from "@/utils/format";
 import { SupportedCurrency, MENTO_TOKENS } from "@/lib/mento-simple";
-import { NotificationButton } from "@/components/NotificationButton";
 import { UserDisplay } from "@/components/ui/UserDisplay";
 import { createInfluencerDashboardSuccessHandler } from "@/utils/transactionUtils";
 import { CurrencyConverterModal } from "@/components/modals/CurrencyConverterModal";
@@ -685,20 +684,6 @@ export default function InfluencerDashboard() {
                 </motion.div>
               )}
 
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.5 }}
-              >
-                <NotificationButton
-                  onNotificationEnabled={() => {
-                    toast.success(
-                      "Notifications enabled! You'll get updates about campaigns and payments."
-                    );
-                  }}
-                  className="text-sm md:text-base"
-                />
-              </motion.div>
             </div>
           </div>
         </motion.div>
