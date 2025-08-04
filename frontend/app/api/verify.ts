@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getUserIdentifier } from "@selfxyz/core";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { CURRENT_NETWORK } from "@/lib/networks";
+import { DEFAULT_NETWORK } from "@/lib/networks";
 import AdsBazaarABI from "@/lib/AdsBazaar.json";
 import { CONTRACT_ADDRESS } from "@/lib/contracts";
 import { CIRCUIT_CONSTANTS } from "@/lib/circuit";
@@ -34,14 +34,14 @@ export default async function handler(
       const address = await getUserIdentifier(publicSignals);
 
       const publicClient = createPublicClient({
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
         transport: http(process.env.RPC_URL!)
       });
       
       const account = privateKeyToAccount(`0x${process.env.PRIVATE_KEY!}`);
       const walletClient = createWalletClient({
         account,
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
         transport: http(process.env.RPC_URL!)
       });
 
@@ -78,7 +78,7 @@ export default async function handler(
         functionName: 'verifySelfProof',
         args: [formattedProof],
         account: account,
-        chain: CURRENT_NETWORK
+        chain: DEFAULT_NETWORK
       });
 
       const receipt = await publicClient.waitForTransactionReceipt({

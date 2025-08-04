@@ -9,7 +9,7 @@ import { useWriteContract, useReadContract, useAccount, useBalance } from 'wagmi
 import { parseUnits, formatUnits, erc20Abi } from 'viem';
 import { CONTRACT_ADDRESS, getMentoTokenAddresses } from '@/lib/contracts';
 import { SupportedCurrency, MENTO_TOKENS } from '@/lib/mento-simple';
-import { CURRENT_NETWORK } from '@/lib/networks';
+import { DEFAULT_NETWORK } from '@/lib/networks';
 import { toast } from 'react-hot-toast';
 import AdsBazaarABI from '@/lib/AdsBazaar.json';
 
@@ -47,7 +47,7 @@ export function useUnifiedAdsBazaar() {
   const contractConfig = useMemo(() => ({
     address: CONTRACT_ADDRESS,
     abi: AdsBazaarABI.abi,
-    chainId: CURRENT_NETWORK.id,
+    chainId: DEFAULT_NETWORK.id,
   }), []);
 
   // User Registration
@@ -65,7 +65,7 @@ export function useUnifiedAdsBazaar() {
         functionName: 'registerUser',
         args: [username, isBusiness, isInfluencer],
         account: address,
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
       });
       toast.success('User registered successfully!');
       return result;
@@ -131,7 +131,7 @@ export function useCampaignManagement() {
           tokenInfo.address
         ],
         account: address,
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
       });
       toast.success(`Campaign created successfully with ${tokenInfo.symbol}!`);
       return result;
@@ -154,7 +154,7 @@ export function useCampaignManagement() {
         functionName: 'cancelAdBrief',
         args: [briefId],
         account: address,
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
       });
       toast.success('Campaign cancelled successfully!');
       return result;
@@ -196,7 +196,7 @@ export function usePaymentManagement() {
           functionName: 'claimAllPendingPayments',
           args: [],
           account: address,
-          chain: CURRENT_NETWORK,
+          chain: DEFAULT_NETWORK,
         });
         toast.success('All payments claimed successfully!');
         return result;
@@ -208,7 +208,7 @@ export function usePaymentManagement() {
           functionName: 'claimPaymentsInToken',
           args: [tokenInfo.address],
           account: address,
-          chain: CURRENT_NETWORK,
+          chain: DEFAULT_NETWORK,
         });
         toast.success(`${tokenInfo.symbol} payments claimed successfully!`);
         return result;
@@ -233,7 +233,7 @@ export function usePaymentManagement() {
         functionName: 'claimAllPendingPayments',
         args: [],
         account: address,
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
       });
       toast.success('All payments claimed successfully!');
       return result;
@@ -273,7 +273,7 @@ export function useApplicationManagement() {
         functionName: 'applyToBrief',
         args: [briefId, message],
         account: address,
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
       });
       toast.success('Application submitted successfully!');
       return result;
@@ -294,7 +294,7 @@ export function useApplicationManagement() {
         functionName: 'selectInfluencer',
         args: [briefId, influencerAddress],
         account: address,
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
       });
       toast.success('Influencer selected successfully!');
       return result;
@@ -320,7 +320,7 @@ export function useUserBalances() {
   // Get CELO balance
   const { data: celoBalance } = useBalance({
     address,
-    chainId: CURRENT_NETWORK.id,
+    chainId: DEFAULT_NETWORK.id,
   });
 
   // Get all token balances
@@ -328,7 +328,7 @@ export function useUserBalances() {
     const { data: balance } = useBalance({
       address,
       token: tokenInfo.address as `0x${string}`,
-      chainId: CURRENT_NETWORK.id,
+      chainId: DEFAULT_NETWORK.id,
     });
 
     const formattedBalance = balance ? formatUnits(balance.value, balance.decimals) : '0';
@@ -387,7 +387,7 @@ export function useAdsBazaarData() {
   const contractConfig = useMemo(() => ({
     address: CONTRACT_ADDRESS,
     abi: AdsBazaarABI.abi,
-    chainId: CURRENT_NETWORK.id,
+    chainId: DEFAULT_NETWORK.id,
   }), []);
 
   // Get user by username (unified contract)

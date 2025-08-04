@@ -6,7 +6,7 @@ import { Brief } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import sdk from '@farcaster/frame-sdk';
-import { CURRENT_NETWORK } from '@/lib/networks';
+import { DEFAULT_NETWORK } from '@/lib/networks';
 import { useShareTracking } from '@/hooks/useShareTracking';
 import { MENTO_TOKENS, SupportedCurrency } from '@/lib/mento-simple';
 import { formatCurrency } from '@/utils/format';
@@ -71,7 +71,7 @@ const ShareCampaignButton = ({
   const shareText = `Check out this amazing campaign: ${campaign.name}
 
 💎 Total Prize Pool: ${totalPrizePool} ${currencyFlag}
-💰 Earn ${currencySymbol} on ${CURRENT_NETWORK.name}
+💰 Earn ${currencySymbol} on ${DEFAULT_NETWORK.name}
 🌐 Secure blockchain payments in ${currencySymbol}
 ⚡ Fast, transparent transactions
 
@@ -120,7 +120,7 @@ Apply now and get paid directly to your wallet!`;
         const farcasterMessage = `🚀 New campaign opportunity: ${campaign.name}
 
 💎 Total Prize Pool: ${totalPrizePool} ${currencyFlag}
-💰 Earn ${currencySymbol} on ${CURRENT_NETWORK.name}
+💰 Earn ${currencySymbol} on ${DEFAULT_NETWORK.name}
 🌐 Secure smart contract payments in ${currencySymbol}
 ⚡ Fast, transparent blockchain transactions
 

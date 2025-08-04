@@ -1,5 +1,5 @@
 import { createConfig, http } from "wagmi";
-import { celo, celoAlfajores } from "wagmi/chains";
+import { celo, celoAlfajores, base, baseSepolia } from "wagmi/chains";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 import { 
   connectorsForWallets 
@@ -50,5 +50,7 @@ export const wagmiConfig = createConfig({
       process.env.NEXT_PUBLIC_RPC_URL || "https://forno.celo.org"
     ),
     [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
+    [base.id]: http("https://mainnet.base.org"),
+    [baseSepolia.id]: http("https://sepolia.base.org"),
   },
 });
