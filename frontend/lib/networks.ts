@@ -1,6 +1,7 @@
-import { celo, celoAlfajores } from "wagmi/chains";
+import { celo, celoAlfajores, base, baseSepolia } from "wagmi/chains";
 
-export const CURRENT_NETWORK = celo; // Change to celo for mainnet
+// Default network - will be replaced by user selection
+export const DEFAULT_NETWORK = celo;
 
 export const NETWORK_CONFIG = {
   [celo.id]: {
@@ -13,6 +14,7 @@ export const NETWORK_CONFIG = {
       symbol: "CELO",
       decimals: 18,
     },
+    type: "celo" as const,
   },
   [celoAlfajores.id]: {
     chain: celoAlfajores,
@@ -24,15 +26,47 @@ export const NETWORK_CONFIG = {
       symbol: "CELO",
       decimals: 18,
     },
+    type: "celo" as const,
+  },
+  [base.id]: {
+    chain: base,
+    name: "Base Mainnet",
+    rpcUrl: "https://mainnet.base.org",
+    explorerUrl: "https://basescan.org",
+    nativeCurrency: {
+      name: "Ethereum",
+      symbol: "ETH",
+      decimals: 18,
+    },
+    type: "base" as const,
+  },
+  [baseSepolia.id]: {
+    chain: baseSepolia,
+    name: "Base Sepolia Testnet",
+    rpcUrl: "https://sepolia.base.org",
+    explorerUrl: "https://sepolia.basescan.org",
+    nativeCurrency: {
+      name: "Ethereum",
+      symbol: "ETH",
+      decimals: 18,
+    },
+    type: "base" as const,
   },
 };
 
+export const getNetworkConfig = (chainId: number) => {
+  return NETWORK_CONFIG[chainId];
+};
+
 export const getCurrentNetworkConfig = () => {
-  return NETWORK_CONFIG[CURRENT_NETWORK.id];
+  return NETWORK_CONFIG[DEFAULT_NETWORK.id];
 };
 
 export const isCorrectNetwork = (chainId?: number) => {
-  return chainId === CURRENT_NETWORK.id;
+  return chainId === DEFAULT_NETWORK.id;
 };
 
-export const SUPPORTED_CHAINS = [celo, celoAlfajores] as const;
+export const SUPPORTED_CHAINS = [celo, celoAlfajores, base, baseSepolia] as const;
+
+export const CELO_CHAINS = [celo, celoAlfajores] as const;
+export const BASE_CHAINS = [base, baseSepolia] as const;

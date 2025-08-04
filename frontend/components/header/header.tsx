@@ -8,6 +8,7 @@ import { cUSDContractConfig } from "../../lib/contracts";
 import { useUserProfile } from "../../hooks/adsBazaar";
 import { MENTO_TOKENS, SupportedCurrency } from "../../lib/mento-simple";
 import { motion } from "framer-motion";
+import { NetworkToggle } from "../NetworkToggle";
 
 interface HeaderProps {
   setActiveTab?: (tab: string) => void;
@@ -377,6 +378,9 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
                 )}
               </div>
 
+              {/* Network Toggle */}
+              <NetworkToggle className="hidden md:block mr-4" />
+
               {/* Mobile menu button */}
               <button
                 className="md:hidden p-2 rounded-lg hover:bg-slate-800/60 text-white"
@@ -425,6 +429,10 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
       {mobileMenuOpen && (
         <div className="md:hidden bg-slate-800/95 backdrop-blur-sm border-t border-slate-700 absolute w-full">
           <nav className="container mx-auto px-4 py-3 flex flex-col">
+            {/* Mobile Network Toggle */}
+            <div className="py-3 border-b border-slate-700/50">
+              <NetworkToggle />
+            </div>
             {shouldShowDashboard && (
               <Link
                 href={getDashboardUrl()}

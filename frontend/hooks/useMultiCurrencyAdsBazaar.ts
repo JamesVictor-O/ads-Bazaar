@@ -3,7 +3,7 @@ import { useWriteContract, useReadContract, useAccount, useWaitForTransactionRec
 import { parseUnits, formatUnits } from 'viem';
 import { MENTO_TOKENS, SupportedCurrency, mentoFX } from '@/lib/mento-simple';
 import { CONTRACT_ADDRESS } from '@/lib/contracts';
-import { CURRENT_NETWORK } from '@/lib/networks';
+import { DEFAULT_NETWORK } from '@/lib/networks';
 import AdsBazaarABI from '@/lib/AdsBazaar.json';
 import { erc20Abi } from 'viem';
 import { toast } from 'react-hot-toast';
@@ -52,7 +52,7 @@ export function useMultiCurrencyCampaignCreation() {
         abi: erc20Abi,
         functionName: 'approve',
         args: [contractAddress as `0x${string}`, budgetInWei],
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
         account: address,
       });
 
@@ -78,7 +78,7 @@ export function useMultiCurrencyCampaignCreation() {
           BigInt(campaignData.selectionGracePeriod),
           tokenInfo.address
         ],
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
         account: address,
         dataSuffix: referralTag,
       });
@@ -126,7 +126,7 @@ export function useMultiCurrencyPayments() {
         abi: AdsBazaarABI.abi,
         functionName: 'claimPaymentsInToken',
         args: [tokenInfo.address],
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
         account: address,
       });
 
@@ -154,7 +154,7 @@ export function useMultiCurrencyPayments() {
         abi: AdsBazaarABI.abi,
         functionName: 'claimAllPendingPayments',
         args: [],
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
         account: address,
       });
 

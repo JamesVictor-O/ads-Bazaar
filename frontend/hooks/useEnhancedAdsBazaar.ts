@@ -4,7 +4,7 @@ import { useWriteContract, useAccount } from 'wagmi';
 import { parseUnits } from 'viem';
 import { CONTRACT_ADDRESS } from '@/lib/contracts';
 import { SupportedCurrency, MENTO_TOKENS } from '@/lib/mento-simple';
-import { CURRENT_NETWORK } from '@/lib/networks';
+import { DEFAULT_NETWORK } from '@/lib/networks';
 import { toast } from 'react-hot-toast';
 import ABI from '../lib/AdsBazaar.json'; // Same ABI, now includes multi-currency functions
 
@@ -54,7 +54,7 @@ export function useCreateBrief() {
             BigInt(verificationPeriod),
             BigInt(selectionGracePeriod)
           ],
-          chain: CURRENT_NETWORK,
+          chain: DEFAULT_NETWORK,
           account: address,
         });
         return result;
@@ -78,7 +78,7 @@ export function useCreateBrief() {
             BigInt(selectionGracePeriod),
             tokenInfo.address
           ],
-          chain: CURRENT_NETWORK,
+          chain: DEFAULT_NETWORK,
           account: address,
         });
         return result;
@@ -116,7 +116,7 @@ export function useClaimPayments() {
           abi: ABI.abi,
           functionName: 'claimPayments', // Same function name
           args: [],
-          chain: CURRENT_NETWORK,
+          chain: DEFAULT_NETWORK,
           account: address,
         });
         return result;
@@ -128,7 +128,7 @@ export function useClaimPayments() {
           abi: ABI.abi,
           functionName: 'claimPaymentsInToken',
           args: [tokenInfo.address],
-          chain: CURRENT_NETWORK,
+          chain: DEFAULT_NETWORK,
           account: address,
         });
         return result;
@@ -151,7 +151,7 @@ export function useClaimPayments() {
         abi: ABI.abi,
         functionName: 'claimAllPendingPayments',
         args: [],
-        chain: CURRENT_NETWORK,
+        chain: DEFAULT_NETWORK,
         account: address,
       });
       toast.success('All pending payments claimed!');

@@ -7,6 +7,7 @@ import { SUPPORTED_CHAINS } from "@/lib/networks";
 import "@rainbow-me/rainbowkit/styles.css";
 import { ReactNode, useEffect, useState, PropsWithChildren } from "react";
 import { SessionProvider } from "next-auth/react";
+import { NetworkProvider } from "@/contexts/NetworkContext";
 import { AuthKitProvider } from "@farcaster/auth-kit";
 import "@farcaster/auth-kit/styles.css";
 import { sdk } from "@farcaster/frame-sdk";
@@ -71,11 +72,13 @@ export function Providers({ children }: { children: ReactNode }) {
           initialChain={SUPPORTED_CHAINS[0]}
           showRecentTransactions={true}
         >
-          <AuthKitProvider config={farcasterConfig}>
-            <SessionProvider refetchInterval={60 * 5}>
-              <FarcasterFrameProvider>{children}</FarcasterFrameProvider>
-            </SessionProvider>
-          </AuthKitProvider>
+          <NetworkProvider>
+            <AuthKitProvider config={farcasterConfig}>
+              <SessionProvider refetchInterval={60 * 5}>
+                <FarcasterFrameProvider>{children}</FarcasterFrameProvider>
+              </SessionProvider>
+            </AuthKitProvider>
+          </NetworkProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
