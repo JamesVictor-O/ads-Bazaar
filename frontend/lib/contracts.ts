@@ -1,8 +1,30 @@
 import { erc20Abi } from "viem";
-import { CURRENT_NETWORK } from "./networks";
+import { DEFAULT_NETWORK } from "./networks";
 
+// Define contract address types
+type CeloAddresses = {
+  CUSD: string;
+  CEUR: string;
+  CREAL: string;
+  CKES: string;
+  EXOF: string;
+  CNGN: string;
+  ADS_BAZAAR: string;
+  SELF_SCOPE: string;
+};
 
-const CONTRACT_ADDRESSES = {
+type BaseAddresses = {
+  USDC: string;
+  DEGEN: string;
+  ADS_BAZAAR: string;
+};
+
+const CONTRACT_ADDRESSES: {
+  42220: CeloAddresses;
+  44787: CeloAddresses; 
+  8453: BaseAddresses;
+  84532: BaseAddresses;
+} = {
   // Celo Mainnet
   42220: {
     CUSD: "0x765DE816845861e75A25fCA122bb6898B8B1282a", // Mainnet cUSD
@@ -25,26 +47,73 @@ const CONTRACT_ADDRESSES = {
     ADS_BAZAAR: "0x7bfaf4acf2f34a43041bde3f150adface7e4afce", // Multi-currency Diamond contract (use same for testnet)
     SELF_SCOPE: "AdsBazaar"
   },
+  // Base Mainnet
+  8453: {
+    USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base USDC
+    DEGEN: "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed", // DEGEN token
+    ADS_BAZAAR: "0x0000000000000000000000000000000000000000", // TODO: Deploy contract
+  },
+  // Base Sepolia Testnet
+  84532: {
+    USDC: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia USDC
+    DEGEN: "0x0000000000000000000000000000000000000000", // TODO: Deploy test DEGEN or use alternative
+    ADS_BAZAAR: "0x0000000000000000000000000000000000000000", // TODO: Deploy contract
+  },
 };
 
-// Get current network addresses
+// Get addresses for specific network
+export const getContractAddresses = (chainId: number) => {
+  return CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES];
+};
+
+// Get current network addresses (using default network)
 const getCurrentAddresses = () => {
   return CONTRACT_ADDRESSES[
-    CURRENT_NETWORK.id as keyof typeof CONTRACT_ADDRESSES
+    DEFAULT_NETWORK.id as keyof typeof CONTRACT_ADDRESSES
   ];
 };
 
 export const cUSDContractConfig = {
-  address: getCurrentAddresses().CUSD as `0x${string}`,
+  address: (getCurrentAddresses() as CeloAddresses).CUSD as `0x${string}`,
   abi: erc20Abi,
 };
 
 // Main AdsBazaar Diamond contract address
 export const CONTRACT_ADDRESS = getCurrentAddresses().ADS_BAZAAR as `0x${string}`;
 
-// All Mento token addresses for current network
+// Get token addresses for specific network
+export const getTokenAddresses = (chainId: number) => {
+  const addresses = getContractAddresses(chainId);
+  if (!addresses) return null;
+
+  // Celo networks - Mento tokens
+  if (chainId === 42220 || chainId === 44787) {
+    const celoAddresses = addresses as CeloAddresses;
+    return {
+      cUSD: celoAddresses.CUSD as `0x${string}`,
+      cEUR: celoAddresses.CEUR as `0x${string}`,
+      cREAL: celoAddresses.CREAL as `0x${string}`,
+      cKES: celoAddresses.CKES as `0x${string}`,
+      eXOF: celoAddresses.EXOF as `0x${string}`,
+      cNGN: celoAddresses.CNGN as `0x${string}`
+    };
+  }
+
+  // Base networks - USDC and DEGEN
+  if (chainId === 8453 || chainId === 84532) {
+    const baseAddresses = addresses as BaseAddresses;
+    return {
+      USDC: baseAddresses.USDC as `0x${string}`,
+      DEGEN: baseAddresses.DEGEN as `0x${string}`
+    };
+  }
+
+  return null;
+};
+
+// All Mento token addresses for current network (backward compatibility)
 export const getMentoTokenAddresses = () => {
-  const addresses = getCurrentAddresses();
+  const addresses = getCurrentAddresses() as CeloAddresses;
   return {
     cUSD: addresses.CUSD as `0x${string}`,
     cEUR: addresses.CEUR as `0x${string}`,
@@ -56,15 +125,17 @@ export const getMentoTokenAddresses = () => {
 };
 
 // Helper function to get explorer URL for transactions
-export const getExplorerUrl = (txHash: string) => {
+export const getExplorerUrl = (txHash: string, chainId?: number) => {
   const networkConfig = {
     42220: "https://celoscan.io",
     44787: "https://explorer.celo.org/alfajores",
+    8453: "https://basescan.org",
+    84532: "https://sepolia.basescan.org",
   };
 
-  const baseUrl =
-    networkConfig[CURRENT_NETWORK.id as keyof typeof networkConfig];
+  const targetChainId = chainId || DEFAULT_NETWORK.id;
+  const baseUrl = networkConfig[targetChainId as keyof typeof networkConfig];
   return `${baseUrl}/tx/${txHash}`;
 };
 
-export const SELF_SCOPE = getCurrentAddresses().SELF_SCOPE;
+export const SELF_SCOPE = (getCurrentAddresses() as CeloAddresses).SELF_SCOPE;

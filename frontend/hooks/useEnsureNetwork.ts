@@ -1,7 +1,7 @@
 import { useAccount, useSwitchChain } from "wagmi";
 import { toast } from "react-hot-toast";
 import {
-  CURRENT_NETWORK,
+  DEFAULT_NETWORK,
   getCurrentNetworkConfig,
   isCorrectNetwork,
 } from "../lib/networks";
@@ -20,7 +20,7 @@ export const useEnsureNetwork = () => {
 
     if (!isCorrectNetwork(chain?.id)) {
       try {
-        await switchChainAsync({ chainId: CURRENT_NETWORK.id });
+        await switchChainAsync({ chainId: DEFAULT_NETWORK.id });
         toast.success(`Switched to ${currentNetworkConfig.name}`);
         return true;
       } catch (err: any) {
@@ -34,7 +34,7 @@ export const useEnsureNetwork = () => {
               method: "wallet_addEthereumChain",
               params: [
                 {
-                  chainId: `0x${CURRENT_NETWORK.id.toString(16)}`,
+                  chainId: `0x${DEFAULT_NETWORK.id.toString(16)}`,
                   chainName: currentNetworkConfig.name,
                   rpcUrls: [currentNetworkConfig.rpcUrl],
                   nativeCurrency: currentNetworkConfig.nativeCurrency,
@@ -44,7 +44,7 @@ export const useEnsureNetwork = () => {
             });
 
             // Try switching again after adding
-            await switchChainAsync({ chainId: CURRENT_NETWORK.id });
+            await switchChainAsync({ chainId: DEFAULT_NETWORK.id });
             toast.success(`Added and switched to ${currentNetworkConfig.name}`);
             return true;
           } catch (addErr: any) {
@@ -80,6 +80,6 @@ export const useEnsureNetwork = () => {
     isSwitching: isPending,
     switchError: error,
     currentNetwork: currentNetworkConfig,
-    requiredNetwork: CURRENT_NETWORK,
+    requiredNetwork: DEFAULT_NETWORK,
   };
 };
