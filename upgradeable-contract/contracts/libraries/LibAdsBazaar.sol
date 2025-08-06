@@ -54,6 +54,13 @@ library LibAdsBazaar {
         EXPIRED
     }
 
+    enum SparkStatus {
+        ACTIVE,
+        PAUSED,
+        COMPLETED,
+        CANCELLED
+    }
+
     struct AdBrief {
         bytes32 briefId;
         address business;
@@ -109,6 +116,35 @@ library LibAdsBazaar {
         bool isApproved;
     }
 
+    struct SparkCampaign {
+        bytes32 sparkId;
+        address creator;
+        string castUrl;
+        address tokenAddress;
+        uint256 totalBudget;
+        uint256 remainingBudget;
+        uint256 baseReward;
+        uint256 multiplier;
+        uint256 maxParticipants;
+        uint256 createdAt;
+        uint256 expiresAt;
+        SparkStatus status;
+        uint256 participantCount;
+        uint256 verifiedCount;
+        uint256 totalRewardsPaid;
+    }
+
+    struct SparkParticipation {
+        address participant;
+        bytes32 sparkId;
+        string recastUrl;
+        uint256 timestamp;
+        bool verified;
+        bool rewarded;
+        uint256 rewardAmount;
+        uint256 verificationScore;
+    }
+
     struct AdsBazaarStorage {
         // Core contract variables
         address owner;
@@ -150,6 +186,20 @@ library LibAdsBazaar {
         // Username mappings
         mapping(string => address) usernameToAddress;
         mapping(string => bool) usernameExists;
+        
+        // Spark Campaign storage
+        mapping(bytes32 => SparkCampaign) sparkCampaigns;
+        mapping(bytes32 => mapping(address => SparkParticipation)) sparkParticipations;
+        mapping(address => bytes32[]) userCreatedSparks;
+        mapping(address => bytes32[]) userParticipatedSparks;
+        bytes32[] activeSparks;
+        uint256 sparkCounter;
+        
+        // Spark Campaign configuration
+        uint256 minSparkDeposit;
+        uint256 maxMultiplier;
+        uint256 minSparkDuration;
+        uint256 maxSparkDuration;
     }
 
     function adsBazaarStorage() internal pure returns (AdsBazaarStorage storage ds) {
@@ -188,6 +238,15 @@ library LibAdsBazaar {
     event SubmissionFlagged(bytes32 indexed briefId, address indexed influencer, address indexed business, string reason);
     event DisputeResolved(bytes32 indexed briefId, address indexed influencer, address indexed resolver, bool isValid);
     event CompensationPaid(bytes32 indexed briefId, address indexed influencer, uint256 amount);
+    
+    // Spark Campaign events
+    event SparkCampaignCreated(bytes32 indexed sparkId, address indexed creator, string castUrl, address tokenAddress, uint256 totalBudget, uint256 multiplier);
+    event SparkParticipationSubmitted(bytes32 indexed sparkId, address indexed participant, string recastUrl);
+    event SparkParticipationVerified(bytes32 indexed sparkId, address indexed participant, bool isValid);
+    event SparkRewardClaimed(bytes32 indexed sparkId, address indexed participant, uint256 amount);
+    event SparkCampaignCompleted(bytes32 indexed sparkId, uint256 totalParticipants, uint256 totalRewardsPaid);
+    event SparkCampaignCancelled(bytes32 indexed sparkId, uint256 refundAmount);
+    event SparkConfigurationUpdated(uint256 minDeposit, uint256 maxMultiplier, uint256 maxDailyParticipations, uint256 minDuration, uint256 maxDuration);
 
     // Common modifier functions (to be used in facets)
     function enforceOwner() internal view {
