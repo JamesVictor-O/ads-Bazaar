@@ -6,6 +6,7 @@ import { Brief } from "@/types";
 import { SubmissionsModal } from "@/components/modals/SubmissionsModal";
 import ApplicationsModal from "@/components/modals/ApplicationsModal";
 import CreateCampaignModal from "@/components/modals/CreateCampaignModal";
+import CreateSparkModal from "@/components/modals/CreateSparkModal";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { Toaster, toast } from "react-hot-toast";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
@@ -77,6 +78,7 @@ const BrandDashboard = () => {
   const { generateDivviReferralTag, trackTransaction } = useDivviIntegration();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateSparkModal, setShowCreateSparkModal] = useState(false);
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
   const [showSubmissionsModal, setShowSubmissionsModal] = useState(false);
   const [selectedBrief, setSelectedBrief] = useState<Brief | null>(null);
@@ -973,6 +975,37 @@ const BrandDashboard = () => {
 
                 {/* Buttons Group */}
                 <div className="flex gap-2 md:gap-3 flex-shrink-0">
+                  {/* Create Spark Campaign Button */}
+                  <motion.button
+                    onClick={() => setShowCreateSparkModal(true)}
+                    disabled={!isConnected || !isCorrectChain}
+                    className={`flex items-center justify-center gap-2 px-3 py-2.5 md:px-4 md:py-3 rounded-lg md:rounded-xl font-semibold transition-all duration-200 shadow-lg text-xs md:text-sm ${
+                      !isConnected || !isCorrectChain
+                        ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                        : "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:from-yellow-500 hover:to-orange-600 shadow-yellow-500/20"
+                    }`}
+                    whileTap={
+                      isConnected && isCorrectChain ? { scale: 0.95 } : {}
+                    }
+                  >
+                    {!isConnected ? (
+                      <>
+                        <AlertTriangle className="w-3 h-3 md:w-4 md:h-4" />
+                        <span className="hidden lg:inline">Connect</span>
+                      </>
+                    ) : !isCorrectChain ? (
+                      <>
+                        <AlertTriangle className="w-3 h-3 md:w-4 md:h-4" />
+                        <span className="hidden lg:inline">Wrong Network</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3 h-3 md:w-4 md:h-4" />
+                        <span className="hidden sm:inline">Spark</span>
+                      </>
+                    )}
+                  </motion.button>
+
                   {/* Create Campaign Button */}
                   <motion.button
                     onClick={handleCreateCampaignClick}
@@ -2055,6 +2088,19 @@ const BrandDashboard = () => {
       {showWalletFunding && (
         <WalletFundingModal
           onClose={() => setShowWalletFunding(false)}
+        />
+      )}
+
+      {/* Create Spark Modal */}
+      {showCreateSparkModal && (
+        <CreateSparkModal
+          isOpen={showCreateSparkModal}
+          onClose={() => setShowCreateSparkModal(false)}
+          onSuccess={() => {
+            // Refresh dashboard data after successful spark creation
+            refetchBriefs();
+            refetchProfile();
+          }}
         />
       )}
     </div>

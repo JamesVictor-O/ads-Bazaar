@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Menu, X, Copy, ChevronDown, User, Wallet, Zap } from "lucide-react";
+import { Menu, X, Copy, ChevronDown, User, Wallet, Zap, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance } from "wagmi";
@@ -9,6 +9,7 @@ import { useUserProfile } from "../../hooks/adsBazaar";
 import { MENTO_TOKENS, SupportedCurrency } from "../../lib/mento-simple";
 import { motion } from "framer-motion";
 import { NetworkToggle } from "../NetworkToggle";
+import SparkDiscovery from "../SparkDiscovery";
 
 interface HeaderProps {
   setActiveTab?: (tab: string) => void;
@@ -17,6 +18,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [showSparkDiscovery, setShowSparkDiscovery] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   const { address, isConnected } = useAccount();
@@ -155,6 +157,16 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
           >
             Marketplace
           </Link>
+          {isConnected && (
+            <motion.button
+              onClick={() => setShowSparkDiscovery(true)}
+              className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors"
+              whileTap={{ scale: 0.95 }}
+            >
+              <Sparkles className="w-4 h-4" />
+              Spark Discovery
+            </motion.button>
+          )}
           {isConnected && (
             <Link href="/auto-approval">
               <motion.button
@@ -454,6 +466,19 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
               Marketplace
             </Link>
             {isConnected && (
+              <motion.button
+                onClick={() => {
+                  setShowSparkDiscovery(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors border-b border-slate-700/50"
+                whileTap={{ scale: 0.95 }}
+              >
+                <Sparkles className="w-4 h-4" />
+                Spark Discovery
+              </motion.button>
+            )}
+            {isConnected && (
               <Link href="/auto-approval">
                 <motion.button
                   className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white transition-colors"
@@ -486,6 +511,12 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
           onClick={() => setProfileDropdownOpen(false)}
         />
       )}
+
+      {/* Spark Discovery Modal */}
+      <SparkDiscovery
+        isOpen={showSparkDiscovery}
+        onClose={() => setShowSparkDiscovery(false)}
+      />
     </header>
   );
 };
