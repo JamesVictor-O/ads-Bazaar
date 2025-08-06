@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import SubmitPostModal from "@/components/modals/SubmitPostModal";
 import ClaimPaymentsModal from "@/components/modals/ClaimPaymentsModal";
+import CreateSparkModal from "@/components/modals/CreateSparkModal";
 import { Transaction } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -98,6 +99,7 @@ export default function InfluencerDashboard() {
   const [isMounted, setIsMounted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
+  const [showCreateSparkModal, setShowCreateSparkModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] =
     useState<ApplicationWithBrief | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -683,6 +685,27 @@ export default function InfluencerDashboard() {
                   <span className="sm:hidden font-medium">Verified ✓</span>
                 </motion.div>
               )}
+
+              {/* Create Spark Campaign Button */}
+              <motion.button
+                onClick={() => setShowCreateSparkModal(true)}
+                disabled={!isConnected || !isVerified}
+                className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl font-medium transition-all shadow-sm text-sm md:text-base ${
+                  !isConnected || !isVerified
+                    ? "bg-slate-600/50 text-slate-400 cursor-not-allowed border border-slate-600/50"
+                    : "bg-gradient-to-r from-yellow-400 to-orange-500 text-white hover:from-yellow-500 hover:to-orange-600 shadow-yellow-500/20"
+                }`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
+                whileTap={
+                  isConnected && isVerified ? { scale: 0.95 } : {}
+                }
+              >
+                <Zap className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="hidden sm:inline">Create Spark</span>
+                <span className="sm:hidden">Spark</span>
+              </motion.button>
 
             </div>
           </div>
@@ -1508,6 +1531,19 @@ export default function InfluencerDashboard() {
         onClose={() => setShowCurrencyConverter(false)}
         userType="influencer"
       />
+
+      {/* Create Spark Modal */}
+      {showCreateSparkModal && (
+        <CreateSparkModal
+          isOpen={showCreateSparkModal}
+          onClose={() => setShowCreateSparkModal(false)}
+          onSuccess={() => {
+            // Refresh dashboard data after successful spark creation
+            refetch();
+            refetchProfile();
+          }}
+        />
+      )}
     </div>
   );
 }
