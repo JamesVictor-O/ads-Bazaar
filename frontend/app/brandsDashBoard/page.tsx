@@ -758,7 +758,6 @@ const BrandDashboard = () => {
         briefId as `0x${string}`,
         referralTag
       );
-      // Success notification and cleanup will be handled by useEffect
     } catch (error) {
       console.error("Error starting partial campaign:", error);
       // Error will be handled by useEffect, but we keep this for immediate feedback
@@ -776,7 +775,6 @@ const BrandDashboard = () => {
       
       const referralTag = generateDivviReferralTag();
       await cancelCampaignWithCompensation(briefId as `0x${string}`, compensationPerInfluencer, referralTag);
-      // Success notification and cleanup will be handled by useEffect
     } catch (error) {
       console.error("Error cancelling with compensation:", error);
       // Error will be handled by useEffect, but we keep this for immediate feedback

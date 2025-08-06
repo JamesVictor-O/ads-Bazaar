@@ -108,7 +108,6 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
   const copyAddress = async () => {
     if (address) {
       await navigator.clipboard.writeText(address);
-      // You might want to add a toast notification here
     }
   };
 
