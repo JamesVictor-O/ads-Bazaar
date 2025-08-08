@@ -399,8 +399,6 @@ const BrandDashboard = () => {
     };
   }, [briefs]);
 
-  // Legacy campaign creation useEffect removed - now handled by multi-currency system
-
   // Handle multi-currency campaign creation success with automatic refresh
   useEffect(() => {
     if (isMultiCurrencyCreateSuccess) {
