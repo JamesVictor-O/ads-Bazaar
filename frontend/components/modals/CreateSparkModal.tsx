@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Zap,
@@ -13,12 +13,12 @@ import {
   Sparkles,
   TrendingUp,
   AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
 import { CurrencySelector } from "../CurrencySelector";
 import { SupportedCurrency, MENTO_TOKENS } from "@/lib/mento-simple";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount } from "wagmi";
-import { toast } from "react-hot-toast";
 import { NetworkStatus } from "../NetworkStatus";
 import { useEnsureNetwork } from "@/hooks/useEnsureNetwork";
 import { useCreateSparkCampaign, useSparkConfiguration } from "@/hooks/useSparkCampaign";
@@ -58,9 +58,9 @@ const DURATION_OPTIONS = [
 ];
 
 export default function CreateSparkModal({ isOpen, onClose, onSuccess }: CreateSparkModalProps) {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const { isCorrectChain } = useEnsureNetwork();
-  const { createSparkCampaign, isCreating, isSuccess, error } = useCreateSparkCampaign();
+  const { createSparkCampaign, isCreating, isSuccess } = useCreateSparkCampaign();
   const { configuration } = useSparkConfiguration();
   const { balances } = useMultiCurrencyBalances();
 
@@ -226,8 +226,8 @@ export default function CreateSparkModal({ isOpen, onClose, onSuccess }: CreateS
                   Currency
                 </label>
                 <CurrencySelector
-                  value={formData.currency}
-                  onChange={(currency) => setFormData(prev => ({ ...prev, currency }))}
+                  selectedCurrency={formData.currency}
+                  onCurrencyChange={(currency: SupportedCurrency) => setFormData(prev => ({ ...prev, currency }))}
                   className="w-full"
                 />
               </div>

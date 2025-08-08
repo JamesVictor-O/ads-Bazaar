@@ -117,6 +117,7 @@ export function CurrencySelector({
     <div className={`relative z-[100] ${className}`}>
       {/* Currency Selector Button */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg hover:bg-slate-800/70 transition-colors"
       >
@@ -149,6 +150,7 @@ export function CurrencySelector({
             
             return (
               <button
+                type="button"
                 key={key}
                 onClick={() => {
                   onCurrencyChange(currency);
@@ -185,6 +187,7 @@ export function CurrencySelector({
           {/* Refresh Rates Button */}
           <div className="border-t border-slate-700 p-2">
             <button
+              type="button"
               onClick={loadRates}
               disabled={isLoadingRates}
               className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white transition-colors disabled:opacity-50"
