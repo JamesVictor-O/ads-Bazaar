@@ -252,16 +252,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
         <div className="w-full lg:w-[60%] space-y-6 text-center lg:text-left">
           {/* Header Section */}
           <div>
-            <motion.div
-              className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-2 mb-4"
-              variants={itemVariants}
-            >
-              <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-emerald-400 text-sm font-medium">
-                Web3 Creator Economy
-              </span>
-            </motion.div>
-
+         
             <motion.h1
               className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight"
               variants={itemVariants}
@@ -318,22 +309,22 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             variants={containerVariants}
           >
             <motion.div
-              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center hover:bg-slate-700/50 transition-all duration-300"
+              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 flex flex-col justify-center items-center text-center hover:bg-slate-700/50 transition-all duration-300"
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
             >
-              <Shield className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-emerald-400" />
+              <Image src={"/6L3lhVlp_400x400.jpg"} alt="Celo" width={20} height={20} />
               <div className="text-xs md:text-sm text-slate-300">
                 Mento StableCoins Supported
               </div>
             </motion.div>
 
             <motion.div
-              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center hover:bg-slate-700/50 transition-all duration-300"
+              className="bg-slate-800/60 md:bg-transparent backdrop-blur-sm border border-slate-700/50 md:border-slate-600 rounded-lg p-3 text-center hover:bg-slate-700/50 flex flex-col items-center justify-center gap-2 transition-all duration-300"
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
             >
-              <DollarSign className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-indigo-400" />
+              <Image src={"/celo-celo-logo.svg"} alt="Celo" width={20} height={20} />
               <div className="text-xs md:text-sm text-slate-300">
                 Celo Blockchain
               </div>
@@ -346,7 +337,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             >
               <Users className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-2 text-purple-400" />
               <div className="text-xs md:text-sm text-slate-300">
-                Farcaster MiniApp
+                 MiniApp
               </div>
             </motion.div>
           </motion.div>
@@ -424,7 +415,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-2">
           {[
             {
               value: isLoadingStats ? "..." : formatNumber(stats.totalUsers),
@@ -461,7 +452,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
           ].map((stat, index) => (
             <motion.div
               key={stat.label}
-              className="text-center p-4 md:p-6 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-slate-800/60 transition-all duration-300"
+              className="text-center p-4 md:p-3 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-slate-800/60 transition-all duration-300"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 * index }}
@@ -551,7 +542,7 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
                         </div>
                         {item.currency !== displayCurrency && (
                           <div className="text-sm text-slate-400">
-                            ≈ {formatNumber(item.convertedAmount)}{" "}
+                           {formatNumber(item.convertedAmount)}{" "}
                             {displayCurrency}
                           </div>
                         )}
