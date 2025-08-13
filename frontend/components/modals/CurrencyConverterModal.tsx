@@ -105,14 +105,14 @@ export function CurrencyConverterModal({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
+      className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[9998]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
       <motion.div
-        className="bg-slate-800/95 backdrop-blur-md border border-slate-700/50 rounded-xl sm:rounded-2xl w-full max-w-md sm:max-w-2xl mx-auto max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10"
+        className="bg-slate-800/95 backdrop-blur-md border border-slate-700/50 rounded-xl sm:rounded-2xl w-full max-w-xs sm:max-w-md lg:max-w-2xl mx-auto max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-emerald-500/10 relative z-[9999]"
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
@@ -177,7 +177,19 @@ export function CurrencyConverterModal({
                     Currency Conversion
                   </h4>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {/* Amount Input */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Amount</label>
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none text-lg"
+                      placeholder="Enter amount"
+                    />
+                  </div>
+
+                  <div className="space-y-4 mb-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">From</label>
                       <CurrencySelector
@@ -187,6 +199,18 @@ export function CurrencyConverterModal({
                         className="bg-slate-800 border-slate-600 text-white focus:border-emerald-500"
                       />
                     </div>
+                    
+                    {/* Swap Button - Centered between selectors */}
+                    <div className="flex justify-center py-2">
+                      <button
+                        onClick={swapCurrencies}
+                        className="p-3 bg-slate-700 hover:bg-slate-600 rounded-full transition-colors border-2 border-slate-600 hover:border-emerald-500 shadow-lg"
+                        title="Swap currencies"
+                      >
+                        <ArrowRightLeft className="w-5 h-5 text-slate-300" />
+                      </button>
+                    </div>
+                    
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">To</label>
                       <CurrencySelector
@@ -196,28 +220,6 @@ export function CurrencyConverterModal({
                         className="bg-slate-800 border-slate-600 text-white focus:border-emerald-500"
                       />
                     </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Amount</label>
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
-                      placeholder="Enter amount"
-                    />
-                  </div>
-
-                  {/* Swap Button */}
-                  <div className="flex justify-center mb-4">
-                    <button
-                      onClick={swapCurrencies}
-                      className="p-2 bg-slate-700 hover:bg-slate-600 rounded-full transition-colors"
-                      title="Swap currencies"
-                    >
-                      <ArrowRightLeft className="w-4 h-4 text-slate-300" />
-                    </button>
                   </div>
 
                   {/* Conversion Result */}
@@ -276,10 +278,10 @@ export function CurrencyConverterModal({
                     </span>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {/* From Currency - Stack Layout */}
-                    <div className="bg-slate-800/50 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
+                    <div className="bg-slate-800/50 rounded-lg p-4 space-y-4">
+                      <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-slate-300">From</label>
                         {fromBalance && (
                           <button
@@ -292,13 +294,11 @@ export function CurrencyConverterModal({
                       </div>
                       
                       {/* Currency Selector */}
-                      <div className="mb-3">
-                        <CurrencySelector
-                          selectedCurrency={fromCurrency}
-                          onCurrencyChange={setFromCurrency}
-                          className="bg-slate-700 border-slate-600 text-white focus:border-emerald-500 w-full"
-                        />
-                      </div>
+                      <CurrencySelector
+                        selectedCurrency={fromCurrency}
+                        onCurrencyChange={setFromCurrency}
+                        className="bg-slate-700 border-slate-600 text-white focus:border-emerald-500 w-full"
+                      />
                       
                       {/* Amount Input */}
                       <input
@@ -310,29 +310,27 @@ export function CurrencyConverterModal({
                       />
                     </div>
 
-                    {/* Swap Arrow - Compact */}
-                    <div className="flex justify-center py-1">
+                    {/* Swap Arrow - More Spacing */}
+                    <div className="flex justify-center py-4">
                       <button
                         onClick={swapCurrencies}
-                        className="p-2 bg-slate-700 hover:bg-emerald-600 rounded-full transition-colors border-2 border-slate-600 hover:border-emerald-500"
+                        className="p-3 bg-slate-700 hover:bg-emerald-600 rounded-full transition-colors border-2 border-slate-600 hover:border-emerald-500 shadow-lg"
                         title="Swap currencies"
                       >
-                        <ArrowRightLeft className="w-4 h-4 text-slate-300" />
+                        <ArrowRightLeft className="w-5 h-5 text-slate-300" />
                       </button>
                     </div>
 
                     {/* To Currency - Stack Layout */}
-                    <div className="bg-slate-800/50 rounded-lg p-3">
-                      <label className="block text-sm font-medium text-slate-300 mb-2">To (you receive)</label>
+                    <div className="bg-slate-800/50 rounded-lg p-4 space-y-4">
+                      <label className="block text-sm font-medium text-slate-300">To (you receive)</label>
                       
                       {/* Currency Selector */}
-                      <div className="mb-3">
-                        <CurrencySelector
-                          selectedCurrency={toCurrency}
-                          onCurrencyChange={setToCurrency}
-                          className="bg-slate-700 border-slate-600 text-white focus:border-emerald-500 w-full"
-                        />
-                      </div>
+                      <CurrencySelector
+                        selectedCurrency={toCurrency}
+                        onCurrencyChange={setToCurrency}
+                        className="bg-slate-700 border-slate-600 text-white focus:border-emerald-500 w-full"
+                      />
                       
                       {/* Estimated Amount */}
                       <div className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg">
