@@ -114,22 +114,22 @@ export function CurrencySelector({
   const selectedToken = MENTO_TOKENS[selectedCurrency];
 
   return (
-    <div className={`relative z-[100] ${className}`}>
+    <div className={`relative ${className}`}>
       {/* Currency Selector Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg hover:bg-slate-800/70 transition-colors"
+        className="flex items-center justify-between w-full px-3 sm:px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg hover:bg-slate-800/70 transition-colors min-h-[60px]"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{selectedToken.flag}</span>
-          <div className="text-left">
-            <div className="font-medium text-white">{selectedToken.symbol}</div>
-            <div className="text-xs text-slate-400">{selectedToken.name}</div>
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <span className="text-xl sm:text-2xl flex-shrink-0">{selectedToken.flag}</span>
+          <div className="text-left min-w-0">
+            <div className="font-medium text-white text-sm sm:text-base">{selectedToken.symbol}</div>
+            <div className="text-xs text-slate-400 truncate">{selectedToken.name}</div>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {isLoadingRates && <RefreshCw className="w-4 h-4 text-slate-400 animate-spin" />}
           <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </div>
@@ -140,10 +140,10 @@ export function CurrencySelector({
         <>
           {/* Backdrop to close dropdown when clicking outside */}
           <div 
-            className="fixed inset-0 z-[90]" 
+            className="fixed inset-0 z-[100]" 
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[9999] max-h-80 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[101] max-h-60 sm:max-h-80 overflow-y-auto max-w-full">
           {Object.entries(MENTO_TOKENS).map(([key, token]) => {
             const currency = key as SupportedCurrency;
             const rateInfo = rates.find(r => r.key === currency);
@@ -156,26 +156,26 @@ export function CurrencySelector({
                   onCurrencyChange(currency);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-700/50 transition-colors ${
+                className={`w-full flex items-center justify-between px-3 sm:px-4 py-3 text-left hover:bg-slate-700/50 transition-colors ${
                   currency === selectedCurrency ? 'bg-slate-700/30' : ''
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{token.flag}</span>
-                  <div>
-                    <div className="font-medium text-white">{token.symbol}</div>
-                    <div className="text-xs text-slate-400">{token.name}</div>
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <span className="text-lg sm:text-xl flex-shrink-0">{token.flag}</span>
+                  <div className="min-w-0">
+                    <div className="font-medium text-white text-sm sm:text-base">{token.symbol}</div>
+                    <div className="text-xs text-slate-400 truncate">{token.name}</div>
                   </div>
                 </div>
                 
-                <div className="text-right">
+                <div className="text-right flex-shrink-0 ml-2">
                   <div className="text-xs text-slate-400">
                     Balance: {balances[currency]?.formatted ? 
                       parseFloat(balances[currency].formatted).toFixed(2) : 
                       '0.00'}
                   </div>
                   {showConverter && amount && convertedAmounts[currency] && (
-                    <div className="text-sm text-emerald-400">
+                    <div className="text-xs sm:text-sm text-emerald-400">
                       ≈ {parseFloat(convertedAmounts[currency]).toLocaleString()}
                     </div>
                   )}
