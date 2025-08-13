@@ -115,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({ setActiveTab }) => {
   }
 
   return (
-    <header className="fixed h-20 sm:h-28 w-full z-50 transition-all duration-300 bg-slate-900/95 backdrop-blur-sm shadow-lg py-2">
+    <header className="fixed h-20 sm:h-20 w-full z-50 transition-all duration-300 bg-slate-900/95 backdrop-blur-sm shadow-lg ">
       <div className="h-full w-full px-4 lg:px-8 flex justify-between items-center">
         {/* Logo */}
         <Link href={"/"}>
