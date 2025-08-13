@@ -2,14 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, easeInOut } from "framer-motion";
-import {
-  ArrowRight,
-  DollarSign,
-  Shield,
-  Star,
-  Users,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, DollarSign, Shield, Star, Users, Zap } from "lucide-react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useRouter } from "next/navigation";
@@ -29,7 +22,8 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
   const [animationPhase, setAnimationPhase] = useState(0);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [displayCurrency, setDisplayCurrency] = useState<SupportedCurrency>("cUSD");
+  const [displayCurrency, setDisplayCurrency] =
+    useState<SupportedCurrency>("cUSD");
   const { isConnected: wagmiConnected } = useAccount();
   const { userProfile, isLoadingProfile } = useUserProfile();
 
@@ -49,7 +43,8 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
     setMounted(true);
   }, []);
 
-  const { stats, isLoading: isLoadingStats } = usePlatformStats(displayCurrency);
+  const { stats, isLoading: isLoadingStats } =
+    usePlatformStats(displayCurrency);
 
   const handleGetStartedClick = async () => {
     try {
@@ -388,9 +383,27 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
               height={300}
               className="w-full"
             />
-            <Image src={"/twitter.png"} width={500} height={400} alt="X" className="w-24 h-24 absolute top-60 left-6"/>
-            <Image src={"/tiktok.png"} width={500} height={400} alt="X" className="w-24 h-24 absolute top-60 right-4"/>
-            <Image src={"/facebook.png"} width={500} height={400} alt="X" className="w-24 h-24 absolute bottom-8 right-60"/>
+            <Image
+              src={"/twitter.png"}
+              width={500}
+              height={400}
+              alt="X"
+              className="w-24 h-24 absolute top-60 left-6"
+            />
+            <Image
+              src={"/tiktok.png"}
+              width={500}
+              height={400}
+              alt="X"
+              className="w-24 h-24 absolute top-60 right-4"
+            />
+            <Image
+              src={"/facebook.png"}
+              width={500}
+              height={400}
+              alt="X"
+              className="w-24 h-24 absolute bottom-8 right-60"
+            />
           </div>
         </div>
       </motion.div>
@@ -438,7 +451,9 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
             {
               value: isLoadingStats
                 ? "..."
-                : `${formatNumber(stats.totalEscrowAmount)} ${stats.displayCurrency}`,
+                : `${formatNumber(stats.totalEscrowAmount)} ${
+                    stats.displayCurrency
+                  }`,
               label: "Active Escrow",
               icon: "💰",
               color: "from-amber-400 to-amber-600",
@@ -467,13 +482,6 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
 
         {/* Live indicator and Currency Selector */}
         <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-6">
-          <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-full">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-            <span className="text-xs text-slate-400">
-              Live on Celo Blockchain
-            </span>
-          </div>
-          
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400">Display currency:</span>
             <CurrencySelector
@@ -487,48 +495,96 @@ export default function HeroSection({ setIsModalOpen }: HeroSectionProps) {
         {/* Escrow Breakdown */}
         {!isLoadingStats && stats.escrowBreakdown.length > 0 && (
           <motion.div
-            className="mt-16 max-w-2xl mx-auto"
+            className="mt-3 md:mt-8  mx-auto overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.6 }}
           >
-            <details className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-xl p-4">
-              <summary className="cursor-pointer text-slate-300 hover:text-white transition-colors select-none">
-                <span className="text-sm font-medium">View escrow breakdown by currency</span>
-              </summary>
-              
-              <div className="mt-4 space-y-3">
-                {stats.escrowBreakdown.map((item) => (
-                  <div key={item.currency} className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">
-                        {item.currency === 'cUSD' ? '🇺🇸' : 
-                         item.currency === 'cEUR' ? '🇪🇺' :
-                         item.currency === 'cREAL' ? '🇧🇷' :
-                         item.currency === 'cKES' ? '🇰🇪' :
-                         item.currency === 'eXOF' ? '🌍' :
-                         item.currency === 'cNGN' ? '🇳🇬' : '💰'}
-                      </span>
-                      <span className="font-medium text-white">{item.currency}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium text-white">
-                        {formatNumber(item.amount)} {item.currency}
-                      </div>
-                      {item.currency !== displayCurrency && (
-                        <div className="text-xs text-slate-400">
-                          ≈ {formatNumber(item.convertedAmount)} {displayCurrency}
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-medium text-white mb-2">
+                Escrow Breakdown by Currency
+              </h3>
+              <p className="text-sm text-slate-400">
+                Real-time escrow amounts across supported currencies
+              </p>
+            </div>
+
+            <div className="relative">
+              {/* Gradient overlays for smooth fade effect */}
+              <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-slate-900 to-transparent z-10 pointer-events-none"></div>
+              {/* <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-slate-900 to-transparent z-10 pointer-events-none"></div> */}
+
+              {/* Carousel container */}
+              <div className="flex gap-4 animate-scroll">
+                {/* Duplicate items for seamless loop */}
+                {[...stats.escrowBreakdown, ...stats.escrowBreakdown].map(
+                  (item, index) => (
+                    <motion.div
+                      key={`${item.currency}-${index}`}
+                      className="flex-shrink-0 h-24 w-32 pt-3 md:pt-0 md:w-48 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl md:p-4 hover:bg-slate-800/60 transition-all duration-300"
+                      whileHover={{ scale: 1.05, y: -5 }}
+                    >
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-2 mt-1">
+                          <div className="text-xl md:text-lg ">
+                            {item.currency === "cUSD"
+                              ? "🇺🇸"
+                              : item.currency === "cEUR"
+                              ? "🇪🇺"
+                              : item.currency === "cREAL"
+                              ? "🇧🇷"
+                              : item.currency === "cKES"
+                              ? "🇰🇪"
+                              : item.currency === "eXOF"
+                              ? "🌍"
+                              : item.currency === "cNGN"
+                              ? "🇳🇬"
+                              : "💰"}
+                          </div>
+                          <div className="font-bold text-white text-lg ">
+                            {item.currency}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+
+                        <div className="text-lg md:text-2xl font-bold bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent ">
+                          {formatNumber(item.amount)}
+                        </div>
+                        {item.currency !== displayCurrency && (
+                          <div className="text-sm text-slate-400">
+                            ≈ {formatNumber(item.convertedAmount)}{" "}
+                            {displayCurrency}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )
+                )}
               </div>
-            </details>
+            </div>
           </motion.div>
         )}
       </motion.div>
       {/* END OF PLATFORM STATISTICS */}
+
+      {/* Custom CSS for carousel animation */}
+      <style jsx>{`
+        @keyframes scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .animate-scroll {
+          animation: scroll 30s linear infinite;
+        }
+
+        .animate-scroll:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
     </section>
   );
 }
